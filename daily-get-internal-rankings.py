@@ -246,7 +246,7 @@ def loop_through_rankings(date):
         pbp = load_pbp_data(years_to_load)
         if pbp.empty: return pd.DataFrame()
         
-        qb_rating_map, team_qb_vol_map = get_qb_ratings_fast(years_to_load)
+        qb_rating_map, team_qb_vol_map = get_qb_ratings_fast(years_to_load, target_year, CURRENT_UPCOMING_WEEK)
     
         # 3. Process PBP
         print("Processing PBP data...")
@@ -585,7 +585,7 @@ def loop_through_rankings(date):
         # 3. Process PBP
         print("Processing PBP data...")
         pbp['game_date'] = pd.to_datetime(pbp['game_date'])
-        pbp = pbp[pbp['game_date'] >= start_date].copy()
+        pbp = pbp[(pbp['game_date'] >= start_date) & (pbp['game_date'] <= current_date)].copy()
         
         valid_types = ['run', 'pass', 'punt', 'field_goal', 'kickoff', 'extra_point']
         pbp = pbp[pbp['play_type'].isin(valid_types)]
@@ -832,7 +832,7 @@ def loop_through_rankings(date):
         # 3. Process
         print("Processing PBP data...")
         pbp['game_date'] = pd.to_datetime(pbp['game_date'])
-        pbp = pbp[pbp['game_date'] >= start_date].copy()
+        pbp = pbp[(pbp['game_date'] >= start_date) & (pbp['game_date'] <= current_date)].copy()
         
         valid_types = ['run', 'pass', 'punt', 'field_goal', 'kickoff', 'extra_point']
         pbp = pbp[pbp['play_type'].isin(valid_types)]
