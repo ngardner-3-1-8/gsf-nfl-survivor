@@ -164,11 +164,17 @@ def loop_through_rankings(date):
             print(f"Error loading PBP data: {e}")
             return pd.DataFrame()
     
-    def get_qb_ratings_fast(years):
+    def get_qb_ratings_fast(years, target_year, current_upcoming_week):
         print(f"Loading Player Stats for {years}...")
         try:
             stats = nfl.load_player_stats(seasons=years).to_pandas()
             qbs = stats[stats['position'] == 'QB'].copy()
+            
+            # --- NEW FIX: Filter out future stats ---
+            qbs = qbs[
+                (qbs['season'] < target_year) | 
+                ((qbs['season'] == target_year) & (qbs['week'] < current_upcoming_week))
+            ].copy()
             
             # --- FIX 1: COLUMN NAMES ---
             team_col = 'recent_team' if 'recent_team' in qbs.columns else 'team'
@@ -234,7 +240,7 @@ def loop_through_rankings(date):
         # 1. Setup
         current_date = today
         start_date = current_date - timedelta(days=DAYS_WINDOW)
-        years_to_load = [target_year, target_year - 1, target_year - 2]
+        years_to_load = [target_year, target_year - 1, target_year - 2, target_year - 3]
         
         # 2. Load
         pbp = load_pbp_data(years_to_load)
@@ -245,7 +251,7 @@ def loop_through_rankings(date):
         # 3. Process PBP
         print("Processing PBP data...")
         pbp['game_date'] = pd.to_datetime(pbp['game_date'])
-        pbp = pbp[pbp['game_date'] >= start_date].copy()
+        pbp = pbp[(pbp['game_date'] >= start_date) & (pbp['game_date'] <= current_date)].copy()
         
         valid_types = ['run', 'pass', 'punt', 'field_goal', 'kickoff', 'extra_point']
         pbp = pbp[pbp['play_type'].isin(valid_types)]
