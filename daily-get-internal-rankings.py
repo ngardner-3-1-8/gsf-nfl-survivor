@@ -503,7 +503,7 @@ def loop_through_rankings(date):
         df = build_power_ratings()
         
         if not df.empty:
-            filename = f"nfl-power-ratings/nfl_power_ratings_blended_week_{CURRENT_UPCOMING_WEEK-1}_{target_year}.csv"
+            filename = f"nfl-power-ratings/nfl_power_ratings_blended_week_{CURRENT_UPCOMING_WEEK}_{target_year}.csv"
             
             # 2. Compare if file exists
             if os.path.exists('nfl-power-ratings/mp_ratings.csv'):
