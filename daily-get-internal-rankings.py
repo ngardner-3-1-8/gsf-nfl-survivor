@@ -101,6 +101,8 @@ def loop_through_rankings(date):
                     target_year -= 1
                     # Reload schedule for the adjusted year so we can calculate the week correctly below
                     schedule = nfl.load_schedules([target_year])
+                    schedule = schedule.to_pandas()
+                    starting_week = 1
             
             # 4. Calculate the Current Week
             # We find the latest game that has happened to determine "current" week
