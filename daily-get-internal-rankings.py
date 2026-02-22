@@ -56,12 +56,14 @@ def loop_through_rankings(date):
             games_played = schedule[
                 pd.to_datetime(schedule['gameday']) <= pd.to_datetime(today)
             ]
+            print(games_played)
             
             if not games_played.empty:
                 # If games have been played, the "starting_week" for your script 
                 # (which usually scrapes the *upcoming* week) should be the last played week + 1.
                 last_played_week = int(games_played['week'].max())
                 starting_week = last_played_week + 1
+                print(starting_week)
                 
                 # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
                 if starting_week > 19: 
@@ -105,12 +107,14 @@ def loop_through_rankings(date):
             games_played = schedule[
                 pd.to_datetime(schedule['gameday']) <= pd.to_datetime(today)
             ]
+            print(games_played)
             
             if not games_played.empty:
                 # If games have been played, the "starting_week" for your script 
                 # (which usually scrapes the *upcoming* week) should be the last played week + 1.
                 last_played_week = int(games_played['week'].max())
                 starting_week = last_played_week + 1
+                print(starting_week)
                 
                 # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
                 if starting_week > 19: 
