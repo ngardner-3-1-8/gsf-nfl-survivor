@@ -94,11 +94,11 @@ def loop_through_rankings(date):
                 first_game_date = pd.to_datetime(reg_season_games['gameday'].min())
                 
                 # Check if today is BEFORE the first game
-####                if pd.to_datetime(today) < first_game_date:
-####                    print(f"Today ({today.date()}) is before the first game ({first_game_date.date()}). dropping year by 1.")
-####                    target_year -= 1
+                if pd.to_datetime(today) < first_game_date:
+                    print(f"Today ({today.date()}) is before the first game ({first_game_date.date()}). dropping year by 1.")
+                    target_year -= 1
                     # Reload schedule for the adjusted year so we can calculate the week correctly below
-####                    schedule = nfl.load_schedules([target_year])
+                    schedule = nfl.load_schedules([target_year])
             
             # 4. Calculate the Current Week
             # We find the latest game that has happened to determine "current" week
