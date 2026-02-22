@@ -1,5 +1,5 @@
 Team,Power Rating,Projected QB,Starter Weight %,QB Adj (Pts),EPA Rating,SR Rating (Pts),Strength of Schedule,Offensive EPA/Game,Defensive EPA/Game,Special Teams EPA/Game,Rank,MP_Rating,Rating_Last,Rank_Last,Change,QB used,Diff,Abs_Diff
-DET,8.997,J.Goff,1.0,0.0,11.382,6.824,1.542,6.463,-2.644,1.099,8,3.74,4.04,7,-1,Goff,5.257,5.257
+DET,8.997,J.Goff,1.0,-0.0,11.382,6.824,1.542,6.463,-2.644,1.099,8,3.74,4.04,7,-1,Goff,5.257,5.257
 GB,5.718,J.Love,0.942,0.326,7.861,3.883,0.973,8.365,0.126,-1.434,9,3.57,4.02,8,-1,Love,2.148,2.148
 LA,5.66,M.Stafford,0.969,0.018,6.488,4.78,1.066,3.562,-3.505,-1.492,2,9.47,9.27,2,0,Stafford,-3.8100000000000005,3.8100000000000005
 KC,5.092,P.Mahomes,0.973,0.144,7.074,3.404,0.447,8.21,0.78,-0.573,18,-0.19,4.31,6,-12,Minshew,5.282,5.282
