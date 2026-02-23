@@ -2242,7 +2242,7 @@ def loop_through_simulations(date_str):
     collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data(schedule_df)
     
     # --- CONFIGURATION ---
-    SIMULATIONS = 1000
+    SIMULATIONS = 400
     HISTORY_DAYS = 840
     CURRENT_SEASON = target_year
     DECAY_RATE = 0.00475
@@ -2527,44 +2527,44 @@ def loop_through_simulations(date_str):
             """
     
     # --- APPLY WEATHER PHYSICS ---
-    #WEATHER        if not is_dome:
+        if not is_dome:
                 # 1. WIND EFFECTS
-    #WEATHER            if wind_speed > 15:
+           if wind_speed > 15:
                     # Harder to throw accurate deep balls
-    #WEATHER                if ptype == 'pass':
-    #WEATHER                    stats['complete'] -= 0.05
-    #WEATHER                    stats['mu'] -= 1.0 # Average depth of target drops
-    #WEATHER            if wind_speed > 25:
-    #WEATHER                if ptype == 'pass':
-    #WEATHER                    stats['complete'] -= 0.12
-    #WEATHER                    stats['intercept'] += 0.01 # Tips/Overthrows
+                if ptype == 'pass':
+                    stats['complete'] -= 0.05
+                    stats['mu'] -= 1.0 # Average depth of target drops
+            if wind_speed > 25:
+                if ptype == 'pass':
+                    stats['complete'] -= 0.12
+                    stats['intercept'] += 0.01 # Tips/Overthrows
                 
                 # 2. PRECIPITATION EFFECTS (Ball Security & Catching)
-    #WEATHER            if is_rain:
+            if is_rain:
                     # "Slick Ball"
-    #WEATHER                stats['fumble'] *= 1.3      # 50% increase in fumble risk
-    #WEATHER                if ptype == 'pass':
-    #WEATHER                    stats['complete'] -= 0.06 # Drops
-    #WEATHER                    stats['mu'] *= 0.9        # Players slip, less YAC
-    #WEATHER                else:
-    #WEATHER                    stats['mu'] *= 0.95       # Slower footing
+                stats['fumble'] *= 1.3      # 50% increase in fumble risk
+                if ptype == 'pass':
+                    stats['complete'] -= 0.06 # Drops
+                    stats['mu'] *= 0.9        # Players slip, less YAC
+                else:
+                    stats['mu'] *= 0.95       # Slower footing
                 
-    #WEATHER            elif is_snow:
+            elif is_snow:
                     # "Chaos" Factor
-    #WEATHER                stats['fumble'] *= 1.4
-    #WEATHER                if ptype == 'pass':
-    #WEATHER                    stats['complete'] -= 0.08 # Visibility/Tracking issues
-    #WEATHER                else:
+                stats['fumble'] *= 1.4
+                if ptype == 'pass':
+                    stats['complete'] -= 0.08 # Visibility/Tracking issues
+                else:
                         # OFFENSIVE ADVANTAGE in Snow (Run Game)
                         # Defenders react slower and slip.
                         # RBs know where they are going.
-    #WEATHER                    stats['mu'] += 0.4 
+                    stats['mu'] += 0.4 
     
                 # 3. TEMPERATURE EFFECTS (The "Rock")
-    #WEATHER            if temp < 20:
-    #WEATHER                stats['fumble'] *= 1.25 # Hits hurt more, ball is hard
-    #WEATHER                if ptype == 'pass':
-    #WEATHER                    stats['complete'] -= 0.04 # Hard to grip/catch
+            if temp < 20:
+                stats['fumble'] *= 1.25 # Hits hurt more, ball is hard
+                if ptype == 'pass':
+                    stats['complete'] -= 0.04 # Hard to grip/catch
     
             yards = 0
             is_complete = True
@@ -2825,14 +2825,14 @@ def loop_through_simulations(date_str):
                 if pass_prob is None: pass_prob = self.league_pass_rates.get((down, d_bucket, ctx), 0.55)
     
                 # WIND: severe penalty if over 20mph
-    #WEATHER            if not is_dome and wind_speed > 20:
-    #WEATHER                pass_prob -= 0.15  # Heavy shift to run
-    #WEATHER            elif not is_dome and wind_speed > 15:
-    #WEATHER                pass_prob -= 0.05
+            if not is_dome and wind_speed > 20:
+                pass_prob -= 0.15  # Heavy shift to run
+            elif not is_dome and wind_speed > 15:
+                pass_prob -= 0.05
                 
                 # RAIN/SNOW: slight shift to run to avoid drops/tips
-    #WEATHER            if not is_dome and (is_rain or is_snow):
-    #WEATHER                pass_prob -= 0.05
+            if not is_dome and (is_rain or is_snow):
+                pass_prob -= 0.05
                 
                 # Standard Adjustments
                 if phase == 'REG' and clock < 300:
