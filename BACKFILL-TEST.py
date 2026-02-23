@@ -2825,14 +2825,14 @@ def loop_through_simulations(date_str):
                 if pass_prob is None: pass_prob = self.league_pass_rates.get((down, d_bucket, ctx), 0.55)
     
                 # WIND: severe penalty if over 20mph
-            if not is_dome and wind_speed > 20:
-                pass_prob -= 0.15  # Heavy shift to run
-            elif not is_dome and wind_speed > 15:
-                pass_prob -= 0.05
+                if not is_dome and wind_speed > 20:
+                    pass_prob -= 0.15  # Heavy shift to run
+                elif not is_dome and wind_speed > 15:
+                    pass_prob -= 0.05
                 
                 # RAIN/SNOW: slight shift to run to avoid drops/tips
-            if not is_dome and (is_rain or is_snow):
-                pass_prob -= 0.05
+                if not is_dome and (is_rain or is_snow):
+                    pass_prob -= 0.05
                 
                 # Standard Adjustments
                 if phase == 'REG' and clock < 300:
