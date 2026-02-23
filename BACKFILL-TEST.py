@@ -2529,7 +2529,7 @@ def loop_through_simulations(date_str):
     # --- APPLY WEATHER PHYSICS ---
         if not is_dome:
                 # 1. WIND EFFECTS
-           if wind_speed > 15:
+            if wind_speed > 15:
                     # Harder to throw accurate deep balls
                 if ptype == 'pass':
                     stats['complete'] -= 0.05
