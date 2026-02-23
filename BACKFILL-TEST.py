@@ -2527,131 +2527,131 @@ def loop_through_simulations(date_str):
             """
     
     # --- APPLY WEATHER PHYSICS ---
-        if not is_dome:
+            if not is_dome:
                 # 1. WIND EFFECTS
-            if wind_speed > 15:
+                if wind_speed > 15:
                     # Harder to throw accurate deep balls
-                if ptype == 'pass':
-                    stats['complete'] -= 0.05
-                    stats['mu'] -= 1.0 # Average depth of target drops
-            if wind_speed > 25:
-                if ptype == 'pass':
-                    stats['complete'] -= 0.12
-                    stats['intercept'] += 0.01 # Tips/Overthrows
+                    if ptype == 'pass':
+                        stats['complete'] -= 0.05
+                        stats['mu'] -= 1.0 # Average depth of target drops
+                if wind_speed > 25:
+                    if ptype == 'pass':
+                        stats['complete'] -= 0.12
+                        stats['intercept'] += 0.01 # Tips/Overthrows
                 
                 # 2. PRECIPITATION EFFECTS (Ball Security & Catching)
-            if is_rain:
+                if is_rain:
                     # "Slick Ball"
-                stats['fumble'] *= 1.3      # 50% increase in fumble risk
-                if ptype == 'pass':
-                    stats['complete'] -= 0.06 # Drops
-                    stats['mu'] *= 0.9        # Players slip, less YAC
-                else:
-                    stats['mu'] *= 0.95       # Slower footing
+                    stats['fumble'] *= 1.3      # 50% increase in fumble risk
+                    if ptype == 'pass':
+                        stats['complete'] -= 0.06 # Drops
+                        stats['mu'] *= 0.9        # Players slip, less YAC
+                    else:
+                        stats['mu'] *= 0.95       # Slower footing
                 
-            elif is_snow:
+                elif is_snow:
                     # "Chaos" Factor
-                stats['fumble'] *= 1.4
-                if ptype == 'pass':
-                    stats['complete'] -= 0.08 # Visibility/Tracking issues
-                else:
+                    stats['fumble'] *= 1.4
+                    if ptype == 'pass':
+                        stats['complete'] -= 0.08 # Visibility/Tracking issues
+                    else:
                         # OFFENSIVE ADVANTAGE in Snow (Run Game)
                         # Defenders react slower and slip.
                         # RBs know where they are going.
-                    stats['mu'] += 0.4 
+                        stats['mu'] += 0.4 
     
                 # 3. TEMPERATURE EFFECTS (The "Rock")
-            if temp < 20:
-                stats['fumble'] *= 1.25 # Hits hurt more, ball is hard
-                if ptype == 'pass':
-                    stats['complete'] -= 0.04 # Hard to grip/catch
+                if temp < 20:
+                    stats['fumble'] *= 1.25 # Hits hurt more, ball is hard
+                    if ptype == 'pass':
+                        stats['complete'] -= 0.04 # Hard to grip/catch
     
-            yards = 0
-            is_complete = True
-            is_turnover = False
-            desc_tag = ""
+                yards = 0
+                is_complete = True
+                is_turnover = False
+                desc_tag = ""
     
-            # Apply Defensive Multiplier & HFA to base efficiency
-            # If defense is good (mult < 1.0), they reduce yardage.
-            adjusted_mu = stats['mu'] * def_mult
+                # Apply Defensive Multiplier & HFA to base efficiency
+                # If defense is good (mult < 1.0), they reduce yardage.
+                adjusted_mu = stats['mu'] * def_mult
             
-            # --- RUN LOGIC ---
-            if ptype == 'run':
+                # --- RUN LOGIC ---
+                if ptype == 'run':
                 # 1. Check Fumble
-                if np.random.random() < stats['fumble']:
-                    is_turnover = True
-                    yards = 0 # Fumbles usually happen at LOS or slight gain, simplifying to 0 for sim
-                    desc_tag = "FUMBLE"
+                    if np.random.random() < stats['fumble']:
+                        is_turnover = True
+                        yards = 0 # Fumbles usually happen at LOS or slight gain, simplifying to 0 for sim
+                        desc_tag = "FUMBLE"
                 
-                # 2. Check BREAKAWAY (Team Specific Rate)
-                else:
-                    # RETRIEVE TEAM RATE HERE
-                    # Fallback to league average if team not found
-                    league_avg = self.profiles.get('league_breakaway_run', 0.035)
-                    bk_prob = self.profiles['breakaway_run'].get(off, league_avg)
+                    # 2. Check BREAKAWAY (Team Specific Rate)
+                    else:
+                        # RETRIEVE TEAM RATE HERE
+                        # Fallback to league average if team not found
+                        league_avg = self.profiles.get('league_breakaway_run', 0.035)
+                        bk_prob = self.profiles['breakaway_run'].get(off, league_avg)
                     
-                    if np.random.random() < bk_prob:
-                        # Log-normal distribution for breakaway yards
-                        raw_yards = np.random.lognormal(3.0, 0.6) 
-                        yards = int(max(15, raw_yards))
-                        yards = min(yards, 99)
-                        desc_tag = "BREAKAWAY RUN"
+                        if np.random.random() < bk_prob:
+                            # Log-normal distribution for breakaway yards
+                            raw_yards = np.random.lognormal(3.0, 0.6) 
+                            yards = int(max(15, raw_yards))
+                            yards = min(yards, 99)
+                            desc_tag = "BREAKAWAY RUN"
                 
                     # 3. Standard Run
-                    else:
-                        raw_yards = np.random.normal(adjusted_mu, stats['sigma'])
-                        yards = int(max(raw_yards, -3))
-                        if np.random.random() < 0.10: 
-                            yards = np.random.randint(-3, 1)
+                        else:
+                            raw_yards = np.random.normal(adjusted_mu, stats['sigma'])
+                            yards = int(max(raw_yards, -3))
+                            if np.random.random() < 0.10: 
+                                yards = np.random.randint(-3, 1)
     
-            # --- PASS LOGIC ---
-            else:
-                # 1. Check Sack
-                if np.random.random() < stats['sack']:
-                    yards = -7
-                    is_complete = False
-                    desc_tag = "SACK"
-                    # Small chance of strip-sack
-                    if np.random.random() < 0.015: 
-                        is_turnover = True
-                        desc_tag += " / FUMBLE"
-    
-                # 2. Check Interception
-                elif np.random.random() < stats['intercept']:
-                    is_turnover = True
-                    is_complete = False # Technically incomplete stats-wise for yardage calc
-                    yards = 0
-                    desc_tag = "INTERCEPTION"
-    
-                # 3. Check Completion
-                elif np.random.random() > stats['complete']:
-                    is_complete = False
-                    yards = 0
-                    desc_tag = "INCOMPLETE"
-    
-                # 4. COMPLETED PASS
+                # --- PASS LOGIC ---
                 else:
-                    # Check BREAKAWAY (The Fix for Totals)
-                    # ~7% of completions go for big yardage
-                    if np.random.random() < 0.07:
-                        # Normal dist centered on 35 yards, high variance
-                        raw_yards = np.random.normal(35, 12)
-                        yards = int(max(20, raw_yards)) # Minimum 20 yards for a "breakaway"
-                        yards = min(yards, 99)
-                        desc_tag = "DEEP BALL"
-                        
-                        # Add fumble chance on long run after catch
-                        if np.random.random() < 0.01:
-                            is_turnover = True
+                    # 1. Check Sack
+                    if np.random.random() < stats['sack']:
+                        yards = -7
+                        is_complete = False
+                        desc_tag = "SACK"
+                        # Small chance of strip-sack
+                        if np.random.random() < 0.015: 
+                                is_turnover = True
                             desc_tag += " / FUMBLE"
+    
+                    # 2. Check Interception
+                    elif np.random.random() < stats['intercept']:
+                        is_turnover = True
+                        is_complete = False # Technically incomplete stats-wise for yardage calc
+                        yards = 0
+                        desc_tag = "INTERCEPTION"
+    
+                    # 3. Check Completion
+                    elif np.random.random() > stats['complete']:
+                        is_complete = False
+                        yards = 0
+                        desc_tag = "INCOMPLETE"
+    
+                    # 4. COMPLETED PASS
                     else:
-                        # Standard Completion
-                        raw_yards = np.random.normal(adjusted_mu, stats['sigma'])
-                        yards = int(max(raw_yards, -2))
-                        # Standard fumble chance
-                        if np.random.random() < stats['fumble']:
-                            is_turnover = True
-                            desc_tag = "FUMBLE"
+                        # Check BREAKAWAY (The Fix for Totals)
+                        # ~7% of completions go for big yardage
+                        if np.random.random() < 0.07:
+                            # Normal dist centered on 35 yards, high variance
+                            raw_yards = np.random.normal(35, 12)
+                            yards = int(max(20, raw_yards)) # Minimum 20 yards for a "breakaway"
+                            yards = min(yards, 99)
+                            desc_tag = "DEEP BALL"
+                        
+                            # Add fumble chance on long run after catch
+                            if np.random.random() < 0.01:
+                                is_turnover = True
+                                desc_tag += " / FUMBLE"
+                        else:
+                            # Standard Completion
+                            raw_yards = np.random.normal(adjusted_mu, stats['sigma'])
+                            yards = int(max(raw_yards, -2))
+                            # Standard fumble chance
+                            if np.random.random() < stats['fumble']:
+                                is_turnover = True
+                                desc_tag = "FUMBLE"
     
             return yards, is_complete, is_turnover, desc_tag
     
