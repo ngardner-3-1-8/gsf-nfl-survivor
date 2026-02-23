@@ -37,14 +37,14 @@ from scipy.stats import percentileofscore
 import warnings
 import calendar
     
-def loop_through_sims(date):    
+def loop_through_simulations(date_str):   
     # 1. Get current date
-    today = pd.to_datetime(date)
+    today = pd.to_datetime(date_str)
     current_cal_year = today.year 
     
     # 2. Initial Year Logic based on Month (User Rule)
     # If Jan-May (< 6), assume we are finishing the previous season.
-    target_year = current_cal_year - 1 if today.month < 5 else current_cal_year
+    target_year = current_cal_year - 1 if today.month < 6 else current_cal_year
     
     schedule_df = pd.read_csv(f"nfl-schedules/schedule_{target_year}.csv")
     
