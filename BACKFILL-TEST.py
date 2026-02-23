@@ -2882,7 +2882,8 @@ def loop_through_simulations(date_str):
     
                     yardline += p_yards
                     down, dist = 1, 10
-                    if yardline >= 100: yardline = 99
+                    if yardline >= 100: 
+                        yardline = 99
                     clock_running = False 
                     continue
     
