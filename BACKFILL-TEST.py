@@ -3532,8 +3532,8 @@ def loop_through_sims(date):
             
             print("\nSimulation Complete!")
             # Ensure directory exists or remove prefix if not needed
-            final_combined_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance{date}_TEST.csv", index=False)
-            print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_{date}_TEST.csv'")
+            final_combined_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance{starting_week}_TEST.csv", index=False)
+            print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_{starting_week}_TEST.csv'")
 
 
 if __name__ == "__main__":
@@ -3546,4 +3546,4 @@ if __name__ == "__main__":
     ]
 
     for date in week_starting_dates:
-        loop_through_sims(date)
+        loop_through_simulations(date)
