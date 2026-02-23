@@ -2613,7 +2613,7 @@ def loop_through_simulations(date_str):
                         desc_tag = "SACK"
                         # Small chance of strip-sack
                         if np.random.random() < 0.015: 
-                                is_turnover = True
+                            is_turnover = True
                             desc_tag += " / FUMBLE"
     
                     # 2. Check Interception
