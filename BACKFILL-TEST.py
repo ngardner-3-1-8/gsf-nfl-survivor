@@ -612,8 +612,8 @@ def loop_through_simulations(date_str):
     	
         def calculate_hours_difference(tz1, tz2):
     	    try:
-    	        tz1_offset = pytz.timezone(tz1).utcoffset(datetime.now()).total_seconds() / 3600
-    	        tz2_offset = pytz.timezone(tz2).utcoffset(datetime.now()).total_seconds() / 3600
+    	        tz1_offset = pytz.timezone(tz1).utcoffset(pd.to_datetime(date_str)).total_seconds() / 3600
+    	        tz2_offset = pytz.timezone(tz2).utcoffset(pd.to_datetime(date_str)).total_seconds() / 3600
     	        return tz1_offset - tz2_offset
     	    except:
     	        return 0
@@ -1136,7 +1136,7 @@ def loop_through_simulations(date_str):
             print("Fetching full season schedule from nflreadpy...")
             
             # Determine season (if currently Jan/Feb 2025, we want the 2024 season)
-            now = datetime.now()
+            now = pd.to_datetime(date_str)
             season = now.year if now.month > 3 else now.year - 1
             
             try:
@@ -2300,11 +2300,11 @@ def loop_through_simulations(date_str):
                 return
     
             df['game_date'] = pd.to_datetime(df['game_date'])
-            cutoff = datetime.now() - timedelta(days=HISTORY_DAYS)
+            cutoff = pd.to_datetime(date_str) - timedelta(days=HISTORY_DAYS)
             df = df[df['game_date'] >= cutoff].copy()
             df = df[(df['wp'] >= GARBAGE_MIN) & (df['wp'] <= GARBAGE_MAX)]
             
-            current_date = datetime.now()
+            current_date = pd.to_datetime(date_str)
             df['days_ago'] = (current_date - df['game_date']).dt.days.clip(lower=0)
             df['time_weight'] = np.exp(-DECAY_RATE * df['days_ago'])
             
@@ -3301,7 +3301,7 @@ def loop_through_simulations(date_str):
         try:
             clean_date_str = str(date_str)[:10]
             game_date = datetime.strptime(clean_date_str, "%Y-%m-%d")
-            days_diff = (game_date - datetime.now()).days
+            days_diff = (game_date - pd.to_datetime(date_str)).days
             month = game_date.month
         except:
             # If date is broken, rely immediately on row data or generic safe values
