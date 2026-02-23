@@ -2566,94 +2566,94 @@ def loop_through_simulations(date_str):
                     if ptype == 'pass':
                         stats['complete'] -= 0.04 # Hard to grip/catch
     
-                yards = 0
-                is_complete = True
-                is_turnover = False
-                desc_tag = ""
-    
-                # Apply Defensive Multiplier & HFA to base efficiency
-                # If defense is good (mult < 1.0), they reduce yardage.
-                adjusted_mu = stats['mu'] * def_mult
+            yards = 0
+            is_complete = True
+            is_turnover = False
+            desc_tag = ""
+
+            # Apply Defensive Multiplier & HFA to base efficiency
+            # If defense is good (mult < 1.0), they reduce yardage.
+            adjusted_mu = stats['mu'] * def_mult
+        
+            # --- RUN LOGIC ---
+            if ptype == 'run':
+            # 1. Check Fumble
+                if np.random.random() < stats['fumble']:
+                    is_turnover = True
+                    yards = 0 # Fumbles usually happen at LOS or slight gain, simplifying to 0 for sim
+                    desc_tag = "FUMBLE"
             
-                # --- RUN LOGIC ---
-                if ptype == 'run':
-                # 1. Check Fumble
-                    if np.random.random() < stats['fumble']:
-                        is_turnover = True
-                        yards = 0 # Fumbles usually happen at LOS or slight gain, simplifying to 0 for sim
-                        desc_tag = "FUMBLE"
-                
-                    # 2. Check BREAKAWAY (Team Specific Rate)
-                    else:
-                        # RETRIEVE TEAM RATE HERE
-                        # Fallback to league average if team not found
-                        league_avg = self.profiles.get('league_breakaway_run', 0.035)
-                        bk_prob = self.profiles['breakaway_run'].get(off, league_avg)
-                    
-                        if np.random.random() < bk_prob:
-                            # Log-normal distribution for breakaway yards
-                            raw_yards = np.random.lognormal(3.0, 0.6) 
-                            yards = int(max(15, raw_yards))
-                            yards = min(yards, 99)
-                            desc_tag = "BREAKAWAY RUN"
-                
-                    # 3. Standard Run
-                        else:
-                            raw_yards = np.random.normal(adjusted_mu, stats['sigma'])
-                            yards = int(max(raw_yards, -3))
-                            if np.random.random() < 0.10: 
-                                yards = np.random.randint(-3, 1)
-    
-                # --- PASS LOGIC ---
+                # 2. Check BREAKAWAY (Team Specific Rate)
                 else:
-                    # 1. Check Sack
-                    if np.random.random() < stats['sack']:
-                        yards = -7
-                        is_complete = False
-                        desc_tag = "SACK"
-                        # Small chance of strip-sack
-                        if np.random.random() < 0.015: 
+                    # RETRIEVE TEAM RATE HERE
+                    # Fallback to league average if team not found
+                    league_avg = self.profiles.get('league_breakaway_run', 0.035)
+                    bk_prob = self.profiles['breakaway_run'].get(off, league_avg)
+                
+                    if np.random.random() < bk_prob:
+                        # Log-normal distribution for breakaway yards
+                        raw_yards = np.random.lognormal(3.0, 0.6) 
+                        yards = int(max(15, raw_yards))
+                        yards = min(yards, 99)
+                        desc_tag = "BREAKAWAY RUN"
+            
+                # 3. Standard Run
+                    else:
+                        raw_yards = np.random.normal(adjusted_mu, stats['sigma'])
+                        yards = int(max(raw_yards, -3))
+                        if np.random.random() < 0.10: 
+                            yards = np.random.randint(-3, 1)
+
+            # --- PASS LOGIC ---
+            else:
+                # 1. Check Sack
+                if np.random.random() < stats['sack']:
+                    yards = -7
+                    is_complete = False
+                    desc_tag = "SACK"
+                    # Small chance of strip-sack
+                    if np.random.random() < 0.015: 
+                        is_turnover = True
+                        desc_tag += " / FUMBLE"
+
+                # 2. Check Interception
+                elif np.random.random() < stats['intercept']:
+                    is_turnover = True
+                    is_complete = False # Technically incomplete stats-wise for yardage calc
+                    yards = 0
+                    desc_tag = "INTERCEPTION"
+
+                # 3. Check Completion
+                elif np.random.random() > stats['complete']:
+                    is_complete = False
+                    yards = 0
+                    desc_tag = "INCOMPLETE"
+
+                # 4. COMPLETED PASS
+                else:
+                    # Check BREAKAWAY (The Fix for Totals)
+                    # ~7% of completions go for big yardage
+                    if np.random.random() < 0.07:
+                        # Normal dist centered on 35 yards, high variance
+                        raw_yards = np.random.normal(35, 12)
+                        yards = int(max(20, raw_yards)) # Minimum 20 yards for a "breakaway"
+                        yards = min(yards, 99)
+                        desc_tag = "DEEP BALL"
+                    
+                        # Add fumble chance on long run after catch
+                        if np.random.random() < 0.01:
                             is_turnover = True
                             desc_tag += " / FUMBLE"
-    
-                    # 2. Check Interception
-                    elif np.random.random() < stats['intercept']:
-                        is_turnover = True
-                        is_complete = False # Technically incomplete stats-wise for yardage calc
-                        yards = 0
-                        desc_tag = "INTERCEPTION"
-    
-                    # 3. Check Completion
-                    elif np.random.random() > stats['complete']:
-                        is_complete = False
-                        yards = 0
-                        desc_tag = "INCOMPLETE"
-    
-                    # 4. COMPLETED PASS
                     else:
-                        # Check BREAKAWAY (The Fix for Totals)
-                        # ~7% of completions go for big yardage
-                        if np.random.random() < 0.07:
-                            # Normal dist centered on 35 yards, high variance
-                            raw_yards = np.random.normal(35, 12)
-                            yards = int(max(20, raw_yards)) # Minimum 20 yards for a "breakaway"
-                            yards = min(yards, 99)
-                            desc_tag = "DEEP BALL"
-                        
-                            # Add fumble chance on long run after catch
-                            if np.random.random() < 0.01:
-                                is_turnover = True
-                                desc_tag += " / FUMBLE"
-                        else:
-                            # Standard Completion
-                            raw_yards = np.random.normal(adjusted_mu, stats['sigma'])
-                            yards = int(max(raw_yards, -2))
-                            # Standard fumble chance
-                            if np.random.random() < stats['fumble']:
-                                is_turnover = True
-                                desc_tag = "FUMBLE"
-    
-            return yards, is_complete, is_turnover, desc_tag
+                        # Standard Completion
+                        raw_yards = np.random.normal(adjusted_mu, stats['sigma'])
+                        yards = int(max(raw_yards, -2))
+                        # Standard fumble chance
+                        if np.random.random() < stats['fumble']:
+                            is_turnover = True
+                            desc_tag = "FUMBLE"
+
+        return yards, is_complete, is_turnover, desc_tag
     
         def _get_kickoff_start(self, team):
             # NFL Kickoff Return Distribution (Approximate)
