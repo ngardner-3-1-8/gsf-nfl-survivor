@@ -2653,7 +2653,7 @@ def loop_through_simulations(date_str):
                             is_turnover = True
                             desc_tag = "FUMBLE"
 
-        return yards, is_complete, is_turnover, desc_tag
+            return yards, is_complete, is_turnover, desc_tag
     
         def _get_kickoff_start(self, team):
             # NFL Kickoff Return Distribution (Approximate)
