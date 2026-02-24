@@ -2599,10 +2599,20 @@ def loop_through_simulations(date_str):
             
                 # 3. Standard Run
                     else:
-                        raw_yards = np.random.normal(adjusted_mu, stats['sigma'])
-                        yards = int(max(raw_yards, -3))
-                        if np.random.random() < 0.10: 
-                            yards = np.random.randint(-3, 1)
+                        # Shift the distribution so 0 in Gamma = -3 yards in real life
+                        shift = 3.0
+                        shifted_mu = adjusted_mu + shift
+                        
+                        # Safety catch to prevent math errors if a team's mu is horribly negative
+                        if shifted_mu <= 0.1: shifted_mu = 0.1 
+                        
+                        shape = (shifted_mu ** 2) / (stats['sigma'] ** 2)
+                        scale = (stats['sigma'] ** 2) / shifted_mu
+                        
+                        raw_yards = np.random.gamma(shape, scale)
+                        
+                        # Subtract the shift back out
+                        yards = int(raw_yards) - int(shift)
 
             # --- PASS LOGIC ---
             else:
@@ -2644,10 +2654,22 @@ def loop_through_simulations(date_str):
                         if np.random.random() < 0.01:
                             is_turnover = True
                             desc_tag += " / FUMBLE"
+                    # 3. Standard Run (and apply similar to Standard Pass)
                     else:
-                        # Standard Completion
-                        raw_yards = np.random.normal(adjusted_mu, stats['sigma'])
-                        yards = int(max(raw_yards, -2))
+                        # Shift the distribution so 0 in Gamma = -3 yards in real life
+                        shift = 3.0
+                        shifted_mu = adjusted_mu + shift
+                        
+                        # Safety catch to prevent math errors if a team's mu is horribly negative
+                        if shifted_mu <= 0.1: shifted_mu = 0.1 
+                        
+                        shape = (shifted_mu ** 2) / (stats['sigma'] ** 2)
+                        scale = (stats['sigma'] ** 2) / shifted_mu
+                        
+                        raw_yards = np.random.gamma(shape, scale)
+                        
+                        # Subtract the shift back out
+                        yards = int(raw_yards) - int(shift)
                         # Standard fumble chance
                         if np.random.random() < stats['fumble']:
                             is_turnover = True
