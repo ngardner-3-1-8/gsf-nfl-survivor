@@ -3066,8 +3066,17 @@ def loop_through_simulations(date_str):
                 ptype = 'pass' if is_pass else 'run'
     
                 # Get INITIAL stats profile
-                stats = self.profiles['efficiency'].get((off, zone, ptype), 
+                base_stats = self.profiles['efficiency'].get((off, zone, ptype), 
                         {'mu': 4.0, 'sigma': 4.0, 'complete': 0.6, 'intercept': 0.03, 'fumble': 0.01, 'sack': 0.07})
+                
+                # MUST COPY THE DICTIONARY SO WE DON'T PERMANENTLY CHANGE IT
+                stats = base_stats.copy()
+
+                # --- PREVENT DEFENSE LOGIC ---
+                if ctx == 'trailing' and clock < 600 and ptype == 'pass':
+                    stats['complete'] += 0.08  # Defenses give up underneath stuff
+                    stats['mu'] -= 1.5         # But keep everything in front of them
+                    stats['intercept'] -= 0.01 # Not taking risks jumping routes
     
                 # OVERRIDE: Goal-to-Go Efficiency Boost
                 # We only need a tiny nudge to convert ~1 extra drive per game from FG to TD
