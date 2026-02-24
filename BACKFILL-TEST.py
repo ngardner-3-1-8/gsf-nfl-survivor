@@ -2416,9 +2416,11 @@ def loop_through_simulations(date_str):
             for team, group in eff_plays.groupby('defteam'):
                 self.def_mults[team] = {}
                 tr = group[group['play_type']=='run']
-                self.def_mults[team]['run'] = (np.average(tr['yards_gained'], weights=tr['time_weight']) / league_run) if len(tr)>0 else 1.0
+                raw_run_mult = (np.average(tr['yards_gained'], weights=tr['time_weight']) / league_run) if len(tr)>0 else 1.0
+                self.def_mults[team]['run'] = (raw_run_mult * 0.8) + (1.0 * 0.2) # Regress 20% to League Avg
                 tp = group[(group['play_type']=='pass') & (group['complete_pass']==1)]
-                self.def_mults[team]['pass'] = (np.average(tp['yards_gained'], weights=tp['time_weight']) / league_pass) if len(tp)>0 else 1.0
+                raw_pass_mult = (np.average(tp['yards_gained'], weights=tp['time_weight']) / league_pass) if len(tp)>0 else 1.0
+                self.def_mults[team]['pass'] = (raw_pass_mult * 0.8) + (1.0 * 0.2) # Regress 20% to League Avg
     
             # 6. PENALTIES
             pen_dict = {}
@@ -3563,12 +3565,13 @@ def loop_through_simulations(date_str):
 
 if __name__ == "__main__":
     week_starting_dates = [
-#        "09/03/2025", "09/10/2025"#, "09/17/2025", "09/24/2025", 
+#        "09/03/2025", 
+        "09/10/2025"#, "09/17/2025", "09/24/2025", 
 #        "10/01/2025", "10/08/2025", "10/15/2025", "10/22/2025", 
 #        "10/29/2025", "11/05/2025", "11/12/2025", "11/19/2025", 
 #        "11/26/2025", "11/29/2025", "12/03/2025", "12/10/2025", 
 #        "12/17/2025", "12/24/2025", "12/26/2025", 
-        "12/31/2025"
+#        "12/31/2025"
     ]
 
     for date in week_starting_dates:
