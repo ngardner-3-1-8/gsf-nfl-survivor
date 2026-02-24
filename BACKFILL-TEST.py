@@ -2527,44 +2527,44 @@ def loop_through_simulations(date_str):
             """
     
     # --- APPLY WEATHER PHYSICS ---
-            if not is_dome:
+#####            if not is_dome:
                 # 1. WIND EFFECTS
-                if wind_speed > 15:
+#####                if wind_speed > 15:
                     # Harder to throw accurate deep balls
-                    if ptype == 'pass':
-                        stats['complete'] -= 0.05
-                        stats['mu'] -= 1.0 # Average depth of target drops
-                if wind_speed > 25:
-                    if ptype == 'pass':
-                        stats['complete'] -= 0.12
-                        stats['intercept'] += 0.01 # Tips/Overthrows
+#####                    if ptype == 'pass':
+#####                        stats['complete'] -= 0.05
+#####                        stats['mu'] -= 1.0 # Average depth of target drops
+#####                if wind_speed > 25:
+#####                    if ptype == 'pass':
+#####                        stats['complete'] -= 0.12
+#####                        stats['intercept'] += 0.01 # Tips/Overthrows
                 
                 # 2. PRECIPITATION EFFECTS (Ball Security & Catching)
-                if is_rain:
+#####                if is_rain:
                     # "Slick Ball"
-                    stats['fumble'] *= 1.3      # 50% increase in fumble risk
-                    if ptype == 'pass':
-                        stats['complete'] -= 0.06 # Drops
-                        stats['mu'] *= 0.9        # Players slip, less YAC
-                    else:
-                        stats['mu'] *= 0.95       # Slower footing
+#####                    stats['fumble'] *= 1.3      # 50% increase in fumble risk
+#####                    if ptype == 'pass':
+#####                        stats['complete'] -= 0.06 # Drops
+#####                        stats['mu'] *= 0.9        # Players slip, less YAC
+#####                    else:
+#####                        stats['mu'] *= 0.95       # Slower footing
                 
-                elif is_snow:
+#####                elif is_snow:
                     # "Chaos" Factor
-                    stats['fumble'] *= 1.4
-                    if ptype == 'pass':
-                        stats['complete'] -= 0.08 # Visibility/Tracking issues
-                    else:
+#####                    stats['fumble'] *= 1.4
+#####                    if ptype == 'pass':
+#####                        stats['complete'] -= 0.08 # Visibility/Tracking issues
+#####                    else:
                         # OFFENSIVE ADVANTAGE in Snow (Run Game)
                         # Defenders react slower and slip.
                         # RBs know where they are going.
-                        stats['mu'] += 0.4 
+#####                        stats['mu'] += 0.4 
     
                 # 3. TEMPERATURE EFFECTS (The "Rock")
-                if temp < 20:
-                    stats['fumble'] *= 1.25 # Hits hurt more, ball is hard
-                    if ptype == 'pass':
-                        stats['complete'] -= 0.04 # Hard to grip/catch
+#####                if temp < 20:
+#####                    stats['fumble'] *= 1.25 # Hits hurt more, ball is hard
+#####                    if ptype == 'pass':
+#####                        stats['complete'] -= 0.04 # Hard to grip/catch
     
             yards = 0
             is_complete = True
