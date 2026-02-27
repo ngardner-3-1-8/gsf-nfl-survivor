@@ -109,7 +109,7 @@ def loop_through_rankings(date):
                 # Check if today is BEFORE the first game
                 if pd.to_datetime(today) < first_game_date:
                     print(f"Today ({today.date()}) is before the first game ({first_game_date.date()}). dropping year by 1.")
-                    target_year -= 1
+                    target_year -= 0
                     # Reload schedule for the adjusted year so we can calculate the week correctly below
                     schedule = nfl.load_schedules([target_year])
                     schedule = schedule.to_pandas()
