@@ -59,15 +59,26 @@ def loop_through_rankings(date):
             print(games_played)
             
             if not games_played.empty:
-                # If games have been played, the "starting_week" for your script 
-                # (which usually scrapes the *upcoming* week) should be the last played week + 1.
-                last_played_week = int(games_played['week'].max())
-                starting_week = last_played_week + 1
-                print(starting_week)
+                # Ensure gameday is datetime for accurate comparisons
+                schedule['gameday'] = pd.to_datetime(schedule['gameday'])
                 
-                # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
-                if starting_week > 19: 
-                    starting_week = 19 
+                # Create a Series: index = week, value = the latest game date for that week
+                week_end_dates = schedule[schedule['game_type'] == 'REG'].groupby('week')['gameday'].max()
+                
+                # Find weeks where the FINAL game has already occurred
+                completed_weeks = week_end_dates[week_end_dates <= pd.to_datetime(today)]
+                
+                if not completed_weeks.empty:
+                    # The latest completed week
+                    last_played_week = int(completed_weeks.index.max())
+                    starting_week = last_played_week + 1
+                else:
+                    # No weeks have fully completed yet
+                    starting_week = 1
+                    
+                # Bound check
+                if starting_week > 20: 
+                    starting_week = 20
             else:
                 # If we fell back a year but that season is fully over, or if no games played yet
                 starting_week = 1 
@@ -76,7 +87,7 @@ def loop_through_rankings(date):
             print(f"⚠️ Error in dynamic detection: {e}. Falling back to defaults.")
             # Fallback defaults to prevent crash
             target_year = 2025
-            starting_week = 19
+            starting_week = 20
     else:
         target_year = current_cal_year
     
@@ -112,15 +123,26 @@ def loop_through_rankings(date):
             print(games_played)
             
             if not games_played.empty:
-                # If games have been played, the "starting_week" for your script 
-                # (which usually scrapes the *upcoming* week) should be the last played week + 1.
-                last_played_week = int(games_played['week'].max())
-                starting_week = last_played_week + 1
-                print(starting_week)
+                # Ensure gameday is datetime for accurate comparisons
+                schedule['gameday'] = pd.to_datetime(schedule['gameday'])
                 
-                # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
-                if starting_week > 19: 
-                    starting_week = 19 
+                # Create a Series: index = week, value = the latest game date for that week
+                week_end_dates = schedule[schedule['game_type'] == 'REG'].groupby('week')['gameday'].max()
+                
+                # Find weeks where the FINAL game has already occurred
+                completed_weeks = week_end_dates[week_end_dates <= pd.to_datetime(today)]
+                
+                if not completed_weeks.empty:
+                    # The latest completed week
+                    last_played_week = int(completed_weeks.index.max())
+                    starting_week = last_played_week + 1
+                else:
+                    # No weeks have fully completed yet
+                    starting_week = 1
+                    
+                # Bound check
+                if starting_week > 20: 
+                    starting_week = 20
             else:
                 # If we fell back a year but that season is fully over, or if no games played yet
                 starting_week = 1 
