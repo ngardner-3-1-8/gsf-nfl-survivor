@@ -71,46 +71,30 @@ def loop_through_simulations(date_str):
     
     if today <= first_game_date:
         starting_week = 1
-    else:# We find the latest game that has happened to determine "current" week
-        games_played = schedule_df[schedule_df['Date'] <= today]
-        last_played_week = int(games_played['Week'].max())
-        if not games_played.empty:
-            standard_nfl_week = int(games_played['Week'].max())
-            
-            # ADJUST FOR CIRCA SPECIAL WEEKS
-            # Start with standard week
+    else:
+        # 1. Find the final game date for every week in the season
+        # This creates a Series where index = Week, value = Latest Game Date for that week
+        week_end_dates = schedule_df.groupby('Week')['Date'].max()
+        # 2. Filter for weeks where the LAST game of that week has already occurred
+        completed_weeks = week_end_dates[week_end_dates <= today]
+        if not completed_weeks.empty:
+            # The "standard_nfl_week" is now the last FULLY completed week
+            standard_nfl_week = int(completed_weeks.index.max())           
+            # 3. Your starting point for simulations is the next week (the one in progress or upcoming)
             starting_week = standard_nfl_week + 1
+            # --- ADJUST FOR CIRCA SPECIAL WEEKS ---
+            # Using your existing logic for Thanksgiving/Christmas shifts
             if today >= black_friday:
-                starting_week += 0
+                starting_week += 1
             if today >= boxing_day:
-                starting_week += 0
-            
-    	    # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
+                starting_week += 1            
+            # Bound check: Cap at 19 (or your season max)
             if starting_week > 19: 
                 starting_week = 19
         else:
+            # If no week is fully completed yet, we are still in Week 1
             starting_week = 1
-    if today <= first_game_date:
-        upcoming_week = 1
-    else:# We find the latest game that has happened to determine "current" week
-        games_played = schedule_df[schedule_df['Date'] <= today]
-        last_played_week = int(games_played['Week'].max())
-        if not games_played.empty:
-            standard_nfl_week = int(games_played['Week'].max())
-            
-            # ADJUST FOR CIRCA SPECIAL WEEKS
-            # Start with standard week
-            upcoming_week = standard_nfl_week + 1
-            if today >= black_friday:
-                upcoming_week += 1
-            if today >= boxing_day:
-                upcoming_week += 1
-            
-    	    # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
-            if upcoming_week > 19: 
-                upcoming_week = 20
-        else:
-            upcoming_week = 1
+
     
     # 5. Final Assignment to your variables
     current_year = target_year
