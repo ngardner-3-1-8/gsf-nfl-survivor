@@ -82,15 +82,18 @@ def loop_through_simulations(date_str):
             standard_nfl_week = int(completed_weeks.index.max())           
             # 3. Your starting point for simulations is the next week (the one in progress or upcoming)
             starting_week = standard_nfl_week + 1
+            upcoming_week = starting_week
             # --- ADJUST FOR CIRCA SPECIAL WEEKS ---
             # Using your existing logic for Thanksgiving/Christmas shifts
             if today >= black_friday:
-                starting_week += 1
+                starting_week += 0
+                upcoming_week += 1
             if today >= boxing_day:
-                starting_week += 1            
+                starting_week += 0
+                upcoming_week += 1
             # Bound check: Cap at 19 (or your season max)
-            if starting_week > 19: 
-                starting_week = 19
+            if starting_week > 18: 
+                starting_week = 18
         else:
             # If no week is fully completed yet, we are still in Week 1
             starting_week = 1
