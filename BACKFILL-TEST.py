@@ -81,9 +81,9 @@ def loop_through_simulations(date_str):
             # Start with standard week
             starting_week = standard_nfl_week + 1
             if today >= black_friday:
-                starting_week += 1
+                starting_week += 0
             if today >= boxing_day:
-                starting_week += 1
+                starting_week += 0
             
     	    # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
             if starting_week > 19: 
@@ -3608,13 +3608,13 @@ if __name__ == "__main__":
 #        "11/12/2025",
 #        "11/19/2025", 
 #        "11/26/2025",
-        "11/29/2025",
+        "11/29/2025"#,
 #        "12/03/2025",
 #        "12/10/2025", 
 #        "12/17/2025",
 #        "12/24/2025",
 #        "12/26/2025"
-        "12/31/2025"
+#        "12/31/2025"
     ]
 
     for date in week_starting_dates:
