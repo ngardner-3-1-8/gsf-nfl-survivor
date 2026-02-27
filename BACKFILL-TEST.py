@@ -86,10 +86,31 @@ def loop_through_simulations(date_str):
                 starting_week += 1
             
     	    # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
-            if starting_week > 20: 
-                starting_week = 20
+            if starting_week > 19: 
+                starting_week = 19
         else:
             starting_week = 1
+    if today <= first_game_date:
+        upcoming_week = 1
+    else:# We find the latest game that has happened to determine "current" week
+        games_played = schedule_df[schedule_df['Date'] <= today]
+        last_played_week = int(games_played['Week'].max())
+        if not games_played.empty:
+            standard_nfl_week = int(games_played['Week'].max())
+            
+            # ADJUST FOR CIRCA SPECIAL WEEKS
+            # Start with standard week
+            upcoming_week = standard_nfl_week + 1
+            if today >= black_friday:
+                upcoming_week += 1
+            if today >= boxing_day:
+                upcoming_week += 1
+            
+    	    # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
+            if upcoming_week > 19: 
+                upcoming_week = 20
+        else:
+            upcoming_week = 1
     
     # 5. Final Assignment to your variables
     current_year = target_year
@@ -3568,8 +3589,8 @@ def loop_through_simulations(date_str):
             
             print("\nSimulation Complete!")
             # Ensure directory exists or remove prefix if not needed
-            final_combined_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance{starting_week}_TEST.csv", index=False)
-            print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_{starting_week}_TEST.csv'")
+            final_combined_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance{upcoming_week}_TEST.csv", index=False)
+            print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_{upcoming_week}_TEST.csv'")
 
 
 if __name__ == "__main__":
