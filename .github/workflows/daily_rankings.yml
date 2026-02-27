@@ -33,7 +33,6 @@ jobs:
           
           # Stage CSVs and Images (png/jpg) if you are generating plots
           git add nfl-power-ratings/*.csv
-#          git add nfl-power-ratings/*.png || true
           
           git commit -m "Daily Rankings Update: $(date +'%Y-%m-%d')" || echo "No changes to commit"
           git push
