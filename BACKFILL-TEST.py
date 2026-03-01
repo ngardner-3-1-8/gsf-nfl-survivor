@@ -1014,6 +1014,12 @@ def loop_through_simulations(date_str):
                 # Update the 'Away Team Short Rest' for the specific row
                 df.loc[index, 'Away Team Short Rest'] = 'Yes'
 
+        df['Away Team Massey-Peabody Current Rank'] = df['Away Team'].map(lambda team: stadiums[team][6] if team in stadiums else 'NA')
+        df['Home Team Massey-Peabody Current Rank'] = df['Home Team'].map(lambda team: stadiums[team][6] if team in stadiums else 'NA')
+    
+        df['Away Team Generic Sports Fan Current Rank'] = df['Away Team'].map(lambda team: stadiums[team][8] if team in stadiums else 'NA')
+        df['Home Team Generic Sports Fan Current Rank'] = df['Home Team'].map(lambda team: stadiums[team][8] if team in stadiums else 'NA')
+
 
             # 3. Calculate the new, highly-situational Away GSF Rank
         df['Away Team Adjusted Massey-Peabody Preseason Rank'] = (
