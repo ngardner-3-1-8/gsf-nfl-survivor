@@ -71,6 +71,7 @@ def loop_through_simulations(date_str):
     
     if today <= first_game_date:
         starting_week = 1
+        upcoming_week = starting_week
     else:
         # 1. Find the final game date for every week in the season
         # This creates a Series where index = Week, value = Latest Game Date for that week
