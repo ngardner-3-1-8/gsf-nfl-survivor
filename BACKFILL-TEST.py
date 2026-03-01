@@ -1157,7 +1157,7 @@ def loop_through_simulations(date_str):
         
         # Pull the favorite closer to the underdog in divisional games
         df.loc[divisional_mask, 'Home Team Adjusted Massey-Peabody Current Rank'] -= (mp_rank_diff * 0.075)
-        df.loc[divisional_mask, 'Away Team Adjusted Jassey-Peabody Current Rank'] += (mp_rank_diff * 0.075)
+        df.loc[divisional_mask, 'Away Team Adjusted Massey-Peabody Current Rank'] += (mp_rank_diff * 0.075)
 
         df['Adjusted Massey-Peabody Preseason Winner'] = df.apply(lambda row: row['Away Team'] if row['Away Team Adjusted Massey-Peabody Preseason Rank'] > row['Home Team Adjusted Massey-Peabody Preseason Rank'] else (row['Home Team'] if row['Away Team Adjusted Massey-Peabody Preseason Rank'] < row['Home Team Adjusted Massey-Peabody Preseason Rank'] else 'Tie'), axis=1)
         df['Adjusted Massey-Peabody Preseason Difference'] = abs(df['Away Team Adjusted Massey-Peabody Preseason Rank'] - df['Home Team Adjusted Massey-Peabody Preseason Rank'])
