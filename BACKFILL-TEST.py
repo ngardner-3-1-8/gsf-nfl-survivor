@@ -904,9 +904,9 @@ def loop_through_simulations(date_str):
         df['MP + GSF Average Preseason Winner'] = df.apply(lambda row: row['Away Team'] if row['Away Team MP + GSF Average Preseason Rank'] > row['Home Team MP + GSF Average Preseason Rank'] else (row['Home Team'] if row['Away Team MP + GSF Average Preseason Rank'] < row['Home Team MP + GSF Average Preseason Rank'] else 'Tie'), axis=1)
         df['MP + GSF Average Preseason Difference'] = abs(df['Away Team MP + GSF Average Preseason Rank'] - df['Home Team MP + GSF Average Preseason Rank'])
     
-        THREE_IN_TEN_PENALTY = -0.75
-        FOUR_IN_SEVENTEEN_PENALTY = -0.50
-        SHORT_REST_PENALTY = -1.0
+        THREE_IN_TEN_PENALTY = -0.00
+        FOUR_IN_SEVENTEEN_PENALTY = -0.00
+        SHORT_REST_PENALTY = -0.0
         
         # 2. Create a Non-Linear Timezone Penalty Function
         def calculate_timezone_penalty(tz_advantage):
