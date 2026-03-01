@@ -1091,7 +1091,7 @@ def loop_through_simulations(date_str):
         df.loc[divisional_mask, 'Away Team Adjusted Massey-Peabody Preseason Rank'] += (mp_ps_rank_diff * 0.075)
 
         # 3. Calculate the new, highly-situational Away GSF Rank
-        df['Away Team Adjusted Massey-Peabody Fan Current Rank'] = (
+        df['Away Team Adjusted Massey-Peabody Current Rank'] = (
             df['Away Team'].map(lambda team: stadiums[team][8]) # Base Rank
             + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -.125, 0) # Extreme Travel
             - df['Away NonLinear TZ'] # NEW Non-Linear Timezone
@@ -1104,7 +1104,7 @@ def loop_through_simulations(date_str):
         )
         
         # 4. Calculate the new Home GSF Rank
-        df['Home Team Adjusted Massey-Peabody Fan Current Rank'] = (
+        df['Home Team Adjusted Massey-Peabody Current Rank'] = (
             df['Home Team'].map(lambda team: stadiums[team][8]) # Base Rank
             + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), .125, 0) # Extreme Travel
             - df['Home NonLinear TZ'] # NEW Non-Linear Timezone
