@@ -1014,6 +1014,19 @@ def loop_through_simulations(date_str):
             if (away_team_rest < 7) and (away_team_rest < home_team_rest):
                 # Update the 'Away Team Short Rest' for the specific row
                 df.loc[index, 'Away Team Short Rest'] = 'Yes'
+                
+        df['Home Team Short Rest'] = 'No'
+        # Iterate through each row in the DataFrame
+        for index, row in df.iterrows():
+            # Get the home and away teams
+            home_team_rest = row['Home Team Weekly Rest']
+            away_team_rest = row['Away Team Weekly Rest']
+            game_date = row['Date']
+    
+            # Check for short rest and rest disadvantage
+            if (home_team_rest < 7) and (home_team_rest < away_team_rest):
+                # Update the 'Away Team Short Rest' for the specific row
+                df.loc[index, 'Home Team Short Rest'] = 'Yes'
 
         df['Away Team Massey-Peabody Current Rank'] = df['Away Team'].map(lambda team: stadiums[team][6] if team in stadiums else 'NA')
         df['Home Team Massey-Peabody Current Rank'] = df['Home Team'].map(lambda team: stadiums[team][6] if team in stadiums else 'NA')
