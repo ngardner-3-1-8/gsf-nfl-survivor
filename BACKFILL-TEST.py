@@ -904,9 +904,9 @@ def loop_through_simulations(date_str):
         df['MP + GSF Average Preseason Winner'] = df.apply(lambda row: row['Away Team'] if row['Away Team MP + GSF Average Preseason Rank'] > row['Home Team MP + GSF Average Preseason Rank'] else (row['Home Team'] if row['Away Team MP + GSF Average Preseason Rank'] < row['Home Team MP + GSF Average Preseason Rank'] else 'Tie'), axis=1)
         df['MP + GSF Average Preseason Difference'] = abs(df['Away Team MP + GSF Average Preseason Rank'] - df['Home Team MP + GSF Average Preseason Rank'])
     
-        THREE_IN_TEN_PENALTY = -0.5
-        FOUR_IN_SEVENTEEN_PENALTY = -0.25
-        SHORT_REST_PENALTY = -.5
+        THREE_IN_TEN_PENALTY = -0.0
+        FOUR_IN_SEVENTEEN_PENALTY = -0.0
+        SHORT_REST_PENALTY = -0.0
         
         # 2. Create a Non-Linear Timezone Penalty Function
         def calculate_timezone_penalty(tz_advantage):
@@ -1041,7 +1041,7 @@ def loop_through_simulations(date_str):
             + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
             - df['Away NonLinear TZ'] # NEW Non-Linear Timezone
             + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Away Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
+            + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 #.0625 # Cumulative Rest
             + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 2, 0) # NEW Short Rest Penalty
             + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
@@ -1054,7 +1054,7 @@ def loop_through_simulations(date_str):
             + np.where((df['Home Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
             - df['Home NonLinear TZ'] # NEW Non-Linear Timezone
             + pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Home Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
+            + df['Home Team Current Week Cumulative Rest Advantage'] * .0625 #.0625 # Cumulative Rest
             + np.where(df['Home Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
             + np.where(df['Home Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Home Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
@@ -1067,7 +1067,7 @@ def loop_through_simulations(date_str):
             + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
             - df['Away NonLinear TZ'] # NEW Non-Linear Timezone
             + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Away Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
+            + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 #.0625 # Cumulative Rest
             + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 2, 0) # NEW Short Rest Penalty
             + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
@@ -1080,7 +1080,7 @@ def loop_through_simulations(date_str):
             + np.where((df['Home Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
             - df['Home NonLinear TZ'] # NEW Non-Linear Timezone
             + pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Home Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
+            + df['Home Team Current Week Cumulative Rest Advantage'] * .0625 #.0625 # Cumulative Rest
             + np.where(df['Home Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
             + np.where(df['Home Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Home Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
@@ -1108,7 +1108,7 @@ def loop_through_simulations(date_str):
             + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
             - df['Away NonLinear TZ'] # NEW Non-Linear Timezone
             + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Away Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
+            + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 #.0625 # Cumulative Rest
             + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 2, 0) # NEW Short Rest Penalty
             + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
@@ -1121,7 +1121,7 @@ def loop_through_simulations(date_str):
             + np.where((df['Home Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
             - df['Home NonLinear TZ'] # NEW Non-Linear Timezone
             + pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Home Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
+            + df['Home Team Current Week Cumulative Rest Advantage'] * .0625 #.0625 # Cumulative Rest
             + np.where(df['Home Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
             + np.where(df['Home Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Home Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
@@ -1134,7 +1134,7 @@ def loop_through_simulations(date_str):
             + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
             - df['Away NonLinear TZ'] # NEW Non-Linear Timezone
             + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Away Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
+            + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 #.0625 # Cumulative Rest
             + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 2, 0) # NEW Short Rest Penalty
             + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
@@ -1147,7 +1147,7 @@ def loop_through_simulations(date_str):
             + np.where((df['Home Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
             - df['Home NonLinear TZ'] # NEW Non-Linear Timezone
             + pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Home Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
+            + df['Home Team Current Week Cumulative Rest Advantage'] * .0625 #.0625 # Cumulative Rest
             + np.where(df['Home Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
             + np.where(df['Home Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Home Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
