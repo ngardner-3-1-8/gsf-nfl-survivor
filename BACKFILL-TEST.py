@@ -1126,6 +1126,7 @@ def loop_through_simulations(date_str):
             + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
             - np.where(((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0])) & (df['Home Stadium'] == df['Actual Stadium']), df['Away Team'].map(lambda team: stadiums[team][10]), 0) / 2
+        )
         
         # 4. Calculate the new Home GSF Rank
         df['Home Team Adjusted Generic Sports Fan Current Rank'] = (
