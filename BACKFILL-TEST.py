@@ -904,9 +904,9 @@ def loop_through_simulations(date_str):
         df['MP + GSF Average Preseason Winner'] = df.apply(lambda row: row['Away Team'] if row['Away Team MP + GSF Average Preseason Rank'] > row['Home Team MP + GSF Average Preseason Rank'] else (row['Home Team'] if row['Away Team MP + GSF Average Preseason Rank'] < row['Home Team MP + GSF Average Preseason Rank'] else 'Tie'), axis=1)
         df['MP + GSF Average Preseason Difference'] = abs(df['Away Team MP + GSF Average Preseason Rank'] - df['Home Team MP + GSF Average Preseason Rank'])
     
-        THREE_IN_TEN_PENALTY = -0.00
-        FOUR_IN_SEVENTEEN_PENALTY = -0.00
-        SHORT_REST_PENALTY = -0.0
+        THREE_IN_TEN_PENALTY = -0.5
+        FOUR_IN_SEVENTEEN_PENALTY = -0.25
+        SHORT_REST_PENALTY = -.5
         
         # 2. Create a Non-Linear Timezone Penalty Function
         def calculate_timezone_penalty(tz_advantage):
@@ -1024,54 +1024,54 @@ def loop_through_simulations(date_str):
 
             # 3. Calculate the new, highly-situational Away GSF Rank
         df['Away Team Adjusted Massey-Peabody Preseason Rank'] = (
-            df['Away Team'].map(lambda team: stadiums[team][8]) # Base Rank
+            df['Away Team'].map(lambda team: stadiums[team][5]) # Base Rank
             + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
             - df['Away NonLinear TZ'] # NEW Non-Linear Timezone
             + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 # Cumulative Rest
+            + df['Away Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
             + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
-            + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY / 5, 0) # NEW 3-in-10 Penalty
-            + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY / 5, 0) # NEW 4-in-17 Penalty
+            + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY# / 5, 0) # NEW 3-in-10 Penalty
+            + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY# / 5, 0) # NEW 4-in-17 Penalty
             - np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0) # Static Away Adj
         )
         
         # 4. Calculate the new Home GSF Rank
         df['Home Team Adjusted Massey-Peabody Preseason Rank'] = (
-            df['Away Team'].map(lambda team: stadiums[team][8]) # Base Rank
-            + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
-            - df['Away NonLinear TZ'] # NEW Non-Linear Timezone
-            + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 # Cumulative Rest
-            + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
-            + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY / 5, 0) # NEW 3-in-10 Penalty
-            + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY / 5, 0) # NEW 4-in-17 Penalty
-            - np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0) # Static Away Adj
+            df['Home Team'].map(lambda team: stadiums[team][5]) # Base Rank
+            + np.where((df['Home Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
+            - df['Home NonLinear TZ'] # NEW Non-Linear Timezone
+            + pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
+            + df['Home Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
+            + np.where(df['Home Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
+            + np.where(df['Home Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY# / 5, 0) # NEW 3-in-10 Penalty
+            + np.where(df['Home Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY# / 5, 0) # NEW 4-in-17 Penalty
+            - np.where((df['Home Team'].map(lambda team: stadiums[team][0])) != df['Away Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][10]), 0) # Static Away Adj
         )
 
         # 3. Calculate the new, highly-situational Away GSF Rank
         df['Away Team Adjusted Generic Sports Fan Preseason Rank'] = (
-            df['Away Team'].map(lambda team: stadiums[team][8]) # Base Rank
+            df['Away Team'].map(lambda team: stadiums[team][7]) # Base Rank
             + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
             - df['Away NonLinear TZ'] # NEW Non-Linear Timezone
             + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 # Cumulative Rest
+            + df['Away Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
             + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
-            + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY / 5, 0) # NEW 3-in-10 Penalty
-            + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY / 5, 0) # NEW 4-in-17 Penalty
+            + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY# / 5, 0) # NEW 3-in-10 Penalty
+            + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY# / 5, 0) # NEW 4-in-17 Penalty
             - np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0) # Static Away Adj
         )
         
         # 4. Calculate the new Home GSF Rank
         df['Home Team Adjusted Generic Sports Fan Preseason Rank'] = (
-            df['Away Team'].map(lambda team: stadiums[team][8]) # Base Rank
-            + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
-            - df['Away NonLinear TZ'] # NEW Non-Linear Timezone
-            + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 # Cumulative Rest
-            + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
-            + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY / 5, 0) # NEW 3-in-10 Penalty
-            + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY / 5, 0) # NEW 4-in-17 Penalty
-            - np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0) # Static Away Adj
+            df['Home Team'].map(lambda team: stadiums[team][7]) # Base Rank
+            + np.where((df['Home Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
+            - df['Home NonLinear TZ'] # NEW Non-Linear Timezone
+            + pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
+            + df['Home Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
+            + np.where(df['Home Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
+            + np.where(df['Home Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY# / 5, 0) # NEW 3-in-10 Penalty
+            + np.where(df['Home Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY# / 5, 0) # NEW 4-in-17 Penalty
+            - np.where((df['Home Team'].map(lambda team: stadiums[team][0])) != df['Away Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][10]), 0) # Static Away Adj
         )
         
         # 5. NEW: Divisional Game Compression
@@ -1091,28 +1091,28 @@ def loop_through_simulations(date_str):
 
         # 3. Calculate the new, highly-situational Away GSF Rank
         df['Away Team Adjusted Massey-Peabody Current Rank'] = (
-            df['Away Team'].map(lambda team: stadiums[team][8]) # Base Rank
+            df['Away Team'].map(lambda team: stadiums[team][6]) # Base Rank
             + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
             - df['Away NonLinear TZ'] # NEW Non-Linear Timezone
             + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 # Cumulative Rest
+            + df['Away Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
             + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
-            + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY / 5, 0) # NEW 3-in-10 Penalty
-            + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY / 5, 0) # NEW 4-in-17 Penalty
+            + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY# / 5, 0) # NEW 3-in-10 Penalty
+            + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY# / 5, 0) # NEW 4-in-17 Penalty
             - np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0) # Static Away Adj
         )
         
         # 4. Calculate the new Home GSF Rank
         df['Home Team Adjusted Massey-Peabody Current Rank'] = (
-            df['Away Team'].map(lambda team: stadiums[team][8]) # Base Rank
-            + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
-            - df['Away NonLinear TZ'] # NEW Non-Linear Timezone
-            + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 # Cumulative Rest
-            + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
-            + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY / 5, 0) # NEW 3-in-10 Penalty
-            + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY / 5, 0) # NEW 4-in-17 Penalty
-            - np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0) # Static Away Adj
+            df['Home Team'].map(lambda team: stadiums[team][6]) # Base Rank
+            + np.where((df['Home Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
+            - df['Home NonLinear TZ'] # NEW Non-Linear Timezone
+            + pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
+            + df['Home Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
+            + np.where(df['Home Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
+            + np.where(df['Home Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY# / 5, 0) # NEW 3-in-10 Penalty
+            + np.where(df['Home Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY# / 5, 0) # NEW 4-in-17 Penalty
+            - np.where((df['Home Team'].map(lambda team: stadiums[team][0])) != df['Away Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][10]), 0) # Static Away Adj
         )
 
         # 3. Calculate the new, highly-situational Away GSF Rank
@@ -1121,24 +1121,24 @@ def loop_through_simulations(date_str):
             + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
             - df['Away NonLinear TZ'] # NEW Non-Linear Timezone
             + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 # Cumulative Rest
+            + df['Away Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
             + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
-            + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY / 5, 0) # NEW 3-in-10 Penalty
-            + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY / 5, 0) # NEW 4-in-17 Penalty
+            + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY# / 5, 0) # NEW 3-in-10 Penalty
+            + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY# / 5, 0) # NEW 4-in-17 Penalty
             - np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0) # Static Away Adj
         )
         
         # 4. Calculate the new Home GSF Rank
         df['Home Team Adjusted Generic Sports Fan Current Rank'] = (
-            df['Away Team'].map(lambda team: stadiums[team][8]) # Base Rank
-            + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
-            - df['Away NonLinear TZ'] # NEW Non-Linear Timezone
-            + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
-            + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 # Cumulative Rest
-            + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
-            + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY / 5, 0) # NEW 3-in-10 Penalty
-            + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY / 5, 0) # NEW 4-in-17 Penalty
-            - np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0) # Static Away Adj
+            df['Home Team'].map(lambda team: stadiums[team][8]) # Base Rank
+            + np.where((df['Home Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -0, 0) # Extreme Travel
+            - df['Home NonLinear TZ'] # NEW Non-Linear Timezone
+            + pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0) * .125 # Standard Rest
+            + df['Home Team Current Week Cumulative Rest Advantage'] * .05 #.0625 # Cumulative Rest
+            + np.where(df['Home Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 5, 0) # NEW Short Rest Penalty
+            + np.where(df['Home Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY# / 5, 0) # NEW 3-in-10 Penalty
+            + np.where(df['Home Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY# / 5, 0) # NEW 4-in-17 Penalty
+            - np.where((df['Home Team'].map(lambda team: stadiums[team][0])) != df['Away Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][10]), 0) # Static Away Adj
         )
         
         # 5. NEW: Divisional Game Compression
