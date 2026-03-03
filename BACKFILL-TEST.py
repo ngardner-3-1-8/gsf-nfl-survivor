@@ -1129,14 +1129,14 @@ def loop_through_simulations(date_str):
         gsf_ps_rank_diff = df['Home Team Adjusted Generic Sports Fan Preseason Rank'] - df['Away Team Adjusted Generic Sports Fan Preseason Rank']
         
         # Pull the favorite closer to the underdog in divisional games
-        df.loc[divisional_mask, 'Home Team Adjusted Generic Sports Fan Preseason Rank'] -= (gsf_ps_rank_diff * 0.075)
-        df.loc[divisional_mask, 'Away Team Adjusted Generic Sports Fan Preseason Rank'] += (gsf_ps_rank_diff * 0.075)
+        df.loc[divisional_mask, 'Home Team Adjusted Generic Sports Fan Preseason Rank'] -= (gsf_ps_rank_diff * 0.025)
+        df.loc[divisional_mask, 'Away Team Adjusted Generic Sports Fan Preseason Rank'] += (gsf_ps_rank_diff * 0.025)
 
         mp_ps_rank_diff = df['Home Team Adjusted Massey-Peabody Preseason Rank'] - df['Away Team Adjusted Massey-Peabody Preseason Rank']
         
         # Pull the favorite closer to the underdog in divisional games
-        df.loc[divisional_mask, 'Home Team Adjusted Massey-Peabody Preseason Rank'] -= (mp_ps_rank_diff * 0.075)
-        df.loc[divisional_mask, 'Away Team Adjusted Massey-Peabody Preseason Rank'] += (mp_ps_rank_diff * 0.075)
+        df.loc[divisional_mask, 'Home Team Adjusted Massey-Peabody Preseason Rank'] -= (mp_ps_rank_diff * 0.025)
+        df.loc[divisional_mask, 'Away Team Adjusted Massey-Peabody Preseason Rank'] += (mp_ps_rank_diff * 0.025)
 
         # 3. Calculate the new, highly-situational Away GSF Rank
 ####        df['Away Team Adjusted Massey-Peabody Current Rank'] = (
@@ -1233,14 +1233,14 @@ def loop_through_simulations(date_str):
         rank_diff = df['Home Team Adjusted Generic Sports Fan Current Rank'] - df['Away Team Adjusted Generic Sports Fan Current Rank']
         
         # Pull the favorite closer to the underdog in divisional games
-        df.loc[divisional_mask, 'Home Team Adjusted Generic Sports Fan Current Rank'] -= (rank_diff * 0.075)
-        df.loc[divisional_mask, 'Away Team Adjusted Generic Sports Fan Current Rank'] += (rank_diff * 0.075)
+        df.loc[divisional_mask, 'Home Team Adjusted Generic Sports Fan Current Rank'] -= (rank_diff * 0.025)
+        df.loc[divisional_mask, 'Away Team Adjusted Generic Sports Fan Current Rank'] += (rank_diff * 0.025)
 
         mp_rank_diff = df['Home Team Adjusted Massey-Peabody Current Rank'] - df['Away Team Adjusted Massey-Peabody Current Rank']
         
         # Pull the favorite closer to the underdog in divisional games
-        df.loc[divisional_mask, 'Home Team Adjusted Massey-Peabody Current Rank'] -= (mp_rank_diff * 0.075)
-        df.loc[divisional_mask, 'Away Team Adjusted Massey-Peabody Current Rank'] += (mp_rank_diff * 0.075)
+        df.loc[divisional_mask, 'Home Team Adjusted Massey-Peabody Current Rank'] -= (mp_rank_diff * 0.025)
+        df.loc[divisional_mask, 'Away Team Adjusted Massey-Peabody Current Rank'] += (mp_rank_diff * 0.025)
 
         df['Adjusted Massey-Peabody Preseason Winner'] = df.apply(lambda row: row['Away Team'] if row['Away Team Adjusted Massey-Peabody Preseason Rank'] > row['Home Team Adjusted Massey-Peabody Preseason Rank'] else (row['Home Team'] if row['Away Team Adjusted Massey-Peabody Preseason Rank'] < row['Home Team Adjusted Massey-Peabody Preseason Rank'] else 'Tie'), axis=1)
         df['Adjusted Massey-Peabody Preseason Difference'] = abs(df['Away Team Adjusted Massey-Peabody Preseason Rank'] - df['Home Team Adjusted Massey-Peabody Preseason Rank'])
