@@ -1087,11 +1087,41 @@ def loop_through_simulations(date_str):
 ####            + np.where(((df['Home Team'].map(lambda team: stadiums[team][0])) != df['Away Team'].map(lambda team: stadiums[team][0])) & (df['Home Stadium'] == df['Actual Stadium']), df['Home Team'].map(lambda team: stadiums[team][9]), 0)/2 # Static Away Adj
 ####        )
 
-        df['Away Team Adjusted Massey-Peabody Preseason Rank'] = df['Away Team'].map(lambda team: stadiums[team][5]) + np.where((df['Away Travel Advantage'] < -100) & (df['Home Stadium'] == df['Actual Stadium']), -.125, 0) - pd.to_numeric(df['Away Timezone Advantage']*.25, errors='coerce').fillna(0)-pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0)-.125*df['Away Team Current Week Cumulative Rest Advantage'] - np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
-        df['Home Team Adjusted Massey-Peabody Preseason Rank'] = df['Home Team'].map(lambda team: stadiums[team][5]) - np.where((df['Away Travel Advantage'] < -100) & (df['Home Stadium'] == df['Actual Stadium']), .125, 0) - pd.to_numeric(df['Home Timezone Advantage']*.25, errors='coerce').fillna(0)-pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0)-.125*df['Home Team Current Week Cumulative Rest Advantage'] + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
+        df['Away Team Adjusted Massey-Peabody Preseason Rank'] = (
+            df['Away Team'].map(lambda team: stadiums[team][5]) 
+            + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -.125, 0) 
+            - pd.to_numeric(df['Away Timezone Advantage']*.1, errors='coerce').fillna(0)
+            - pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0)
+            - .125*df['Away Team Current Week Cumulative Rest Advantage'] * .0625 
+            - np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
+        )
         
-        df['Away Team Adjusted Generic Sports Fan Preseason Rank'] = df['Away Team'].map(lambda team: stadiums[team][7]) + np.where((df['Away Travel Advantage'] < -100) & (df['Home Stadium'] == df['Actual Stadium']), -.125, 0) - pd.to_numeric(df['Away Timezone Advantage']*.25, errors='coerce').fillna(0)-pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0)-.125*df['Away Team Current Week Cumulative Rest Advantage'] - np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
-        df['Home Team Adjusted Generic Sports Fan Preseason Rank'] = df['Home Team'].map(lambda team: stadiums[team][7]) - np.where((df['Away Travel Advantage'] < -100) & (df['Home Stadium'] == df['Actual Stadium']), .125, 0) - pd.to_numeric(df['Home Timezone Advantage']*.25, errors='coerce').fillna(0)-pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0)-.125*df['Home Team Current Week Cumulative Rest Advantage'] + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
+        df['Home Team Adjusted Massey-Peabody Preseason Rank'] = (
+            df['Home Team'].map(lambda team: stadiums[team][5]) 
+            - np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), .125, 0) 
+            - pd.to_numeric(df['Home Timezone Advantage']*.1, errors='coerce').fillna(0)-pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0)
+            - .125*df['Home Team Current Week Cumulative Rest Advantage'] * .0625 
+            + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
+        )
+        
+        df['Away Team Adjusted Generic Sports Fan Preseason Rank'] = (
+            df['Away Team'].map(lambda team: stadiums[team][7]) 
+            + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -.125, 0) 
+            - pd.to_numeric(df['Away Timezone Advantage']*.1, errors='coerce').fillna(0)
+            - pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0)
+            - .125*df['Away Team Current Week Cumulative Rest Advantage'] * .0625 
+            - np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
+        )
+
+
+        df['Home Team Adjusted Generic Sports Fan Preseason Rank'] = (
+            df['Home Team'].map(lambda team: stadiums[team][7]) 
+            - np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), .125, 0) 
+            - pd.to_numeric(df['Home Timezone Advantage']*.1, errors='coerce').fillna(0)
+            - pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0)
+            - .125*df['Home Team Current Week Cumulative Rest Advantage'] * .0625 
+            + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
+        )
         
         # 5. NEW: Divisional Game Compression
         # If it's a divisional game, reduce the absolute difference between the teams' ranks by 15%
@@ -1160,11 +1190,42 @@ def loop_through_simulations(date_str):
 ####            + np.where(((df['Home Team'].map(lambda team: stadiums[team][0])) != df['Away Team'].map(lambda team: stadiums[team][0])) & (df['Home Stadium'] == df['Actual Stadium']), df['Home Team'].map(lambda team: stadiums[team][9]), 0)/2 # Static Away Adj
 ####        )
 
-        df['Away Team Adjusted Massey-Peabody Current Rank'] = df['Away Team'].map(lambda team: stadiums[team][6]) + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -.125, 0) - pd.to_numeric(df['Away Timezone Advantage'] * .1, errors='coerce').fillna(0) + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
-        df['Home Team Adjusted Massey-Peabody Current Rank'] = df['Home Team'].map(lambda team: stadiums[team][6]) + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), .125, 0) + pd.to_numeric(df['Home Timezone Advantage'] * .1, errors='coerce').fillna(0) + pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0) * .125 + df['Home Team Current Week Cumulative Rest Advantage'] * .0625 + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
+        df['Away Team Adjusted Massey-Peabody Current Rank'] = (
+            df['Away Team'].map(lambda team: stadiums[team][6]) 
+            - df['Away NonLinear TZ'] #+ np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -.125, 0) 
+            - pd.to_numeric(df['Away Timezone Advantage'] * .1, errors='coerce').fillna(0) 
+            + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 
+            + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 
+            + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
+        )
+        
+        df['Home Team Adjusted Massey-Peabody Current Rank'] = (
+            df['Home Team'].map(lambda team: stadiums[team][6]) 
+            - df['Home NonLinear TZ']#+ np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), .125, 0) 
+            + pd.to_numeric(df['Home Timezone Advantage'] * .1, errors='coerce').fillna(0) 
+            + pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0) * .125 
+            + df['Home Team Current Week Cumulative Rest Advantage'] * .0625 
+            + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
+        )
 
-        df['Away Team Adjusted Generic Sports Fan Current Rank'] = df['Away Team'].map(lambda team: stadiums[team][8]) + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -.125, 0) - pd.to_numeric(df['Away Timezone Advantage'] * .1, errors='coerce').fillna(0) + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
-        df['Home Team Adjusted Generic Sports Fan Current Rank'] = df['Home Team'].map(lambda team: stadiums[team][8]) + np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), .125, 0) + pd.to_numeric(df['Home Timezone Advantage'] * .1, errors='coerce').fillna(0) + pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0) * .125 + df['Home Team Current Week Cumulative Rest Advantage'] * .0625 + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
+        df['Away Team Adjusted Generic Sports Fan Current Rank'] = (
+            df['Away Team'].map(lambda team: stadiums[team][8]) 
+            - df['Away NonLinear TZ']#+ np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -.125, 0) 
+            - pd.to_numeric(df['Away Timezone Advantage'] * .1, errors='coerce').fillna(0) 
+            + pd.to_numeric(df['Weekly Away Rest Advantage'], errors='coerce').fillna(0) * .125 
+            + df['Away Team Current Week Cumulative Rest Advantage'] * .0625 
+            + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0) ###YOU DON'T DIVIDE BY TWO HERE??
+        )
+
+        
+        df['Home Team Adjusted Generic Sports Fan Current Rank'] = (
+            df['Home Team'].map(lambda team: stadiums[team][8]) 
+            - df['Home NonLinear TZ']#+ np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), .125, 0) 
+            + pd.to_numeric(df['Home Timezone Advantage'] * .1, errors='coerce').fillna(0) 
+            + pd.to_numeric(df['Weekly Home Rest Advantage'], errors='coerce').fillna(0) * .125 
+            + df['Home Team Current Week Cumulative Rest Advantage'] * .0625 
+            + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
+        )
         
         # 5. NEW: Divisional Game Compression
         # If it's a divisional game, reduce the absolute difference between the teams' ranks by 15%
@@ -2417,7 +2478,7 @@ def loop_through_simulations(date_str):
     collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data(schedule_df)
     
     # --- CONFIGURATION ---
-    SIMULATIONS = 100
+    SIMULATIONS = 1
     HISTORY_DAYS = 840
     CURRENT_SEASON = target_year
     DECAY_RATE = 0.00475
