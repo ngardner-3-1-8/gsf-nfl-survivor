@@ -903,10 +903,6 @@ def loop_through_simulations(date_str):
         df['Home Team MP + GSF Average Preseason Rank'] = (df['Home Team Massey-Peabody Preseason Rank'] + df['Home Team Generic Sports Fan Preseason Rank'])/2
         df['MP + GSF Average Preseason Winner'] = df.apply(lambda row: row['Away Team'] if row['Away Team MP + GSF Average Preseason Rank'] > row['Home Team MP + GSF Average Preseason Rank'] else (row['Home Team'] if row['Away Team MP + GSF Average Preseason Rank'] < row['Home Team MP + GSF Average Preseason Rank'] else 'Tie'), axis=1)
         df['MP + GSF Average Preseason Difference'] = abs(df['Away Team MP + GSF Average Preseason Rank'] - df['Home Team MP + GSF Average Preseason Rank'])
-    
-        THREE_IN_TEN_PENALTY = -0.0
-        FOUR_IN_SEVENTEEN_PENALTY = -0.0
-        SHORT_REST_PENALTY = -0.0
         
         # 2. Create a Non-Linear Timezone Penalty Function
         def calculate_timezone_penalty(tz_advantage):
@@ -1034,7 +1030,10 @@ def loop_through_simulations(date_str):
         df['Away Team Generic Sports Fan Current Rank'] = df['Away Team'].map(lambda team: stadiums[team][8] if team in stadiums else 'NA')
         df['Home Team Generic Sports Fan Current Rank'] = df['Home Team'].map(lambda team: stadiums[team][8] if team in stadiums else 'NA')
 
-        SHORT_REST_PENALTY = 0 #-.25
+        SHORT_REST_PENALTY = -.5
+        THREE_IN_TEN_PENALTY = -0.0
+        FOUR_IN_SEVENTEEN_PENALTY = -0.0
+        SHORT_REST_PENALTY = -0.0
 
 
             # 3. Calculate the new, highly-situational Away GSF Rank
