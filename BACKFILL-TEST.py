@@ -1092,9 +1092,9 @@ def loop_through_simulations(date_str):
             df['Away Team'].map(lambda team: stadiums[team][5])
             + df['Away NonLinear TZ'] 
             + pd.to_numeric(df['Away Timezone Advantage'] * .075, errors='coerce').fillna(0)
-            + pd.to_numeric(df['Weekly Away Rest Advantage'] * .125, errors='coerce').fillna(0)
+            + pd.to_numeric(df['Weekly Away Rest Advantage'] * .075, errors='coerce').fillna(0)
             + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY, 0) # NEW Short Rest Penalty
-            + .125*df['Away Team Current Week Cumulative Rest Advantage'] * .05 
+            + df['Away Team Current Week Cumulative Rest Advantage'] * .05 
             + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
         )
         
@@ -1102,7 +1102,7 @@ def loop_through_simulations(date_str):
             df['Home Team'].map(lambda team: stadiums[team][5]) 
             + df['Home NonLinear TZ'] 
             + pd.to_numeric(df['Home Timezone Advantage'] * .075, errors='coerce').fillna(0)
-            + pd.to_numeric(df['Weekly Home Rest Advantage'] * .125, errors='coerce').fillna(0)
+            + pd.to_numeric(df['Weekly Home Rest Advantage'] * .075, errors='coerce').fillna(0)
             + np.where(df['Home Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 2, 0) # NEW Short Rest Penalty
             + df['Home Team Current Week Cumulative Rest Advantage'] * .05 
             + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
@@ -1112,7 +1112,7 @@ def loop_through_simulations(date_str):
             df['Away Team'].map(lambda team: stadiums[team][7])
             + df['Away NonLinear TZ'] 
             + pd.to_numeric(df['Away Timezone Advantage'] * .075, errors='coerce').fillna(0)
-            - pd.to_numeric(df['Weekly Away Rest Advantage'] * .125, errors='coerce').fillna(0)
+            - pd.to_numeric(df['Weekly Away Rest Advantage'] * .075, errors='coerce').fillna(0)
             + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY, 0) # NEW Short Rest Penalty
             - df['Away Team Current Week Cumulative Rest Advantage'] * .05 
             - np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
@@ -1123,7 +1123,7 @@ def loop_through_simulations(date_str):
             df['Home Team'].map(lambda team: stadiums[team][7]) 
             + df['Home NonLinear TZ']            
             + pd.to_numeric(df['Home Timezone Advantage'] * .075, errors='coerce').fillna(0)
-            + pd.to_numeric(df['Weekly Home Rest Advantage'] * .125, errors='coerce').fillna(0)
+            + pd.to_numeric(df['Weekly Home Rest Advantage'] * .075, errors='coerce').fillna(0)
             + np.where(df['Home Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 2, 0) # NEW Short Rest Penalty
             + df['Home Team Current Week Cumulative Rest Advantage'] * .05 
             + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
@@ -1200,7 +1200,7 @@ def loop_through_simulations(date_str):
             df['Away Team'].map(lambda team: stadiums[team][6]) 
             + df['Away NonLinear TZ'] #+ np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -.125, 0) 
             + pd.to_numeric(df['Away Timezone Advantage'] * .075, errors='coerce').fillna(0) 
-            + pd.to_numeric(df['Weekly Away Rest Advantage'] * .125, errors='coerce').fillna(0)
+            + pd.to_numeric(df['Weekly Away Rest Advantage'] * .075, errors='coerce').fillna(0)
             + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY, 0) # NEW Short Rest Penalty
             + df['Away Team Current Week Cumulative Rest Advantage'] * .05 
             + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
@@ -1210,7 +1210,7 @@ def loop_through_simulations(date_str):
             df['Home Team'].map(lambda team: stadiums[team][6]) 
             + df['Home NonLinear TZ']#+ np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), .125, 0) 
             + pd.to_numeric(df['Home Timezone Advantage'] * .075, errors='coerce').fillna(0) 
-            + pd.to_numeric(df['Weekly Home Rest Advantage'] * .125, errors='coerce').fillna(0)
+            + pd.to_numeric(df['Weekly Home Rest Advantage'] * .075, errors='coerce').fillna(0)
             + np.where(df['Home Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 2, 0) # NEW Short Rest Penalty
             + df['Home Team Current Week Cumulative Rest Advantage'] * .05 
             + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
@@ -1220,7 +1220,7 @@ def loop_through_simulations(date_str):
             df['Away Team'].map(lambda team: stadiums[team][8]) 
             + df['Away NonLinear TZ']#+ np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -.125, 0) 
             + pd.to_numeric(df['Away Timezone Advantage'] * .075, errors='coerce').fillna(0) 
-            + pd.to_numeric(df['Weekly Away Rest Advantage'] * .125, errors='coerce').fillna(0)
+            + pd.to_numeric(df['Weekly Away Rest Advantage'] * .075, errors='coerce').fillna(0)
             + np.where(df['Away Team Short Rest'] == 'Yes', SHORT_REST_PENALTY, 0) # NEW Short Rest Penalty
             + df['Away Team Current Week Cumulative Rest Advantage'] * .05 
             + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
@@ -1231,7 +1231,7 @@ def loop_through_simulations(date_str):
             df['Home Team'].map(lambda team: stadiums[team][8]) 
             + df['Home NonLinear TZ']#+ np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), .125, 0) 
             + pd.to_numeric(df['Home Timezone Advantage'] * .075, errors='coerce').fillna(0) 
-            + pd.to_numeric(df['Weekly Home Rest Advantage'] * .125, errors='coerce').fillna(0)
+            + pd.to_numeric(df['Weekly Home Rest Advantage'] * .075, errors='coerce').fillna(0)
             + np.where(df['Home Team Short Rest'] == 'Yes', SHORT_REST_PENALTY / 2, 0) # NEW Short Rest Penalty
             + df['Home Team Current Week Cumulative Rest Advantage'] * .05 
             + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
