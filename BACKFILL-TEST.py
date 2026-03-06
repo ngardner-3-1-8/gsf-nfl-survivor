@@ -1031,8 +1031,8 @@ def loop_through_simulations(date_str):
         df['Home Team Generic Sports Fan Current Rank'] = df['Home Team'].map(lambda team: stadiums[team][8] if team in stadiums else 'NA')
 
         SHORT_REST_PENALTY = -0.05
-        THREE_IN_TEN_PENALTY = -0.00
-        FOUR_IN_SEVENTEEN_PENALTY = -0.00
+        THREE_IN_TEN_PENALTY = -0.5
+        FOUR_IN_SEVENTEEN_PENALTY = -0.25
 
 
             # 3. Calculate the new, highly-situational Away GSF Rank
