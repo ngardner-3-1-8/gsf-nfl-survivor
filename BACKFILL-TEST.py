@@ -1030,7 +1030,7 @@ def loop_through_simulations(date_str):
         df['Away Team Generic Sports Fan Current Rank'] = df['Away Team'].map(lambda team: stadiums[team][8] if team in stadiums else 'NA')
         df['Home Team Generic Sports Fan Current Rank'] = df['Home Team'].map(lambda team: stadiums[team][8] if team in stadiums else 'NA')
 
-        SHORT_REST_PENALTY = -.35
+        SHORT_REST_PENALTY = -.20
         THREE_IN_TEN_PENALTY = -0.0
         FOUR_IN_SEVENTEEN_PENALTY = -0.0
 
