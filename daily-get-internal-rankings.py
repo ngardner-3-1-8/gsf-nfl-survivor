@@ -178,9 +178,47 @@ def loop_through_rankings(date):
     # CONVERSION FACTOR (+1% SR = 0.70 Points)
     SR_TO_POINTS_COEFF = 0.765 
     
-    # MANUAL OVERRIDE: 
+# TYPICAL STARTERS MAP
+    TYPICAL_STARTERS = {
+        'KC': 'P.Mahomes',
+        'CAR': 'B.Young',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': '',
+        '': ''
+    }
+    
+    # MANUAL OVERRIDE: [Backup Name, Wk1, Wk2, Wk3, Wk4...]
+    # True = Backup is starting, False = Typical Starter is playing
     MANUAL_CURRENT_STARTERS = {
-    #    'KC': 'G.Minshew',
+        # Example: Minshew starts weeks 3 and 4, Mahomes starts the rest
+        'KC': ['G.Minshew', False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False],
     }
     
     def load_pbp_data(years):
@@ -405,7 +443,26 @@ def loop_through_rankings(date):
             st_epa_game = get_epa_per_game_sum(st_all, epa_col='net_epa_for_team')
             
             # QB Logic
-            curr_starter = MANUAL_CURRENT_STARTERS.get(team, None)
+            curr_starter = None
+            
+            # 1. Check Manual Override for the current upcoming week
+            if team in MANUAL_CURRENT_STARTERS:
+                override_data = MANUAL_CURRENT_STARTERS[team]
+                backup_qb = override_data[0]
+                injury_schedule = override_data[1:] # The list of booleans
+                
+                # Convert the current week to a 0-based index
+                week_idx = CURRENT_UPCOMING_WEEK - 1
+                
+                # If we have a boolean for this week and it's True, the backup is starting
+                if week_idx < len(injury_schedule) and injury_schedule[week_idx]:
+                    curr_starter = backup_qb
+                    
+            # 2. If no backup override applies, use the typical starter
+            if curr_starter is None:
+                curr_starter = TYPICAL_STARTERS.get(team, None)
+                
+            # 3. Fallback to existing dynamic detection if not defined in dictionaries
             if curr_starter is None:
                 team_games = game_qb_map[game_qb_map['posteam'] == team]
                 if not team_games.empty:
@@ -413,6 +470,8 @@ def loop_through_rankings(date):
                     if not last_game_slice.empty:
                         last_game_id = last_game_slice['game_id'].values[0]
                         curr_starter = game_qb_dict.get((last_game_id, team), 'Unknown')
+            
+            curr_qb_rating = qb_rating_map.get(curr_starter, 0.0)
             
             curr_qb_rating = qb_rating_map.get(curr_starter, 0.0)
             t_games_sched = df_sched[df_sched['team'] == team]
