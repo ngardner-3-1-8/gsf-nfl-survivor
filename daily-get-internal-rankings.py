@@ -178,47 +178,47 @@ def loop_through_rankings(date):
     # CONVERSION FACTOR (+1% SR = 0.70 Points)
     SR_TO_POINTS_COEFF = 0.765 
     
-# TYPICAL STARTERS MAP
+    # TYPICAL STARTERS MAP (Primary 2025 Starters)
     TYPICAL_STARTERS = {
-        'KC': 'P.Mahomes',
+        'ARI': 'K.Murray',
+        'ATL': 'M.Penix',
+        'BAL': 'L.Jackson',
+        'BUF': 'J.Allen',
         'CAR': 'B.Young',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': '',
-        '': ''
+        'CHI': 'C.Williams',
+        'CIN': 'J.Burrow',
+        'CLE': 'S.Sanders',
+        'DAL': 'D.Prescott',
+        'DEN': 'B.Nix',
+        'DET': 'J.Goff',
+        'GB': 'J.Love',
+        'HOU': 'C.Stroud',
+        'IND': 'D.Jones',
+        'JAX': 'T.Lawrence',
+        'KC': 'P.Mahomes',
+        'LA': 'M.Stafford',
+        'LAC': 'J.Herbert',
+        'LV': 'G.Smith',
+        'MIA': 'T.Tagovailoa',
+        'MIN': 'J.McCarthy',
+        'NE': 'D.Maye',
+        'NO': 'T.Shough',
+        'NYG': 'J.Dart',
+        'NYJ': 'B.Cook',
+        'PHI': 'J.Hurts',
+        'PIT': 'A.Rodgers',
+        'SEA': 'S.Darnold',
+        'SF': 'B.Purdy',
+        'TB': 'B.Mayfield',
+        'TEN': 'C.Ward',
+        'WAS': 'J.Daniels'
     }
     
     # MANUAL OVERRIDE: [Backup Name, Wk1, Wk2, Wk3, Wk4...]
     # True = Backup is starting, False = Typical Starter is playing
     MANUAL_CURRENT_STARTERS = {
-        # Example: Minshew starts weeks 3 and 4, Mahomes starts the rest
-        'KC': ['G.Minshew', False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False],
+        'KC': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,'G.Minshew', 'C.Oladokun', 'C.Oladokun'],
+        'BAL': [None, None, None, None, 'T.Huntley', 'T.Huntley', None, None, None, None, None, None, None, None, None, None, None, None]
     }
     
     def load_pbp_data(years):
@@ -445,24 +445,20 @@ def loop_through_rankings(date):
             # QB Logic
             curr_starter = None
             
-            # 1. Check Manual Override for the current upcoming week
+            # 1. Check Manual Override for the specific week
             if team in MANUAL_CURRENT_STARTERS:
-                override_data = MANUAL_CURRENT_STARTERS[team]
-                backup_qb = override_data[0]
-                injury_schedule = override_data[1:] # The list of booleans
-                
-                # Convert the current week to a 0-based index
                 week_idx = CURRENT_UPCOMING_WEEK - 1
+                manual_list = MANUAL_CURRENT_STARTERS[team]
                 
-                # If we have a boolean for this week and it's True, the backup is starting
-                if week_idx < len(injury_schedule) and injury_schedule[week_idx]:
-                    curr_starter = backup_qb
-                    
-            # 2. If no backup override applies, use the typical starter
+                # Check if we have an entry for this week and if it's a specific name
+                if week_idx < len(manual_list) and manual_list[week_idx] is not None:
+                    curr_starter = manual_list[week_idx]
+            
+            # 2. If no manual name is provided for this week, use the typical starter
             if curr_starter is None:
                 curr_starter = TYPICAL_STARTERS.get(team, None)
                 
-            # 3. Fallback to existing dynamic detection if not defined in dictionaries
+            # 3. Fallback to existing dynamic detection
             if curr_starter is None:
                 team_games = game_qb_map[game_qb_map['posteam'] == team]
                 if not team_games.empty:
@@ -470,6 +466,8 @@ def loop_through_rankings(date):
                     if not last_game_slice.empty:
                         last_game_id = last_game_slice['game_id'].values[0]
                         curr_starter = game_qb_dict.get((last_game_id, team), 'Unknown')
+            
+            curr_qb_rating = qb_rating_map.get(curr_starter, 0.0)
             
             curr_qb_rating = qb_rating_map.get(curr_starter, 0.0)
             
