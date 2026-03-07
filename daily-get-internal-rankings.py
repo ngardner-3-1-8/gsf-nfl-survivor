@@ -217,8 +217,38 @@ def loop_through_rankings(date):
     # MANUAL OVERRIDE: [Backup Name, Wk1, Wk2, Wk3, Wk4...]
     # True = Backup is starting, False = Typical Starter is playing
     MANUAL_CURRENT_STARTERS = {
-        'KC': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,'G.Minshew', 'C.Oladokun', 'C.Oladokun'],
-        'BAL': [None, None, None, None, 'T.Huntley', 'T.Huntley', None, None, None, None, None, None, None, None, None, None, None, None]
+        'ARI': [None, None, None, None, None, 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett'],
+        'ATL': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'BAL': [None, None, None, None, 'C.Rush', 'C.Rush', 'T.Huntley', 'T.Huntley', None, None, None, None, None, None, None, None, 'T.Huntley', None],
+        'BUF': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'CAR': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'CHI': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'CIN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'CLE': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'DAL': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'DEN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'DET': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'GB': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'HOU': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'IND': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'JAX': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'KC': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'C.Oladokun', 'C.Oladokun', 'S.Buechele'],
+        'LV': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'LAC': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'LA': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'MIA': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'MIN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'NE': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'NO': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'NYG': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'NYJ': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'PHI': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'PIT': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'SEA': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'SF': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'TB': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'TEN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'WAS': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]
     }
     
     def load_pbp_data(years):
