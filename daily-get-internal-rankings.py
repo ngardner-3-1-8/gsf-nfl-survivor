@@ -293,14 +293,26 @@ def loop_through_rankings(date):
             qbs['total_epa'] = qbs['passing_epa'] + qbs['rushing_epa']
             qbs['total_involvement'] = qbs['attempts'] + qbs['sacks_val'] + qbs['carries']
             
-            # --- EFFICIENCY RATING ---
+            # --- EFFICIENCY RATING WITH BAYESIAN SHRINKAGE ---
             qb_career = qbs.groupby('player_name').agg(
                 career_epa=('total_epa', 'sum'),
                 career_plays=('total_involvement', 'sum')
             ).reset_index()
             
-            qb_career['epa_per_play'] = qb_career['career_epa'] / qb_career['career_plays']
-            qb_career = qb_career[qb_career['career_plays'] > 50]
+            # 1. Calculate Dynamic Replacement Level (25th Percentile of experienced QBs)
+            experienced_qbs = qb_career[qb_career['career_plays'] > 150].copy()
+            experienced_qbs['raw_epa_per_play'] = experienced_qbs['career_epa'] / experienced_qbs['career_plays']
+            
+            # Fallback to -0.05 (typical backup EPA) if calculation fails
+            replacement_epa = experienced_qbs['raw_epa_per_play'].quantile(0.25) if not experienced_qbs.empty else -0.05
+            
+            # 2. Apply Shrinkage Formula
+            # 'B' is the prior weight. 100 plays is a standard anchor. 
+            # A rookie with 5 plays will be heavily pulled toward the replacement_epa.
+            B = 100 
+            qb_career['epa_per_play'] = (qb_career['career_epa'] + (B * replacement_epa)) / (qb_career['career_plays'] + B)
+            
+            # Notice we no longer drop QBs with < 50 plays!
             qb_rating_map = pd.Series(qb_career.epa_per_play.values, index=qb_career.player_name).to_dict()
             
             # --- TEAM VOLUME ---
@@ -308,11 +320,12 @@ def loop_through_rankings(date):
             team_volume = team_game_stats.groupby(team_col)['total_involvement'].mean()
             team_volume_map = team_volume.to_dict()
             
-            return qb_rating_map, team_volume_map
+            # Return the replacement_epa as a 3rd variable to use as a fallback
+            return qb_rating_map, team_volume_map, replacement_epa
             
         except Exception as e:
             print(f"Error loading player stats: {e}")
-            return {}, {}
+            return {}, {}, -0.05
     
     def weighted_avg(values, weights):
         if len(values) == 0: return 0
@@ -342,7 +355,7 @@ def loop_through_rankings(date):
         pbp = load_pbp_data(years_to_load)
         if pbp.empty: return pd.DataFrame()
         
-        qb_rating_map, team_qb_vol_map = get_qb_ratings_fast(years_to_load, target_year, CURRENT_UPCOMING_WEEK)
+        qb_rating_map, team_qb_vol_map, replacement_epa = get_qb_ratings_fast(years_to_load, target_year, CURRENT_UPCOMING_WEEK)
     
         # 3. Process PBP
         print("Processing PBP data...")
@@ -497,11 +510,7 @@ def loop_through_rankings(date):
                         last_game_id = last_game_slice['game_id'].values[0]
                         curr_starter = game_qb_dict.get((last_game_id, team), 'Unknown')
             
-            curr_qb_rating = qb_rating_map.get(curr_starter, 0.0)
-            
-            curr_qb_rating = qb_rating_map.get(curr_starter, 0.0)
-            
-            curr_qb_rating = qb_rating_map.get(curr_starter, 0.0)
+            curr_qb_rating = qb_rating_map.get(curr_starter, replacement_epa)
             t_games_sched = df_sched[df_sched['team'] == team]
             
             total_weight = 0
