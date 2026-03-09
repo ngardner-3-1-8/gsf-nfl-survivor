@@ -2401,7 +2401,7 @@ def loop_through_simulations(date_str):
     collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data(schedule_df)
     
     # --- CONFIGURATION ---
-    SIMULATIONS = 2500
+    SIMULATIONS = 2000
     HISTORY_DAYS = 840
     CURRENT_SEASON = target_year
     DECAY_RATE = 0.00475
@@ -3241,27 +3241,17 @@ def loop_through_simulations(date_str):
                 # We only need a tiny nudge to convert ~1 extra drive per game from FG to TD
                 is_goal_to_go = (100 - yardline) <= 10
                 
-    #            if is_goal_to_go:
-    #                if ptype == 'run':
-                        # PREVIOUS (Too Strong): mu += 1.3, sigma = 1.5 
-                        # NEW (Marginal):
-                        # Add 0.4 yards to the average surge (e.g., 3.5 -> 3.9)
-    #                    stats['mu'] += 0.0  
-                        
-                        # Don't crush the variance (sigma). Keep it around 3.0.
-                        # This allows for 1-yard gains or 0-yard stuffs, which forces 
-                        # 3rd & 4th down decisions rather than automatic 1st downs.
-    #                    stats['sigma'] = 3.0 
-                        
-    #                else:
-                        # PREVIOUS (Too Strong): complete += 0.05
-                        # NEW (Marginal):
-                        # Tiny bump to completion % (2.5%) for short throws
-    #                    stats['complete'] += 0.0025 
-                        
-                        # QBs are still careful, but picks happen (tipped balls).
-                        # 1.5% is a realistic low floor.
-    #                    stats['intercept'] = 0.03
+                if is_goal_to_go:
+                    if ptype == 'run':
+                        # Field is compressed. Harder to surge.
+                        stats['mu'] -= 0.5 
+                        # Tighter variance (less room to run, usually results in 1-2 yards or 0)
+                        stats['sigma'] *= 0.7 
+                    else:
+                        # Passing windows are significantly tighter
+                        stats['complete'] -= 0.04 
+                        # Tipped balls and jumped routes increase
+                        stats['intercept'] += 0.015
                 
                 # (Deleted the duplicate 'stats =' line that was here)
     
