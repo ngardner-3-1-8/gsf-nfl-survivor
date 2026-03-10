@@ -3244,14 +3244,14 @@ def loop_through_simulations(date_str):
                 if is_goal_to_go:
                     if ptype == 'run':
                         # Field is compressed. Harder to surge.
-                        stats['mu'] -= 0.5 
+                        stats['mu'] -= 0.3 
                         # Tighter variance (less room to run, usually results in 1-2 yards or 0)
-                        stats['sigma'] *= 0.7 
+                        stats['sigma'] *= 0.85 
                     else:
                         # Passing windows are significantly tighter
-                        stats['complete'] -= 0.04 
+                        stats['complete'] -= 0.03 
                         # Tipped balls and jumped routes increase
-                        stats['intercept'] += 0.015
+                        stats['intercept'] += 0.01
                 
                 # (Deleted the duplicate 'stats =' line that was here)
     
@@ -3731,8 +3731,8 @@ if __name__ == "__main__":
 #        "10/08/2025", 
 #        "10/15/2025",
 #        "10/22/2025", 
-#        "10/29/2025",
-#        "11/05/2025" 
+        "10/29/2025",
+        "11/05/2025",
         "11/12/2025",
         "11/19/2025", 
         "11/26/2025",
