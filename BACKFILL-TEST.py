@@ -2527,59 +2527,117 @@ def loop_through_simulations(date_str):
             avg_play_duration = incomplete_plays['seconds_consumed'].mean()
             if np.isnan(avg_play_duration): avg_play_duration = 6.0
     
-            # 4. EFFICIENCY
-            self.pbp['field_zone'] = np.where(self.pbp['yardline_100'] <= 20, 'redzone', 'open')
-            efficiency_dict = {}
-            eff_plays = self.pbp[self.pbp['play_type'].isin(['run', 'pass'])]
+        # 4. EFFICIENCY (Offense, Defense, and League Averages)
+        self.pbp['field_zone'] = np.where(self.pbp['yardline_100'] <= 20, 'redzone', 'open')
+        efficiency_dict = {}
+        def_efficiency_dict = {}
+        eff_plays = self.pbp[self.pbp['play_type'].isin(['run', 'pass'])]
+        
+        # --- A. Calculate League Averages for Blending ---
+        league_pass_plays = eff_plays[eff_plays['play_type'] == 'pass']
+        l_sack_rate = np.average(league_pass_plays['sack'], weights=league_pass_plays['time_weight']) if len(league_pass_plays) > 0 else 0.07
+        
+        league_non_sacks = league_pass_plays[league_pass_plays['sack'] == 0]
+        if len(league_non_sacks) > 0:
+            l_comp_rate = np.average(league_non_sacks['complete_pass'], weights=league_non_sacks['time_weight'])
+            l_int_rate = np.average(league_non_sacks['interception'], weights=league_non_sacks['time_weight'])
             
-            for (team, zone), team_group in eff_plays.groupby(['posteam', 'field_zone']):
-                # RUN
-                runs = team_group[team_group['play_type'] == 'run']
-                if len(runs) > 0:
-                    r_mu, r_sigma = weighted_avg_and_std(runs['yards_gained'].fillna(0).values, runs['time_weight'].values)
-                    r_fumble = np.average(runs['fumble_lost'], weights=runs['time_weight'])
-                else:
-                    r_mu, r_sigma, r_fumble = 3.5, 3.0, 0.01
-                efficiency_dict[(team, zone, 'run')] = {'mu': r_mu, 'sigma': r_sigma, 'fumble': r_fumble}
-    
-                # PASS
-                passes = team_group[team_group['play_type'] == 'pass']
-                if len(passes) > 0:
-                    sack_rate = np.average(passes['sack'], weights=passes['time_weight'])
-                    non_sacks = passes[passes['sack'] == 0]
-                    if len(non_sacks) > 0:
-                        comp_rate = np.average(non_sacks['complete_pass'], weights=non_sacks['time_weight'])
-                        int_rate = np.average(non_sacks['interception'], weights=non_sacks['time_weight'])
-                        completions = non_sacks[non_sacks['complete_pass'] == 1]
-                        if len(completions) > 0:
-                            p_mu, p_sigma = weighted_avg_and_std(completions['yards_gained'].values, completions['time_weight'].values)
-                            p_fumble = np.average(completions['fumble_lost'], weights=completions['time_weight'])
-                        else:
-                            p_mu, p_sigma, p_fumble = 10.0, 5.0, 0.01
+            league_comps = league_non_sacks[league_non_sacks['complete_pass'] == 1]
+            l_pass_fum_rate = np.average(league_comps['fumble_lost'], weights=league_comps['time_weight']) if len(league_comps) > 0 else 0.01
+        else:
+            l_comp_rate, l_int_rate, l_pass_fum_rate = 0.65, 0.025, 0.01
+            
+        self.league_avgs = {
+            'sack': l_sack_rate, 'complete': l_comp_rate, 
+            'intercept': l_int_rate, 'pass_fumble': l_pass_fum_rate
+        }
+
+        # --- B. Offensive Profiles ---
+        for (team, zone), team_group in eff_plays.groupby(['posteam', 'field_zone']):
+            # RUN
+            runs = team_group[team_group['play_type'] == 'run']
+            if len(runs) > 0:
+                r_mu, r_sigma = weighted_avg_and_std(runs['yards_gained'].fillna(0).values, runs['time_weight'].values)
+                r_fumble = np.average(runs['fumble_lost'], weights=runs['time_weight'])
+            else:
+                r_mu, r_sigma, r_fumble = 3.5, 3.0, 0.01
+            efficiency_dict[(team, zone, 'run')] = {'mu': r_mu, 'sigma': r_sigma, 'fumble': r_fumble}
+
+            # PASS
+            passes = team_group[team_group['play_type'] == 'pass']
+            if len(passes) > 0:
+                sack_rate = np.average(passes['sack'], weights=passes['time_weight'])
+                non_sacks = passes[passes['sack'] == 0]
+                if len(non_sacks) > 0:
+                    comp_rate = np.average(non_sacks['complete_pass'], weights=non_sacks['time_weight'])
+                    int_rate = np.average(non_sacks['interception'], weights=non_sacks['time_weight'])
+                    completions = non_sacks[non_sacks['complete_pass'] == 1]
+                    if len(completions) > 0:
+                        p_mu, p_sigma = weighted_avg_and_std(completions['yards_gained'].values, completions['time_weight'].values)
+                        p_fumble = np.average(completions['fumble_lost'], weights=completions['time_weight'])
                     else:
-                        comp_rate, int_rate, p_fumble, p_mu, p_sigma = 0.6, 0.03, 0.01, 7.0, 5.0
+                        p_mu, p_sigma, p_fumble = 10.0, 5.0, 0.01
                 else:
-                    sack_rate, comp_rate, int_rate, p_fumble, p_mu, p_sigma = 0.07, 0.6, 0.03, 0.01, 7.0, 5.0
+                    comp_rate, int_rate, p_fumble, p_mu, p_sigma = 0.6, 0.03, 0.01, 7.0, 5.0
+            else:
+                sack_rate, comp_rate, int_rate, p_fumble, p_mu, p_sigma = 0.07, 0.6, 0.03, 0.01, 7.0, 5.0
+
+            efficiency_dict[(team, zone, 'pass')] = {
+                'mu': p_mu, 'sigma': p_sigma, 'fumble': p_fumble, 
+                'intercept': int_rate, 'complete': comp_rate, 'sack': sack_rate
+            }
+
+        # --- C. Defensive Profiles (NEW) ---
+        for (team, zone), team_group in eff_plays.groupby(['defteam', 'field_zone']):
+            passes = team_group[team_group['play_type'] == 'pass']
+            if len(passes) > 0:
+                sack_rate = np.average(passes['sack'], weights=passes['time_weight'])
+                non_sacks = passes[passes['sack'] == 0]
+                if len(non_sacks) > 0:
+                    comp_rate = np.average(non_sacks['complete_pass'], weights=non_sacks['time_weight'])
+                    int_rate = np.average(non_sacks['interception'], weights=non_sacks['time_weight'])
+                    completions = non_sacks[non_sacks['complete_pass'] == 1]
+                    p_fumble = np.average(completions['fumble_lost'], weights=completions['time_weight']) if len(completions) > 0 else l_pass_fum_rate
+                else:
+                    comp_rate, int_rate, p_fumble = l_comp_rate, l_int_rate, l_pass_fum_rate
+            else:
+                sack_rate, comp_rate, int_rate, p_fumble = l_sack_rate, l_comp_rate, l_int_rate, l_pass_fum_rate
+
+            def_efficiency_dict[(team, zone, 'pass')] = {
+                'sack': sack_rate, 'complete': comp_rate, 'intercept': int_rate, 'fumble': p_fumble
+            }
     
-                efficiency_dict[(team, zone, 'pass')] = {
-                    'mu': p_mu, 'sigma': p_sigma, 'fumble': p_fumble, 
-                    'intercept': int_rate, 'complete': comp_rate, 'sack': sack_rate
-                }
-    
-            # 5. DEFENSE MULTS
+            # 5. DEFENSE MULTS (Now by Field Zone)
             self.def_mults = {}
-            league_run = np.average(eff_plays[eff_plays['play_type']=='run']['yards_gained'], weights=eff_plays[eff_plays['play_type']=='run']['time_weight'])
-            league_pass = np.average(eff_plays[(eff_plays['play_type']=='pass') & (eff_plays['complete_pass']==1)]['yards_gained'], 
-                                     weights=eff_plays[(eff_plays['play_type']=='pass') & (eff_plays['complete_pass']==1)]['time_weight'])
             
-            for team, group in eff_plays.groupby('defteam'):
-                self.def_mults[team] = {}
-                tr = group[group['play_type']=='run']
-                raw_run_mult = (np.average(tr['yards_gained'], weights=tr['time_weight']) / league_run) if len(tr)>0 else 1.0
-                self.def_mults[team]['run'] = (raw_run_mult * 0.8) + (1.0 * 0.2) # Regress 20% to League Avg
-                tp = group[(group['play_type']=='pass') & (group['complete_pass']==1)]
-                raw_pass_mult = (np.average(tp['yards_gained'], weights=tp['time_weight']) / league_pass) if len(tp)>0 else 1.0
-                self.def_mults[team]['pass'] = (raw_pass_mult * 0.8) + (1.0 * 0.2) # Regress 20% to League Avg
+            # A. Calculate League Averages by Zone
+            league_zone_avgs = {}
+            for zone, zone_group in eff_plays.groupby('field_zone'):
+                l_run_plays = zone_group[zone_group['play_type'] == 'run']
+                l_pass_plays = zone_group[(zone_group['play_type'] == 'pass') & (zone_group['complete_pass'] == 1)]
+                
+                l_run_avg = np.average(l_run_plays['yards_gained'], weights=l_run_plays['time_weight']) if len(l_run_plays) > 0 else 3.5
+                l_pass_avg = np.average(l_pass_plays['yards_gained'], weights=l_pass_plays['time_weight']) if len(l_pass_plays) > 0 else 7.0
+                
+                league_zone_avgs[zone] = {'run': l_run_avg, 'pass': l_pass_avg}
+                
+            # B. Calculate Team Defensive Multipliers by Zone
+            for (team, zone), group in eff_plays.groupby(['defteam', 'field_zone']):
+                l_run = league_zone_avgs[zone]['run']
+                l_pass = league_zone_avgs[zone]['pass']
+                
+                tr = group[group['play_type'] == 'run']
+                raw_run_mult = (np.average(tr['yards_gained'], weights=tr['time_weight']) / l_run) if len(tr) > 0 else 1.0
+                
+                tp = group[(group['play_type'] == 'pass') & (group['complete_pass'] == 1)]
+                raw_pass_mult = (np.average(tp['yards_gained'], weights=tp['time_weight']) / l_pass) if len(tp) > 0 else 1.0
+                
+                # Regress 20% to League Avg (1.0) to stabilize small sample sizes
+                run_mult = (raw_run_mult * 0.8) + (1.0 * 0.2)
+                pass_mult = (raw_pass_mult * 0.8) + (1.0 * 0.2)
+                
+                # Store using the tuple (team, zone) as the key
+                self.def_mults[(team, zone)] = {'run': run_mult, 'pass': pass_mult}
     
             # 6. PENALTIES
             pen_dict = {}
@@ -2640,35 +2698,77 @@ def loop_through_simulations(date_str):
                 
                 kicking_stats[team] = {'max_made': max_made, 'short_acc': short_acc, 'med_acc': med_acc, 'long_acc': long_acc}
     
-            # 9. BREAKAWAY RUN RATES
+            # 9. BREAKAWAY RUN RATES (Offense vs. Defense)
             # Define a breakaway as a run of 15+ yards
             run_plays = self.pbp[self.pbp['play_type'] == 'run']
-            breakaway_plays = run_plays[run_plays['yards_gained'] >= 15]
+            breakaway_runs = run_plays[run_plays['yards_gained'] >= 15]
             
             # Calculate League Average Rate first
             if len(run_plays) > 0:
-                league_bk_rate = len(breakaway_plays) / len(run_plays)
+                league_bk_run_rate = len(breakaway_runs) / len(run_plays)
             else:
-                league_bk_rate = 0.035 # Default fallback (3.5%)
+                league_bk_run_rate = 0.035 # Default fallback (3.5%)
     
-            breakaway_stats = {}
+            off_bk_run_stats = {}
+            def_bk_run_stats = {}
+    
+            # Offensive Breakaway Rates
             for team, group in run_plays.groupby('posteam'):
                 n_runs = len(group)
                 n_breakaways = len(group[group['yards_gained'] >= 15])
-                
-                # REGRESSION TO THE MEAN:
-                # We add 50 "league average runs" to the team's sample.
-                # This prevents a team with few runs from having a wild 0% or 10% rate.
-                regressed_rate = (n_breakaways + (50 * league_bk_rate)) / (n_runs + 50)
-                breakaway_stats[team] = regressed_rate
+                regressed_rate = (n_breakaways + (50 * league_bk_run_rate)) / (n_runs + 50)
+                off_bk_run_stats[team] = regressed_rate
     
-            # Store in profiles (Add this to your self.profiles dictionary below)
-            self.profiles['breakaway_run'] = breakaway_stats
-            self.profiles['league_breakaway_run'] = league_bk_rate        
+            # Defensive Breakaway Allowed Rates
+            for team, group in run_plays.groupby('defteam'):
+                n_runs = len(group)
+                n_breakaways = len(group[group['yards_gained'] >= 15])
+                regressed_rate = (n_breakaways + (50 * league_bk_run_rate)) / (n_runs + 50)
+                def_bk_run_stats[team] = regressed_rate
+    
+            # Store in profiles (Make sure to map these in your final dictionary below!)
+            self.profiles['breakaway_run_off'] = off_bk_run_stats
+            self.profiles['breakaway_run_def'] = def_bk_run_stats
+            self.profiles['league_breakaway_run'] = league_bk_run_rate
+            
+            # 10. BREAKAWAY PASS RATES (Offense vs. Defense)
+            # Define a breakaway pass as a completion of 20+ yards
+            pass_plays = self.pbp[(self.pbp['play_type'] == 'pass') & (self.pbp['complete_pass'] == 1)]
+            breakaway_passes = pass_plays[pass_plays['yards_gained'] >= 20]
+            
+            # Calculate League Average Rate (per completion)
+            if len(pass_plays) > 0:
+                league_bk_pass_rate = len(breakaway_passes) / len(pass_plays)
+            else:
+                league_bk_pass_rate = 0.07 # Standard fallback (7%)
+    
+            off_bk_pass_stats = {}
+            def_bk_pass_stats = {}
+    
+            # Offensive Breakaway Rates
+            for team, group in pass_plays.groupby('posteam'):
+                n_comps = len(group)
+                n_breakaways = len(group[group['yards_gained'] >= 20])
+                # Regress with 50 league-average completions to prevent wild outliers
+                regressed_rate = (n_breakaways + (50 * league_bk_pass_rate)) / (n_comps + 50)
+                off_bk_pass_stats[team] = regressed_rate
+    
+            # Defensive Breakaway Allowed Rates
+            for team, group in pass_plays.groupby('defteam'):
+                n_comps = len(group)
+                n_breakaways = len(group[group['yards_gained'] >= 20])
+                regressed_rate = (n_breakaways + (50 * league_bk_pass_rate)) / (n_comps + 50)
+                def_bk_pass_stats[team] = regressed_rate
+
+            # Store in profiles (Make sure to add these to your self.profiles dict at the end of the function)
+            self.profiles['breakaway_pass_off'] = off_bk_pass_stats
+            self.profiles['breakaway_pass_def'] = def_bk_pass_stats
+            self.profiles['league_breakaway_pass'] = league_bk_pass_rate
             
             
             self.profiles = {
                 'efficiency': efficiency_dict,
+                'def_efficiency': def_efficiency_dict,
                 'pace': pace_stats.to_dict(),
                 'penalties': pen_dict,
                 'penalty_details': def_pen_stats,
@@ -2677,8 +2777,12 @@ def loop_through_simulations(date_str):
                 'playcalling': playcalling_dict,
                 'oob_rates': oob_rates,
                 'play_duration': avg_play_duration,
-                'breakaway_run': breakaway_stats,
-                'league_breakaway_run': league_bk_rate
+                'breakaway_run_off': off_bk_run_stats,
+                'breakaway_run_def': def_bk_run_stats,
+                'league_breakaway_run': league_bk_run_rate,
+                'breakaway_pass_off': off_bk_pass_stats,
+                'breakaway_pass_def': def_bk_pass_stats,
+                'league_breakaway_pass': league_bk_pass_rate
             }
     
         def _resolve_play_outcome(self, off, def_, zone, ptype, stats, def_mult, hfa_impact, 
@@ -2738,20 +2842,22 @@ def loop_through_simulations(date_str):
         
             # --- RUN LOGIC ---
             if ptype == 'run':
-            # 1. Check Fumble
+                # 1. Check Fumble
                 if np.random.random() < stats['fumble']:
                     is_turnover = True
-                    yards = 0 # Fumbles usually happen at LOS or slight gain, simplifying to 0 for sim
+                    yards = 0 
                     desc_tag = "FUMBLE"
             
-                # 2. Check BREAKAWAY (Team Specific Rate)
+                # 2. Check BREAKAWAY (Dynamic Offense vs Defense Blend)
                 else:
-                    # RETRIEVE TEAM RATE HERE
-                    # Fallback to league average if team not found
-                    league_avg = self.profiles.get('league_breakaway_run', 0.035)
-                    bk_prob = self.profiles['breakaway_run'].get(off, league_avg)
-                
-                    if np.random.random() < bk_prob:
+                    league_run_avg = self.profiles.get('league_breakaway_run', 0.035)
+                    off_run_rate = self.profiles['breakaway_run_off'].get(off, league_run_avg)
+                    def_run_rate = self.profiles['breakaway_run_def'].get(def_, league_run_avg)
+
+                    # Matchup adjustment: Offense rate scaled by how the defense compares to league average
+                    matchup_bk_prob = off_run_rate * (def_run_rate / league_run_avg) if league_run_avg > 0 else 0.035
+
+                    if np.random.random() < matchup_bk_prob:
                         # Log-normal distribution for breakaway yards
                         raw_yards = np.random.lognormal(3.0, 0.6) 
                         yards = int(max(15, raw_yards))
@@ -2802,9 +2908,15 @@ def loop_through_simulations(date_str):
 
                 # 4. COMPLETED PASS
                 else:
-                    # Check BREAKAWAY (The Fix for Totals)
-                    # ~7% of completions go for big yardage
-                    if np.random.random() < 0.07:
+                    # Check BREAKAWAY (Dynamic Offense vs Defense Blend)
+                    league_pass_avg = self.profiles.get('league_breakaway_pass', 0.07)
+                    off_pass_rate = self.profiles['breakaway_pass_off'].get(off, league_pass_avg)
+                    def_pass_rate = self.profiles['breakaway_pass_def'].get(def_, league_pass_avg)
+
+                    # Matchup adjustment: Offense rate scaled by how the defense compares to league average
+                    matchup_bk_prob = off_pass_rate * (def_pass_rate / league_pass_avg) if league_pass_avg > 0 else 0.07
+
+                    if np.random.random() < matchup_bk_prob:
                         # Normal dist centered on 35 yards, high variance
                         raw_yards = np.random.normal(35, 12)
                         yards = int(max(20, raw_yards)) # Minimum 20 yards for a "breakaway"
@@ -3007,15 +3119,15 @@ def loop_through_simulations(date_str):
                 pass_prob = self.profiles['playcalling'].get((off, down, d_bucket, ctx))
                 if pass_prob is None: pass_prob = self.league_pass_rates.get((down, d_bucket, ctx), 0.55)
     
-####                # WIND: severe penalty if over 20mph
-####                if not is_dome and wind_speed > 20:
-####                    pass_prob -= 0.15  # Heavy shift to run
-####                elif not is_dome and wind_speed > 15:
-####                    pass_prob -= 0.05
+                # WIND: severe penalty if over 20mph
+                if not is_dome and wind_speed > 25:
+                    pass_prob *= 0.85  # Heavy shift to run
+                elif not is_dome and wind_speed > 15:
+                    pass_prob *= 0.95
                 
                 # RAIN/SNOW: slight shift to run to avoid drops/tips
-####                if not is_dome and (is_rain or is_snow):
-####                    pass_prob -= 0.05
+                if not is_dome and (is_rain or is_snow):
+                    pass_prob *= 0.95
                 
                 # Standard Adjustments
                 if phase == 'REG' and clock < 300:
@@ -3128,7 +3240,7 @@ def loop_through_simulations(date_str):
                             if kick_dist < 40: base_prob = k_stats['short_acc']
                             elif kick_dist < 50: base_prob = k_stats['med_acc']
                             else: base_prob = k_stats['long_acc']
-    #WEATHER                        
+                       
                             final_prob = base_prob * weather_acc_mod
                             if kick_dist > (weather_max_dist - 3): final_prob *= 0.8 
                             made = np.random.random() < final_prob
@@ -3230,7 +3342,29 @@ def loop_through_simulations(date_str):
                 
                 # MUST COPY THE DICTIONARY SO WE DON'T PERMANENTLY CHANGE IT
                 stats = base_stats.copy()
-
+    
+                # --- DYNAMIC OFFENSE/DEFENSE BLENDING ---
+                if ptype == 'pass':
+                    def_stats = self.profiles.get('def_efficiency', {}).get((def_, zone, 'pass'), {})
+                    
+                    if def_stats:
+                        # Get the League Averages
+                        l_sack = self.league_avgs.get('sack', 0.07)
+                        l_comp = self.league_avgs.get('complete', 0.65)
+                        l_int = self.league_avgs.get('intercept', 0.025)
+                        l_fum = self.league_avgs.get('pass_fumble', 0.01)
+    
+                        # Apply the Ratio: Offense * (Defense / League Average)
+                        stats['sack'] = stats['sack'] * (def_stats.get('sack', l_sack) / l_sack) if l_sack > 0 else stats['sack']
+                        stats['complete'] = stats['complete'] * (def_stats.get('complete', l_comp) / l_comp) if l_comp > 0 else stats['complete']
+                        stats['intercept'] = stats['intercept'] * (def_stats.get('intercept', l_int) / l_int) if l_int > 0 else stats['intercept']
+                        stats['fumble'] = stats['fumble'] * (def_stats.get('fumble', l_fum) / l_fum) if l_fum > 0 else stats['fumble']
+                        
+                        # Cap extremes to prevent math errors during simulation
+                        stats['complete'] = np.clip(stats['complete'], 0.35, 0.85)
+                        stats['sack'] = np.clip(stats['sack'], 0.01, 0.25)
+                        stats['intercept'] = np.clip(stats['intercept'], 0.005, 0.08)
+    
                 # --- PREVENT DEFENSE LOGIC ---
                 if ctx == 'trailing' and clock < 600 and ptype == 'pass':
                     stats['complete'] += 0.08  # Defenses give up underneath stuff
@@ -3255,8 +3389,8 @@ def loop_through_simulations(date_str):
                 
                 # (Deleted the duplicate 'stats =' line that was here)
     
-                # Get Defense Adjustments
-                def_mult = self.def_mults.get(def_, {}).get(ptype, 1.0)
+                # Get Defense Adjustments (Now Zone-Specific)
+                def_mult = self.def_mults.get((def_, zone), {}).get(ptype, 1.0)
                 if def_ == home: def_mult *= (1 - hfa_impact)
                 
                 # --- CALL THE NEW HELPER FUNCTION ---
@@ -3723,26 +3857,26 @@ def loop_through_simulations(date_str):
 
 if __name__ == "__main__":
     week_starting_dates = [
-#        "09/03/2025", 
-#        "09/10/2025", 
-#        "09/17/2025", 
-#        "09/24/2025", 
-#        "10/01/2025", 
-#        "10/08/2025", 
-#        "10/15/2025",
-#        "10/22/2025" 
+        "09/03/2025", 
+        "09/10/2025", 
+        "09/17/2025", 
+        "09/24/2025", 
+        "10/01/2025", 
+        "10/08/2025", 
+        "10/15/2025",
+        "10/22/2025", 
         "10/29/2025",
         "11/05/2025",
-        "11/12/2025",
-        "11/19/2025", 
-        "11/26/2025",
-        "11/29/2025",
-        "12/03/2025",
-        "12/10/2025", 
-        "12/17/2025",
-        "12/24/2025",
-        "12/26/2025",
-        "12/31/2025"
+        "11/12/2025"
+#        "11/19/2025", 
+#        "11/26/2025",
+#        "11/29/2025",
+#        "12/03/2025",
+#        "12/10/2025", 
+#        "12/17/2025",
+#        "12/24/2025",
+#        "12/26/2025",
+#        "12/31/2025"
     ]
 
     for date in week_starting_dates:
