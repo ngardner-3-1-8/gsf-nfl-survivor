@@ -2,8 +2,8 @@ name: Daily Schedule & Ranking Update
 
 on:
   schedule:
-    # Runs at 12:00 UTC every day (8:00 AM ET during Daylight Savings, 7:00 AM Standard)
-    - cron: '0 12 * * *'
+    # Runs at 12:00 UTC every day (6:30 AM ET during Daylight Savings, 5:30 AM Standard)
+    - cron: '30 10 * * *'
   # Allows you to run this workflow manually from the Actions tab for testing
   workflow_dispatch:
 
