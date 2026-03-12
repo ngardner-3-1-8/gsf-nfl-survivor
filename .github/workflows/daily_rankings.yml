@@ -3,8 +3,8 @@ name: Daily Internal Rankings
 on:
   schedule:
     # Runs at 15:00 UTC Daily
-    # (10:00 AM EST / 11:00 AM EDT)
-    - cron: '0 15 * * *'
+    # (8:00 AM EST / 9:00 AM EDT)
+    - cron: '0 13 * * *'
   workflow_dispatch: # Manual run button
 
 jobs:
