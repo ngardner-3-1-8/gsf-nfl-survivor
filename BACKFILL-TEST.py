@@ -2410,7 +2410,7 @@ def loop_through_simulations(date_str):
     collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data(schedule_df)
     
     # --- CONFIGURATION ---
-    SIMULATIONS = 2000
+    SIMULATIONS = 20
     HISTORY_DAYS = 840
     CURRENT_SEASON = target_year
     DECAY_RATE = 0.00475
