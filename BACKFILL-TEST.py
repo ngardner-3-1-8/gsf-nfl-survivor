@@ -3803,8 +3803,8 @@ def loop_through_simulations(date_str):
                     prob_away_cover = (margin > row['Home Team Sportsbook Spread']).mean()
                     
                     # 2. Probability of Total going Over
-                    prob_over = (total > row['Total Line']).mean()
-                    prob_under = (total < row['Total Line']).mean()
+                    prob_over = (total > row['Total']).mean()
+                    prob_under = (total < row['Total']).mean()
                     
                     # 4. Calculate Stats & Labels
                     # --- FIX: Define spread_var BEFORE using it in the function ---
