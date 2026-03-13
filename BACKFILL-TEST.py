@@ -3762,8 +3762,13 @@ def loop_through_simulations(date_str):
             on='Game ID', 
             how='left'
         )
-    
-        for index, row in collect_schedule_travel_ranking_data_df.iterrows():
+
+# --- NEW: Filter to only simulate the upcoming week's games ---
+        weekly_games_df = collect_schedule_travel_ranking_data_df[
+            collect_schedule_travel_ranking_data_df['Week'] == upcoming_week
+        ].copy()
+        for index, row in weekly_games_df.iterrows():
+####        for index, row in collect_schedule_travel_ranking_data_df.iterrows():
             try:
                 # Extract Row Data
                 away_full = row['Away Team']
