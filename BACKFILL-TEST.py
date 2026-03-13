@@ -3799,12 +3799,12 @@ def loop_through_simulations(date_str):
                     total = df_sim['Total']
 
                     # 1. Probability Home Team covers the spread (Margin is Away - Home)
-                    prob_home_cover = (margin < row['Home Team Spread']).mean()
-                    prob_away_cover = 1 - prob_home_cover
+                    prob_home_cover = (margin < row['Home Team Sportsbook Spread']).mean()
+                    prob_away_cover = (margin > row['Home Team Sportsbook Spread']).mean()
                     
                     # 2. Probability of Total going Over
                     prob_over = (total > row['Total Line']).mean()
-                    prob_under = 1 - prob_over
+                    prob_under = (total < row['Total Line']).mean()
                     
                     # 4. Calculate Stats & Labels
                     # --- FIX: Define spread_var BEFORE using it in the function ---
@@ -3843,8 +3843,8 @@ def loop_through_simulations(date_str):
                         'Sim_Prob_Land_7': prob_land_7,
                         'Sim_Home_Cover_Prob': prob_home_cover,
                         'Sim_Away_Cover_Prob': prob_away_cover,
-                        'Sim_Over_Prob': prob_over,
-                        'Sim_Under_Prob': prob_under
+                        'Sim_Prob_Over': prob_over,
+                        'Sim_Prob_Under': prob_under
                         
                     }
                     
