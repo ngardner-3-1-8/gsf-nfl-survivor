@@ -1272,7 +1272,8 @@ def loop_through_simulations(date_str):
                         'Home Team': team_map.get(row['home_team'], row['home_team']),
                         'Home Odds': row['home_moneyline'], # nflreadpy already provides American odds
                         'Away Spread': away_spread,
-                        'Home Spread': home_spread
+                        'Home Spread': home_spread,
+                        'Total': row['total_line'],
                     })
         
                 return pd.DataFrame(formatted_games)
@@ -1344,6 +1345,7 @@ def loop_through_simulations(date_str):
                     'Home Odds': row['home_moneyline'],
                     'Away Spread': away_spread,
                     'Home Spread': home_spread,
+                    'Total': row['total_line'],
                     'Source': 'Historical (nflreadpy)' # Tag source for debugging
                 })
             
@@ -1391,12 +1393,16 @@ def loop_through_simulations(date_str):
                                     for outcome in market['outcomes']:
                                         if outcome['name'] == home_team: game_odds['home_spread'].append(outcome['point'])
                                         elif outcome['name'] == away_team: game_odds['away_spread'].append(outcome['point'])
+                                elif market['key'] == 'totals': # <--- ADDED: Parsing Totals
+                                    for outcome in market['outcomes']:
+                                        game_odds['totals'].append(outcome['point'])
         
                         # Averages
                         avg_home = sum(game_odds['home'])/len(game_odds['home']) if game_odds['home'] else None
                         avg_away = sum(game_odds['away'])/len(game_odds['away']) if game_odds['away'] else None
                         avg_home_spread = sum(game_odds['home_spread'])/len(game_odds['home_spread']) if game_odds['home_spread'] else None
                         avg_away_spread = sum(game_odds['away_spread'])/len(game_odds['away_spread']) if game_odds['away_spread'] else None
+                        avg_total = sum(game_odds['totals'])/len(game_odds['totals']) if game_odds['totals'] else None
         
                         # Convert Decimal to American
                         def dec_to_amer(dec):
@@ -1413,6 +1419,7 @@ def loop_through_simulations(date_str):
                             'Home Odds': dec_to_amer(avg_home),
                             'Away Spread': avg_away_spread,
                             'Home Spread': avg_home_spread,
+                            'Total': avg_total,
                             'Source': 'Live API'
                         })
             except Exception as e:
@@ -1435,7 +1442,7 @@ def loop_through_simulations(date_str):
                     
                     if mask.any():
                         # Update specific columns
-                        cols_to_update = ['Time', 'Away Odds', 'Home Odds', 'Away Spread', 'Home Spread', 'Source']
+                        cols_to_update = ['Time', 'Away Odds', 'Home Odds', 'Away Spread', 'Home Spread', 'Total', 'Source']
                         df_base.loc[mask, cols_to_update] = row[cols_to_update].values
                     else:
                         # Optional: If for some reason the game isn't in nflreadpy (rare), append it
@@ -1498,6 +1505,7 @@ def loop_through_simulations(date_str):
             csv_df = df.copy()
         
             # Initialize columns that will be populated by DraftKings data or overridden with internal data
+            csv_df['Total Line'] = np.nan
             csv_df['Home Team Sportsbook Moneyline'] = np.nan
             csv_df['Away Team Sportsbook Moneyline'] = np.nan
             csv_df['Sportsbook Favorite'] = np.nan
@@ -1519,7 +1527,8 @@ def loop_through_simulations(date_str):
                         csv_df.loc[index, 'Away Team Sportsbook Moneyline'] = matching_row.iloc[0]['Away Odds']
                         csv_df.loc[index, 'Home Team Sportsbook Moneyline'] = matching_row.iloc[0]['Home Odds']
                         csv_df.loc[index, 'Away Team Sportsbook Spread'] = matching_row.iloc[0]['Away Spread']
-                        csv_df.loc[index, 'Home Team Sportsbook Spread'] = matching_row.iloc[0]['Home Spread']					
+                        csv_df.loc[index, 'Home Team Sportsbook Spread'] = matching_row.iloc[0]['Home Spread']
+                        csv_df.loc[index, 'Total Line'] = matching_row.iloc[0].get('Total', np.nan)
                         
                         # Determine Favorite/Underdog based on DraftKings odds
                         # Assuming odds <= -110 typically indicates the favorite
