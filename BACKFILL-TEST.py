@@ -3797,6 +3797,14 @@ def loop_through_simulations(date_str):
                     margin = df_sim['Margin']
                     df_sim['Total'] = df_sim['Home_Score'] + df_sim['Away_Score']
                     total = df_sim['Total']
+
+                    # 1. Probability Home Team covers the spread (Margin is Away - Home)
+                    prob_home_cover = (margin < row['Home Team Spread']).mean()
+                    prob_away_cover = 1 - prob_home_cover
+                    
+                    # 2. Probability of Total going Over
+                    prob_over = (total > row['Total Line']).mean()
+                    prob_under = 1 - prob_over
                     
                     # 4. Calculate Stats & Labels
                     # --- FIX: Define spread_var BEFORE using it in the function ---
@@ -3832,7 +3840,12 @@ def loop_through_simulations(date_str):
                         'Sim_Home_Win_Pct': (margin < 0).mean(),
                         'Sim_Away_Win_Pct': (margin > 0).mean(),
                         'Sim_Prob_Land_3': prob_land_3,
-                        'Sim_Prob_Land_7': prob_land_7
+                        'Sim_Prob_Land_7': prob_land_7,
+                        'Sim_Home_Cover_Prob': prob_home_cover,
+                        'Sim_Away_Cover_Prob': prob_away_cover,
+                        'Sim_Over_Prob': prob_over,
+                        'Sim_Under_Prob': prob_under
+                        
                     }
                     
                     simulation_results.append(res)
@@ -3862,24 +3875,24 @@ def loop_through_simulations(date_str):
 
 if __name__ == "__main__":
     week_starting_dates = [
-#        "09/03/2025" 
-#        "09/10/2025" 
-#        "09/17/2025", 
-#        "09/24/2025", 
-#        "10/01/2025", 
-#        "10/08/2025",
-#        "10/15/2025",
-#        "10/22/2025", 
-#        "10/29/2025",
-#        "11/05/2025",
-#        "11/12/2025"
-#        "11/19/2025", 
-#        "11/26/2025",
-#        "11/29/2025",
-#        "12/03/2025",
-#        "12/10/2025", 
-#        "12/17/2025",
-#        "12/24/2025"
+        "09/03/2025",
+        "09/10/2025", 
+        "09/17/2025", 
+        "09/24/2025", 
+        "10/01/2025", 
+        "10/08/2025",
+        "10/15/2025",
+        "10/22/2025", 
+        "10/29/2025",
+        "11/05/2025",
+        "11/12/2025",
+        "11/19/2025", 
+        "11/26/2025",
+        "11/29/2025",
+        "12/03/2025",
+        "12/10/2025", 
+        "12/17/2025",
+        "12/24/2025",
         "12/26/2025",
         "12/31/2025"
     ]
