@@ -2410,7 +2410,7 @@ def loop_through_simulations(date_str):
     collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data(schedule_df)
     
     # --- CONFIGURATION ---
-    SIMULATIONS = 5000
+    SIMULATIONS = 2000
     HISTORY_DAYS = 840
     CURRENT_SEASON = target_year
     DECAY_RATE = 0.00475
@@ -2426,6 +2426,129 @@ def loop_through_simulations(date_str):
         'ARZ': 'ARI', 'BLT': 'BAL', 'CLV': 'CLE', 'HST': 'HOU',
         'LAR': 'LA', 'STL': 'LA', 'SD': 'LAC', 'OAK': 'LV'
     }
+
+    # TYPICAL STARTERS MAP (Primary 2025 Starters)
+    TYPICAL_STARTERS = {
+        'ARI': 'K.Murray',
+        'ATL': 'M.Penix',
+        'BAL': 'L.Jackson',
+        'BUF': 'J.Allen',
+        'CAR': 'B.Young',
+        'CHI': 'C.Williams',
+        'CIN': 'J.Burrow',
+        'CLE': 'S.Sanders',
+        'DAL': 'D.Prescott',
+        'DEN': 'B.Nix',
+        'DET': 'J.Goff',
+        'GB': 'J.Love',
+        'HOU': 'C.Stroud',
+        'IND': 'D.Jones',
+        'JAX': 'T.Lawrence',
+        'KC': 'P.Mahomes',
+        'LA': 'M.Stafford',
+        'LAC': 'J.Herbert',
+        'LV': 'G.Smith',
+        'MIA': 'T.Tagovailoa',
+        'MIN': 'J.McCarthy',
+        'NE': 'D.Maye',
+        'NO': 'T.Shough',
+        'NYG': 'J.Dart',
+        'NYJ': 'B.Cook',
+        'PHI': 'J.Hurts',
+        'PIT': 'A.Rodgers',
+        'SEA': 'S.Darnold',
+        'SF': 'B.Purdy',
+        'TB': 'B.Mayfield',
+        'TEN': 'C.Ward',
+        'WAS': 'J.Daniels'
+    }
+    
+    # MANUAL OVERRIDE: [Backup Name, Wk1, Wk2, Wk3, Wk4...]
+    # True = Backup is starting, False = Typical Starter is playing
+    MANUAL_CURRENT_STARTERS = {
+        'ARI': [None, None, None, None, None, 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett'],
+        'ATL': [None, None, None, None, None, None, None, 'K.Cousins', None, None, None, 'K.Cousins', 'K.Cousins', 'K.Cousins', 'K.Cousins', 'K.Cousins', 'K.Cousins', 'K.Cousins'],
+        'BAL': [None, None, None, None, 'C.Rush', 'C.Rush', 'T.Huntley', 'T.Huntley', None, None, None, None, None, None, None, None, 'T.Huntley', None],
+        'BUF': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'M.Trubisky'],
+        'CAR': [None, None, None, None, None, None, None, 'A.Dalton', None, None, None, None, None, None, None, None, None, None],
+        'CHI': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'CIN': [None, 'J.Browning', 'J.Browning', 'J.Browning', 'J.Browning', 'J.Flacco', 'J.Flacco', 'J.Flacco', 'J.Flacco', 'J.Flacco', 'J.Flacco', 'J.Flacco', None, None, None, None, None, None],
+        'CLE': ['J.Flacco', 'J.Flacco', 'J.Flacco', 'J.Flacco', 'D.Gabriel', 'D.Gabriel', 'D.Gabriel', 'D.Gabriel', 'D.Gabriel', 'D.Gabriel', 'D.Gabriel', None, None, None, None, None, None, None],
+        'DAL': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'J.Milton III'],
+        'DEN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'DET': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'GB': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'M.Willis', 'M.Willis', 'C.Tune'],
+        'HOU': [None, None, None, None, None, None, None, None, 'D.Mills', 'D.Mills', 'D.Mills', 'D.Mills', None, None, None, None, None, None],
+        'IND': [None, None, None, None, None, None, None, None, None, None, None, None, None, 'R.Leonard', 'P.Rivers', 'P.Rivers', 'P.Rivers', 'R.Leonard'],
+        'JAX': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'KC': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'C.Oladokun', 'C.Oladokun', 'S.Buechele'],
+        'LV': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, "A.O'Connell"],
+        'LAC': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'T.Lance'],
+        'LA': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'MIA': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'Q.Ewers', 'Q.Ewers', 'Q.Ewers'],
+        'MIN': [None, None, 'C.Wentz', 'C.Wentz', 'C.Wentz','C.Wentz', 'C.Wentz', 'C.Wentz', None, None, None, None, 'M.Brosmer', None, None, None, 'M.Brosmer', None],
+        'NE': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'NO': ['S.Rattler', 'S.Rattler', 'S.Rattler', 'S.Rattler', 'S.Rattler', 'S.Rattler', 'S.Rattler', 'S.Rattler', None, None, None, None, None, None, None, None, None, None],
+        'NYG': ['R.Wilson', 'R.Wilson', 'R.Wilson', None, None, None, None, None, None, None, 'J.Winston', 'J.Winston', None, None, None, None, None, None],
+        'NYJ': ['J.Fields', 'T.Taylor', 'T.Taylor', 'J.Fields', 'J.Fields', 'J.Fields', 'T.Taylor', 'J.Fields', 'J.Fields', 'J.Fields', 'J.Fields', 'T.Taylor', 'T.Taylor', None, None, None, None, None],
+        'PHI': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'T.McKee'],
+        'PIT': [None, None, None, None, None, None, None, None, None, None, 'M.Rudolph', 'M.Rudolph', None, None, None, None, None, None],
+        'SEA': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'SF': [None, 'M.Jones', 'M.Jones', None, 'M.Jones', 'M.Jones', 'M.Jones', 'M.Jones', 'M.Jones', 'M.Jones', None, None, None, None, None, None, None, None],
+        'TB': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'TEN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        'WAS': [None, None, 'M.Mariota', 'M.Mariota', None, None, None, 'M.Mariota', None, 'M.Mariota', 'M.Mariota', 'M.Mariota', 'M.Mariota', None, 'M.Mariota', 'M.Mariota', 'J.Johnson', 'J.Johnson']
+    }
+
+    def get_qb_ratings_fast(years, target_year, current_upcoming_week):
+        print(f"Loading Player Stats for {years}...")
+        try:
+            stats = nfl.load_player_stats(seasons=years).to_pandas()
+            qbs = stats[stats['position'] == 'QB'].copy()
+            
+            qbs = qbs[
+                (qbs['season'] < target_year) | 
+                ((qbs['season'] == target_year) & (qbs['week'] < current_upcoming_week))
+            ].copy()
+            
+            if 'sacks_suffered' in qbs.columns:
+                qbs['sacks_val'] = qbs['sacks_suffered']
+            elif 'sacks' in qbs.columns:
+                qbs['sacks_val'] = qbs['sacks']
+            else:
+                qbs['sacks_val'] = 0 
+                
+            cols_to_fix = ['passing_epa', 'rushing_epa', 'attempts', 'carries']
+            for col in cols_to_fix:
+                if col in qbs.columns:
+                    qbs[col] = qbs[col].fillna(0)
+                else:
+                    qbs[col] = 0
+            qbs['sacks_val'] = qbs['sacks_val'].fillna(0)
+                
+            qbs['total_epa'] = qbs['passing_epa'] + qbs['rushing_epa']
+            qbs['total_involvement'] = qbs['attempts'] + qbs['sacks_val'] + qbs['carries']
+            
+            qb_career = qbs.groupby('player_name').agg(
+                career_epa=('total_epa', 'sum'),
+                career_plays=('total_involvement', 'sum')
+            ).reset_index()
+            
+            experienced_qbs = qb_career[qb_career['career_plays'] > 150].copy()
+            experienced_qbs['raw_epa_per_play'] = experienced_qbs['career_epa'] / experienced_qbs['career_plays']
+            
+            replacement_epa = experienced_qbs['raw_epa_per_play'].quantile(0.25) if not experienced_qbs.empty else -0.05
+            
+            B = 100 
+            qb_career['epa_per_play'] = (qb_career['career_epa'] + (B * replacement_epa)) / (qb_career['career_plays'] + B)
+            
+            qb_rating_map = pd.Series(qb_career.epa_per_play.values, index=qb_career.player_name).to_dict()
+            
+            return qb_rating_map, replacement_epa
+        
+    except Exception as e:
+        print(f"Error loading player stats: {e}")
+        return {}, -0.05
     
     def weighted_avg_and_std(values, weights):
         if len(values) == 0: return 0.0, 0.0
@@ -2984,7 +3107,7 @@ def loop_through_simulations(date_str):
                 # KICKOFF RETURN TOUCHDOWN (0.5% chance)
                 return 100
     
-        def simulate_matchup(self, home, away, wind_speed=0, temp=70, precip=0, is_dome=False, print_sample_game=False):
+        def simulate_matchup(self, home, away, wind_speed=0, temp=70, precip=0, is_dome=False, print_sample_game=False, home_qb_delta=0.0, away_qb_delta=0.0):
             results = []
     
             is_snow = (temp <= 32 and precip > 0)
@@ -2994,14 +3117,16 @@ def loop_through_simulations(date_str):
             hfa_impact = self.hfa_map.get(h_lookup, HFA_DEFENSE_BOOST_DEFAULT)
             
             print(f"Simulating {home} vs {away} | HFA: {hfa_impact:.1%} | Wind: {wind_speed}mph")
+
+            qb_deltas = {home: home_qb_delta, away: away_qb_delta}
             
             if print_sample_game:
                 print(f"\n{'='*60}\nSAMPLE GAME LOG ({away} @ {home})\n{'='*60}")
-                self._play_game(home, away, wind_speed, temp, is_rain, is_snow, is_dome, hfa_impact, verbose=True)
+                self._play_game(home, away, wind_speed, temp, is_rain, is_snow, is_dome, hfa_impact, qb_deltas, verbose=True)
                 print(f"{'='*60}\nEND SAMPLE LOG\n{'='*60}\n")
     
             for _ in range(SIMULATIONS):
-                res = self._play_game(home, away, wind_speed, temp, is_rain, is_snow, is_dome, hfa_impact, verbose=False)
+                res = self._play_game(home, away, wind_speed, temp, is_rain, is_snow, is_dome, hfa_impact, qb_deltas, verbose=False)
                 results.append(res)
                 
             return pd.DataFrame(results)
@@ -3044,7 +3169,7 @@ def loop_through_simulations(date_str):
             if verbose: print(f"   >>> {desc} ({off} {scores[off]} - {def_} {scores[def_]})")
             return
     
-        def _play_game(self, home, away, wind_speed, temp, is_rain, is_snow, is_dome, hfa_impact, verbose=False):
+        def _play_game(self, home, away, wind_speed, temp, is_rain, is_snow, is_dome, hfa_impact, qb_deltas, verbose=False):
             clock = 3600
             phase = 'REG' 
             scores = {home: 0, away: 0}
@@ -3127,6 +3252,10 @@ def loop_through_simulations(date_str):
                 # --- PLAY CALL ---
                 pass_prob = self.profiles['playcalling'].get((off, down, d_bucket, ctx))
                 if pass_prob is None: pass_prob = self.league_pass_rates.get((down, d_bucket, ctx), 0.55)
+
+                # --- NEW: QB INJURY ADJUSTMENT (PLAY CALLING) ---
+                # A drop of -0.20 in EPA drops the passing rate by 4%
+                pass_prob += (qb_deltas[off] * 0.20)
     
                 # WIND: severe penalty if over 20mph
                 if not is_dome and wind_speed > 25:
@@ -3354,6 +3483,22 @@ def loop_through_simulations(date_str):
     
                 # --- DYNAMIC OFFENSE/DEFENSE BLENDING ---
                 if ptype == 'pass':
+
+                    qbd = qb_deltas[off]
+
+                    # 1. Completion Percentage (e.g., -0.20 EPA = -3% completions)
+                    stats['complete'] += (qbd * 0.15)
+                    
+                    # 2. Interceptions (e.g., -0.20 EPA = +1% INT rate)
+                    stats['intercept'] -= (qbd * 0.05)
+                    
+                    # 3. Yards Per Completion (e.g., -0.20 EPA = -2.0 yards per completion avg)
+                    stats['mu'] += (qbd * 10.0)
+                    
+                    # Ensure we don't break the mathematical bounds of the simulator
+                    stats['complete'] = np.clip(stats['complete'], 0.30, 0.85)
+                    stats['intercept'] = max(0.005, stats['intercept'])
+                    
                     def_stats = self.profiles.get('def_efficiency', {}).get((def_, zone, 'pass'), {})
                     
                     if def_stats:
@@ -3741,6 +3886,24 @@ def loop_through_simulations(date_str):
         print(f"\nStarting Simulations for {len(collect_schedule_travel_ranking_data_df)} games...")
         print(f"{'Game':<30} | {'Source':<15} | {'Wind':<5} | {'Spread':<6} | {'Spread Var':<10}")
         print("-" * 85)
+
+        # Helper to find the baseline rating of the QBs who actually threw the passes in our PBP data
+        def get_hist_qb_baseline(team, pbp, qb_map, rep_epa):
+            team_pass = pbp[(pbp['posteam'] == team) & (pbp['play_type'] == 'pass')].copy()
+            if team_pass.empty: return rep_epa
+            team_pass['qb_rating'] = team_pass['passer_player_name'].map(qb_map).fillna(rep_epa)
+            return np.average(team_pass['qb_rating'], weights=team_pass['time_weight'])
+
+        hist_baselines = {}
+        for t in sim.pbp['posteam'].dropna().unique():
+            hist_baselines[t] = get_hist_qb_baseline(t, sim.pbp, qb_rating_map, replacement_epa)
+            
+        def get_starter(team, week):
+            if team in MANUAL_CURRENT_STARTERS:
+                manual = MANUAL_CURRENT_STARTERS[team]
+                if week - 1 < len(manual) and manual[week - 1] is not None:
+                    return manual[week - 1]
+            return TYPICAL_STARTERS.get(team, "Unknown")
     
         # 1. UPDATED THRESHOLDS: Based on your model's actual outputs (140-210 range)
         def get_variance_label(val, metric_type='combined'):
@@ -3790,7 +3953,13 @@ def loop_through_simulations(date_str):
                 lon = row['Actual Stadium Longitude']
                 sched_temp = row.get('temp') 
                 sched_wind = row.get('wind')
-                sched_desc = row.get('weather') # <--- ADD THIS LINE
+                sched_desc = row.get('weather')
+
+                away_qb = get_starter(away, upcoming_week)
+                home_qb = get_starter(home, upcoming_week)
+                
+                away_delta = qb_rating_map.get(away_qb, replacement_epa) - hist_baselines.get(away, replacement_epa)
+                home_delta = qb_rating_map.get(home_qb, replacement_epa) - hist_baselines.get(home, replacement_epa)
                 
                 # 1. Get Weather
                 raw_wind, precip, temp, is_dome, source = get_weather_for_game(
@@ -3800,7 +3969,10 @@ def loop_through_simulations(date_str):
                     row_desc=sched_desc
                 )
                 # 2. Run Simulation
-                df_sim = sim.simulate_matchup(home, away, wind_speed=raw_wind, temp=temp, precip=precip, is_dome=is_dome)
+                df_sim = sim.simulate_matchup(
+                    home, away, wind_speed=raw_wind, temp=temp, precip=precip, 
+                    is_dome=is_dome, home_qb_delta=home_delta, away_qb_delta=away_delta
+                )
                 if not df_sim.empty:
                     # 3. Define the Series variables
                     margin = df_sim['Margin']
