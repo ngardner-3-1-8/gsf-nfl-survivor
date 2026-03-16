@@ -2546,9 +2546,9 @@ def loop_through_simulations(date_str):
             
             return qb_rating_map, replacement_epa
         
-    except Exception as e:
-        print(f"Error loading player stats: {e}")
-        return {}, -0.05
+        except Exception as e:
+            print(f"Error loading player stats: {e}")
+            return {}, -0.05
     
     def weighted_avg_and_std(values, weights):
         if len(values) == 0: return 0.0, 0.0
