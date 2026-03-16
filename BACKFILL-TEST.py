@@ -3889,8 +3889,6 @@ def loop_through_simulations(date_str):
         print(f"\nStarting Simulations for {len(collect_schedule_travel_ranking_data_df)} games...")
         print(f"{'Game':<30} | {'Source':<15} | {'Wind':<5} | {'Spread':<6} | {'Spread Var':<10}")
         print("-" * 85)
-
-        sim.pbp['posteam'] = sim.pbp['posteam'].map(sim.TEAM_MAP).fillna(sim.pbp['posteam'])
         
         # 3. Calculate historical baselines (Cleaned up logic)
         print("Calculating team historical QB baselines...")
