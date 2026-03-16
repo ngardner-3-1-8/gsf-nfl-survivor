@@ -3880,23 +3880,29 @@ def loop_through_simulations(date_str):
     # --- MAIN EXECUTION BLOCK ---
     if __name__ == "__main__":
         sim = AdvancedNFLSimulator()
-        sim.load_data() 
+        sim.load_data()
+
+        years_to_load = [target_year, target_year - 1, target_year - 2, target_year - 3]
+        qb_rating_map, replacement_epa = get_qb_ratings_fast(years_to_load, target_year, upcoming_week)
         
         simulation_results = []
         print(f"\nStarting Simulations for {len(collect_schedule_travel_ranking_data_df)} games...")
         print(f"{'Game':<30} | {'Source':<15} | {'Wind':<5} | {'Spread':<6} | {'Spread Var':<10}")
         print("-" * 85)
 
-        # Helper to find the baseline rating of the QBs who actually threw the passes in our PBP data
-        def get_hist_qb_baseline(team, pbp, qb_map, rep_epa):
-            team_pass = pbp[(pbp['posteam'] == team) & (pbp['play_type'] == 'pass')].copy()
-            if team_pass.empty: return rep_epa
-            team_pass['qb_rating'] = team_pass['passer_player_name'].map(qb_map).fillna(rep_epa)
-            return np.average(team_pass['qb_rating'], weights=team_pass['time_weight'])
-
+        sim.pbp['posteam'] = sim.pbp['posteam'].map(sim.TEAM_MAP).fillna(sim.pbp['posteam'])
+        
+        # 3. Calculate historical baselines (Cleaned up logic)
+        print("Calculating team historical QB baselines...")
         hist_baselines = {}
         for t in sim.pbp['posteam'].dropna().unique():
-            hist_baselines[t] = get_hist_qb_baseline(t, sim.pbp, qb_rating_map, replacement_epa)
+            team_pass = sim.pbp[(sim.pbp['posteam'] == t) & (sim.pbp['play_type'] == 'pass')].copy()
+            if not team_pass.empty:
+                # Map passers to ratings and calculate weighted average
+                team_pass['qb_rating'] = team_pass['passer_player_name'].map(qb_rating_map).fillna(replacement_epa)
+                hist_baselines[t] = np.average(team_pass['qb_rating'], weights=team_pass['time_weight'])
+            else:
+                hist_baselines[t] = replacement_epa
             
         def get_starter(team, week):
             if team in MANUAL_CURRENT_STARTERS:
