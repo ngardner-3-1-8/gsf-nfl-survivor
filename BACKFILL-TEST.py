@@ -2409,48 +2409,48 @@ def loop_through_simulations(date_str):
     
     collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data(schedule_df)
 
-    # --- Helper function used in the main logic (Moved from the bottom) ---
-    def get_expected_availability(team_name, availability_dict: Dict):
+    def calculate_team_availability(picks_data_path, upcoming_week):
         """
-        Calculates the expected availability percentage for a team.
-        Normalizes the input 'team_name' to Full Name to ensure it matches the dictionary keys.
+        Reads the survivor picks CSV and calculates availability based 
+        on who is still 'ALIVE' (Total_Wins >= upcoming_week - 1).
         """
-        # 1. Define the mapping (Abbr -> Full Name)
-        # Ensure this matches the keys used in your availability_dict
-        team_name_map = {
-            "ARI": "Arizona Cardinals", "ATL": "Atlanta Falcons", "BAL": "Baltimore Ravens",
-            "BUF": "Buffalo Bills", "CAR": "Carolina Panthers", "CHI": "Chicago Bears",
-            "CIN": "Cincinnati Bengals", "CLE": "Cleveland Browns", "DAL": "Dallas Cowboys",
-            "DEN": "Denver Broncos", "DET": "Detroit Lions", "GB": "Green Bay Packers",
-            "HOU": "Houston Texans", "IND": "Indianapolis Colts", "JAX": "Jacksonville Jaguars",
-            "KC": "Kansas City Chiefs", "LV": "Las Vegas Raiders", "LAC": "Los Angeles Chargers",
-            "LAR": "Los Angeles Rams", "MIA": "Miami Dolphins", "MIN": "Minnesota Vikings",
-            "NE": "New England Patriots", "NO": "New Orleans Saints", "NYG": "New York Giants",
-            "NYJ": "New York Jets", "PHI": "Philadelphia Eagles", "PIT": "Pittsburgh Steelers",
-            "SF": "San Francisco 49ers", "SEA": "Seattle Seahawks", "TB": "Tampa Bay Buccaneers",
-            "TEN": "Tennessee Titans", "WAS": "Washington Commanders", "WSH": "Washington Commanders"
-        }
-    
-        # 2. Normalize the lookup key
-        # If team_name is "ARI", this becomes "Arizona Cardinals"
-        # If team_name is "Arizona Cardinals", this stays "Arizona Cardinals"
-        full_team_name = team_name_map.get(team_name, team_name)
-    
-        # 3. Perform Lookup
-        # Try looking up the full name first
-        availability = availability_dict.get(full_team_name)
+        df = pd.read_csv(picks_data_path)
         
-        # Optional fallback: If not found, try the original abbreviation
-        if availability is None:
-            availability = availability_dict.get(team_name)
+        # 1. Identify who is still alive
+        alive_df = df[df['Total_Wins'] >= (upcoming_week - 1)].copy()
+        total_alive = len(alive_df)
+        
+        if total_alive == 0:
+            return {} # Handle case where everyone is eliminated
     
-        # 4. Handle missing/invalid values
-        if availability is None:
-            return 1.0
-        elif availability <= -0.01:
-            return 1.0      
-        else:
-            return float(availability)
+        # 2. Identify which columns contain previous picks
+        usage_cols = [f"Week_{i}" for i in range(1, upcoming_week)]
+        
+        # 3. Get list of all unique teams from your schedule/historical data
+        # (Assuming you have a list of all 32 teams)
+        all_teams = [
+            'Arizona Cardinals', 'Atlanta Falcons', 'Baltimore Ravens', 'Buffalo Bills',
+            'Carolina Panthers', 'Chicago Bears', 'Cincinnati Bengals', 'Cleveland Browns',
+            'Dallas Cowboys', 'Denver Broncos', 'Detroit Lions', 'Green Bay Packers',
+            'Houston Texans', 'Indianapolis Colts', 'Jacksonville Jaguars', 'Kansas City Chiefs',
+            'Las Vegas Raiders', 'Los Angeles Chargers', 'Los Angeles Rams', 'Miami Dolphins',
+            'Minnesota Vikings', 'New England Patriots', 'New Orleans Saints', 'New York Giants',
+            'New York Jets', 'Philadelphia Eagles', 'Pittsburgh Steelers', 'San Francisco 49ers',
+            'Seattle Seahawks', 'Tampa Bay Buccaneers', 'Tennessee Titans', 'Washington Commanders'
+        ]
+    
+        availability_dict = {}
+    
+        for team in all_teams:
+            # Count how many ALIVE entries ALREADY USED this team
+            # We check if the team name exists in any of the previous week columns
+            used_count = alive_df[usage_cols].apply(lambda row: row.str.contains(team, case=False, na=False).any(), axis=1).sum()
+            
+            # Availability % = (Total Alive - People who used them) / Total Alive
+            availability_pct = (total_alive - used_count) / total_alive
+            availability_dict[team] = availability_pct
+    
+        return availability_dict
 
     # --- Main Function ---
     def get_predicted_pick_percentages(config: dict, schedule_df: pd.DataFrame):
@@ -2459,18 +2459,27 @@ def loop_through_simulations(date_str):
         adjusting for team availability based on previous expected picks.
         """
     
-        selected_contest = config['selected_contest'] 
-        subcontest = config['subcontest'] 
-        starting_week = config['starting_week'] 
-        current_week_entries = config['current_week_entries'] 
-        week_requiring_two_selections = config.get('weeks_two_picks', []) 
-        week_requiring_three_selections = config.get('weeks_three_picks', []) 
-        team_availability = config.get('team_availabilities', {}) 
-        custom_pick_percentages = config.get('pick_percentages', {})
+#        selected_contest = config['selected_contest'] 
+#        subcontest = config['subcontest'] 
+        starting_week = upcoming_week
+########        current_week_entries = total_alive 
+#        week_requiring_two_selections = config.get('weeks_two_picks', []) 
+#        week_requiring_three_selections = config.get('weeks_three_picks', []) 
+        # 1. Define the path to your current season picks
+        picks_file = f"circa-pick-history/{target_year}_survivor_picks.csv"
+        
+        # 2. Calculate availability directly from the file instead of config
+        if os.path.exists(picks_file):
+            print(f"📊 Calculating team availability from {picks_file}...")
+            team_availability = calculate_team_availability(picks_file, starting_week)
+        else:
+            print(f"⚠️ Warning: {picks_file} not found. Defaulting to 100% availability.")
+            team_availability = {} # Falls back to 1.0 in your downstream logic
+#        custom_pick_percentages = config.get('pick_percentages', {})
         
         # NEW CONFIG OPTION: Set to True to auto-select best features
         run_optimization = config.get('optimize_features', True) 
-        n_features_to_keep = config.get('num_features', 15) 
+        n_features_to_keep = config.get('num_features', 30) 
     
         # Define features related to holiday games
         holiday_cols = ['Thanksgiving Favorite', 'Thanksgiving Underdog', 'Christmas Favorite', 'Christmas Underdog', 'Pre Thanksgiving', 'Pre Christmas']
