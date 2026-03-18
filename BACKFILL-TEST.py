@@ -3495,6 +3495,8 @@ def loop_through_simulations(date_str):
     #        nfl_schedule_df.to_csv("DK_Predicted_pick_percent.csv", index=False)
     	
         return nfl_schedule_df
+
+    collect_schedule_travel_ranking_data_nfl_schedule_df = get_predicted_pick_percentages(config, collect_schedule_travel_ranking_data_df)
     
     # --- CONFIGURATION ---
     SIMULATIONS = 2
