@@ -2478,8 +2478,8 @@ def loop_through_simulations(date_str):
 #        custom_pick_percentages = config.get('pick_percentages', {})
         
         # NEW CONFIG OPTION: Set to True to auto-select best features
-        run_optimization = config.get('optimize_features', True) 
-        n_features_to_keep = config.get('num_features', 30) 
+        run_optimization = True 
+        n_features_to_keep = 30
     
         # Define features related to holiday games
         holiday_cols = ['Thanksgiving Favorite', 'Thanksgiving Underdog', 'Christmas Favorite', 'Christmas Underdog', 'Pre Thanksgiving', 'Pre Christmas']
