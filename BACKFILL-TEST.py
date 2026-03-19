@@ -2462,7 +2462,7 @@ def loop_through_simulations(date_str):
 #        selected_contest = config['selected_contest'] 
 #        subcontest = config['subcontest'] 
         starting_week = upcoming_week
-########        current_week_entries = total_alive 
+        current_week_entries = total_alive 
 #        week_requiring_two_selections = config.get('weeks_two_picks', []) 
 #        week_requiring_three_selections = config.get('weeks_three_picks', []) 
         # 1. Define the path to your current season picks
