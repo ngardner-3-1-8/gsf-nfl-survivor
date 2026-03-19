@@ -2477,7 +2477,7 @@ def loop_through_simulations(date_str):
             team_availability = {} 
             current_week_entries = circa_total_entries # Or whatever your default fallback is
 #        custom_pick_percentages = config.get('pick_percentages', {})
-        current_week_entries = total_alive 
+#        current_week_entries = total_alive 
         # NEW CONFIG OPTION: Set to True to auto-select best features
         run_optimization = True 
         n_features_to_keep = 30
