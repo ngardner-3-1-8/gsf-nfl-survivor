@@ -2625,7 +2625,7 @@ def loop_through_simulations(date_str):
             ).fillna(-1).astype(int)
     
         if current_week_entries >= 0:
-            nfl_schedule_df.loc[nfl_schedule_df['Week_Num'] == starting_week, 'Total Remaining Entries at Start of Week'] = current_week_entries
+            nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'] = current_week_entries
         else:
             # Handle the -1 (auto-estimate) case based on contest
     #        if selected_contest == 'Circa':
@@ -2651,19 +2651,19 @@ def loop_through_simulations(date_str):
     #                default_entries = 20000
     #        else: # DraftKings
     #             default_entries = 20000 # Example
-            nfl_schedule_df.loc[nfl_schedule_df['Week_Num'] == starting_week, 'Total Remaining Entries at Start of Week'] = default_entries
+            nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'] = default_entries
         # --- End POOL SIZE LOGIC ---
     
         # Ensure 'Total Remaining Entries at Start of Week' has been correctly initialized
         # If the entry size is not set, the simulation will break.
-        if nfl_schedule_df.loc[nfl_schedule_df['Week_Num'] == starting_week, 'Total Remaining Entries at Start of Week'].empty:
+        if nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'].empty:
              print(f"Error: 'Total Remaining Entries' not set for starting week {starting_week}. Assuming {default_entries}.")
-             nfl_schedule_df.loc[nfl_schedule_df['Week_Num'] == starting_week, 'Total Remaining Entries at Start of Week'] = default_entries
+             nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'] = default_entries
         
-        max_week = nfl_schedule_df['Week_Num'].max() # Get max week from the data itself
+        max_week = nfl_schedule_df['Week'].max() # Get max week from the data itself
         
         # 2. Initialize 'used' dictionary (U_prev_week)
-        S_at_sw = nfl_schedule_df[nfl_schedule_df['Week_Num'] == starting_week]['Total Remaining Entries at Start of Week'].iloc[0]
+        S_at_sw = nfl_schedule_df[nfl_schedule_df['Week'] == starting_week]['Total Remaining Entries at Start of Week'].iloc[0]
         U_prev_week: Dict[str, float] = {}
         
         # Get all unique teams
@@ -2693,7 +2693,7 @@ def loop_through_simulations(date_str):
         # Loop through each week, starting from your defined starting week
         for current_week in range(starting_week, int(max_week) + 1):
             print(f"\n--- 🏈 Processing Week {current_week} of {max_week}---")
-            current_week_mask = nfl_schedule_df['Week_Num'] == current_week
+            current_week_mask = nfl_schedule_df['Week'] == current_week
             if not current_week_mask.any():
                 print(f"Skipping week {current_week} (no data found).")
                 continue
@@ -2890,24 +2890,24 @@ def loop_through_simulations(date_str):
     
             # C. Future Schedule Analysis (The "Look-ahead" counts)
             # We need to look at nfl_schedule_df for all weeks GREATER than current_week
-            future_schedule = nfl_schedule_df[nfl_schedule_df['Week_Num'] > current_week].copy()
+            future_schedule = nfl_schedule_df[nfl_schedule_df['Week'] > current_week].copy()
     
             if not future_schedule.empty:
                 # 1. Flatten the future schedule to a simple (Team, Week, WinPct) format
-                fut_home = future_schedule[['Home Team', 'Home Team Fair Odds', 'Week_Num']].rename(
+                fut_home = future_schedule[['Home Team', 'Home Team Fair Odds', 'Week']].rename(
                     columns={'Home Team': 'Team', 'Home Team Fair Odds': 'WinPct'}
                 )
-                fut_away = future_schedule[['Away Team', 'Away Team Fair Odds', 'Week_Num']].rename(
+                fut_away = future_schedule[['Away Team', 'Away Team Fair Odds', 'Week']].rename(
                     columns={'Away Team': 'Team', 'Away Team Fair Odds': 'WinPct'}
                 )
                 fut_long = pd.concat([fut_home, fut_away], ignore_index=True)
     
                 # 2. Identify if they are the "Top Team" in that future week
                 # Group by Week to find the Max Win % for that specific future week
-                weekly_max_series = fut_long.groupby('Week_Num')['WinPct'].transform('max')
+                weekly_max_series = fut_long.groupby('Week')['WinPct'].transform('max')
                 fut_long['Is_Top_Team'] = (fut_long['WinPct'] == weekly_max_series)
     
-                total_future_weeks = future_schedule['Week_Num'].nunique()
+                total_future_weeks = future_schedule['Week'].nunique()
                 # 3. Calculate the counts per team
                 # Create boolean columns for the criteria
                 fut_long['Future_Weeks_Top_Team'] = fut_long['Is_Top_Team'].astype(int)
@@ -3236,17 +3236,17 @@ def loop_through_simulations(date_str):
     		
             # Set the next week's starting pool size based on this week's survivors
             next_week = current_week + 1
-            nfl_schedule_df.loc[nfl_schedule_df['Week_Num'] == next_week, 'Total Remaining Entries at Start of Week'] = total_survivors_this_week
+            nfl_schedule_df.loc[nfl_schedule_df['Week'] == next_week, 'Total Remaining Entries at Start of Week'] = total_survivors_this_week
     
             
             print(f"Projected Pool Size for Week {next_week}: {total_survivors_this_week:,.0f}")
             
         # Create the boolean mask once, as it's used twice
             multiplier_mask = (selected_contest == 'Splash Sports') & \
-                          (nfl_schedule_df['Week_Num'].isin(week_requiring_two_selections)) & \
+                          (nfl_schedule_df['Week'].isin(week_requiring_two_selections)) & \
         	              (subcontest != "Week 9 Bloody Survivor ($100 Entry)")
             multiplier_mask_3 = (selected_contest == 'Splash Sports') & \
-                          (nfl_schedule_df['Week_Num'].isin(week_requiring_three_selections)) & \
+                          (nfl_schedule_df['Week'].isin(week_requiring_three_selections)) & \
         	              (subcontest == "Week 9 Bloody Survivor ($100 Entry)")
         	
             nfl_schedule_df['Home Expected Survival Rate'] = nfl_schedule_df['Home Team Fair Odds'] * nfl_schedule_df['Home Pick %']
@@ -3285,7 +3285,7 @@ def loop_through_simulations(date_str):
         
             # Get the absolute starting pool size from the main DF
             initial_pool_size = nfl_schedule_df.loc[
-                nfl_schedule_df['Week_Num'] == start_w,
+                nfl_schedule_df['Week'] == start_w,
                 'Total Remaining Entries at Start of Week'
             ].iloc[0]
             
@@ -3314,7 +3314,7 @@ def loop_through_simulations(date_str):
                     if remaining_entries_sim <= 0:
                         break
                         
-                    week_df = nfl_schedule_df[nfl_schedule_df['Week_Num'] == week].copy()
+                    week_df = nfl_schedule_df[nfl_schedule_df['Week'] == week].copy()
                     if week_df.empty:
                         continue
         
@@ -3371,7 +3371,7 @@ def loop_through_simulations(date_str):
                     
                     # Store week-level results for this trial
                     week_records.append({
-                        'Week_Num': week,
+                        'Week': week,
                         'Trial': trial,
                         'Eliminations': total_eliminations,
                         'Survivors': survivors_this_week
@@ -3398,14 +3398,14 @@ def loop_through_simulations(date_str):
             monte_df = pd.DataFrame(monte_results)
             
             # Group by week and get summary statistics
-            summary = monte_df.groupby('Week_Num').agg({
+            summary = monte_df.groupby('Week').agg({
                 'Eliminations': ['mean', 'std', 'median'],
                 'Survivors': ['mean', 'std', 'median']
             }).reset_index()
             
             # Clean up the multi-index column names
             summary.columns = [
-                'Week_Num', 
+                'Week', 
                 'Avg Eliminations', 'Std Eliminations', 'Median Eliminations',
                 'Avg Survivors', 'Std Survivors', 'Median Survivors'
             ]
@@ -3420,8 +3420,8 @@ def loop_through_simulations(date_str):
     
         # Merge back into main dataframe for charting
         nfl_schedule_df = nfl_schedule_df.merge(
-            monte_summary[['Week_Num', 'Avg Survivors', 'Avg Eliminations']],
-            on='Week_Num',
+            monte_summary[['Week', 'Avg Survivors', 'Avg Eliminations']],
+            on='Week',
             how='left'
         )
     	# 1. Convert all 'object' columns to 'str' to handle mixed types
