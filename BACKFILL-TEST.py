@@ -2485,10 +2485,32 @@ def loop_through_simulations(date_str):
         holiday_cols = ['Thanksgiving Favorite', 'Thanksgiving Underdog', 'Christmas Favorite', 'Christmas Underdog', 'Pre Thanksgiving', 'Pre Christmas']
     
     
-        df = pd.read_csv('Circa_historical_data.csv')
+        df = pd.read_csv('contest-historical-data/Circa_historical_data.csv')
     
         df.rename(columns={"Week": "Date"}, inplace=True)
         df['Pick %'].fillna(0.0, inplace=True)
+
+        # ============================================================
+        # 🛑 STRICT TEMPORAL FILTERING (Preventing Data Leakage)
+        # ============================================================
+        # Keep all years prior to the target_year
+        past_years_mask = df['Year'] < target_year
+        
+        # For the target_year, only keep weeks strictly prior to the upcoming_week
+        current_year_past_weeks_mask = (df['Year'] == target_year) & (df['Date'] < upcoming_week)
+        
+        # Combine masks to create our valid training pool
+        valid_history_mask = past_years_mask | current_year_past_weeks_mask
+        df_historical = df[valid_history_mask].copy()
+        
+        if df_historical.empty:
+            print(f"⚠️ Warning: No historical training data available prior to {target_year} Week {upcoming_week}.")
+            # You may need a fallback mechanism here if running week 1 of your very first historical year
+        # ============================================================
+    
+        # Define X and y using ONLY the historically valid data
+        X = df_historical[base_features].fillna(0)
+        y = df_historical['Pick %']
     
         # --- Train Base Model (No Public Pick Data) ---
         print("Training base model (no public pick data)...")
@@ -2559,9 +2581,9 @@ def loop_through_simulations(date_str):
         # Dictionary to store the Mean Absolute Errors for comparison if needed
         mae_results = {}
     
-        for n in range(1, 81):
+        for n in range(1, 81, 5):
             # 1. Initialize and fit the model with n estimators
-            temp_rf_model = RandomForestRegressor(n_estimators=n, random_state=0)
+            temp_rf_model = RandomForestRegressor(n_estimators=n, random_state=0, n_jobs=-1)
             temp_rf_model.fit(X_train, y_train)
             
             # 2. Test accuracy on the split (optional, but good for tracking)
@@ -2579,7 +2601,7 @@ def loop_through_simulations(date_str):
         
         # If your downstream code still relies on 'rf_model_base', 
         # you can set it to the best model or a default of 50.
-        rf_model_base = RandomForestRegressor(n_estimators=best_n, random_state=0)
+        rf_model_base = RandomForestRegressor(n_estimators=best_n, random_state=0, , n_jobs=-1)
         rf_model_base.fit(X_train, y_train)
         
         assumed_public_pick_col = 'Public Pick %' 
@@ -2603,7 +2625,7 @@ def loop_through_simulations(date_str):
                 # Train/test split for the enhanced model
                 X_train_e, X_test_e, y_train_e, y_test_e = train_test_split(X_enhanced, y_enhanced, test_size=0.2, random_state=42)
                 
-                rf_model_enhanced = RandomForestRegressor(n_estimators=50, random_state=0)
+                rf_model_enhanced = RandomForestRegressor(n_estimators=50, random_state=0, , n_jobs=-1)
                 rf_model_enhanced.fit(X_train_e, y_train_e)
                 
                 y_pred_e = rf_model_enhanced.predict(X_test_e)
