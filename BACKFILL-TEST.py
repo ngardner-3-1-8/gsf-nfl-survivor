@@ -2450,10 +2450,10 @@ def loop_through_simulations(date_str):
             availability_pct = (total_alive - used_count) / total_alive
             availability_dict[team] = availability_pct
     
-        return availability_dict
+        return availability_dict, total_alive
 
     # --- Main Function ---
-    def get_predicted_pick_percentages(config: dict, schedule_df: pd.DataFrame):
+    def get_predicted_pick_percentages(schedule_df):
         """
         Calculates predicted pick percentages for each team in each week,
         adjusting for team availability based on previous expected picks.
@@ -2462,21 +2462,22 @@ def loop_through_simulations(date_str):
 #        selected_contest = config['selected_contest'] 
 #        subcontest = config['subcontest'] 
         starting_week = upcoming_week
-        current_week_entries = total_alive 
 #        week_requiring_two_selections = config.get('weeks_two_picks', []) 
 #        week_requiring_three_selections = config.get('weeks_three_picks', []) 
         # 1. Define the path to your current season picks
         picks_file = f"circa-pick-history/{target_year}_survivor_picks.csv"
         
-        # 2. Calculate availability directly from the file instead of config
+        # Wait to assign current_week_entries until AFTER you call the helper
         if os.path.exists(picks_file):
             print(f"📊 Calculating team availability from {picks_file}...")
-            team_availability = calculate_team_availability(picks_file, starting_week)
+            # Unpack both returned variables
+            team_availability, current_week_entries = calculate_team_availability(picks_file, starting_week)
         else:
             print(f"⚠️ Warning: {picks_file} not found. Defaulting to 100% availability.")
-            team_availability = {} # Falls back to 1.0 in your downstream logic
+            team_availability = {} 
+            current_week_entries = circa_total_entries # Or whatever your default fallback is
 #        custom_pick_percentages = config.get('pick_percentages', {})
-        
+        current_week_entries = total_alive 
         # NEW CONFIG OPTION: Set to True to auto-select best features
         run_optimization = True 
         n_features_to_keep = 30
@@ -3298,44 +3299,6 @@ def loop_through_simulations(date_str):
             nfl_schedule_df['Expected Eliminated Entry Percent From Game'] = nfl_schedule_df['Home Expected Elimination Percent'] + nfl_schedule_df['Away Expected Elimination Percent']
             nfl_schedule_df['Expected Away Team Picks'] = nfl_schedule_df['Away Pick %'] * nfl_schedule_df['Total Remaining Entries at Start of Week']
             nfl_schedule_df['Expected Home Team Picks'] = nfl_schedule_df['Home Pick %'] * nfl_schedule_df['Total Remaining Entries at Start of Week']
-        
-        
-    
-            def assign_pick_percentages_from_config(row, custom_picks_config):
-                home_team = row['Home Team']
-                away_team = row['Away Team']
-                week = row['Week'] # Assumes week is like "Week 1", "Week 2"
-                week_num_str = str(week).replace('Week ', '')
-                week_key = f"week_{week_num_str}"
-        
-                home_pick_percent = row.get('Home Pick %') # Default
-                away_pick_percent = row.get('Away Pick %') # Default
-        
-                if week_key in custom_picks_config:
-                    week_overrides = custom_picks_config[week_key]
-                    
-                    # Check for Home Team override [cite: 638]
-                    if home_team in week_overrides:
-                        user_override_value = week_overrides[home_team]
-                        if user_override_value >= 0:
-                            home_pick_percent = user_override_value
-                            
-                    # Check for Away Team override [cite: 639]
-                    if away_team in week_overrides:
-                        user_override_value = week_overrides[away_team]
-                        if user_override_value >= 0: # Keep -1 logic [cite: 639]
-                            away_pick_percent = user_override_value
-        
-                return pd.Series({'Home Pick %': home_pick_percent, 'Away Pick %': away_pick_percent})
-                                                          
-            # Get the single source of truth...
-            custom_pick_percentages = config.get('pick_percentages', {})
-            
-            nfl_schedule_df[['Home Pick %', 'Away Pick %']] = nfl_schedule_df.apply(
-                assign_pick_percentages_from_config,  # <-- CORRECT NAME
-                axis=1, 
-                args=(custom_pick_percentages,) # Pass the config dict
-            )
     
         ####################################################################################################
         
@@ -3527,7 +3490,7 @@ def loop_through_simulations(date_str):
     	
         return nfl_schedule_df
 
-    collect_schedule_travel_ranking_data_nfl_schedule_df = get_predicted_pick_percentages(config, collect_schedule_travel_ranking_data_df)
+    collect_schedule_travel_ranking_data_nfl_schedule_df = get_predicted_pick_percentages(collect_schedule_travel_ranking_data_df)
     
     # --- CONFIGURATION ---
     SIMULATIONS = 2
