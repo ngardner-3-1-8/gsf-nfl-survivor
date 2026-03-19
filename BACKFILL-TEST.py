@@ -2508,13 +2508,6 @@ def loop_through_simulations(date_str):
             print(f"⚠️ Warning: No historical training data available prior to {target_year} Week {upcoming_week}.")
             # You may need a fallback mechanism here if running week 1 of your very first historical year
         # ============================================================
-    
-        # Define X and y using ONLY the historically valid data
-        X = df_historical[base_features].fillna(0)
-        y = df_historical['Pick %']
-    
-        # --- Train Base Model (No Public Pick Data) ---
-        print("Training base model (no public pick data)...")
         
         # 1. DEFINE CANDIDATE FEATURES (The Full List)
         base_features = ['Win %', 'Future Value (Stars)', 'Date', 'Away Team', 'Availability', 'Divisional Matchup?', 'Week_Mean_WinPct', 'Week_Mean_FV', 'Week_Max_WinPct', 
