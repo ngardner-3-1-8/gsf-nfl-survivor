@@ -2584,7 +2584,10 @@ def loop_through_simulations(date_str):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
         # This is your original model, now renamed 'base'
-        # Dictionary to store the Mean Absolute Errors for comparison if neede
+        # Dictionary to store the Mean Absolute Errors for comparison if needed
+        assumed_public_pick_col = 'Public Pick %' 
+
+        rf_model_enhanced = None
         
         if assumed_public_pick_col not in df.columns:
             print(f"Warning: Historical data does not contain '{assumed_public_pick_col}'. Cannot train enhanced model.")
