@@ -2602,7 +2602,7 @@ def loop_through_simulations(date_str):
         
         # If your downstream code still relies on 'rf_model_base', 
         # you can set it to the best model or a default of 50.
-        rf_model_base = RandomForestRegressor(n_estimators=best_n, random_state=0, , n_jobs=-1)
+        rf_model_base = RandomForestRegressor(n_estimators=best_n, random_state=0, n_jobs=-1)
         rf_model_base.fit(X_train, y_train)
         
         assumed_public_pick_col = 'Public Pick %' 
