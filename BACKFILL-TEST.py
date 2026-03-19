@@ -2626,7 +2626,7 @@ def loop_through_simulations(date_str):
                 # Train/test split for the enhanced model
                 X_train_e, X_test_e, y_train_e, y_test_e = train_test_split(X_enhanced, y_enhanced, test_size=0.2, random_state=42)
                 
-                rf_model_enhanced = RandomForestRegressor(n_estimators=50, random_state=0, , n_jobs=-1)
+                rf_model_enhanced = RandomForestRegressor(n_estimators=50, random_state=0, n_jobs=-1)
                 rf_model_enhanced.fit(X_train_e, y_train_e)
                 
                 y_pred_e = rf_model_enhanced.predict(X_test_e)
