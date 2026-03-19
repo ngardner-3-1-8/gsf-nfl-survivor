@@ -2584,22 +2584,7 @@ def loop_through_simulations(date_str):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
         # This is your original model, now renamed 'base'
-        # Dictionary to store the Mean Absolute Errors for comparison if needed
-        mae_results = {}
-    
-        for n in range(1, 81, 5):
-            # 1. Initialize and fit the model with n estimators
-            temp_rf_model = RandomForestRegressor(n_estimators=n, random_state=0, n_jobs=-1)
-            temp_rf_model.fit(X_train, y_train)
-            
-            # 2. Test accuracy on the split (optional, but good for tracking)
-            y_pred = temp_rf_model.predict(X_test)
-            mae = mean_absolute_error(y_test, y_pred)
-            mae_results[n] = mae
-            
-            # 3. Add the prediction for the ENTIRE dataset as a new column
-            # Using X here assuming you want the predictions mapped to the historical 'df'
-            schedule_df[f'n_estimator {n}'] = temp_rf_model.predict(X)
+        # Dictionary to store the Mean Absolute Errors for comparison if neede
     
         # Optional: Print out the best performing n_estimator
         best_n = min(mae_results, key=mae_results.get)
@@ -3185,21 +3170,22 @@ def loop_through_simulations(date_str):
                     
                     nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Home Team'] == team), f'Home {col_name}'] = pick_percent
                     nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team), f'Away {col_name}'] = pick_percent
+            # ==============================================================================
+            # THE STATE DRIVER FIX
+            # ==============================================================================
+            # We have 80 columns of predictions, but the simulator can only follow one timeline.
+            # We explicitly set the "official" Pick % to the 30-feature model to drive U_prev_week
+            baseline_col = 'Pick_Pct_30_Features'
             
-            # Final sanity clamp to ensure floating point math didn't push anyone 0.00001 over
-            pick_predictions_df['Pick %'] = pick_predictions_df[['Pick %', 'Availability']].min(axis=1)
-    
-            # --- D. STORE PREDICTIONS & CALCULATE SURVIVORS ---
-            
-            # 4. Map the normalized 'Pick %' back to the main nfl_schedule_df
             for _, row in pick_predictions_df.iterrows():
                 team = row['Team']
-                pick_percent = row['Pick %']
+                # If for some reason the 30-feature model failed, fallback to 0 to prevent crashes
+                pick_percent = row.get(baseline_col, 0.0) 
                 
-                # Map Home Pick %
+                # Map Home Pick % for downstream math
                 nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Home Team'] == team), 'Home Pick %'] = pick_percent
                 
-                # Map Away Pick %
+                # Map Away Pick % for downstream math
                 nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team), 'Away Pick %'] = pick_percent
     
             # 5. Calculate Survivors and Eliminations for this week
