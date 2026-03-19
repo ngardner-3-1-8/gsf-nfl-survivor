@@ -2585,18 +2585,6 @@ def loop_through_simulations(date_str):
     
         # This is your original model, now renamed 'base'
         # Dictionary to store the Mean Absolute Errors for comparison if neede
-    
-        # Optional: Print out the best performing n_estimator
-        best_n = min(mae_results, key=mae_results.get)
-        print(f"Best Base Model was n={best_n} with MAE: {mae_results[best_n]:.4f}")
-        
-        # If your downstream code still relies on 'rf_model_base', 
-        # you can set it to the best model or a default of 50.
-        rf_model_base = RandomForestRegressor(n_estimators=best_n, random_state=0, n_jobs=-1)
-        rf_model_base.fit(X_train, y_train)
-        
-        assumed_public_pick_col = 'Public Pick %' 
-        rf_model_enhanced = None
         
         if assumed_public_pick_col not in df.columns:
             print(f"Warning: Historical data does not contain '{assumed_public_pick_col}'. Cannot train enhanced model.")
