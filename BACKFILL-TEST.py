@@ -2541,32 +2541,44 @@ def loop_through_simulations(date_str):
     #                     'Week_Std_60_70', 'Team_60_70_RelativeToWeekMean', 'Team_60_70_RelativeToTopTeam', '60_70_Rank', '60_70_Rank_Density', 'Week_Mean_Top_Team', 'Week_Max_Top_Team', 
     #                     'Week_Min_Top_Team', 'Week_Std_Top_Team', 'Team_Top_Team_RelativeToWeekMean', 'Team_Top_Team_RelativeToTopTeam', 'Top_Team_Rank', 'Top_Team_Rank_Density']
             
-        X = df[base_features].fillna(0)
-        y = df['Pick %']
     
         # ============================================================
         # 🌟 NEW BLOCK: AUTO-OPTIMIZATION (RFE)
         # ============================================================
-        if run_optimization:
-            print(f"⚙️ Optimizing Model: Reducing {len(base_features)} features to the best {n_features_to_keep}...")
+        X = df[base_features].fillna(0)
+        y = df['Pick %']
+        
+        max_features = len(base_features)
+        print(f"⚙️ Running RFE to rank all {max_features} features...")
+        
+        # 1. Run RFE ONCE down to 1 feature to get the definitive ranking
+        base_rf = RandomForestRegressor(n_estimators=30, n_jobs=-1, random_state=42)
+        selector = RFE(estimator=base_rf, n_features_to_select=1, step=1)
+        selector.fit(X, y)
+        
+        # 2. Create a ranked list of features (Rank 1 is best)
+        feature_ranks = pd.Series(selector.ranking_, index=base_features).sort_values()
+        
+        # 3. Train models from max_features down to 1
+        trained_models = {}
+        print("🧠 Training predictive models for each feature count...")
+        
+        for n in range(max_features, 0, -1):
+            # Get the top N features
+            top_n_features = feature_ranks.head(n).index.tolist()
+            X_subset = X[top_n_features]
             
-            # We use a 'lighter' Random Forest for the selection phase to be fast
-            selector = RFE(
-                estimator=RandomForestRegressor(n_estimators=30, n_jobs=-1, random_state=42),
-                n_features_to_select=n_features_to_keep,
-                step=5  # Removes 5 weakest features at a time
-            )
+            # Train the model (Using 50 estimators as a solid baseline)
+            rf_model = RandomForestRegressor(n_estimators=50, random_state=42, n_jobs=-1)
+            rf_model.fit(X_subset, y)
             
-            selector.fit(X, y)
+            # Store the trained model and its specific features
+            trained_models[n] = {
+                'model': rf_model,
+                'features': top_n_features
+            }
             
-            # Update base_features to ONLY contain the winners
-            selected_mask = selector.support_
-            optimized_features = np.array(base_features)[selected_mask].tolist()
-            
-            print(f"✅ Optimization Complete. Kept: {optimized_features}")
-            
-            # Update X to use only the optimized features
-            X = X[optimized_features]
+        print("✅ All models trained and cached!")
         # ============================================================
     
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -3112,88 +3124,67 @@ def loop_through_simulations(date_str):
             # 4. Create the final aggregate feature
             pick_predictions_df['Holiday Strength'] = pick_predictions_df['Pre Thanksgiving'] + pick_predictions_df['Pre Christmas']
     
-            # --- Conditional Model Selection ---
-            if public_picks_available and rf_model_enhanced:
-                print("--- Predicting using ENHANCED model (with public pick data) ---")
-                model = rf_model_enhanced
-                # 🌟 FIX: Ask the model exactly what columns it was trained on
-                features_to_use = list(rf_model_enhanced.feature_names_in_)
-            else:
-                print("--- Predicting using BASE model (no public pick data) ---")
-                model = rf_model_base
-                # 🌟 FIX: Ask the model exactly what columns it was trained on
-                features_to_use = list(rf_model_base.feature_names_in_)
+            # --- LOOP THROUGH ALL 80 MODELS ---
+            print("--- Predicting and normalizing across all feature configurations ---")
+            
+            for n_features, model_data in trained_models.items():
+                model = model_data['model']
+                features_to_use = model_data['features']
                 
-            # 1. Ensure all features the model expects exist in this week's data
-            # (Prevents KeyErrors if a specific week is missing a holiday column)
-            for col in features_to_use:
-                if col not in pick_predictions_df.columns:
-                    pick_predictions_df[col] = 0.0 
+                # 1. Ensure features exist in this week's data
+                for col in features_to_use:
+                    if col not in pick_predictions_df.columns:
+                        pick_predictions_df[col] = 0.0 
+                        
+                predict_data = pick_predictions_df[features_to_use].fillna(0) 
+                
+                # 2. Predict into a custom column name
+                col_name = f'Pick_Pct_{n_features}_Features'
+                pick_predictions_df[col_name] = model.predict(predict_data)
+                
+                # 3. Normalize to target sum (1.0, 2.0, or 3.0)
+                target_pick_sum = 1.0
+                if current_week in week_requiring_two_selections:
+                    target_pick_sum = 2.0
+                # elif current_week in week_requiring_three_selections:
+                #     target_pick_sum = 3.0
                     
-            # 2. 🌟 CRITICAL FIX: Slice the dataframe to ONLY the features the model knows
-            # This also ensures the ORDER of columns is identical to training.
-            predict_data = pick_predictions_df[features_to_use].fillna(0) 
-            
-            # 3. Predict will now work because predict_data matches the training set exactly
-            pick_predictions_df['Pick %'] = model.predict(predict_data)
-    
-            # --- Normalization Logic remains the same ---
-            target_pick_sum = 1.0
-            if current_week in week_requiring_two_selections:
-                target_pick_sum = 2.0
-            elif current_week in week_requiring_three_selections:
-                target_pick_sum = 3.0
-                
-            current_sum = pick_predictions_df['Pick %'].sum()
-            if current_sum > 0:
-                pick_predictions_df['Pick %'] = pick_predictions_df['Pick %'] * (target_pick_sum / current_sum)
-            else:
-                pick_predictions_df['Pick %'] = 0.0
-            
-            # 3. Iterative Water-Filling Loop
-            max_iterations = 15 
-            
-            for i in range(max_iterations):
-                # Ensure Availability is filled
-                pick_predictions_df['Availability'] = pick_predictions_df['Availability'].fillna(0.0)
-            
-                # A. Find teams exceeding their availability
-                over_cap_mask = pick_predictions_df['Pick %'] > pick_predictions_df['Availability']
-                
-                # Check if we are done (no violations and sum is correct)
-                current_total_pick = pick_predictions_df['Pick %'].sum()
-                
-                # If no one is over the cap, we are likely done, unless the sum drifted due to floating point math
-                if not over_cap_mask.any():
-                    break
-                    
-                # B. Calculate the "Overflow" (The amount we must take away)
-                # Sum of (Prediction - Availability) for all teams over the limit
-                excess_prob = (pick_predictions_df.loc[over_cap_mask, 'Pick %'] - pick_predictions_df.loc[over_cap_mask, 'Availability']).sum()
-                
-                # C. Clamp the violators to their max availability
-                pick_predictions_df.loc[over_cap_mask, 'Pick %'] = pick_predictions_df.loc[over_cap_mask, 'Availability']
-                
-                # D. Distribute Overflow to valid teams
-                # We only distribute to teams that are NOT currently over the cap
-                non_violator_mask = ~over_cap_mask
-                sum_non_violators = pick_predictions_df.loc[non_violator_mask, 'Pick %'].sum()
-                
-                if sum_non_violators > 0:
-                    # Calculate the share for each team
-                    # Your Logic: Team_Share = Team_Pick / Sum_Of_Available_Teams
-                    # Example: Eagles (28%) / Sum (56%) = 0.5
-                    shares = pick_predictions_df.loc[non_violator_mask, 'Pick %'] / sum_non_violators
-                    
-                    # Add their share of the excess
-                    # Example: Eagles (28%) += 8% * 0.5
-                    pick_predictions_df.loc[non_violator_mask, 'Pick %'] += (excess_prob * shares)
+                current_sum = pick_predictions_df[col_name].sum()
+                if current_sum > 0:
+                    pick_predictions_df[col_name] = pick_predictions_df[col_name] * (target_pick_sum / current_sum)
                 else:
-                    # If sum_non_violators is 0 (everyone is either capped or has 0% prediction),
-                    # we cannot distribute the excess. The specific math is impossible.
-                    # We break to avoid infinite loop.
-                    print(f"Warning Week {current_week}: Cannot redistribute excess {excess_prob:.4f}. Pool is saturated.")
-                    break
+                    pick_predictions_df[col_name] = 0.0
+                
+                # 4. Independent Water-Filling Loop
+                for i in range(15): 
+                    pick_predictions_df['Availability'] = pick_predictions_df['Availability'].fillna(0.0)
+                    over_cap_mask = pick_predictions_df[col_name] > pick_predictions_df['Availability']
+                    
+                    if not over_cap_mask.any():
+                        break
+                        
+                    excess_prob = (pick_predictions_df.loc[over_cap_mask, col_name] - pick_predictions_df.loc[over_cap_mask, 'Availability']).sum()
+                    pick_predictions_df.loc[over_cap_mask, col_name] = pick_predictions_df.loc[over_cap_mask, 'Availability']
+                    
+                    non_violator_mask = ~over_cap_mask
+                    sum_non_violators = pick_predictions_df.loc[non_violator_mask, col_name].sum()
+                    
+                    if sum_non_violators > 0:
+                        shares = pick_predictions_df.loc[non_violator_mask, col_name] / sum_non_violators
+                        pick_predictions_df.loc[non_violator_mask, col_name] += (excess_prob * shares)
+                    else:
+                        break
+                
+                # Final sanity clamp
+                pick_predictions_df[col_name] = pick_predictions_df[[col_name, 'Availability']].min(axis=1)
+
+                # 5. Map back to main nfl_schedule_df dynamically
+                for _, row in pick_predictions_df.iterrows():
+                    team = row['Team']
+                    pick_percent = row[col_name]
+                    
+                    nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Home Team'] == team), f'Home {col_name}'] = pick_percent
+                    nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team), f'Away {col_name}'] = pick_percent
             
             # Final sanity clamp to ensure floating point math didn't push anyone 0.00001 over
             pick_predictions_df['Pick %'] = pick_predictions_df[['Pick %', 'Availability']].min(axis=1)
