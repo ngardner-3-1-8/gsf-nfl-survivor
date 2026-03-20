@@ -3148,8 +3148,8 @@ def loop_through_simulations(date_str):
                 
                 # 3. Normalize to target sum (1.0, 2.0, or 3.0)
                 target_pick_sum = 1.0
-                if current_week in week_requiring_two_selections:
-                    target_pick_sum = 2.0
+#                if current_week in week_requiring_two_selections:
+#                    target_pick_sum = 2.0
                 # elif current_week in week_requiring_three_selections:
                 #     target_pick_sum = 3.0
                     
@@ -3270,20 +3270,20 @@ def loop_through_simulations(date_str):
             print(f"Projected Pool Size for Week {next_week}: {total_survivors_this_week:,.0f}")
             
         # Create the boolean mask once, as it's used twice
-            multiplier_mask = (selected_contest == 'Splash Sports') & \
-                          (nfl_schedule_df['Week'].isin(week_requiring_two_selections)) & \
-        	              (subcontest != "Week 9 Bloody Survivor ($100 Entry)")
-            multiplier_mask_3 = (selected_contest == 'Splash Sports') & \
-                          (nfl_schedule_df['Week'].isin(week_requiring_three_selections)) & \
-        	              (subcontest == "Week 9 Bloody Survivor ($100 Entry)")
+#            multiplier_mask = (selected_contest == 'Splash Sports') & \
+#                          (nfl_schedule_df['Week'].isin(week_requiring_two_selections)) & \
+#        	              (subcontest != "Week 9 Bloody Survivor ($100 Entry)")
+#            multiplier_mask_3 = (selected_contest == 'Splash Sports') & \
+#                          (nfl_schedule_df['Week'].isin(week_requiring_three_selections)) & \
+#        	              (subcontest == "Week 9 Bloody Survivor ($100 Entry)")
         	
             nfl_schedule_df['Home Expected Survival Rate'] = nfl_schedule_df['Home Team Fair Odds'] * nfl_schedule_df['Home Pick %']
-            nfl_schedule_df.loc[multiplier_mask, 'Home Expected Survival Rate'] *= 0.65
-            nfl_schedule_df.loc[multiplier_mask_3, 'Home Expected Survival Rate'] *= 0.35
+#            nfl_schedule_df.loc[multiplier_mask, 'Home Expected Survival Rate'] *= 0.65
+#            nfl_schedule_df.loc[multiplier_mask_3, 'Home Expected Survival Rate'] *= 0.35
             nfl_schedule_df['Home Expected Elimination Percent'] = nfl_schedule_df['Home Pick %'] - nfl_schedule_df['Home Expected Survival Rate']
             nfl_schedule_df['Away Expected Survival Rate'] = nfl_schedule_df['Away Team Fair Odds'] * nfl_schedule_df['Away Pick %']
-            nfl_schedule_df.loc[multiplier_mask, 'Away Expected Survival Rate'] *= 0.65
-            nfl_schedule_df.loc[multiplier_mask_3, 'Away Expected Survival Rate'] *= 0.35
+ #           nfl_schedule_df.loc[multiplier_mask, 'Away Expected Survival Rate'] *= 0.65
+ #           nfl_schedule_df.loc[multiplier_mask_3, 'Away Expected Survival Rate'] *= 0.35
             nfl_schedule_df['Away Expected Elimination Percent'] = nfl_schedule_df['Away Pick %'] - nfl_schedule_df['Away Expected Survival Rate']
             nfl_schedule_df['Expected Eliminated Entry Percent From Game'] = nfl_schedule_df['Home Expected Elimination Percent'] + nfl_schedule_df['Away Expected Elimination Percent']
             nfl_schedule_df['Expected Away Team Picks'] = nfl_schedule_df['Away Pick %'] * nfl_schedule_df['Total Remaining Entries at Start of Week']
