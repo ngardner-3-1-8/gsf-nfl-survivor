@@ -3410,14 +3410,6 @@ def loop_through_simulations(date_str):
                     
                 # Add this trial's full weekly results to the main list
                 monte_results.extend(week_records)
-        
-                # Update progress bar (e.g., every 100 trials to be efficient)
-                if (trial + 1) % 100 == 0:
-                    progress_bar.progress((trial + 1) / num_trials)
-        
-            # --- Aggregation ---
-            progress_bar.progress(1.0) # Complete the bar
-            print("Simulation trials complete. Aggregating results...")
             
             if not monte_results:
                 print("Warning: Monte Carlo simulation produced no results.")
