@@ -1919,6 +1919,9 @@ def loop_through_simulations(date_str):
     	# 4. Pre-Holiday Logic (Vectorized)
         df['Away Team Pre Thanksgiving'] = ((df['Away Team Thanksgiving Favorite'] | df['Away Team Thanksgiving Underdog']) & (df['Week'] < thanksgiving_week)).astype(int)
         df['Home Team Pre Thanksgiving'] = ((df['Home Team Thanksgiving Favorite'] | df['Home Team Thanksgiving Underdog']) & (df['Week'] < thanksgiving_week)).astype(int)
+
+        df['Away Team Pre Christmas'] = ((df['Away Team Christmas Favorite'] | df['Away Team Christmas Underdog']) & (df['Week'] < christmas_week)).astype(int)
+        df['Home Team Pre Christmas'] = ((df['Home Team Christmas Favorite'] | df['Home Team Christmas Underdog']) & (df['Week'] < christmas_week)).astype(int)
     	
     	# 5. Divisional Matchup Boolean
         df["Divisional Matchup Boolean"] = (df["Divisional Matchup?"] == True).astype(int)
