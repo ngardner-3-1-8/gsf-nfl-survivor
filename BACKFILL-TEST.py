@@ -3471,7 +3471,7 @@ def loop_through_simulations(date_str):
     	
         return nfl_schedule_df
 
-    collect_schedule_travel_ranking_data_nfl_schedule_df = get_predicted_pick_percentages(collect_schedule_travel_ranking_data_df)
+    collect_schedule_travel_ranking_data_df = get_predicted_pick_percentages(collect_schedule_travel_ranking_data_df)
     
     # --- CONFIGURATION ---
     SIMULATIONS = 2
