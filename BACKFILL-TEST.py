@@ -2424,13 +2424,12 @@ def loop_through_simulations(date_str):
         total_alive = len(alive_df)
         
         if total_alive == 0:
-            return {} # Handle case where everyone is eliminated
+            return {}, 0 # Handle case where everyone is eliminated
     
         # 2. Identify which columns contain previous picks
         usage_cols = [f"Week_{i}" for i in range(1, upcoming_week)]
         
         # 3. Get list of all unique teams from your schedule/historical data
-        # (Assuming you have a list of all 32 teams)
         all_teams = [
             'Arizona Cardinals', 'Atlanta Falcons', 'Baltimore Ravens', 'Buffalo Bills',
             'Carolina Panthers', 'Chicago Bears', 'Cincinnati Bengals', 'Cleveland Browns',
@@ -2441,13 +2440,39 @@ def loop_through_simulations(date_str):
             'New York Jets', 'Philadelphia Eagles', 'Pittsburgh Steelers', 'San Francisco 49ers',
             'Seattle Seahawks', 'Tampa Bay Buccaneers', 'Tennessee Titans', 'Washington Commanders'
         ]
+        
+        # 🌟 NEW: Abbreviation map to bridge the gap between your list and the CSV
+        team_abbr_map = {
+            'Arizona Cardinals': 'ARI', 'Atlanta Falcons': 'ATL', 'Baltimore Ravens': 'BAL',
+            'Buffalo Bills': 'BUF', 'Carolina Panthers': 'CAR', 'Chicago Bears': 'CHI',
+            'Cincinnati Bengals': 'CIN', 'Cleveland Browns': 'CLE', 'Dallas Cowboys': 'DAL',
+            'Denver Broncos': 'DEN', 'Detroit Lions': 'DET', 'Green Bay Packers': 'GB',
+            'Houston Texans': 'HOU', 'Indianapolis Colts': 'IND', 'Jacksonville Jaguars': 'JAC',
+            'Kansas City Chiefs': 'KC', 'Las Vegas Raiders': 'LV', 'Los Angeles Chargers': 'LAC',
+            'Los Angeles Rams': 'LAR', 'Miami Dolphins': 'MIA', 'Minnesota Vikings': 'MIN',
+            'New England Patriots': 'NE', 'New Orleans Saints': 'NO', 'New York Giants': 'NYG',
+            'New York Jets': 'NYJ', 'Philadelphia Eagles': 'PHI', 'Pittsburgh Steelers': 'PIT',
+            'San Francisco 49ers': 'SF', 'Seattle Seahawks': 'SEA', 'Tampa Bay Buccaneers': 'TB',
+            'Tennessee Titans': 'TEN', 'Washington Commanders': 'WAS'
+        }
     
         availability_dict = {}
     
         for team in all_teams:
-            # Count how many ALIVE entries ALREADY USED this team
-            # We check if the team name exists in any of the previous week columns
-            used_count = alive_df[usage_cols].apply(lambda row: row.str.contains(team, case=False, na=False).any(), axis=1).sum()
+            abbr = team_abbr_map.get(team, team)
+            
+            # Build a list of valid names to check against the CSV
+            valid_names = [team, abbr, team.upper(), abbr.upper()]
+            
+            # Catch edge-case abbreviations commonly found in contest files
+            if abbr == 'LAR': valid_names.extend(['LA', 'LAR'])
+            if abbr == 'LAC': valid_names.extend(['SD', 'LAC'])
+            if abbr == 'LV': valid_names.extend(['OAK', 'LV'])
+            if abbr == 'WAS': valid_names.extend(['WSH', 'WAS'])
+            if abbr == 'JAC': valid_names.extend(['JAC', 'JAX'])
+            
+            # 🌟 FIX: Use .isin() to check for exact matches against the valid_names list
+            used_count = alive_df[usage_cols].isin(valid_names).any(axis=1).sum()
             
             # Availability % = (Total Alive - People who used them) / Total Alive
             availability_pct = (total_alive - used_count) / total_alive
