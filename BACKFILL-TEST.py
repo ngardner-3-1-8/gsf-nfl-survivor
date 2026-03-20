@@ -2452,6 +2452,36 @@ def loop_through_simulations(date_str):
     
         return availability_dict, total_alive
 
+    def get_expected_availability(team_name, availability_dict):
+        """
+        Safely retrieves team availability from the dictionary, 
+        mapping abbreviations to full names if necessary.
+        """
+        team_name_map = {
+            "ARI": "Arizona Cardinals", "ATL": "Atlanta Falcons", "BAL": "Baltimore Ravens",
+            "BUF": "Buffalo Bills", "CAR": "Carolina Panthers", "CHI": "Chicago Bears",
+            "CIN": "Cincinnati Bengals", "CLE": "Cleveland Browns", "DAL": "Dallas Cowboys",
+            "DEN": "Denver Broncos", "DET": "Detroit Lions", "GB": "Green Bay Packers",
+            "HOU": "Houston Texans", "IND": "Indianapolis Colts", "JAX": "Jacksonville Jaguars",
+            "KC": "Kansas City Chiefs", "LV": "Las Vegas Raiders", "LAC": "Los Angeles Chargers",
+            "LAR": "Los Angeles Rams", "MIA": "Miami Dolphins", "MIN": "Minnesota Vikings",
+            "NE": "New England Patriots", "NO": "New Orleans Saints", "NYG": "New York Giants",
+            "NYJ": "New York Jets", "PHI": "Philadelphia Eagles", "PIT": "Pittsburgh Steelers",
+            "SF": "San Francisco 49ers", "SEA": "Seattle Seahawks", "TB": "Tampa Bay Buccaneers",
+            "TEN": "Tennessee Titans", "WAS": "Washington Commanders", "WSH": "Washington Commanders"
+        }
+    
+        full_team_name = team_name_map.get(team_name, team_name)
+        availability = availability_dict.get(full_team_name)
+        
+        if availability is None:
+            availability = availability_dict.get(team_name)
+    
+        if availability is None or availability <= -0.01:
+            return 1.0      
+        else:
+            return float(availability)
+
     # --- Main Function ---
     def get_predicted_pick_percentages(schedule_df):
         """
