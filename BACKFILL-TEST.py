@@ -2881,24 +2881,19 @@ def loop_through_simulations(date_str):
             pick_predictions_df['thanksgiving_week'] = (
                 pick_predictions_df['Date'] == thanksgiving_week).astype(int)
     
-            if selected_contest == 'Circa':
-                pick_predictions_df['Calendar Date'] = pd.to_datetime(pick_predictions_df['Calendar Date'])
-    
-                # Create the "Thursday Night Game" column
-                # Logic:
-                # 1. Day of week is Thursday (dt.dayofweek == 3; Monday is 0, Sunday is 6)
-                # 2. christmas_week is 0
-                # 3. thanksgiving_week is 0
-                pick_predictions_df['Thursday Night Game'] = (
-                    (pick_predictions_df['Calendar Date'].dt.dayofweek == 3) & 
-                    (pick_predictions_df['christmas_week'] == 0) & 
-                    (pick_predictions_df['thanksgiving_week'] == 0)
-                ).astype(int) # Convert boolean (True/False) to integer (1/0)
-            else:
-                pick_predictions_df['Calendar Date'] = pd.to_datetime(pick_predictions_df['Calendar Date'])
-                pick_predictions_df['Thursday Night Game'] = (
-                    (pick_predictions_df['Calendar Date'].dt.dayofweek == 3)
-                ).astype(int)
+            pick_predictions_df['Calendar Date'] = pd.to_datetime(pick_predictions_df['Calendar Date'])
+
+            # Create the "Thursday Night Game" column
+            # Logic:
+            # 1. Day of week is Thursday (dt.dayofweek == 3; Monday is 0, Sunday is 6)
+            # 2. christmas_week is 0
+            # 3. thanksgiving_week is 0
+            pick_predictions_df['Thursday Night Game'] = (
+                (pick_predictions_df['Calendar Date'].dt.dayofweek == 3) & 
+                (pick_predictions_df['christmas_week'] == 0) & 
+                (pick_predictions_df['thanksgiving_week'] == 0)
+            ).astype(int) # Convert boolean (True/False) to integer (1/0)
+
     
             # Home vs Away on Thursday
             pick_predictions_df['Thursday_Home'] = (pick_predictions_df['Thursday Night Game'] == 1) & (pick_predictions_df['Away Team'] == 0)
