@@ -2603,38 +2603,47 @@ def loop_through_simulations(date_str):
         # ============================================================
         # 🌟 NEW BLOCK: AUTO-OPTIMIZATION (RFE)
         # ============================================================
-        X = df[base_features].fillna(0)
-        y = df['Pick %']
+        assumed_public_pick_col = 'Public Pick %'
         
-        max_features = len(base_features)
+        # 1. Determine which feature set to use
+        if assumed_public_pick_col in df_historical.columns and not df[assumed_public_pick_col].isnull().all():
+            print(f"✨ Enhanced column '{assumed_public_pick_col}' found. Including in RFE...")
+            current_features = base_features + [assumed_public_pick_col]
+            # Filter to rows that actually have the public data to avoid training on zeros
+            df_for_rfe = df_historical.dropna(subset=[assumed_public_pick_col])
+        else:
+            print(f"⚠️ '{assumed_public_pick_col}' not found or empty. Using base features only.")
+            current_features = base_features
+            df_for_rfe = df
+        
+        X = df_for_rfe[current_features].fillna(0)
+        y = df_for_rfe['Pick %']
+        
+        max_features = len(current_features)
         print(f"⚙️ Running RFE to rank all {max_features} features...")
         
-        # 1. Run RFE ONCE down to 1 feature to get the definitive ranking
-        base_rf = RandomForestRegressor(n_estimators=30, n_jobs=-1, random_state=42)
+        # 2. Run RFE ONCE (Optimized with fewer estimators for speed)
+        base_rf = RandomForestRegressor(n_estimators=50, n_jobs=-1, random_state=42)
         selector = RFE(estimator=base_rf, n_features_to_select=1, step=1)
         selector.fit(X, y)
         
-        # 2. Create a ranked list of features (Rank 1 is best)
-        feature_ranks = pd.Series(selector.ranking_, index=base_features).sort_values()
-
-        print("\n🏆 Top 20 Most Valuable Features according to RFE:")
+        # 3. Create the ranked list
+        feature_ranks = pd.Series(selector.ranking_, index=current_features).sort_values()
+        
+        print("\n🏆 Top 20 Most Valuable Features (Including Enhanced if available):")
         print(feature_ranks.head(20))
         print("-" * 50)
         
-        # 3. Train models from max_features down to 1
+        # 4. Train the model library (1 to max_features)
         trained_models = {}
-        print("🧠 Training predictive models for each feature count...")
-        
         for n in range(max_features, 0, -1):
-            # Get the top N features
             top_n_features = feature_ranks.head(n).index.tolist()
             X_subset = X[top_n_features]
             
-            # Train the model (Using 50 estimators as a solid baseline)
-            rf_model = RandomForestRegressor(n_estimators=150, random_state=42, n_jobs=-1)
+            # Using 100-150 estimators for the final models
+            rf_model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
             rf_model.fit(X_subset, y)
             
-            # Store the trained model and its specific features
             trained_models[n] = {
                 'model': rf_model,
                 'features': top_n_features
@@ -2644,37 +2653,6 @@ def loop_through_simulations(date_str):
         # ============================================================
     
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-        # This is your original model, now renamed 'base'
-        # Dictionary to store the Mean Absolute Errors for comparison if needed
-        assumed_public_pick_col = 'Public Pick %' 
-
-        rf_model_enhanced = None
-        
-        if assumed_public_pick_col not in df.columns:
-            print(f"Warning: Historical data does not contain '{assumed_public_pick_col}'. Cannot train enhanced model.")
-        else:
-            enhanced_features = base_features + [assumed_public_pick_col]
-            
-            # Filter historical data to rows WHERE public pick data was available
-            df_enhanced = df.dropna(subset=[assumed_public_pick_col])
-            
-            if df_enhanced.empty:
-                print("Warning: No historical data found with public pick %. Enhanced model will not be trained.")
-            else:
-                print(f"Training enhanced model on {len(df_enhanced)} historical samples.")
-                X_enhanced = df_enhanced[enhanced_features].fillna(0) # Fill NA for training data
-                y_enhanced = df_enhanced['Pick %']
-                
-                # Train/test split for the enhanced model
-                X_train_e, X_test_e, y_train_e, y_test_e = train_test_split(X_enhanced, y_enhanced, test_size=0.2, random_state=42)
-                
-                rf_model_enhanced = RandomForestRegressor(n_estimators=150, random_state=0, n_jobs=-1)
-                rf_model_enhanced.fit(X_train_e, y_train_e)
-                
-                y_pred_e = rf_model_enhanced.predict(X_test_e)
-                mae_e = mean_absolute_error(y_test_e, y_pred_e)
-                print(f"Enhanced Model Mean Absolute Error: {mae_e:.2f}")
     
         print("Starting week-by-week pick percentage predictions...")
         
