@@ -2627,7 +2627,7 @@ def loop_through_simulations(date_str):
             X_subset = X[top_n_features]
             
             # Train the model (Using 50 estimators as a solid baseline)
-            rf_model = RandomForestRegressor(n_estimators=50, random_state=42, n_jobs=-1)
+            rf_model = RandomForestRegressor(n_estimators=500, random_state=42, n_jobs=-1)
             rf_model.fit(X_subset, y)
             
             # Store the trained model and its specific features
