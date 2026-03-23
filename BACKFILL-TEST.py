@@ -2616,6 +2616,10 @@ def loop_through_simulations(date_str):
         
         # 2. Create a ranked list of features (Rank 1 is best)
         feature_ranks = pd.Series(selector.ranking_, index=base_features).sort_values()
+
+        print("\n🏆 Top 20 Most Valuable Features according to RFE:")
+        print(feature_ranks.head(20))
+        print("-" * 50)
         
         # 3. Train models from max_features down to 1
         trained_models = {}
@@ -2627,7 +2631,7 @@ def loop_through_simulations(date_str):
             X_subset = X[top_n_features]
             
             # Train the model (Using 50 estimators as a solid baseline)
-            rf_model = RandomForestRegressor(n_estimators=500, random_state=42, n_jobs=-1)
+            rf_model = RandomForestRegressor(n_estimators=150, random_state=42, n_jobs=-1)
             rf_model.fit(X_subset, y)
             
             # Store the trained model and its specific features
@@ -2665,7 +2669,7 @@ def loop_through_simulations(date_str):
                 # Train/test split for the enhanced model
                 X_train_e, X_test_e, y_train_e, y_test_e = train_test_split(X_enhanced, y_enhanced, test_size=0.2, random_state=42)
                 
-                rf_model_enhanced = RandomForestRegressor(n_estimators=50, random_state=0, n_jobs=-1)
+                rf_model_enhanced = RandomForestRegressor(n_estimators=150, random_state=0, n_jobs=-1)
                 rf_model_enhanced.fit(X_train_e, y_train_e)
                 
                 y_pred_e = rf_model_enhanced.predict(X_test_e)
@@ -3156,37 +3160,39 @@ def loop_through_simulations(date_str):
             # --- LOOP THROUGH ALL 80 MODELS ---
             print("--- Predicting and normalizing across all feature configurations ---")
             
+            # Move this outside the 15-iteration loop so it only runs once per model
+            pick_predictions_df['Availability'] = pick_predictions_df['Availability'].fillna(0.0)
+
             for n_features, model_data in trained_models.items():
                 model = model_data['model']
                 features_to_use = model_data['features']
                 
-                # 1. Ensure features exist in this week's data
-                for col in features_to_use:
-                    if col not in pick_predictions_df.columns:
-                        pick_predictions_df[col] = 0.0 
+                # 1. Ensure features exist in this week's data (Optimized set logic)
+                missing_cols = list(set(features_to_use) - set(pick_predictions_df.columns))
+                if missing_cols:
+                    pick_predictions_df[missing_cols] = 0.0 
                         
                 predict_data = pick_predictions_df[features_to_use].fillna(0) 
-                
+                 
                 # 2. Predict into a custom column name
                 col_name = f'Pick_Pct_{n_features}_Features'
                 pick_predictions_df[col_name] = model.predict(predict_data)
                 
                 # 3. Normalize to target sum (1.0, 2.0, or 3.0)
                 target_pick_sum = 1.0
-#                if current_week in week_requiring_two_selections:
-#                    target_pick_sum = 2.0
+                # if current_week in week_requiring_two_selections:
+                #     target_pick_sum = 2.0
                 # elif current_week in week_requiring_three_selections:
                 #     target_pick_sum = 3.0
                     
                 current_sum = pick_predictions_df[col_name].sum()
                 if current_sum > 0:
-                    pick_predictions_df[col_name] = pick_predictions_df[col_name] * (target_pick_sum / current_sum)
+                    pick_predictions_df[col_name] *= (target_pick_sum / current_sum)
                 else:
                     pick_predictions_df[col_name] = 0.0
                 
                 # 4. Independent Water-Filling Loop
                 for i in range(15): 
-                    pick_predictions_df['Availability'] = pick_predictions_df['Availability'].fillna(0.0)
                     over_cap_mask = pick_predictions_df[col_name] > pick_predictions_df['Availability']
                     
                     if not over_cap_mask.any():
@@ -3203,17 +3209,21 @@ def loop_through_simulations(date_str):
                         pick_predictions_df.loc[non_violator_mask, col_name] += (excess_prob * shares)
                     else:
                         break
-                
+                  
                 # Final sanity clamp
                 pick_predictions_df[col_name] = pick_predictions_df[[col_name, 'Availability']].min(axis=1)
 
-                # 5. Map back to main nfl_schedule_df dynamically
-                for _, row in pick_predictions_df.iterrows():
-                    team = row['Team']
-                    pick_percent = row[col_name]
-                    
-                    nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Home Team'] == team), f'Home {col_name}'] = pick_percent
-                    nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team), f'Away {col_name}'] = pick_percent
+                # 5. Map back to main nfl_schedule_df dynamically (Optimized - NO iterrows)
+                # Create a quick dictionary: {'ARI': 0.15, 'BAL': 0.35, ...}
+                pick_map = dict(zip(pick_predictions_df['Team'], pick_predictions_df[col_name]))
+                
+                # Apply fast mapping to Home Teams
+                home_mask = current_week_mask & nfl_schedule_df['Home Team'].isin(pick_map.keys())
+                nfl_schedule_df.loc[home_mask, f'Home {col_name}'] = nfl_schedule_df.loc[home_mask, 'Home Team'].map(pick_map)
+                
+                # Apply fast mapping to Away Teams
+                away_mask = current_week_mask & nfl_schedule_df['Away Team'].isin(pick_map.keys())
+                nfl_schedule_df.loc[away_mask, f'Away {col_name}'] = nfl_schedule_df.loc[away_mask, 'Away Team'].map(pick_map)
             # ==============================================================================
             # THE STATE DRIVER FIX
             # ==============================================================================
