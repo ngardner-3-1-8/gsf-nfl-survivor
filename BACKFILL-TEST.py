@@ -3166,6 +3166,13 @@ def loop_through_simulations(date_str):
             for n_features, model_data in trained_models.items():
                 model = model_data['model']
                 features_to_use = model_data['features']
+
+                # --- ADD THIS PRINT BLOCK HERE ---
+                # Only print during the first simulated week, and only for models 10 and 15
+                if current_week == starting_week and n_features in [10, 15]:
+                    print(f"\n🏈 Week {current_week} | Predicting using {n_features} features model...")
+                    print(f"Features: {features_to_use}")
+                # ---------------------------------
                 
                 # 1. Ensure features exist in this week's data (Optimized set logic)
                 missing_cols = list(set(features_to_use) - set(pick_predictions_df.columns))
