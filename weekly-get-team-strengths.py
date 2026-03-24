@@ -375,7 +375,7 @@ if __name__ == "__main__":
         full_df = pd.concat(all_history, ignore_index=True)
         
         # Save Long Format
-        filename_long = f"nfl_history_{START_YEAR}_{END_YEAR}_weighted.csv"
+        filename_long = f"nfl-pbp-data/nfl_history_{START_YEAR}_{END_YEAR}_weighted.csv"
         full_df.to_csv(filename_long, index=False)
         print(f"Saved: {filename_long}")
         
