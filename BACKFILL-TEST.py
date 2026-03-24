@@ -3314,7 +3314,7 @@ def loop_through_simulations(date_str):
     
         ####################################################################################################
         
-        def run_monte_carlo_simulation(nfl_schedule_df, num_trials=1000):
+        def run_monte_carlo_simulation(nfl_schedule_df, num_trials=100):
             """
             Runs a Monte Carlo simulation to estimate the distribution of survivor
             pool outcomes, based on the 'Expected Value' pick percentages.
