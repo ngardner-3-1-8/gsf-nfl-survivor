@@ -2660,6 +2660,18 @@ def loop_through_simulations(date_str):
                 'model': rf_model,
                 'features': final_features
             }
+
+            if n in [10, 15]:
+                print(f"\n--- Verifying Model n={n} ---")
+                print(f"Total Features Used: {len(final_features)}")
+                print(f"Feature List: {final_features}")
+                # A quick check to explicitly confirm your holiday features made it
+                missing = [m for m in mandatory_features if m not in final_features]
+                if missing:
+                    print(f"⚠️ WARNING: Missing mandatory features: {missing}")
+                else:
+                    print("✅ Mandatory holiday features successfully injected!")
+            
         # ============================================================
     
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
