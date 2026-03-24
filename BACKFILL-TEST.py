@@ -3139,8 +3139,8 @@ def loop_through_simulations(date_str):
             
             # 3. Apply your interaction logic
             # This turns the 'Pre' binary flag into a continuous "Expectation" variable
-            pick_predictions_df['Pre Christmas'] = pick_predictions_df['Pre Christmas'] * pick_predictions_df['christmas_win_pct'] * (1 / pick_predictions_df['Week'])
-            pick_predictions_df['Pre Thanksgiving'] = pick_predictions_df['Pre Thanksgiving'] * pick_predictions_df['thanksgiving_win_pct'] * (1 / pick_predictions_df['Week'])
+            pick_predictions_df['Pre Christmas'] = pick_predictions_df['Pre Christmas'] * pick_predictions_df['christmas_win_pct'] * (1 / pick_predictions_df['Date'])
+            pick_predictions_df['Pre Thanksgiving'] = pick_predictions_df['Pre Thanksgiving'] * pick_predictions_df['thanksgiving_win_pct'] * (1 / pick_predictions_df['Date'])
             
             # 4. Create the final aggregate feature
             pick_predictions_df['Holiday Strength'] = pick_predictions_df['Pre Thanksgiving'] + pick_predictions_df['Pre Christmas']
