@@ -3240,6 +3240,9 @@ def loop_through_simulations(date_str):
                 # Apply fast mapping to Away Teams
                 away_mask = current_week_mask & nfl_schedule_df['Away Team'].isin(pick_map.keys())
                 nfl_schedule_df.loc[away_mask, f'Away {col_name}'] = nfl_schedule_df.loc[away_mask, 'Away Team'].map(pick_map)
+                # Every 20 models, clean up the dataframe memory
+                if n_features % 20 == 0:
+                    nfl_schedule_df = nfl_schedule_df.copy()
             # ==============================================================================
             # THE STATE DRIVER FIX
             # ==============================================================================
