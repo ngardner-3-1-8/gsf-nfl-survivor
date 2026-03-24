@@ -3182,6 +3182,8 @@ def loop_through_simulations(date_str):
                 # 2. Predict into a custom column name
                 col_name = f'Pick_Pct_{n_features}_Features'
                 pick_predictions_df[col_name] = model.predict(predict_data)
+
+                pick_predictions_df = pick_predictions_df.copy()
                 
                 # 3. Normalize to target sum (1.0, 2.0, or 3.0)
                 target_pick_sum = 1.0
