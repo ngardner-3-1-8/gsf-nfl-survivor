@@ -2630,26 +2630,36 @@ def loop_through_simulations(date_str):
         # 3. Create the ranked list
         feature_ranks = pd.Series(selector.ranking_, index=current_features).sort_values()
         
-        print("\n🏆 Top 20 Most Valuable Features (Including Enhanced if available):")
-        print(feature_ranks.head(20))
+        print("\n🏆 Top 81 Most Valuable Features (Including Enhanced if available):")
+        print(feature_ranks.head(81))
         print("-" * 50)
-        
+
+        mandatory_features = ['Pre Thanksgiving', 'Pre Christmas', 'christmas_week', 'thanksgiving_week']
         # 4. Train the model library (1 to max_features)
         trained_models = {}
+    ####    for n in range(max_features, 0, -1):
         for n in range(max_features, 0, -1):
-            top_n_features = feature_ranks.head(n).index.tolist()
-            X_subset = X[top_n_features]
+            # Get the top N features from RFE
+            top_n_list = feature_ranks.head(n).index.tolist()
             
-            # Using 100-150 estimators for the final models
+            # Combine RFE features with your mandatory features
+            # We use dict.fromkeys() to remove duplicates while keeping the RFE order
+            combined_features = list(dict.fromkeys(top_n_list + mandatory_features))
+            
+            # Ensure the features actually exist in X (safety check)
+            final_features = [f for f in combined_features if f in X.columns]
+            
+            X_subset = X[final_features]
+            
+            # Train the model
             rf_model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
             rf_model.fit(X_subset, y)
             
+            # Store the trained model and the ACTUAL feature list used
             trained_models[n] = {
                 'model': rf_model,
-                'features': top_n_features
+                'features': final_features
             }
-            
-        print("✅ All models trained and cached!")
         # ============================================================
     
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -3129,8 +3139,8 @@ def loop_through_simulations(date_str):
             
             # 3. Apply your interaction logic
             # This turns the 'Pre' binary flag into a continuous "Expectation" variable
-            pick_predictions_df['Pre Christmas'] = pick_predictions_df['Pre Christmas'] * pick_predictions_df['christmas_win_pct']
-            pick_predictions_df['Pre Thanksgiving'] = pick_predictions_df['Pre Thanksgiving'] * pick_predictions_df['thanksgiving_win_pct']
+            pick_predictions_df['Pre Christmas'] = pick_predictions_df['Pre Christmas'] * pick_predictions_df['christmas_win_pct'] * (1 / pick_predictions_df['Week'])
+            pick_predictions_df['Pre Thanksgiving'] = pick_predictions_df['Pre Thanksgiving'] * pick_predictions_df['thanksgiving_win_pct'] * (1 / pick_predictions_df['Week'])
             
             # 4. Create the final aggregate feature
             pick_predictions_df['Holiday Strength'] = pick_predictions_df['Pre Thanksgiving'] + pick_predictions_df['Pre Christmas']
