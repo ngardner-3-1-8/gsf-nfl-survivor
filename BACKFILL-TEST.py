@@ -3182,47 +3182,52 @@ def loop_through_simulations(date_str):
                 predict_data = pick_predictions_df[features_to_use].fillna(0) 
                  
                 # 2. Predict into a custom column name
+                # ... (missing_cols check stays the same)
+                predict_data = pick_predictions_df[features_to_use].fillna(0) 
+                 
+                # 2. Predict into a temporary Series instead of the main DataFrame
                 col_name = f'Pick_Pct_{n_features}_Features'
-                pick_predictions_df[col_name] = model.predict(predict_data)
                 
-                # 3. Normalize to target sum (1.0, 2.0, or 3.0)
+                # Create a Series with the exact same index as your dataframe
+                current_preds = pd.Series(model.predict(predict_data), index=pick_predictions_df.index)
+                
+                # 3. Normalize to target sum
                 target_pick_sum = 1.0
-                # if current_week in week_requiring_two_selections:
-                #     target_pick_sum = 2.0
-                # elif current_week in week_requiring_three_selections:
-                #     target_pick_sum = 3.0
-                    
-                current_sum = pick_predictions_df[col_name].sum()
+                current_sum = current_preds.sum()
+                
                 if current_sum > 0:
-                    pick_predictions_df[col_name] *= (target_pick_sum / current_sum)
+                    current_preds *= (target_pick_sum / current_sum)
                 else:
-                    pick_predictions_df[col_name] = 0.0
+                    current_preds[:] = 0.0
                 
                 # 4. Independent Water-Filling Loop
                 for i in range(15): 
-                    over_cap_mask = pick_predictions_df[col_name] > pick_predictions_df['Availability']
+                    over_cap_mask = current_preds > pick_predictions_df['Availability']
                     
                     if not over_cap_mask.any():
                         break
                         
-                    excess_prob = (pick_predictions_df.loc[over_cap_mask, col_name] - pick_predictions_df.loc[over_cap_mask, 'Availability']).sum()
-                    pick_predictions_df.loc[over_cap_mask, col_name] = pick_predictions_df.loc[over_cap_mask, 'Availability']
+                    # Calculate excess using the temporary series
+                    excess_prob = (current_preds[over_cap_mask] - pick_predictions_df.loc[over_cap_mask, 'Availability']).sum()
+                    current_preds[over_cap_mask] = pick_predictions_df.loc[over_cap_mask, 'Availability']
                     
                     non_violator_mask = ~over_cap_mask
-                    sum_non_violators = pick_predictions_df.loc[non_violator_mask, col_name].sum()
+                    sum_non_violators = current_preds[non_violator_mask].sum()
                     
                     if sum_non_violators > 0:
-                        shares = pick_predictions_df.loc[non_violator_mask, col_name] / sum_non_violators
-                        pick_predictions_df.loc[non_violator_mask, col_name] += (excess_prob * shares)
+                        shares = current_preds[non_violator_mask] / sum_non_violators
+                        current_preds[non_violator_mask] += (excess_prob * shares)
                     else:
                         break
                   
-                # Final sanity clamp
-                pick_predictions_df[col_name] = pick_predictions_df[[col_name, 'Availability']].min(axis=1)
-
-                # 5. Map back to main nfl_schedule_df dynamically (Optimized - NO iterrows)
-                # Create a quick dictionary: {'ARI': 0.15, 'BAL': 0.35, ...}
-                pick_map = dict(zip(pick_predictions_df['Team'], pick_predictions_df[col_name]))
+                # Final sanity clamp using numpy minimum for speed
+                current_preds = np.minimum(current_preds, pick_predictions_df['Availability'])
+    
+                # 5. Map back to main nfl_schedule_df dynamically 
+                # Zip the teams with your newly calculated Series
+                pick_map = dict(zip(pick_predictions_df['Team'], current_preds))
+                
+                # ... (Mapping to nfl_schedule_df stays exactly the same)
                 
                 # Apply fast mapping to Home Teams
                 home_mask = current_week_mask & nfl_schedule_df['Home Team'].isin(pick_map.keys())
