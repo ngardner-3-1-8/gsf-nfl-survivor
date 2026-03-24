@@ -1030,6 +1030,8 @@ def loop_through_simulations(date_str):
         df['Away Team Generic Sports Fan Current Rank'] = df['Away Team'].map(lambda team: stadiums[team][8] if team in stadiums else 'NA')
         df['Home Team Generic Sports Fan Current Rank'] = df['Home Team'].map(lambda team: stadiums[team][8] if team in stadiums else 'NA')
 
+        df = df.copy()
+
         SHORT_REST_PENALTY = -0.05
         THREE_IN_TEN_PENALTY = -0.5
         FOUR_IN_SEVENTEEN_PENALTY = -0.25
@@ -1512,6 +1514,8 @@ def loop_through_simulations(date_str):
             csv_df['Sportsbook Underdog'] = np.nan
             csv_df['Home Team Sportsbook Spread'] = np.nan
             csv_df['Away Team Sportsbook Spread'] = np.nan
+            csv_df['Sportsbook Favorite'] = csv_df['Sportsbook Favorite'].astype(object)
+            csv_df['Sportsbook Underdog'] = csv_df['Sportsbook Underdog'].astype(object)
             
             # Attempt to update CSV data with scraped odds from DraftKings
             # This block only executes if live_api_odds_df is not empty
@@ -1530,7 +1534,7 @@ def loop_through_simulations(date_str):
                         csv_df.loc[index, 'Home Team Sportsbook Spread'] = matching_row.iloc[0]['Home Spread']
                         csv_df.loc[index, 'Total Line'] = matching_row.iloc[0].get('Total', np.nan)
                         
-                        # Determine Favorite/Underdog based on DraftKings odds
+                        # Determine Favorite/Underdog based on DraftKings odds                        
                         # Assuming odds <= -110 typically indicates the favorite
                         if matching_row.iloc[0]['Home Odds'] <= -110:
                             csv_df.loc[index, 'Sportsbook Favorite'] = csv_df.loc[index, 'Home Team']
@@ -2127,7 +2131,7 @@ def loop_through_simulations(date_str):
         # Convert to numeric
         public_pick_df['Win %'] = pd.to_numeric(public_pick_df['Win %'].str.rstrip('%')) / 100
         public_pick_df['Pick %'] = pd.to_numeric(public_pick_df['Pick %'].str.rstrip('%')) / 100
-        public_pick_df['Pick %'].fillna(0.0, inplace=True)
+        public_pick_df['Pick %'] = public_pick_df['Pick %'].fillna(0.0)
         public_pick_df['Public Pick %'] = public_pick_df['Pick %']
         
         # Convert 'Week' to integer representing the week number
@@ -2547,7 +2551,7 @@ def loop_through_simulations(date_str):
         df = pd.read_csv('contest-historical-data/Circa_historical_data.csv')
     
         df.rename(columns={"Week": "Date"}, inplace=True)
-        df['Pick %'].fillna(0.0, inplace=True)
+        df['Pick %'] = df['Pick %'].fillna(0.0)
 
         # ============================================================
         # 🛑 STRICT TEMPORAL FILTERING (Preventing Data Leakage)
