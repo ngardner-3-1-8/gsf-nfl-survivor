@@ -3734,7 +3734,8 @@ def loop_through_simulations(date_str):
             valid_pace = self.pbp[(self.pbp['seconds_consumed'] >= 0) & (self.pbp['seconds_consumed'] < 60)]
             
             pace_stats = valid_pace.groupby(['posteam', 'pace_type']).apply(
-                lambda x: np.average(x['seconds_consumed'], weights=x['time_weight'])
+                lambda x: np.average(x['seconds_consumed'], weights=x['time_weight']),
+                include_groups=False
             )
     
             oob_plays = self.pbp[self.pbp['play_type'].isin(['run', 'pass'])]
