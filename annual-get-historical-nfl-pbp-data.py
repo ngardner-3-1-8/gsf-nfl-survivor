@@ -145,7 +145,7 @@ else:
 CURRENT_UPCOMING_WEEK = starting_week 
 
 START_YEAR = 2008
-END_YEAR = target_year
+END_YEAR = target_year - 1
 DECAY_RATE = 0.00475
 MIN_WEIGHTED_PLAYS = 30
 GARBAGE_MIN = 0.05
