@@ -24,7 +24,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Annual Script
-        run: python "Annual Play by Play Historical Data.py"
+        run: python "annual-get-historical-nfl-pbp-data.py"
 
       - name: Commit and Push Results
         run: |
