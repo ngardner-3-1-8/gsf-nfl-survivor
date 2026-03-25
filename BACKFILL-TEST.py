@@ -3459,7 +3459,7 @@ def loop_through_simulations(date_str):
         ###################################################################################################
     
         # --- OPTIONAL: Run Monte Carlo after predictions ---
-        monte_summary = run_monte_carlo_simulation(nfl_schedule_df, num_trials=1000)
+        monte_summary = run_monte_carlo_simulation(nfl_schedule_df, num_trials=100)
     
         # Merge back into main dataframe for charting
         nfl_schedule_df = nfl_schedule_df.merge(
