@@ -158,7 +158,7 @@ NUM_WEEKS_TO_KEEP = starting_week - 1
 # 2. HOLIDAY CALCULATIONS BASED ON THE SEASON YEAR (current_year)
 # If it's Jan 2026, current_year is 2025. This ensures we look at 2025 holidays.
 thanksgiving_season = get_thanksgiving(current_year)
-two_days_after_thanksgiving = thanksgiving_season + datetime.timedelta(days=2)
+two_days_after_thanksgiving = thanksgiving_season + timedelta(days=2)
 
 christmas_season_cutoff = datetime(current_year, 12, 26)
 
