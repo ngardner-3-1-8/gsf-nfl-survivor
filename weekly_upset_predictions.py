@@ -8,7 +8,7 @@ import nflreadpy as nfl
 import datetime
 
 # 1. Get current date
-today = datetime.datetime.now()
+today = pd.to_datetime(date)
 
 current_cal_year = today.year 
 
@@ -43,16 +43,29 @@ if today.month < 6:
         games_played = schedule[
             pd.to_datetime(schedule['gameday']) <= pd.to_datetime(today)
         ]
+        print(games_played)
         
         if not games_played.empty:
-            # If games have been played, the "starting_week" for your script 
-            # (which usually scrapes the *upcoming* week) should be the last played week + 1.
-            last_played_week = int(games_played['week'].max())
-            starting_week = last_played_week + 1
+            # Ensure gameday is datetime for accurate comparisons
+            schedule['gameday'] = pd.to_datetime(schedule['gameday'])
             
-            # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
-            if starting_week > 19: 
-                starting_week = 19 
+            # Create a Series: index = week, value = the latest game date for that week
+            week_end_dates = schedule[schedule['game_type'] == 'REG'].groupby('week')['gameday'].max()
+            
+            # Find weeks where the FINAL game has already occurred
+            completed_weeks = week_end_dates[week_end_dates <= pd.to_datetime(today)]
+            
+            if not completed_weeks.empty:
+                # The latest completed week
+                last_played_week = int(completed_weeks.index.max())
+                starting_week = last_played_week + 1
+            else:
+                # No weeks have fully completed yet
+                starting_week = 1
+                
+            # Bound check
+            if starting_week > 20: 
+                starting_week = 20
         else:
             # If we fell back a year but that season is fully over, or if no games played yet
             starting_week = 1 
@@ -61,7 +74,7 @@ if today.month < 6:
         print(f"⚠️ Error in dynamic detection: {e}. Falling back to defaults.")
         # Fallback defaults to prevent crash
         target_year = 2025
-        starting_week = 19
+        starting_week = 20
 else:
     target_year = current_cal_year
 
@@ -83,25 +96,40 @@ else:
             # Check if today is BEFORE the first game
             if pd.to_datetime(today) < first_game_date:
                 print(f"Today ({today.date()}) is before the first game ({first_game_date.date()}). dropping year by 1.")
-                target_year -= 1
+                target_year -= 0
                 # Reload schedule for the adjusted year so we can calculate the week correctly below
                 schedule = nfl.load_schedules([target_year])
+                schedule = schedule.to_pandas()
+                starting_week = 1
         
         # 4. Calculate the Current Week
         # We find the latest game that has happened to determine "current" week
         games_played = schedule[
             pd.to_datetime(schedule['gameday']) <= pd.to_datetime(today)
         ]
+        print(games_played)
         
         if not games_played.empty:
-            # If games have been played, the "starting_week" for your script 
-            # (which usually scrapes the *upcoming* week) should be the last played week + 1.
-            last_played_week = int(games_played['week'].max())
-            starting_week = last_played_week + 1
+            # Ensure gameday is datetime for accurate comparisons
+            schedule['gameday'] = pd.to_datetime(schedule['gameday'])
             
-            # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
-            if starting_week > 19: 
-                starting_week = 19 
+            # Create a Series: index = week, value = the latest game date for that week
+            week_end_dates = schedule[schedule['game_type'] == 'REG'].groupby('week')['gameday'].max()
+            
+            # Find weeks where the FINAL game has already occurred
+            completed_weeks = week_end_dates[week_end_dates <= pd.to_datetime(today)]
+            
+            if not completed_weeks.empty:
+                # The latest completed week
+                last_played_week = int(completed_weeks.index.max())
+                starting_week = last_played_week + 1
+            else:
+                # No weeks have fully completed yet
+                starting_week = 1
+                
+            # Bound check
+            if starting_week > 20: 
+                starting_week = 20
         else:
             # If we fell back a year but that season is fully over, or if no games played yet
             starting_week = 1 
