@@ -150,7 +150,7 @@ def get_thanksgiving(year):
     nov1_weekday = calendar.weekday(year, 11, 1)
     days_to_first_thursday = (3 - nov1_weekday + 7) % 7
     thanksgiving_day = 1 + days_to_first_thursday + 21
-    return datetime.(year, 11, thanksgiving_day)
+    return datetime.datetime(year, 11, thanksgiving_day)
 
 # 1. Standard Logic
 NUM_WEEKS_TO_KEEP = starting_week - 1
@@ -160,7 +160,7 @@ NUM_WEEKS_TO_KEEP = starting_week - 1
 thanksgiving_season = get_thanksgiving(current_year)
 two_days_after_thanksgiving = thanksgiving_season + datetime.timedelta(days=2)
 
-christmas_season_cutoff = datetime.(current_year, 12, 26)
+christmas_season_cutoff = datetime.datetime(current_year, 12, 26)
 
 # 3. Apply Adjustments
 # Use separate 'if' statements if you want them to be additive (+2 total)
