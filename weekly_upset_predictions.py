@@ -8,7 +8,7 @@ import nflreadpy as nfl
 import datetime
 
 # 1. Get current date
-today = pd.to_datetime(date)
+today = datetime.now()
 
 current_cal_year = today.year 
 
