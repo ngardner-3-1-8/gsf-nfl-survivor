@@ -1,4 +1,4 @@
-name: Weekly NFL Data Collection
+name: Weekly 2 Collect Last Weeks Pick Data
 
 on:
   schedule:
