@@ -24,7 +24,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Prediction Script
-        run: python "weekly_upset_predictions.py"
+        run: python "weekly_3_predict_likely_upsets.py"
 
       - name: Commit and Push Predictions
         run: |
