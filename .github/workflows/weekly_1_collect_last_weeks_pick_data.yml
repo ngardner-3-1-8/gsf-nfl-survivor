@@ -5,7 +5,7 @@ on:
 
     # Runs at 13:30 UTC every Tuesday
     # (4:00 AM EDT / 3:00 AM EST)
-    - cron: '0 8 * * 2'
+    - cron: '0 10 * * 2'
   workflow_dispatch: # Allows you to trigger it manually for testing
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Script
-        run: python weekly-data-collection-chronjob.py
+        run: python weekly_1_collect_last_weeks_pick_data.py
         
       - name: Commit and Push Changes
         run: |
