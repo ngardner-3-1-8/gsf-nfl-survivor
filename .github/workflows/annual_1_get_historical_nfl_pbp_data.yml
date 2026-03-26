@@ -1,4 +1,4 @@
-name: Annual NFL Data Update
+name: Annual 1 Get Historical NFL Play by Play Data
 
 on:
   schedule:
