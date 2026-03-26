@@ -2607,20 +2607,20 @@ def loop_through_simulations(date_str):
         # ============================================================
         # 🌟 NEW BLOCK: AUTO-OPTIMIZATION (RFE)
         # ============================================================
-####        assumed_public_pick_col = 'Public Pick %'
+        assumed_public_pick_col = 'Public Pick %'
         
-####        # 1. Determine which feature set to use
-####        if assumed_public_pick_col in df_historical.columns and not df[assumed_public_pick_col].isnull().all():
-####            print(f"✨ Enhanced column '{assumed_public_pick_col}' found. Including in RFE...")
-####            current_features = base_features + [assumed_public_pick_col]
-####            # Filter to rows that actually have the public data to avoid training on zeros
-####            df_for_rfe = df_historical.dropna(subset=[assumed_public_pick_col])
-####        else:
-####            print(f"⚠️ '{assumed_public_pick_col}' not found or empty. Using base features only.")
-####            current_features = base_features
-####            df_for_rfe = df
-        current_features = base_features ####TESTING WITHOUT PUBLIC PICK COLUMN
-        df_for_rfe = df ####TESTING WITHOUT PUBLIC PICK COLUMN
+        # 1. Determine which feature set to use
+        if assumed_public_pick_col in df_historical.columns and not df[assumed_public_pick_col].isnull().all():
+            print(f"✨ Enhanced column '{assumed_public_pick_col}' found. Including in RFE...")
+            current_features = base_features + [assumed_public_pick_col]
+            # Filter to rows that actually have the public data to avoid training on zeros
+            df_for_rfe = df_historical.dropna(subset=[assumed_public_pick_col])
+            number_features = 9
+        else:
+            print(f"⚠️ '{assumed_public_pick_col}' not found or empty. Using base features only.")
+            current_features = base_features
+            df_for_rfe = df
+            number_features = 7
         
         X = df_for_rfe[current_features].fillna(0)
         y = df_for_rfe['Pick %']
@@ -2643,8 +2643,8 @@ def loop_through_simulations(date_str):
         mandatory_features = ['Pre Thanksgiving', 'Pre Christmas', 'christmas_week', 'thanksgiving_week']
         # 4. Train the model library (1 to max_features)
         trained_models = {}
-        for n in range(max_features, 0, -1):
-####        for n in range(9, 10):
+####        for n in range(max_features, 0, -1):
+        for n in [7,9]:
             # Get the top N features from RFE
             top_n_list = feature_ranks.head(n).index.tolist()
             
@@ -2667,7 +2667,7 @@ def loop_through_simulations(date_str):
                 'features': final_features
             }
 
-            if n in [9]:
+            if n in [number_features]:
                 print(f"\n--- Verifying Model n={n} ---")
                 print(f"Total Features Used: {len(final_features)}")
                 print(f"Feature List: {final_features}")
@@ -3149,54 +3149,66 @@ def loop_through_simulations(date_str):
             pick_predictions_df['Availability'] = pick_predictions_df['Availability'].fillna(0.0)
 
             
-            for n_features, model_data in trained_models.items():
-                model = model_data['model']
-                features_to_use = model_data['features']
+            # --- DYNAMIC MODEL SELECTION ---
+            # Use 9 features for the current week (where public data exists)
+            # Use 7 features for all future simulated weeks
+            if current_week == upcoming_week:
+                n_features = 9
+            else:
+                n_features = 7
                 
-                # 1. Ensure features exist in this week's data (Optimized set logic)
-                missing_cols = list(set(features_to_use) - set(pick_predictions_df.columns))
-                if missing_cols:
-                    pick_predictions_df[missing_cols] = 0.0 
-                        
-                predict_data = pick_predictions_df[features_to_use].fillna(0) 
-                 
-                # 2. Predict into a custom column name
-                col_name = f'Pick_Pct_{n_features}_Features'
-                pick_predictions_df[col_name] = model.predict(predict_data)
+            model_data = trained_models[n_features]
+            model = model_data['model']
+            features_to_use = model_data['features']
+            
+            # --- ADD THIS PRINT BLOCK HERE ---
+            # Print to verify the correct model is firing
+            print(f"🏈 Week {current_week} | Predicting using {n_features} features model...")
+            
+            # 1. Ensure features exist in this week's data (Optimized set logic)
+            missing_cols = list(set(features_to_use) - set(pick_predictions_df.columns))
+            if missing_cols:
+                pick_predictions_df[missing_cols] = 0.0 
+                    
+            predict_data = pick_predictions_df[features_to_use].fillna(0) 
+             
+            # 2. Predict into a custom column name
+            col_name = f'Predicted_Pick_Pct'
+            pick_predictions_df[col_name] = model.predict(predict_data)
 
-                pick_predictions_df = pick_predictions_df.copy()
+            pick_predictions_df = pick_predictions_df.copy()
+            
+            # 3. Normalize to target sum (1.0, 2.0, or 3.0)
+            target_pick_sum = 1.0
+            # if current_week in week_requiring_two_selections:
+            #     target_pick_sum = 2.0
+            # elif current_week in week_requiring_three_selections:
+            #     target_pick_sum = 3.0
                 
-                # 3. Normalize to target sum (1.0, 2.0, or 3.0)
-                target_pick_sum = 1.0
-                # if current_week in week_requiring_two_selections:
-                #     target_pick_sum = 2.0
-                # elif current_week in week_requiring_three_selections:
-                #     target_pick_sum = 3.0
+            current_sum = pick_predictions_df[col_name].sum()
+            if current_sum > 0:
+                pick_predictions_df[col_name] *= (target_pick_sum / current_sum)
+            else:
+                pick_predictions_df[col_name] = 0.0
+            
+            # 4. Independent Water-Filling Loop
+            for i in range(15): 
+                over_cap_mask = pick_predictions_df[col_name] > pick_predictions_df['Availability']
+                
+                if not over_cap_mask.any():
+                    break
                     
-                current_sum = pick_predictions_df[col_name].sum()
-                if current_sum > 0:
-                    pick_predictions_df[col_name] *= (target_pick_sum / current_sum)
+                excess_prob = (pick_predictions_df.loc[over_cap_mask, col_name] - pick_predictions_df.loc[over_cap_mask, 'Availability']).sum()
+                pick_predictions_df.loc[over_cap_mask, col_name] = pick_predictions_df.loc[over_cap_mask, 'Availability']
+                
+                non_violator_mask = ~over_cap_mask
+                sum_non_violators = pick_predictions_df.loc[non_violator_mask, col_name].sum()
+                
+                if sum_non_violators > 0:
+                    shares = pick_predictions_df.loc[non_violator_mask, col_name] / sum_non_violators
+                    pick_predictions_df.loc[non_violator_mask, col_name] += (excess_prob * shares)
                 else:
-                    pick_predictions_df[col_name] = 0.0
-                
-                # 4. Independent Water-Filling Loop
-                for i in range(15): 
-                    over_cap_mask = pick_predictions_df[col_name] > pick_predictions_df['Availability']
-                    
-                    if not over_cap_mask.any():
-                        break
-                        
-                    excess_prob = (pick_predictions_df.loc[over_cap_mask, col_name] - pick_predictions_df.loc[over_cap_mask, 'Availability']).sum()
-                    pick_predictions_df.loc[over_cap_mask, col_name] = pick_predictions_df.loc[over_cap_mask, 'Availability']
-                    
-                    non_violator_mask = ~over_cap_mask
-                    sum_non_violators = pick_predictions_df.loc[non_violator_mask, col_name].sum()
-                    
-                    if sum_non_violators > 0:
-                        shares = pick_predictions_df.loc[non_violator_mask, col_name] / sum_non_violators
-                        pick_predictions_df.loc[non_violator_mask, col_name] += (excess_prob * shares)
-                    else:
-                        break
+                    break
 
                 # Final sanity clamp
                 pick_predictions_df[col_name] = pick_predictions_df[[col_name, 'Availability']].min(axis=1)
@@ -3219,7 +3231,7 @@ def loop_through_simulations(date_str):
             # ==============================================================================
             # We have 80 columns of predictions, but the simulator can only follow one timeline.
             # We explicitly set the "official" Pick % to the -feature model to drive U_prev_week
-            baseline_col = 'Pick_Pct_9_Features'
+            baseline_col = 'Predicted_Pick_Pct'
             
             for _, row in pick_predictions_df.iterrows():
                 team = row['Team']
