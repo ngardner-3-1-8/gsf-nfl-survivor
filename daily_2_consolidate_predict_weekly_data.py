@@ -2607,18 +2607,20 @@ def loop_through_simulations(date_str):
         # ============================================================
         # 🌟 NEW BLOCK: AUTO-OPTIMIZATION (RFE)
         # ============================================================
-        assumed_public_pick_col = 'Public Pick %'
+####        assumed_public_pick_col = 'Public Pick %'
         
-        # 1. Determine which feature set to use
-        if assumed_public_pick_col in df_historical.columns and not df[assumed_public_pick_col].isnull().all():
-            print(f"✨ Enhanced column '{assumed_public_pick_col}' found. Including in RFE...")
-            current_features = base_features + [assumed_public_pick_col]
-            # Filter to rows that actually have the public data to avoid training on zeros
-            df_for_rfe = df_historical.dropna(subset=[assumed_public_pick_col])
-        else:
-            print(f"⚠️ '{assumed_public_pick_col}' not found or empty. Using base features only.")
-            current_features = base_features
-            df_for_rfe = df
+####        # 1. Determine which feature set to use
+####        if assumed_public_pick_col in df_historical.columns and not df[assumed_public_pick_col].isnull().all():
+####            print(f"✨ Enhanced column '{assumed_public_pick_col}' found. Including in RFE...")
+####            current_features = base_features + [assumed_public_pick_col]
+####            # Filter to rows that actually have the public data to avoid training on zeros
+####            df_for_rfe = df_historical.dropna(subset=[assumed_public_pick_col])
+####        else:
+####            print(f"⚠️ '{assumed_public_pick_col}' not found or empty. Using base features only.")
+####            current_features = base_features
+####            df_for_rfe = df
+        current_features = base_features ####TESTING WITHOUT PUBLIC PICK COLUMN
+        df_for_rfe = df ####TESTING WITHOUT PUBLIC PICK COLUMN
         
         X = df_for_rfe[current_features].fillna(0)
         y = df_for_rfe['Pick %']
@@ -2641,8 +2643,8 @@ def loop_through_simulations(date_str):
         mandatory_features = ['Pre Thanksgiving', 'Pre Christmas', 'christmas_week', 'thanksgiving_week']
         # 4. Train the model library (1 to max_features)
         trained_models = {}
-    ####    for n in range(max_features, 0, -1):
-        for n in range(9, 10):
+        for n in range(max_features, 0, -1):
+####        for n in range(9, 10):
             # Get the top N features from RFE
             top_n_list = feature_ranks.head(n).index.tolist()
             
@@ -2656,7 +2658,7 @@ def loop_through_simulations(date_str):
             X_subset = X[final_features]
             
             # Train the model
-            rf_model = RandomForestRegressor(n_estimators=150, random_state=42, n_jobs=-1)
+            rf_model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
             rf_model.fit(X_subset, y)
             
             # Store the trained model and the ACTUAL feature list used
