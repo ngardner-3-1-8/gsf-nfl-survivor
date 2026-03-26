@@ -23,7 +23,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Schedule Script
-        run: python annual_1_get_schedule.py
+        run: python annual_2_get_schedule.py
 
       - name: Commit and Push
         run: |
