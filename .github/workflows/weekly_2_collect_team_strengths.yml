@@ -1,4 +1,4 @@
-name: Weekly Team Strengths Update
+name: Weekly 2 Collect Team Strengths
 
 on:
   schedule:
@@ -24,7 +24,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Team Strengths Script
-        run: python "weekly-get-team-strengths.py"
+        run: python "weekly_2_collect_team_strengths.py"
 
       - name: Commit and Push Results
         run: |
