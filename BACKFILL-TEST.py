@@ -2642,7 +2642,7 @@ def loop_through_simulations(date_str):
         # 4. Train the model library (1 to max_features)
         trained_models = {}
     ####    for n in range(max_features, 0, -1):
-        for n in range(max_features, 0, -1):
+        for n in range(9, 10):
             # Get the top N features from RFE
             top_n_list = feature_ranks.head(n).index.tolist()
             
@@ -2656,7 +2656,7 @@ def loop_through_simulations(date_str):
             X_subset = X[final_features]
             
             # Train the model
-            rf_model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
+            rf_model = RandomForestRegressor(n_estimators=150, random_state=42, n_jobs=-1)
             rf_model.fit(X_subset, y)
             
             # Store the trained model and the ACTUAL feature list used
@@ -2665,7 +2665,7 @@ def loop_through_simulations(date_str):
                 'features': final_features
             }
 
-            if n in [10, 15]:
+            if n in [9]:
                 print(f"\n--- Verifying Model n={n} ---")
                 print(f"Total Features Used: {len(final_features)}")
                 print(f"Feature List: {final_features}")
@@ -3216,8 +3216,8 @@ def loop_through_simulations(date_str):
             # THE STATE DRIVER FIX
             # ==============================================================================
             # We have 80 columns of predictions, but the simulator can only follow one timeline.
-            # We explicitly set the "official" Pick % to the 30-feature model to drive U_prev_week
-            baseline_col = 'Pick_Pct_30_Features'
+            # We explicitly set the "official" Pick % to the -feature model to drive U_prev_week
+            baseline_col = 'Pick_Pct_9_Features'
             
             for _, row in pick_predictions_df.iterrows():
                 team = row['Team']
