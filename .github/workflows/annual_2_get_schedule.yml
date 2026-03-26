@@ -1,9 +1,9 @@
-name: Annual Schedule Fetch
+name: Annual 2 Get Schedule
 
 on:
   schedule:
     # Runs at 14:00 UTC (10:00 AM ET) on May 15th every year
-    - cron: '0 14 15 5 *'
+    - cron: '0 8 18 5 *'
   workflow_dispatch: # Allows you to run it manually right now to test
 
 jobs:
