@@ -2604,88 +2604,65 @@ def loop_through_simulations(date_str):
     #                     'Week_Min_Top_Team', 'Week_Std_Top_Team', 'Team_Top_Team_RelativeToWeekMean', 'Team_Top_Team_RelativeToTopTeam', 'Top_Team_Rank', 'Top_Team_Rank_Density']
             
     
-        # ============================================================
-        # 🌟 NEW BLOCK: AUTO-OPTIMIZATION (RFE)
+# ============================================================
+        # 🌟 DUAL MODEL TRAINING (Current vs Future)
         # ============================================================
         assumed_public_pick_col = 'Public Pick %'
-        
-        # 1. Determine which feature set to use
-        if assumed_public_pick_col in df_historical.columns and not df[assumed_public_pick_col].isnull().all():
-            print(f"✨ Enhanced column '{assumed_public_pick_col}' found. Including in RFE...")
-            current_features = base_features + [assumed_public_pick_col]
-            # Filter to rows that actually have the public data to avoid training on zeros
-            df_for_rfe = df_historical.dropna(subset=[assumed_public_pick_col])
-            number_features = 9
-        else:
-            print(f"⚠️ '{assumed_public_pick_col}' not found or empty. Using base features only.")
-            current_features = base_features
-            df_for_rfe = df
-            number_features = 7
-        
-        X = df_for_rfe[current_features].fillna(0)
-        y = df_for_rfe['Pick %']
-        
-        max_features = len(current_features)
-        print(f"⚙️ Running RFE to rank all {max_features} features...")
-        
-        # 2. Run RFE ONCE (Optimized with fewer estimators for speed)
-        base_rf = RandomForestRegressor(n_estimators=50, n_jobs=-1, random_state=42)
-        selector = RFE(estimator=base_rf, n_features_to_select=1, step=1)
-        selector.fit(X, y)
-        
-        # 3. Create the ranked list
-        feature_ranks = pd.Series(selector.ranking_, index=current_features).sort_values()
-        
-        print("\n🏆 Top 81 Most Valuable Features (Including Enhanced if available):")
-        print(feature_ranks.head(81))
-        print("-" * 50)
-
         mandatory_features = ['Pre Thanksgiving', 'Pre Christmas', 'christmas_week', 'thanksgiving_week']
-        # 4. Train the model library (1 to max_features)
-        trained_models = {}
-####        for n in range(max_features, 0, -1):
         
-        # Define the exact features for Future Weeks (No Public Pick Data)
-        # Ensure Pick % is completely removed from the base features
-        future_features = [f for f in base_features if f != assumed_public_pick_col]
+        # 1. Prepare base features (strictly exclude Public Pick % here)
+        clean_base = [f for f in base_features if f != assumed_public_pick_col]
         
-        # Define the exact features for Current Week (Includes Public Pick Data)
-        current_features = future_features + [assumed_public_pick_col]
-        
-        # Model definitions to loop through
-        model_definitions = {
-            7: future_features,  # Future model (Key is 7 to match your simulation loop logic)
-            9: current_features  # Current model (Key is 9 to match your simulation loop logic)
+        # 2. Define our two targets
+        # Model 9: Current Week (Uses RFE to find the best 9, including Public Pick if ranked high)
+        # Model 7: Future Weeks (Uses RFE to find the best 7 fundamentals)
+        model_configs = {
+            9: {'features': clean_base + [assumed_public_pick_col], 'target_n': 9},
+            7: {'features': clean_base, 'target_n': 7}
         }
         
-        for model_key, feature_list in model_definitions.items():
-            # Ensure the features actually exist in X (safety check)
-            final_features = [f for f in feature_list if f in X.columns]
+        trained_models = {}
+
+        for n_key, config in model_configs.items():
+            feat_list = [f for f in config['features'] if f in df_historical.columns]
             
-            X_subset = X[final_features]
-            y_subset = y
+            # Filter historical data for this specific feature set
+            if assumed_public_pick_col in feat_list:
+                df_train = df_historical.dropna(subset=[assumed_public_pick_col])
+            else:
+                df_train = df_historical
             
-            # Train the Random Forest
-            model = RandomForestRegressor(
-                n_estimators=100, 
-                random_state=42, 
-                n_jobs=-1,
-                min_samples_leaf=5
-            )
-            model.fit(X_subset, y_subset)
+            X_train = df_train[feat_list].fillna(0)
+            y_train = df_train['Pick %']
             
-            # Store it in the dictionary using the 7 or 9 key
-            trained_models[model_key] = {
-                'model': model,
+            print(f"⚙️ Running RFE to find best features for Model {n_key}...")
+            
+            # Run RFE to rank features
+            base_rf = RandomForestRegressor(n_estimators=50, n_jobs=-1, random_state=42)
+            selector = RFE(estimator=base_rf, n_features_to_select=1, step=1)
+            selector.fit(X_train, y_train)
+            
+            # Create ranked list and select the Top N
+            ranks = pd.Series(selector.ranking_, index=feat_list).sort_values()
+            top_n_list = ranks.head(config['target_n']).index.tolist()
+            
+            # Combine Top N with Mandatory features (ensuring no duplicates)
+            final_features = list(dict.fromkeys(top_n_list + mandatory_features))
+            
+            # Final training on the selected subset
+            final_rf = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1, min_samples_leaf=5)
+            final_rf.fit(X_train[final_features], y_train)
+            
+            # Store for the simulation loop
+            trained_models[n_key] = {
+                'model': final_rf,
                 'features': final_features
             }
-            
-            print(f"✅ Trained Model {model_key} with {len(final_features)} features.")
+            print(f"✅ Model {n_key} ready! Features: {final_features}")
 
-            
         # ============================================================
-    
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        # End of Training Block (Proceed to your simulation/testing)
+        # ============================================================
     
         print("Starting week-by-week pick percentage predictions...")
         
@@ -3155,21 +3132,31 @@ def loop_through_simulations(date_str):
 
             
             # --- DYNAMIC MODEL SELECTION ---
-            # Use 9 features for the current week (where public data exists)
-            # Use 7 features for all future simulated weeks
+            # Default to the 7-feature model
+            n_features = 7
+            
+            # Logic: Use 9-feature model ONLY IF it's the current week 
+            # AND the 'Public Pick %' column actually has data.
             if current_week == upcoming_week:
-                n_features = 9
-            else:
-                n_features = 7
-                
+                if 'Public Pick %' in pick_predictions_df.columns:
+                    # Check if the column is NOT entirely null and NOT all zeros
+                    has_public_data = not pick_predictions_df['Public Pick %'].isnull().all() and \
+                                      (pick_predictions_df['Public Pick %'] != 0).any()
+                    
+                    if has_public_data:
+                        n_features = 9
+                    else:
+                        print(f"⚠️ Public Pick % is empty for Week {current_week}. Falling back to 7-feature model.")
+                else:
+                    print(f"⚠️ Public Pick % column missing. Falling back to 7-feature model.")
+
+            # Load the selected model
             model_data = trained_models[n_features]
             model = model_data['model']
             features_to_use = model_data['features']
             
-            # --- ADD THIS PRINT BLOCK HERE ---
-            # Print to verify the correct model is firing
+            # --- VERIFICATION PRINT ---
             print(f"🏈 Week {current_week} | Predicting using {n_features} features model...")
-            print(f"Features being used: {features_to_use}")
             
             # 1. Ensure features exist in this week's data (Optimized set logic)
             missing_cols = list(set(features_to_use) - set(pick_predictions_df.columns))
