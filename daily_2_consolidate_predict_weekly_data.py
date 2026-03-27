@@ -3157,6 +3157,7 @@ def loop_through_simulations(date_str):
             
             # --- VERIFICATION PRINT ---
             print(f"🏈 Week {current_week} | Predicting using {n_features} features model...")
+            print(f"Features Being Used: {features_to_use}")
             
             # 1. Ensure features exist in this week's data (Optimized set logic)
             missing_cols = list(set(features_to_use) - set(pick_predictions_df.columns))
