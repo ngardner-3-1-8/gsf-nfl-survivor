@@ -24,7 +24,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Rankings Script
-        run: python "daily_1_get_internal_rankings"
+        run: python "daily_1_get_internal_rankings.py"
 
       - name: Commit and Push Results
         run: |
