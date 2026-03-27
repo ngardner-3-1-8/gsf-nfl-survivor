@@ -179,77 +179,7 @@ def loop_through_rankings(date):
     SR_TO_POINTS_COEFF = 0.765 
     
     # TYPICAL STARTERS MAP (Primary 2025 Starters)
-    TYPICAL_STARTERS = {
-        'ARI': 'K.Murray',
-        'ATL': 'M.Penix',
-        'BAL': 'L.Jackson',
-        'BUF': 'J.Allen',
-        'CAR': 'B.Young',
-        'CHI': 'C.Williams',
-        'CIN': 'J.Burrow',
-        'CLE': 'S.Sanders',
-        'DAL': 'D.Prescott',
-        'DEN': 'B.Nix',
-        'DET': 'J.Goff',
-        'GB': 'J.Love',
-        'HOU': 'C.Stroud',
-        'IND': 'D.Jones',
-        'JAX': 'T.Lawrence',
-        'KC': 'P.Mahomes',
-        'LA': 'M.Stafford',
-        'LAC': 'J.Herbert',
-        'LV': 'G.Smith',
-        'MIA': 'T.Tagovailoa',
-        'MIN': 'J.McCarthy',
-        'NE': 'D.Maye',
-        'NO': 'T.Shough',
-        'NYG': 'J.Dart',
-        'NYJ': 'B.Cook',
-        'PHI': 'J.Hurts',
-        'PIT': 'A.Rodgers',
-        'SEA': 'S.Darnold',
-        'SF': 'B.Purdy',
-        'TB': 'B.Mayfield',
-        'TEN': 'C.Ward',
-        'WAS': 'J.Daniels'
-    }
-    
-    # MANUAL OVERRIDE: [Backup Name, Wk1, Wk2, Wk3, Wk4...]
-    # True = Backup is starting, False = Typical Starter is playing
-    MANUAL_CURRENT_STARTERS = {
-        'ARI': [None, None, None, None, None, 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett', 'J.Brissett'],
-        'ATL': [None, None, None, None, None, None, None, 'K.Cousins', None, None, None, 'K.Cousins', 'K.Cousins', 'K.Cousins', 'K.Cousins', 'K.Cousins', 'K.Cousins', 'K.Cousins'],
-        'BAL': [None, None, None, None, 'C.Rush', 'C.Rush', 'T.Huntley', 'T.Huntley', None, None, None, None, None, None, None, None, 'T.Huntley', None],
-        'BUF': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'M.Trubisky'],
-        'CAR': [None, None, None, None, None, None, None, 'A.Dalton', None, None, None, None, None, None, None, None, None, None],
-        'CHI': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-        'CIN': [None, 'J.Browning', 'J.Browning', 'J.Browning', 'J.Browning', 'J.Flacco', 'J.Flacco', 'J.Flacco', 'J.Flacco', 'J.Flacco', 'J.Flacco', 'J.Flacco', None, None, None, None, None, None],
-        'CLE': ['J.Flacco', 'J.Flacco', 'J.Flacco', 'J.Flacco', 'D.Gabriel', 'D.Gabriel', 'D.Gabriel', 'D.Gabriel', 'D.Gabriel', 'D.Gabriel', 'D.Gabriel', None, None, None, None, None, None, None],
-        'DAL': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'J.Milton III'],
-        'DEN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-        'DET': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-        'GB': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'M.Willis', 'M.Willis', 'C.Tune'],
-        'HOU': [None, None, None, None, None, None, None, None, 'D.Mills', 'D.Mills', 'D.Mills', 'D.Mills', None, None, None, None, None, None],
-        'IND': [None, None, None, None, None, None, None, None, None, None, None, None, None, 'R.Leonard', 'P.Rivers', 'P.Rivers', 'P.Rivers', 'R.Leonard'],
-        'JAX': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-        'KC': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'C.Oladokun', 'C.Oladokun', 'S.Buechele'],
-        'LV': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, "A.O'Connell"],
-        'LAC': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'T.Lance'],
-        'LA': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-        'MIA': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'Q.Ewers', 'Q.Ewers', 'Q.Ewers'],
-        'MIN': [None, None, 'C.Wentz', 'C.Wentz', 'C.Wentz','C.Wentz', 'C.Wentz', 'C.Wentz', None, None, None, None, 'M.Brosmer', None, None, None, 'M.Brosmer', None],
-        'NE': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-        'NO': ['S.Rattler', 'S.Rattler', 'S.Rattler', 'S.Rattler', 'S.Rattler', 'S.Rattler', 'S.Rattler', 'S.Rattler', None, None, None, None, None, None, None, None, None, None],
-        'NYG': ['R.Wilson', 'R.Wilson', 'R.Wilson', None, None, None, None, None, None, None, 'J.Winston', 'J.Winston', None, None, None, None, None, None],
-        'NYJ': ['J.Fields', 'T.Taylor', 'T.Taylor', 'J.Fields', 'J.Fields', 'J.Fields', 'T.Taylor', 'J.Fields', 'J.Fields', 'J.Fields', 'J.Fields', 'T.Taylor', 'T.Taylor', None, None, None, None, None],
-        'PHI': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'T.McKee'],
-        'PIT': [None, None, None, None, None, None, None, None, None, None, 'M.Rudolph', 'M.Rudolph', None, None, None, None, None, None],
-        'SEA': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-        'SF': [None, 'M.Jones', 'M.Jones', None, 'M.Jones', 'M.Jones', 'M.Jones', 'M.Jones', 'M.Jones', 'M.Jones', None, None, None, None, None, None, None, None],
-        'TB': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-        'TEN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-        'WAS': [None, None, 'M.Mariota', 'M.Mariota', None, None, None, 'M.Mariota', None, 'M.Mariota', 'M.Mariota', 'M.Mariota', 'M.Mariota', None, 'M.Mariota', 'M.Mariota', 'J.Johnson', 'J.Johnson']
-    }
+    from starting_qb_injuries_2025 import TYPICAL_STARTERS, MANUAL_CURRENT_STARTERS
     
     def load_pbp_data(years):
         print(f"Loading PBP data for {years}...")
