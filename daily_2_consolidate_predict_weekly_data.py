@@ -5139,7 +5139,7 @@ def loop_through_simulations(date_str):
     
             # 1. Calculate Market Implied Probabilities 
             # (We use np.where to ONLY calculate this for the upcoming week)
-            is_upcoming = final_combined_df['Week'] == upcoming_week
+            is_upcoming = final_combined_df['Week_x'] == upcoming_week
             
             final_combined_df['Market Home Team Implied Odds'] = np.where(
                 is_upcoming, 
