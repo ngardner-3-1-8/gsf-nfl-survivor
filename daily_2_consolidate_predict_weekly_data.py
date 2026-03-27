@@ -3522,7 +3522,7 @@ def loop_through_simulations(date_str):
         'LAR': 'LA', 'STL': 'LA', 'SD': 'LAC', 'OAK': 'LV'
     }
 
-    from starting_qb_injuries_2026 import TYPICAL_STARTERS, MANUAL_CURRENT_STARTERS
+    from starting_qb_injuries_2025 import TYPICAL_STARTERS, MANUAL_CURRENT_STARTERS
 
     def get_qb_ratings_fast(years, target_year, current_upcoming_week):
         print(f"Loading Player Stats for {years}...")
