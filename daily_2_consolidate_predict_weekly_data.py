@@ -5169,7 +5169,7 @@ def loop_through_simulations(date_str):
             # --------------------------------------------------------
             def evaluate_spread_bet(row, model_spread_col):
                 # 🛑 GATE: Skip future weeks immediately
-                if row['Week'] != upcoming_week:
+                if row['Week_x'] != upcoming_week:
                     return pd.Series(["No Bet", np.nan])
                     
                 if pd.isna(row[model_spread_col]) or pd.isna(row['Home Team Sportsbook Spread']):
@@ -5200,7 +5200,7 @@ def loop_through_simulations(date_str):
             # --------------------------------------------------------
             def evaluate_ml_bet(row, model_home_prob_col, model_away_prob_col):
                 # 🛑 GATE: Skip future weeks immediately
-                if row['Week'] != upcoming_week:
+                if row['Week_x'] != upcoming_week:
                     return pd.Series(["No Bet", np.nan])
                     
                 if pd.isna(row[model_home_prob_col]) or pd.isna(row['Market Home Team Implied Odds']):
@@ -5231,7 +5231,7 @@ def loop_through_simulations(date_str):
             # --------------------------------------------------------
             def determine_total_bet(row):
                 # 🛑 GATE: Skip future weeks immediately
-                if row['Week'] != upcoming_week:
+                if row['Week_x'] != upcoming_week:
                     return pd.Series(["No Bet", np.nan])
                     
                 if pd.isna(row['Monte Carlo Total']) or pd.isna(row['Total Line']):
