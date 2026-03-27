@@ -5075,6 +5075,60 @@ def loop_through_simulations(date_str):
                              'Sim_Total_Median', 'Sim_Spread_Variance', 'Sim_Spread_Std']
             monte_carlo_df[cols_to_round] = monte_carlo_df[cols_to_round].round(2)
             final_combined_df = collect_schedule_travel_ranking_data_df.merge(monte_carlo_df, left_index=True, right_on='Matchup_ID', how='left')
+
+            # 1. Define the lists of columns to be averaged
+            home_columns = [
+                'Home Team Sportsbook Fair Odds',
+                'Home Team Massey_Peabody Fair Odds',
+                'Home Team Generic Sports Fan Fair Odds',
+                'Sim_Home_Win_Pct'
+            ]
+            
+            away_columns = [
+                'Away Team Sportsbook Fair Odds',
+                'Away Team Massey_Peabody Fair Odds',
+                'Away Team Generic Sports Fan Fair Odds',
+                'Sim_Away_Win_Pct'
+            ]
+            
+            # 2. Ensure all columns are numeric (converting strings/empty spaces to NaN)
+            for col in home_columns + away_columns:
+                if col in final_combined_df.columns:
+                    final_combined_df[col] = pd.to_numeric(final_combined_df[col], errors='coerce')
+            
+            # 3. Calculate the averages
+            # axis=1 means "calculate across the row"
+            # skipna=True is the default, which ignores nulls in the calculation
+            final_combined_df['Consensus Home Win Pct'] = final_combined_df[home_columns].mean(axis=1)
+            final_combined_df['Consensus Away Win Pct'] = final_combined_df[away_columns].mean(axis=1)
+            
+            # Optional: Round the results for cleaner reporting
+            final_combined_df['Average Home Win Pct'] = final_combined_df['Average Home Win Pct'].round(4)
+            final_combined_df['Average Away Win Pct'] = final_combined_df['Average Away Win Pct'].round(4)
+            
+            print("✅ Averages calculated successfully and added to the DataFrame.")
+
+            def prob_to_american(p):
+                """Converts a probability (0.0 to 1.0) to American Odds string."""
+                if pd.isna(p) or p <= 0 or p >= 1:
+                    return np.nan
+                
+                if p >= 0.5:
+                    # Favorite: e.g., 0.75 -> -300
+                    odds = -(p / (1 - p)) * 100
+                    return f"{int(round(odds))}"
+                else:
+                    # Underdog: e.g., 0.25 -> +300
+                    odds = ((1 - p) / p) * 100
+                    return f"+{int(round(odds))}"
+            
+            # 1. Apply the conversion to create the new columns
+            # Note: Using 'Consenus' as requested in your prompt
+            final_combined_df['Consenus Home Team Odds'] = final_combined_df['Average Home Win Pct'].apply(prob_to_american)
+            final_combined_df['Consenus Away Team Odds'] = final_combined_df['Average Away Win Pct'].apply(prob_to_american)
+            
+            # 2. Reorder or display to verify
+            print("✅ American Odds columns added.")
     
             
             print("\nSimulation Complete!")
