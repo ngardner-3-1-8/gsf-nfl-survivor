@@ -2644,28 +2644,43 @@ def loop_through_simulations(date_str):
         # 4. Train the model library (1 to max_features)
         trained_models = {}
 ####        for n in range(max_features, 0, -1):
-        for n in [7,9]:
-            # Get the top N features from RFE
-            top_n_list = feature_ranks.head(n).index.tolist()
-            
-            # Combine RFE features with your mandatory features
-            # We use dict.fromkeys() to remove duplicates while keeping the RFE order
-            combined_features = list(dict.fromkeys(top_n_list + mandatory_features))
-            
+        
+        # Define the exact features for Future Weeks (No Public Pick Data)
+        # Ensure Pick % is completely removed from the base features
+        future_features = [f for f in base_features if f != assumed_public_pick_col]
+        
+        # Define the exact features for Current Week (Includes Public Pick Data)
+        current_features = future_features + [assumed_public_pick_col]
+        
+        # Model definitions to loop through
+        model_definitions = {
+            7: future_features,  # Future model (Key is 7 to match your simulation loop logic)
+            9: current_features  # Current model (Key is 9 to match your simulation loop logic)
+        }
+        
+        for model_key, feature_list in model_definitions.items():
             # Ensure the features actually exist in X (safety check)
-            final_features = [f for f in combined_features if f in X.columns]
+            final_features = [f for f in feature_list if f in X.columns]
             
             X_subset = X[final_features]
+            y_subset = y
             
-            # Train the model
-            rf_model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
-            rf_model.fit(X_subset, y)
+            # Train the Random Forest
+            model = RandomForestRegressor(
+                n_estimators=100, 
+                random_state=42, 
+                n_jobs=-1,
+                min_samples_leaf=5
+            )
+            model.fit(X_subset, y_subset)
             
-            # Store the trained model and the ACTUAL feature list used
-            trained_models[n] = {
-                'model': rf_model,
+            # Store it in the dictionary using the 7 or 9 key
+            trained_models[model_key] = {
+                'model': model,
                 'features': final_features
             }
+            
+            print(f"✅ Trained Model {model_key} with {len(final_features)} features.")
 
             if n in [number_features]:
                 print(f"\n--- Verifying Model n={n} ---")
