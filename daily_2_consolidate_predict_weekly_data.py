@@ -5103,8 +5103,8 @@ def loop_through_simulations(date_str):
             final_combined_df['Consensus Away Win Pct'] = final_combined_df[away_columns].mean(axis=1)
             
             # Optional: Round the results for cleaner reporting
-            final_combined_df['Average Home Win Pct'] = final_combined_df['Average Home Win Pct'].round(4)
-            final_combined_df['Average Away Win Pct'] = final_combined_df['Average Away Win Pct'].round(4)
+            final_combined_df['Consensus Home Win Pct'] = final_combined_df['Consensus Home Win Pct'].round(4)
+            final_combined_df['Consensus Away Win Pct'] = final_combined_df['Consensus Away Win Pct'].round(4)
             
             print("✅ Averages calculated successfully and added to the DataFrame.")
 
@@ -5124,8 +5124,8 @@ def loop_through_simulations(date_str):
             
             # 1. Apply the conversion to create the new columns
             # Note: Using 'Consenus' as requested in your prompt
-            final_combined_df['Consenus Home Team Odds'] = final_combined_df['Average Home Win Pct'].apply(prob_to_american)
-            final_combined_df['Consenus Away Team Odds'] = final_combined_df['Average Away Win Pct'].apply(prob_to_american)
+            final_combined_df['Consenus Home Team Odds'] = final_combined_df['Consensus Home Win Pct'].apply(prob_to_american)
+            final_combined_df['Consenus Away Team Odds'] = final_combined_df['Consensus Away Win Pct'].apply(prob_to_american)
             # ============================================================
             # 🎲 BETTING EDGE CALCULATIONS (Current Week Only)
             # ============================================================
