@@ -5126,6 +5126,117 @@ def loop_through_simulations(date_str):
             # Note: Using 'Consenus' as requested in your prompt
             final_combined_df['Consenus Home Team Odds'] = final_combined_df['Average Home Win Pct'].apply(prob_to_american)
             final_combined_df['Consenus Away Team Odds'] = final_combined_df['Average Away Win Pct'].apply(prob_to_american)
+            # ============================================================
+            # 🎲 BETTING EDGE CALCULATIONS (Current Week Only)
+            # ============================================================
+            if current_week == upcoming_week:
+                print(f"💰 Calculating Betting Edges for Week {current_week}...")
+                
+                # Helper function to convert Market Moneyline to Implied Probability
+                def american_to_prob(ml):
+                    if pd.isna(ml): return np.nan
+                    if ml < 0: return abs(ml) / (abs(ml) + 100)
+                    else: return 100 / (ml + 100)
+    
+                # 1. Calculate Market Implied Probabilities
+                final_combined_df['Market Home Team Implied Odds'] = final_combined_df['Home Team Sportsbook Moneyline'].apply(american_to_prob)
+                final_combined_df['Market Away Team Implied Odds'] = final_combined_df['Away Team Sportsbook Moneyline'].apply(american_to_prob)
+    
+                # 2. Setup Monte Carlo Spreads and Totals
+                final_combined_df['Monte Carlo Home Team Spread'] = (final_combined_df['Sim_Spread_Mean'] + final_combined_df['Sim_Spread_Median']) / 2
+                final_combined_df['Monte Carlo Total'] = (final_combined_df['Sim_Total_Mean'] + final_combined_df['Sim_Total_Median']) / 2
+    
+                # --------------------------------------------------------
+                # A. SPREAD BETTING LOGIC
+                # --------------------------------------------------------
+                def evaluate_spread_bet(row, model_spread_col):
+                    if pd.isna(row[model_spread_col]) or pd.isna(row['Home Team Sportsbook Spread']):
+                        return pd.Series(["No Bet", np.nan])
+                    
+                    model_spread = row[model_spread_col]
+                    market_spread = row['Home Team Sportsbook Spread']
+                    
+                    # If model thinks spread should be lower (more negative/less positive), bet Home
+                    if model_spread < market_spread:
+                        return pd.Series([row['Home Team'], abs(model_spread - market_spread)])
+                    # If model thinks spread should be higher, bet Away
+                    elif model_spread > market_spread:
+                        return pd.Series([row['Away Team'], abs(model_spread - market_spread)])
+                    else:
+                        return pd.Series(["No Bet", 0.0])
+    
+                # Apply for Generic Sports Fan
+                final_combined_df[['GSF Spread Bet', 'GSF Spread Edge']] = final_combined_df.apply(
+                    lambda row: evaluate_spread_bet(row, 'Generic Sports Fan Home Team Spread'), axis=1
+                )
+                # Apply for Massey-Peabody
+                final_combined_df[['Massey-Peabody Spread Bet', 'Massey-Peabody Spread Edge']] = final_combined_df.apply(
+                    lambda row: evaluate_spread_bet(row, 'Massey-Peabody Home Team Spread'), axis=1
+                )
+                # Apply for Monte Carlo
+                final_combined_df[['Monte Carlo Spread Bet', 'Monte Carlo Spread Edge']] = final_combined_df.apply(
+                    lambda row: evaluate_spread_bet(row, 'Monte Carlo Home Team Spread'), axis=1
+                )
+    
+                # --------------------------------------------------------
+                # B. MONEYLINE BETTING LOGIC (+EV Checks)
+                # --------------------------------------------------------
+                def evaluate_ml_bet(row, model_home_prob_col, model_away_prob_col):
+                    if pd.isna(row[model_home_prob_col]) or pd.isna(row['Market Home Team Implied Odds']):
+                        return pd.Series(["No Bet", np.nan])
+                    
+                    # Check Home Edge
+                    if row[model_home_prob_col] > row['Market Home Team Implied Odds']:
+                        return pd.Series([row['Home Team'], row[model_home_prob_col] - row['Market Home Team Implied Odds']])
+                    # Check Away Edge
+                    elif row[model_away_prob_col] > row['Market Away Team Implied Odds']:
+                        return pd.Series([row['Away Team'], row[model_away_prob_col] - row['Market Away Team Implied Odds']])
+                    else:
+                        return pd.Series(["No Bet", 0.0])
+    
+                # Apply for Generic Sports Fan
+                final_combined_df[['GSF Moneyline Bet', 'GSF Moneyline Edge']] = final_combined_df.apply(
+                    lambda row: evaluate_ml_bet(row, 'Home Team Generic Sports Fan Fair Odds', 'Away Team Generic Sports Fan Fair Odds'), axis=1
+                )
+                # Apply for Massey-Peabody
+                final_combined_df[['Massey-Peabody Moneyline Bet', 'Massey-Peabody Moneyline Edge']] = final_combined_df.apply(
+                    lambda row: evaluate_ml_bet(row, 'Home Team Massey_Peabody Fair Odds', 'Away Team Massey_Peabody Fair Odds'), axis=1
+                )
+                # Apply for Monte Carlo
+                final_combined_df[['Monte Carlo Moneyline Bet', 'Monte Carlo Moneyline Edge']] = final_combined_df.apply(
+                    lambda row: evaluate_ml_bet(row, 'Sim_Home_Win_Pct', 'Sim_Away_Win_Pct'), axis=1
+                )
+                # Apply for Our Custom Consensus (From the previous step!)
+                final_combined_df[['Consensus Moneyline Bet', 'Consensus Moneyline Edge']] = final_combined_df.apply(
+                    lambda row: evaluate_ml_bet(row, 'Average Home Win Pct', 'Average Away Win Pct'), axis=1
+                )
+    
+                # --------------------------------------------------------
+                # C. TOTALS BETTING LOGIC
+                # --------------------------------------------------------
+                def determine_total_bet(row):
+                    if pd.isna(row['Monte Carlo Total']) or pd.isna(row['Total Line']):
+                        return pd.Series(["No Bet", np.nan])
+                    
+                    if row['Monte Carlo Total'] > row['Total Line']:
+                        return pd.Series(["Over", abs(row['Monte Carlo Total'] - row['Total Line'])])
+                    elif row['Monte Carlo Total'] < row['Total Line']:
+                        return pd.Series(["Under", abs(row['Monte Carlo Total'] - row['Total Line'])])
+                    else:
+                        return pd.Series(["No Bet", 0.0])
+    
+                final_combined_df[['Monte Carlo Total Bet', 'Monte Carlo Total Edge']] = final_combined_df.apply(determine_total_bet, axis=1)
+    
+                # --------------------------------------------------------
+                # D. SET BET SIZES
+                # --------------------------------------------------------
+                unit_size = 100
+                final_combined_df['Bet Size'] = unit_size
+                
+            else:
+                # For simulated future weeks, skip the edge calculations 
+                # since we don't have active sportsbook lines
+                pass
             
             # 2. Reorder or display to verify
             print("✅ American Odds columns added.")
