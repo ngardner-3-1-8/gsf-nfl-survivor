@@ -5223,7 +5223,7 @@ def loop_through_simulations(date_str):
                 lambda row: evaluate_ml_bet(row, 'Sim_Home_Win_Pct', 'Sim_Away_Win_Pct'), axis=1
             )
             final_combined_df[['Consensus Moneyline Bet', 'Consensus Moneyline Edge']] = final_combined_df.apply(
-                lambda row: evaluate_ml_bet(row, 'Average Home Win Pct', 'Average Away Win Pct'), axis=1
+                lambda row: evaluate_ml_bet(row, 'Consensus Home Win Pct', 'Consensus Away Win Pct'), axis=1
             )
     
             # --------------------------------------------------------
