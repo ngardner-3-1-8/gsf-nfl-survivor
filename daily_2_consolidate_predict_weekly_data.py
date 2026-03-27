@@ -5079,14 +5079,14 @@ def loop_through_simulations(date_str):
             # 1. Define the lists of columns to be averaged
             home_columns = [
                 'Home Team Sportsbook Fair Odds',
-                'Home Team Massey_Peabody Fair Odds',
+                'Home Team Massey-Peabody Fair Odds',
                 'Home Team Generic Sports Fan Fair Odds',
                 'Sim_Home_Win_Pct'
             ]
             
             away_columns = [
                 'Away Team Sportsbook Fair Odds',
-                'Away Team Massey_Peabody Fair Odds',
+                'Away Team Massey-Peabody Fair Odds',
                 'Away Team Generic Sports Fan Fair Odds',
                 'Sim_Away_Win_Pct'
             ]
@@ -5200,7 +5200,7 @@ def loop_through_simulations(date_str):
                 )
                 # Apply for Massey-Peabody
                 final_combined_df[['Massey-Peabody Moneyline Bet', 'Massey-Peabody Moneyline Edge']] = final_combined_df.apply(
-                    lambda row: evaluate_ml_bet(row, 'Home Team Massey_Peabody Fair Odds', 'Away Team Massey_Peabody Fair Odds'), axis=1
+                    lambda row: evaluate_ml_bet(row, 'Home Team Massey-Peabody Fair Odds', 'Away Team Massey-Peabody Fair Odds'), axis=1
                 )
                 # Apply for Monte Carlo
                 final_combined_df[['Monte Carlo Moneyline Bet', 'Monte Carlo Moneyline Edge']] = final_combined_df.apply(
