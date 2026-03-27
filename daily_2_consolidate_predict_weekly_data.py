@@ -5217,7 +5217,7 @@ def loop_through_simulations(date_str):
                 lambda row: evaluate_ml_bet(row, 'Home Team Generic Sports Fan Fair Odds', 'Away Team Generic Sports Fan Fair Odds'), axis=1
             )
             final_combined_df[['Massey-Peabody Moneyline Bet', 'Massey-Peabody Moneyline Edge']] = final_combined_df.apply(
-                lambda row: evaluate_ml_bet(row, 'Home Team Massey_Peabody Fair Odds', 'Away Team Massey_Peabody Fair Odds'), axis=1
+                lambda row: evaluate_ml_bet(row, 'Home Team Massey-Peabody Fair Odds', 'Away Team Massey-Peabody Fair Odds'), axis=1
             )
             final_combined_df[['Monte Carlo Moneyline Bet', 'Monte Carlo Moneyline Edge']] = final_combined_df.apply(
                 lambda row: evaluate_ml_bet(row, 'Sim_Home_Win_Pct', 'Sim_Away_Win_Pct'), axis=1
