@@ -5124,6 +5124,33 @@ def loop_through_simulations(date_str):
             
             # 1. Apply the conversion to create the new columns
             # Note: Using 'Consenus' as requested in your prompt
+            # 3. Calculate Consensus Spread (Average of the 3 models)
+            spread_model_cols = [
+                'Generic Sports Fan Home Team Spread',
+                'Massey-Peabody Home Team Spread',
+                'Monte Carlo Home Team Spread'
+            ]
+            
+            # Calculate the average spread, restricted to the upcoming week
+            final_combined_df['Consensus Home Team Spread'] = np.where(
+                final_combined_df['Week_x'] == upcoming_week,
+                final_combined_df[spread_model_cols].mean(axis=1),
+                np.nan
+            )
+
+            away_spread_model_cols = [
+                'Generic Sports Fan Away Team Spread',
+                'Massey-Peabody Away Team Spread',
+                'Monte Carlo Away Team Spread'
+            ]
+            
+            # Calculate the average spread, restricted to the upcoming week
+            final_combined_df['Consensus Away Team Spread'] = np.where(
+                final_combined_df['Week_x'] == upcoming_week,
+                final_combined_df[away_spread_model_cols].mean(axis=1),
+                np.nan
+            )
+            
             final_combined_df['Consenus Home Team Odds'] = final_combined_df['Consensus Home Win Pct'].apply(prob_to_american)
             final_combined_df['Consenus Away Team Odds'] = final_combined_df['Consensus Away Win Pct'].apply(prob_to_american)
             # ============================================================
@@ -5206,6 +5233,9 @@ def loop_through_simulations(date_str):
             final_combined_df[['Monte Carlo Spread Bet', 'Monte Carlo Spread Edge']] = final_combined_df.apply(
                 lambda row: evaluate_spread_bet(row, 'Monte Carlo Home Team Spread'), axis=1
             )
+            final_combined_df[['Consensus Spread Bet', 'Consensus Spread Edge']] = final_combined_df.apply(
+                lambda row: evaluate_spread_bet(row, 'Consensus Home Team Spread'), axis=1
+            )
     
             # --------------------------------------------------------
             # B. MONEYLINE BETTING LOGIC
@@ -5259,10 +5289,96 @@ def loop_through_simulations(date_str):
             final_combined_df[['Monte Carlo Total Bet', 'Monte Carlo Total Edge']] = final_combined_df.apply(determine_total_bet, axis=1)
     
             # --------------------------------------------------------
-            # D. SET BET SIZES (Only for upcoming week)
+            # D. DYNAMIC BET SIZING & TRIPLE KELLY (MONTE CARLO BASELINE)
             # --------------------------------------------------------
-            unit_size = 100
-            final_combined_df['Bet Size'] = np.where(is_upcoming, unit_size, np.nan)
+            BANKROLL = 10000
+            FRACTIONAL_KELLY = 0.25
+            UNIT = 100 # Your 1-unit target
+
+            def calculate_bet_metrics(row):
+                # 🛑 GATE: Skip future weeks
+                if row['Week_x'] != upcoming_week:
+                    return pd.Series([np.nan] * 7)
+
+                # --- 1. DYNAMIC UNIT BET SIZE (Based on Sportsbook Odds) ---
+                # Default to risking 1 unit, then adjust if it's a favorite
+                def get_unit_wager(odds):
+                    if pd.isna(odds): return np.nan
+                    if odds < 0: # Favorite: Risk more to win 1 unit
+                        return UNIT * (abs(odds) / 100)
+                    else: # Underdog: Risk 1 unit
+                        return UNIT
+
+                # --- 2. KELLY MATH HELPER ---
+                def get_kelly_share(win_prob, odds):
+                    if pd.isna(win_prob) or pd.isna(odds) or win_prob <= 0: return 0.0
+                    b = odds / 100 if odds > 0 else 100 / abs(odds) # Profit ratio
+                    q = 1 - win_prob
+                    kelly_pct = (b * win_prob - q) / b
+                    return max(0, kelly_pct * FRACTIONAL_KELLY)
+
+                # --- 3. DATA EXTRACTION ---
+                # Odds
+                h_ml_odds = row['Home Team Sportsbook Moneyline']
+                a_ml_odds = row['Away Team Sportsbook Moneyline']
+                # Standardizing Spread/Total to -110 if missing, otherwise use book price
+                # (Update these column names if your CSV has specific odds for spreads/totals)
+                standard_odds = -110 
+
+                # Probabilities (Monte Carlo Baseline)
+                mc_h_prob = row['Sim_Home_Win_Pct']
+                mc_a_prob = row['Sim_Away_Win_Pct']
+                mc_cover_h = row.get('Sim_Home_Cover_Prob', 0.5) # Ensure these exist in your MC sims
+                mc_cover_a = row.get('Sim_Away_Cover_Prob', 0.5)
+                mc_over_prob = row.get('Sim_Prob_Over', 0.5)
+                mc_under_prob = row.get('Sim_Prob_Under', 0.5)
+
+                # --- 4. CALCULATE WAGERS ---
+                
+                # A. Moneyline
+                ml_bet = row['Monte Carlo Moneyline Bet']
+                ml_wager = np.nan
+                ml_kelly = 0.0
+                if ml_bet == row['Home Team']:
+                    ml_wager = get_unit_wager(h_ml_odds)
+                    ml_kelly = BANKROLL * get_kelly_share(mc_h_prob, h_ml_odds)
+                elif ml_bet == row['Away Team']:
+                    ml_wager = get_unit_wager(a_ml_odds)
+                    ml_kelly = BANKROLL * get_kelly_share(mc_a_prob, a_ml_odds)
+
+                # B. Spread
+                spread_bet = row['Monte Carlo Spread Bet']
+                spread_wager = np.nan
+                spread_kelly = 0.0
+                if spread_bet != "No Bet":
+                    spread_wager = get_unit_wager(standard_odds)
+                    prob = mc_cover_h if spread_bet == row['Home Team'] else mc_cover_a
+                    spread_kelly = BANKROLL * get_kelly_share(prob, standard_odds)
+
+                # C. Total
+                total_bet = row['Monte Carlo Total Bet']
+                total_wager = np.nan
+                total_kelly = 0.0
+                if total_bet != "No Bet":
+                    total_wager = get_unit_wager(standard_odds)
+                    prob = mc_over_prob if total_bet == "Over" else mc_under_prob
+                    total_kelly = BANKROLL * get_kelly_share(prob, standard_odds)
+
+                return pd.Series([
+                    ml_wager, round(ml_kelly, 2),
+                    spread_wager, round(spread_kelly, 2),
+                    total_wager, round(total_kelly, 2),
+                    ml_bet # to keep track
+                ])
+
+            # Apply to DataFrame
+            new_cols = [
+                'MC ML Unit Wager', 'MC ML Kelly Wager',
+                'MC Spread Unit Wager', 'MC Spread Kelly Wager',
+                'MC Total Unit Wager', 'MC Total Kelly Wager',
+                'MC Bet Direction'
+            ]
+            final_combined_df[new_cols] = final_combined_df.apply(calculate_bet_metrics, axis=1)
             
             # 2. Reorder or display to verify
             print("✅ American Odds columns added.")
