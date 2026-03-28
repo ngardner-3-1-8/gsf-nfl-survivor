@@ -5181,7 +5181,7 @@ def loop_through_simulations(date_str):
                 diff = model_spread - market_spread
 
                 
-                if  market_spread == 0:
+                if  market_spread != 0:
                     if diff > 0:
                         return pd.Series([row['Away Team'], diff])
                     elif diff < 0:
