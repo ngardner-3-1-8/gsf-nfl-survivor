@@ -5321,6 +5321,14 @@ def loop_through_simulations(date_str):
                     q = 1 - win_prob
                     kelly_pct = (b * win_prob - q) / b
                     return max(0, kelly_pct * FRACTIONAL_KELLY)
+                    
+                def get_to_win(wager, odds):
+                    if pd.isna(wager) or pd.isna(odds) or wager <= 0: return 0.0
+                    if odds > 0:
+                        return wager * (odds / 100)
+                    else:
+                        return wager * (100 / abs(odds))
+
 
                 # --- 3. DATA EXTRACTION ---
                 # Odds
@@ -5333,54 +5341,71 @@ def loop_through_simulations(date_str):
                 # Probabilities (Monte Carlo Baseline)
                 mc_h_prob = row['Sim_Home_Win_Pct']
                 mc_a_prob = row['Sim_Away_Win_Pct']
-                mc_cover_h = row.get('Sim_Home_Cover_Prob', 0.5238) # Ensure these exist in your MC sims
-                mc_cover_a = row.get('Sim_Away_Cover_Prob', 0.5238)
-                mc_over_prob = row.get('Sim_Prob_Over', 0.5238)
-                mc_under_prob = row.get('Sim_Prob_Under', 0.5238)
+                mc_cover_h = row.get('Sim_Home_Cover_Prob', 0.5) # Ensure these exist in your MC sims
+                mc_cover_a = row.get('Sim_Away_Cover_Prob', 0.5)
+                mc_over_prob = row.get('Sim_Prob_Over', 0.5)
+                mc_under_prob = row.get('Sim_Prob_Under', 0.5)
 
                 # --- 4. CALCULATE WAGERS ---
                 
                 # A. Moneyline
                 ml_bet = row['Monte Carlo Moneyline Bet']
                 ml_wager = np.nan
+                ml_unit_to_win = 0.0
                 ml_kelly = 0.0
+                ml_kelly_to_win = 0.0
+                
                 if ml_bet == row['Home Team']:
                     ml_wager = get_unit_wager(h_ml_odds)
+                    ml_unit_to_win = get_to_win(ml_wager, h_ml_odds)
                     ml_kelly = BANKROLL * get_kelly_share(mc_h_prob, h_ml_odds)
+                    ml_kelly_to_win = get_to_win(ml_kelly, h_ml_odds)
                 elif ml_bet == row['Away Team']:
                     ml_wager = get_unit_wager(a_ml_odds)
+                    ml_unit_to_win = get_to_win(ml_wager, a_ml_odds)
                     ml_kelly = BANKROLL * get_kelly_share(mc_a_prob, a_ml_odds)
+                    ml_kelly_to_win = get_to_win(ml_kelly, a_ml_odds)
 
                 # B. Spread
                 spread_bet = row['Monte Carlo Spread Bet']
                 spread_wager = np.nan
+                spread_unit_to_win = 0.0
                 spread_kelly = 0.0
+                spread_kelly_to_win = 0.0
+                    
                 if spread_bet != "No Bet":
                     spread_wager = get_unit_wager(standard_odds)
+                    spread_unit_to_win = get_to_win(spread_wager, standard_odds)
                     prob = mc_cover_h if spread_bet == row['Home Team'] else mc_cover_a
                     spread_kelly = BANKROLL * get_kelly_share(prob, standard_odds)
+                    spread_kelly_to_win = get_to_win(spread_kelly, standard_odds)
 
                 # C. Total
                 total_bet = row['Monte Carlo Total Bet']
                 total_wager = np.nan
+                total_unit_to_win = 0.0
                 total_kelly = 0.0
+                total_kelly_to_win = 0.0
+                
                 if total_bet != "No Bet":
                     total_wager = get_unit_wager(standard_odds)
+                    total_unit_to_win = get_to_win(total_wager, standard_odds)
                     prob = mc_over_prob if total_bet == "Over" else mc_under_prob
-                    total_kelly = BANKROLL * get_kelly_share(prob, standard_odds)
+                    total_kelly_to_win = get_to_win(total_kelly, standard_odds)
+                    
 
                 return pd.Series([
-                    ml_wager, round(ml_kelly, 2),
-                    spread_wager, round(spread_kelly, 2),
-                    total_wager, round(total_kelly, 2),
-                    ml_bet # to keep track
+                    ml_wager, round(ml_unit_to_win, 2), round(ml_kelly, 2), round(ml_kelly_to_win, 2),
+                    spread_wager, round(spread_unit_to_win, 2), round(spread_kelly, 2), round(spread_kelly_to_win, 2),
+                    total_wager, round(total_unit_to_win, 2), round(total_kelly, 2), round(total_kelly_to_win, 2),
+                    ml_bet
                 ])
 
             # Apply to DataFrame
             new_cols = [
-                'MC ML Unit Wager', 'MC ML Kelly Wager',
-                'MC Spread Unit Wager', 'MC Spread Kelly Wager',
-                'MC Total Unit Wager', 'MC Total Kelly Wager',
+                'MC ML Unit Wager', 'MC ML Unit to Win', 'MC ML Kelly Wager', 'MC ML Kelly To Win',
+                'MC Spread Unit Wager', 'MC Spread Unit to Win', 'MC Spread Kelly Wager', 'MC Spread Kelly To Win',
+                'MC Total Unit Wager', 'MC Total Unit to Win' 'MC Total Kelly Wager', 'MC Total Kelly To Win',
                 'MC Bet Direction'
             ]
             final_combined_df[new_cols] = final_combined_df.apply(calculate_bet_metrics, axis=1)
