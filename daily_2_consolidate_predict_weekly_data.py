@@ -5174,11 +5174,11 @@ def loop_through_simulations(date_str):
                     
                 if pd.isna(row[model_spread_col]) or pd.isna(row['Home Team Sportsbook Spread']):
                     return pd.Series(["No Bet", np.nan])
-
-                diff = model_home_spread - market_home_spread
-                
+                                
                 model_spread = row[model_spread_col]
                 market_spread = row['Home Team Sportsbook Spread']
+
+                diff = model_spread - market_spread
                 
                 if diff < 0:
                     # Model is more bullish on Home than Market
