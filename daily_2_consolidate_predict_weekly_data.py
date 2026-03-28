@@ -5159,6 +5159,10 @@ def loop_through_simulations(date_str):
                 (final_combined_df['Sim_Spread_Mean'] + final_combined_df['Sim_Spread_Median']) / 2, 
                 np.nan
             )
+
+            # 2. Setup Monte Carlo Spreads and Totals (Upcoming week only)
+            final_combined_df['Monte Carlo Away Team Spread'] = -1 * final_combined_df['Monte Carlo Home Team Spread']
+
             final_combined_df['Monte Carlo Total'] = np.where(
                 is_upcoming, 
                 (final_combined_df['Sim_Total_Mean'] + final_combined_df['Sim_Total_Median']) / 2, 
