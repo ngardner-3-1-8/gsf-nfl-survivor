@@ -5174,16 +5174,20 @@ def loop_through_simulations(date_str):
                     
                 if pd.isna(row[model_spread_col]) or pd.isna(row['Home Team Sportsbook Spread']):
                     return pd.Series(["No Bet", np.nan])
+
+                diff = model_home_spread - market_home_spread
                 
                 model_spread = row[model_spread_col]
                 market_spread = row['Home Team Sportsbook Spread']
                 
-                if model_spread < market_spread:
-                    return pd.Series([row['Home Team'], abs(model_spread - market_spread)])
-                elif model_spread > market_spread:
-                    return pd.Series([row['Away Team'], abs(model_spread - market_spread)])
-                else:
-                    return pd.Series(["No Bet", 0.0])
+                    if diff < 0:
+                        # Model is more bullish on Home than Market
+                        return pd.Series([row['Home Team'], abs(diff)])
+                    elif diff > 0:
+                        # Model is more bullish on Away than Market
+                        return pd.Series([row['Away Team'], abs(diff)])
+                    else:
+                        return pd.Series(["No Bet", 0.0])
     
             final_combined_df[['GSF Spread Bet', 'GSF Spread Edge']] = final_combined_df.apply(
                 lambda row: evaluate_spread_bet(row, 'Generic Sports Fan Home Team Spread'), axis=1
