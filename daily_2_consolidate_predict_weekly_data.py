@@ -5183,16 +5183,16 @@ def loop_through_simulations(date_str):
                 
                 if  market_spread != 0:
                     if diff > 0:
-                        return pd.Series([row['Away Team'], diff])
+                        return pd.Series([row['Away Team'], abs(diff)])
                     elif diff < 0:
-                        return pd.Series([row['Home Team'], diff])
+                        return pd.Series([row['Home Team'], abs(diff)])
                     else:
                         return pd.Series(["No Bet", 0.0])
                 else:
                     if diff > 0:
-                        return pd.Series([row['Home Team'], diff])
+                        return pd.Series([row['Home Team'], abs(diff)])
                     elif diff < 0:
-                        return pd.Series([row['Away Team'], diff])
+                        return pd.Series([row['Away Team'], abs(diff)])
                     else:
                         return pd.Series(["No Bet", 0.0])
 
