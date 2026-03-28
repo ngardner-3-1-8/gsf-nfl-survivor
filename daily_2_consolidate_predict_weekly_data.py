@@ -1334,7 +1334,7 @@ def loop_through_simulations(date_str):
         
                 # Handle Spreads (nflreadpy is usually Home relative)
                 # If Spread is -3.0, Home is favored by 3.
-                home_spread = row['spread_line']
+                home_spread = -1 * row['spread_line']
                 away_spread = -1 * home_spread if home_spread is not None else None
         
                 # Build the row
