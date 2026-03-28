@@ -5405,7 +5405,7 @@ def loop_through_simulations(date_str):
             new_cols = [
                 'MC ML Unit Wager', 'MC ML Unit to Win', 'MC ML Kelly Wager', 'MC ML Kelly To Win',
                 'MC Spread Unit Wager', 'MC Spread Unit to Win', 'MC Spread Kelly Wager', 'MC Spread Kelly To Win',
-                'MC Total Unit Wager', 'MC Total Unit to Win' 'MC Total Kelly Wager', 'MC Total Kelly To Win',
+                'MC Total Unit Wager', 'MC Total Unit to Win', 'MC Total Kelly Wager', 'MC Total Kelly To Win',
                 'MC Bet Direction'
             ]
             final_combined_df[new_cols] = final_combined_df.apply(calculate_bet_metrics, axis=1)
