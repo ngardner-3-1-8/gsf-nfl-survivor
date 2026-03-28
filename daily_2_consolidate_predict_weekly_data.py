@@ -3505,7 +3505,7 @@ def loop_through_simulations(date_str):
     collect_schedule_travel_ranking_data_df = get_predicted_pick_percentages(collect_schedule_travel_ranking_data_df)
     
     # --- CONFIGURATION ---
-    SIMULATIONS = 2
+    SIMULATIONS = 100
     HISTORY_DAYS = 840
     CURRENT_SEASON = target_year
     DECAY_RATE = 0.00475
@@ -5333,10 +5333,10 @@ def loop_through_simulations(date_str):
                 # Probabilities (Monte Carlo Baseline)
                 mc_h_prob = row['Sim_Home_Win_Pct']
                 mc_a_prob = row['Sim_Away_Win_Pct']
-                mc_cover_h = row.get('Sim_Home_Cover_Prob', 0.5) # Ensure these exist in your MC sims
-                mc_cover_a = row.get('Sim_Away_Cover_Prob', 0.5)
-                mc_over_prob = row.get('Sim_Prob_Over', 0.5)
-                mc_under_prob = row.get('Sim_Prob_Under', 0.5)
+                mc_cover_h = row.get('Sim_Home_Cover_Prob', 0.5238) # Ensure these exist in your MC sims
+                mc_cover_a = row.get('Sim_Away_Cover_Prob', 0.5238)
+                mc_over_prob = row.get('Sim_Prob_Over', 0.5238)
+                mc_under_prob = row.get('Sim_Prob_Under', 0.5238)
 
                 # --- 4. CALCULATE WAGERS ---
                 
