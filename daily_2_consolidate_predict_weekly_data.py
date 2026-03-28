@@ -5124,32 +5124,6 @@ def loop_through_simulations(date_str):
             
             # 1. Apply the conversion to create the new columns
             # Note: Using 'Consenus' as requested in your prompt
-            # 3. Calculate Consensus Spread (Average of the 3 models)
-            spread_model_cols = [
-                'Generic Sports Fan Home Team Spread',
-                'Massey-Peabody Home Team Spread',
-                'Monte Carlo Home Team Spread'
-            ]
-            
-            # Calculate the average spread, restricted to the upcoming week
-            final_combined_df['Consensus Home Team Spread'] = np.where(
-                final_combined_df['Week_x'] == upcoming_week,
-                final_combined_df[spread_model_cols].mean(axis=1),
-                np.nan
-            )
-
-            away_spread_model_cols = [
-                'Generic Sports Fan Away Team Spread',
-                'Massey-Peabody Away Team Spread',
-                'Monte Carlo Away Team Spread'
-            ]
-            
-            # Calculate the average spread, restricted to the upcoming week
-            final_combined_df['Consensus Away Team Spread'] = np.where(
-                final_combined_df['Week_x'] == upcoming_week,
-                final_combined_df[away_spread_model_cols].mean(axis=1),
-                np.nan
-            )
             
             final_combined_df['Consenus Home Team Odds'] = final_combined_df['Consensus Home Win Pct'].apply(prob_to_american)
             final_combined_df['Consenus Away Team Odds'] = final_combined_df['Consensus Away Win Pct'].apply(prob_to_american)
@@ -5188,6 +5162,33 @@ def loop_through_simulations(date_str):
             final_combined_df['Monte Carlo Total'] = np.where(
                 is_upcoming, 
                 (final_combined_df['Sim_Total_Mean'] + final_combined_df['Sim_Total_Median']) / 2, 
+                np.nan
+            )
+
+            # 3. Calculate Consensus Spread (Average of the 3 models)
+            spread_model_cols = [
+                'Generic Sports Fan Home Team Spread',
+                'Massey-Peabody Home Team Spread',
+                'Monte Carlo Home Team Spread'
+            ]
+            
+            # Calculate the average spread, restricted to the upcoming week
+            final_combined_df['Consensus Home Team Spread'] = np.where(
+                final_combined_df['Week_x'] == upcoming_week,
+                final_combined_df[spread_model_cols].mean(axis=1),
+                np.nan
+            )
+
+            away_spread_model_cols = [
+                'Generic Sports Fan Away Team Spread',
+                'Massey-Peabody Away Team Spread',
+                'Monte Carlo Away Team Spread'
+            ]
+            
+            # Calculate the average spread, restricted to the upcoming week
+            final_combined_df['Consensus Away Team Spread'] = np.where(
+                final_combined_df['Week_x'] == upcoming_week,
+                final_combined_df[away_spread_model_cols].mean(axis=1),
                 np.nan
             )
     
