@@ -5391,6 +5391,7 @@ def loop_through_simulations(date_str):
                     total_wager = get_unit_wager(standard_odds)
                     total_unit_to_win = get_to_win(total_wager, standard_odds)
                     prob = mc_over_prob if total_bet == "Over" else mc_under_prob
+                    total_kelly = BANKROLL * get_kelly_share(prob, standard_odds)
                     total_kelly_to_win = get_to_win(total_kelly, standard_odds)
                     
 
