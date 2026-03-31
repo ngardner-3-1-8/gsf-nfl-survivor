@@ -3573,6 +3573,55 @@ def loop_through_simulations(date_str):
         except Exception as e:
             print(f"Error loading player stats: {e}")
             return {}, -0.05
+
+    def get_advanced_passing_stats(target_year, upcoming_week):
+    """
+    Calculates Pressure Rate, Zone/Man Rate, and EPA splits for offenses
+    up to the current simulation week using nflreadpy and Polars.
+    """
+    print(f"Loading Advanced Passing Stats for {target_year} up to Week {upcoming_week}...")
+    
+    try:
+        # Load Data (Defaults to Polars DataFrames)
+        pbp = nfl.load_pbp([target_year])
+        participation = nfl.load_participation([target_year])
+        
+        # Join and filter for pass plays prior to the upcoming week
+        joined = pbp.select([
+            "game_id", "play_id", "week", "posteam", "epa", "pass_attempt", "play_type"
+        ]).join(
+            participation.select([
+                "game_id", "play_id", "defense_man_zone_type", "was_pressure"
+            ]),
+            on=["game_id", "play_id"],
+            how="inner"
+        ).filter(
+            (pl.col("week") < upcoming_week) & 
+            (pl.col("pass_attempt") == 1) &
+            (pl.col("play_type") == "pass") &
+            (pl.col("posteam").is_not_null()) &
+            (pl.col("epa").is_not_null())
+        )
+
+        # Calculate Aggregates per team
+        stats = joined.group_by("posteam").agg([
+            # Rates (Casted to Float for Polars strict typing)
+            pl.col("was_pressure").cast(pl.Float64).mean().alias("Pressure Rate"),
+            (pl.col("defense_man_zone_type") == "MAN_COVERAGE").cast(pl.Float64).mean().alias("Man Rate"),
+            (pl.col("defense_man_zone_type") == "ZONE_COVERAGE").cast(pl.Float64).mean().alias("Zone Rate"),
+            
+            # EPA Splits
+            pl.col("epa").filter(pl.col("was_pressure") == True).mean().alias("Offensive EPA vs Pressure"),
+            pl.col("epa").filter(pl.col("defense_man_zone_type") == "MAN_COVERAGE").mean().alias("Offensive EPA vs Man"),
+            pl.col("epa").filter(pl.col("defense_man_zone_type") == "ZONE_COVERAGE").mean().alias("Offensive EPA vs Zone")
+        ])
+        
+        # Convert to a pandas nested dictionary for fast O(1) mapping: {'ARI': {'Pressure Rate': 0.35, ...}, ...}
+        return stats.to_pandas().set_index("posteam").to_dict("index")
+        
+    except Exception as e:
+        print(f"Error loading advanced passing stats: {e}")
+        return {}
     
     def weighted_avg_and_std(values, weights):
         if len(values) == 0: return 0.0, 0.0
@@ -5413,6 +5462,31 @@ def loop_through_simulations(date_str):
             
             # 2. Reorder or display to verify
             print("✅ American Odds columns added.")
+
+            # ============================================================
+            # NEW: INTEGRATE ADVANCED PASSING METRICS
+            # ============================================================
+            print("📊 Calculating Advanced Passing Metrics (Pressure, Zone, Man)...")
+            adv_stats_dict = get_advanced_passing_stats(target_year, upcoming_week)
+            
+            new_metrics = [
+                'Pressure Rate', 'Zone Rate', 'Man Rate', 
+                'Offensive EPA vs Pressure', 'Offensive EPA vs Zone', 'Offensive EPA vs Man'
+            ]
+            
+            # Map metrics to Home Team
+            for metric in new_metrics:
+                final_combined_df[f'Home Team {metric}'] = final_combined_df['Home Team'].map(
+                    lambda x: adv_stats_dict.get(NAME_TO_ABBR.get(x, x), {}).get(metric, np.nan)
+                )
+            
+            # Map metrics to Away Team
+            for metric in new_metrics:
+                final_combined_df[f'Away Team {metric}'] = final_combined_df['Away Team'].map(
+                    lambda x: adv_stats_dict.get(NAME_TO_ABBR.get(x, x), {}).get(metric, np.nan)
+                )
+            # ============================================================
+            # ============================================================
     
             
             print("\nSimulation Complete!")
