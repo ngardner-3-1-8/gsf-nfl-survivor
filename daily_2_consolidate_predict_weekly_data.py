@@ -3587,13 +3587,15 @@ def loop_through_simulations(date_str):
             participation = nfl.load_participation([target_year])
             
             # Join and filter for pass plays prior to the upcoming week
+            # FIX: Use left_on and right_on to handle the mismatched game_id column names
             joined = pbp.select([
                 "game_id", "play_id", "week", "posteam", "epa", "pass_attempt", "play_type"
             ]).join(
                 participation.select([
-                    "game_id", "play_id", "defense_man_zone_type", "was_pressure"
+                    "nflverse_game_id", "play_id", "defense_man_zone_type", "was_pressure"
                 ]),
-                on=["game_id", "play_id"],
+                left_on=["game_id", "play_id"],
+                right_on=["nflverse_game_id", "play_id"],
                 how="inner"
             ).filter(
                 (pl.col("week") < upcoming_week) & 
