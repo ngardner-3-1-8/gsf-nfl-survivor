@@ -5479,13 +5479,13 @@ def loop_through_simulations(date_str):
             # Map metrics to Home Team
             for metric in new_metrics:
                 final_combined_df[f'Home Team {metric}'] = final_combined_df['Home Team'].map(
-                    lambda x: adv_stats_dict.get(NAME_TO_ABBR.get(x, x), {}).get(metric, np.nan)
+                    lambda x: adv_stats_dict.get(NAME_MAP.get(x, x), {}).get(metric, np.nan)
                 )
             
             # Map metrics to Away Team
             for metric in new_metrics:
                 final_combined_df[f'Away Team {metric}'] = final_combined_df['Away Team'].map(
-                    lambda x: adv_stats_dict.get(NAME_TO_ABBR.get(x, x), {}).get(metric, np.nan)
+                    lambda x: adv_stats_dict.get(NAME_MAP.get(x, x), {}).get(metric, np.nan)
                 )
             # ============================================================
             # ============================================================
