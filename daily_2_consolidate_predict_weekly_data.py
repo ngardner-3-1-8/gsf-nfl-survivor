@@ -3574,22 +3574,29 @@ def loop_through_simulations(date_str):
             print(f"Error loading player stats: {e}")
             return {}, -0.05
 
-    def get_advanced_passing_stats(target_year, upcoming_week):
+    def get_advanced_passing_stats_365(simulation_date_str):
         """
         Calculates Pressure Rate, Zone/Man Rate, and EPA splits for offenses
-        up to the current simulation week using nflreadpy and Polars.
+        looking back exactly 365 days from the simulation date.
         """
-        print(f"Loading Advanced Passing Stats for {target_year} up to Week {upcoming_week}...")
+        sim_date = pd.to_datetime(simulation_date_str)
+        start_date = (sim_date - timedelta(days=365)).strftime('%Y-%m-%d')
+        end_date = sim_date.strftime('%Y-%m-%d')
+        
+        # Determine which seasons to load to cover the 365-day window
+        current_year = sim_date.year
+        seasons_to_load = [current_year - 1, current_year]
+        
+        print(f"📊 Loading 365-day stats: {start_date} to {end_date}...")
         
         try:
-            # Load Data (Defaults to Polars DataFrames)
-            pbp = nfl.load_pbp([target_year])
-            participation = nfl.load_participation([target_year])
+            # Load PBP and Participation for both seasons
+            pbp = nfl.load_pbp(seasons_to_load)
+            participation = nfl.load_participation(seasons_to_load)
             
-            # Join and filter for pass plays prior to the upcoming week
-            # FIX: Use left_on and right_on to handle the mismatched game_id column names
+            # Join and filter by gameday (YYYY-MM-DD)
             joined = pbp.select([
-                "game_id", "play_id", "week", "posteam", "epa", "pass_attempt", "play_type"
+                "game_id", "play_id", "gameday", "posteam", "epa", "pass_attempt", "play_type"
             ]).join(
                 participation.select([
                     "nflverse_game_id", "play_id", "defense_man_zone_type", "was_pressure"
@@ -3598,31 +3605,27 @@ def loop_through_simulations(date_str):
                 right_on=["nflverse_game_id", "play_id"],
                 how="inner"
             ).filter(
-                (pl.col("week") < upcoming_week) & 
+                (pl.col("gameday") >= start_date) & 
+                (pl.col("gameday") < end_date) & 
                 (pl.col("pass_attempt") == 1) &
                 (pl.col("play_type") == "pass") &
-                (pl.col("posteam").is_not_null()) &
-                (pl.col("epa").is_not_null())
+                (pl.col("posteam").is_not_null())
             )
     
-            # Calculate Aggregates per team
+            # Calculate aggregates
             stats = joined.group_by("posteam").agg([
-                # Rates (Casted to Float for Polars strict typing)
                 pl.col("was_pressure").cast(pl.Float64).mean().alias("Pressure Rate"),
                 (pl.col("defense_man_zone_type") == "MAN_COVERAGE").cast(pl.Float64).mean().alias("Man Rate"),
                 (pl.col("defense_man_zone_type") == "ZONE_COVERAGE").cast(pl.Float64).mean().alias("Zone Rate"),
-                
-                # EPA Splits
                 pl.col("epa").filter(pl.col("was_pressure") == True).mean().alias("Offensive EPA vs Pressure"),
                 pl.col("epa").filter(pl.col("defense_man_zone_type") == "MAN_COVERAGE").mean().alias("Offensive EPA vs Man"),
                 pl.col("epa").filter(pl.col("defense_man_zone_type") == "ZONE_COVERAGE").mean().alias("Offensive EPA vs Zone")
             ])
             
-            # Convert to a pandas nested dictionary for fast O(1) mapping: {'ARI': {'Pressure Rate': 0.35, ...}, ...}
             return stats.to_pandas().set_index("posteam").to_dict("index")
             
         except Exception as e:
-            print(f"Error loading advanced passing stats: {e}")
+            print(f"Error loading 365-day stats: {e}")
             return {}
     
     def weighted_avg_and_std(values, weights):
@@ -5469,7 +5472,7 @@ def loop_through_simulations(date_str):
             # NEW: INTEGRATE ADVANCED PASSING METRICS
             # ============================================================
             print("📊 Calculating Advanced Passing Metrics (Pressure, Zone, Man)...")
-            adv_stats_dict = get_advanced_passing_stats(target_year, upcoming_week)
+            adv_stats_dict = get_advanced_passing_stats_365(today)
             
             new_metrics = [
                 'Pressure Rate', 'Zone Rate', 'Man Rate', 
