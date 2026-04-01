@@ -5496,10 +5496,10 @@ def loop_through_simulations(date_str):
 
             for m in metrics_to_add:
                 final_combined_df[f'Home Team {m}'] = final_combined_df['Home Team'].map(
-                    lambda x: adv_stats.get(NAME_TO_ABBR.get(x, x), {}).get(m, np.nan)
+                    lambda x: adv_stats_dict.get(NAME_MAP.get(x, x), {}).get(m, np.nan)
                 )
                 final_combined_df[f'Away Team {m}'] = final_combined_df['Away Team'].map(
-                    lambda x: adv_stats.get(NAME_TO_ABBR.get(x, x), {}).get(m, np.nan)
+                    lambda x: adv_stats_dict.get(NAME_MAP.get(x, x), {}).get(m, np.nan)
                 )
 
             cols_to_round = [f'Home Team {m}' for m in metrics_to_add] + [f'Away Team {m}' for m in metrics_to_add]
