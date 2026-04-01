@@ -3596,7 +3596,7 @@ def loop_through_simulations(date_str):
             
             # Join and filter by gameday (YYYY-MM-DD)
             joined = pbp.select([
-                "game_id", "play_id", "gameday", "posteam", "epa", "pass_attempt", "play_type"
+                "game_id", "play_id", "game_date", "posteam", "epa", "pass_attempt", "play_type"
             ]).join(
                 participation.select([
                     "nflverse_game_id", "play_id", "defense_man_zone_type", "was_pressure"
@@ -3605,8 +3605,8 @@ def loop_through_simulations(date_str):
                 right_on=["nflverse_game_id", "play_id"],
                 how="inner"
             ).filter(
-                (pl.col("gameday") >= start_date) & 
-                (pl.col("gameday") < end_date) & 
+                (pl.col("game_date") >= start_date) & 
+                (pl.col("game_date") < end_date) & 
                 (pl.col("pass_attempt") == 1) &
                 (pl.col("play_type") == "pass") &
                 (pl.col("posteam").is_not_null())
