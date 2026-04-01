@@ -3576,27 +3576,25 @@ def loop_through_simulations(date_str):
 
     def get_advanced_passing_stats_365(simulation_date_str):
         """
-        Calculates Pressure Rate, Zone/Man Rate, and EPA splits for offenses
-        looking back exactly 365 days from the simulation date.
+        Calculates Pressure Rate (Offense and Defense), Zone/Man Rate, and EPA splits 
+        looking back exactly 365 days from the simulation date using nflreadpy.
         """
         sim_date = pd.to_datetime(simulation_date_str)
         start_date = (sim_date - timedelta(days=365)).strftime('%Y-%m-%d')
         end_date = sim_date.strftime('%Y-%m-%d')
         
-        # Determine which seasons to load to cover the 365-day window
         current_year = sim_date.year
         seasons_to_load = [current_year - 1, current_year]
         
         print(f"📊 Loading 365-day stats: {start_date} to {end_date}...")
         
         try:
-            # Load PBP and Participation for both seasons
             pbp = nfl.load_pbp(seasons_to_load)
             participation = nfl.load_participation(seasons_to_load)
             
-            # Join and filter by gameday (YYYY-MM-DD)
+            # Join and filter (ADDED 'defteam' to the select block)
             joined = pbp.select([
-                "game_id", "play_id", "game_date", "posteam", "epa", "pass_attempt", "play_type"
+                "game_id", "play_id", "game_date", "posteam", "defteam", "epa", "pass_attempt", "play_type"
             ]).join(
                 participation.select([
                     "nflverse_game_id", "play_id", "defense_man_zone_type", "was_pressure"
@@ -3609,20 +3607,36 @@ def loop_through_simulations(date_str):
                 (pl.col("game_date") < end_date) & 
                 (pl.col("pass_attempt") == 1) &
                 (pl.col("play_type") == "pass") &
-                (pl.col("posteam").is_not_null())
+                (pl.col("posteam").is_not_null()) &
+                (pl.col("defteam").is_not_null())
             )
     
-            # Calculate aggregates
-            stats = joined.group_by("posteam").agg([
-                pl.col("was_pressure").cast(pl.Float64).mean().alias("Pressure Rate"),
+            # 1. Calculate OFFENSIVE Aggregates (Group by posteam)
+            off_stats = joined.group_by("posteam").agg([
+                pl.col("was_pressure").cast(pl.Float64).mean().alias("Offensive Pressure Allowed Rate"),
                 (pl.col("defense_man_zone_type") == "MAN_COVERAGE").cast(pl.Float64).mean().alias("Man Rate"),
                 (pl.col("defense_man_zone_type") == "ZONE_COVERAGE").cast(pl.Float64).mean().alias("Zone Rate"),
                 pl.col("epa").filter(pl.col("was_pressure") == True).mean().alias("Offensive EPA vs Pressure"),
                 pl.col("epa").filter(pl.col("defense_man_zone_type") == "MAN_COVERAGE").mean().alias("Offensive EPA vs Man"),
                 pl.col("epa").filter(pl.col("defense_man_zone_type") == "ZONE_COVERAGE").mean().alias("Offensive EPA vs Zone")
-            ])
+            ]).rename({"posteam": "team"}) # Rename so we can join cleanly
+    
+            # 2. Calculate DEFENSIVE Aggregates (Group by defteam)
+            def_stats = joined.group_by("defteam").agg([
+                pl.col("was_pressure").cast(pl.Float64).mean().alias("Defensive Pressure Generated Rate")
+            ]).rename({"defteam": "team"})
+    
+            # 3. Merge Offense and Defense together
+            combined_stats = off_stats.join(def_stats, on="team", how="outer")
             
-            return stats.to_pandas().set_index("posteam").to_dict("index")
+            # Convert to dictionary
+            final_dict = combined_stats.to_pandas().set_index("team").to_dict("index")
+            
+            # RAMS FIX
+            if "LA" in final_dict and "LAR" not in final_dict:
+                final_dict["LAR"] = final_dict["LA"]
+            
+            return final_dict
             
         except Exception as e:
             print(f"Error loading 365-day stats: {e}")
@@ -5474,22 +5488,22 @@ def loop_through_simulations(date_str):
             print("📊 Calculating Advanced Passing Metrics (Pressure, Zone, Man)...")
             adv_stats_dict = get_advanced_passing_stats_365(today)
             
-            new_metrics = [
-                'Pressure Rate', 'Zone Rate', 'Man Rate', 
-                'Offensive EPA vs Pressure', 'Offensive EPA vs Zone', 'Offensive EPA vs Man'
+            metrics_to_add = [
+                'Offensive Pressure Allowed Rate', 'Defensive Pressure Generated Rate', 
+                'Zone Rate', 'Man Rate', 'Offensive EPA vs Pressure', 
+                'Offensive EPA vs Zone', 'Offensive EPA vs Man'
             ]
-            
-            # Map metrics to Home Team
-            for metric in new_metrics:
-                final_combined_df[f'Home Team {metric}'] = final_combined_df['Home Team'].map(
-                    lambda x: adv_stats_dict.get(NAME_MAP.get(x, x), {}).get(metric, np.nan)
+
+            for m in metrics_to_add:
+                final_combined_df[f'Home Team {m}'] = final_combined_df['Home Team'].map(
+                    lambda x: adv_stats.get(NAME_TO_ABBR.get(x, x), {}).get(m, np.nan)
                 )
-            
-            # Map metrics to Away Team
-            for metric in new_metrics:
-                final_combined_df[f'Away Team {metric}'] = final_combined_df['Away Team'].map(
-                    lambda x: adv_stats_dict.get(NAME_MAP.get(x, x), {}).get(metric, np.nan)
+                final_combined_df[f'Away Team {m}'] = final_combined_df['Away Team'].map(
+                    lambda x: adv_stats.get(NAME_TO_ABBR.get(x, x), {}).get(m, np.nan)
                 )
+
+            cols_to_round = [f'Home Team {m}' for m in metrics_to_add] + [f'Away Team {m}' for m in metrics_to_add]
+            final_combined_df[cols_to_round] = final_combined_df[cols_to_round].round(4)
             # ============================================================
             # ============================================================
     
