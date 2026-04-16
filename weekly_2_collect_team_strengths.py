@@ -380,7 +380,7 @@ def loop_through_strengths(date):
     OUTPUT_FILE = f"nfl-pbp-data/nfl_games_with_schematic_data_{START_YEAR}_{END_YEAR}.csv"
     
     # File Paths for your ratings
-    POWER_RATINGS_FILE = f"nfl-power-ratings/nfl_power_ratings_blended_week_{CURRENT_UPCOMING_WEEK}_{END_YEAR}.csv"
+    POWER_RATINGS_FILE = f"nfl-power-ratings/nfl_power_ratings_blended_week_{upcoming_week}_{END_YEAR}.csv"
     HFA_RATINGS_FILE = "nfl-power-ratings/nfl_hfa_ratings.csv"
     
     # --- HELPER: TEAM MAPPING ---
