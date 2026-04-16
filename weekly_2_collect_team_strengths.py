@@ -376,7 +376,7 @@ def loop_through_strengths(date):
     
     
     INPUT_FILE = f"nfl-pbp-data/nfl_history_{START_YEAR}_{END_YEAR}_weighted.csv"
-    OUTPUT_FILE = f"nfl-pbp-data/nfl_games_with_schematic_data_{START_YEAR}_{END_YEAR}.csv"
+    OUTPUT_FILE = f"nfl-pbp-data/nfl_games_with_schematic_data_{START_YEAR}_{END_YEAR}_week_{starting_week}.csv"
     
     # File Paths for your ratings
     POWER_RATINGS_FILE = f"nfl-power-ratings/nfl_power_ratings_blended_week_{starting_week}_{END_YEAR}.csv"
