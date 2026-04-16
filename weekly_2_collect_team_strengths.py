@@ -108,7 +108,7 @@ def loop_through_strengths(date):
         pbp = pbp[(pbp['wp'] >= GARBAGE_MIN) & (pbp['wp'] <= GARBAGE_MAX)]
         pbp = pbp[pbp['play_type'].isin(['run', 'pass'])]
         pbp = pbp.dropna(subset=['epa', 'posteam', 'defteam'])
-        
+        pbp =pbp[pbp['game_type'] == 'REG']
         # --- TIME DECAY WEIGHTS (Relative to History) ---
         pbp['game_date'] = pd.to_datetime(pbp['game_date'])
         
