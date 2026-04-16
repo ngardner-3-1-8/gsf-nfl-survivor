@@ -7,7 +7,7 @@ import warnings
 
 def loop_through_strengths(date):
     # 1. Get current date
-    today = pd.to_datetime(date_str)
+    today = pd.to_datetime(date)
     current_cal_year = today.year 
     
     # 2. Initial Year Logic based on Month (User Rule)
