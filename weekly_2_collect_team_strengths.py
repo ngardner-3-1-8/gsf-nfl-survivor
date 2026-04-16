@@ -294,8 +294,8 @@ def loop_through_strengths(date):
             off_sr_map = (valid_offs['off_avg_sr'] - league_avg_sr).to_dict()
     
             # Map directly to the series (100x faster than .apply)
-            subset['off_epa_adj'] = subset['offteam'].map(off_epa_map).fillna(0)
-            subset['off_sr_adj'] = subset['offteam'].map(off_sr_map).fillna(0)
+            subset['off_epa_adj'] = subset['posteam'].map(off_epa_map).fillna(0)
+            subset['off_sr_adj'] = subset['posteam'].map(off_sr_map).fillna(0)
     
             subset['def_epa_adjusted'] = subset['epa'] - subset['off_epa_adj'] + subset['hfa_adj']
             subset['def_sr_adjusted'] = subset['success'] - subset['off_sr_adj']
