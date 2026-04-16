@@ -155,6 +155,7 @@ HFA_EPA_VAL = 0.04
 warnings.filterwarnings("ignore")
 
 # --- 1. DATA LOADING & DECAY CALCULATION ---
+# --- 1. DATA LOADING & DECAY CALCULATION ---
 def load_data(target_year, ref_date):
     """
     Loads data for target_year and the two prior years.
@@ -167,39 +168,43 @@ def load_data(target_year, ref_date):
         pbp = nfl.load_pbp(seasons=years).to_pandas()
     except Exception as e:
         print(f"CRITICAL ERROR loading PBP: {e}")
-        return pd.DataFrame(), False
+        return pd.DataFrame(), False, False
     
     # Standard Filters
     pbp = pbp[(pbp['wp'] >= GARBAGE_MIN) & (pbp['wp'] <= GARBAGE_MAX)]
     pbp = pbp[pbp['play_type'].isin(['run', 'pass'])]
     pbp = pbp.dropna(subset=['epa', 'posteam', 'defteam'])
     
-    # --- TIME DECAY WEIGHTS (Relative to History) ---
+    # --- TIME DECAY WEIGHTS ---
     pbp['game_date'] = pd.to_datetime(pbp['game_date'])
-    
-    # Calculate days ago relative to the reference date (e.g., Feb after the season)
     pbp['days_ago'] = (ref_date - pbp['game_date']).dt.days
-    
-    # Filter out any games that happened AFTER the reference date (just in case)
     pbp = pbp[pbp['days_ago'] >= 0]
-    
-    # Formula: weight = e^(-rate * days_ago)
     pbp['time_weight'] = np.exp(-DECAY_RATE * pbp['days_ago'])
     
-    # Load FTN Data (Only available for recent years)
+    # Load FTN Data
     try:
         ftn = nfl.load_ftn_charting(seasons=years).to_pandas()
         if 'nflverse_game_id' in ftn.columns:
             ftn = ftn.rename(columns={'nflverse_game_id': 'game_id', 'nflverse_play_id': 'play_id'})
-        
-        cols = ['game_id', 'play_id', 'is_blitz', 'is_pressure', 'is_play_action', 
-                'is_rpo', 'is_slot', 'is_motion']
+        cols = ['game_id', 'play_id', 'is_blitz', 'is_pressure', 'is_play_action', 'is_rpo', 'is_slot', 'is_motion']
         ftn_subset = ftn[[c for c in cols if c in ftn.columns]]
         pbp = pd.merge(pbp, ftn_subset, on=['game_id', 'play_id'], how='left')
         has_ftn = True
     except:
-        # FTN data likely won't exist for 2008-2021, this is expected
         has_ftn = False
+
+    # --- NEW: LOAD PARTICIPATION DATA (MAN/ZONE/PRESSURE) ---
+    try:
+        participation = nfl.load_participation(seasons=years).to_pandas()
+        part_cols = ['nflverse_game_id', 'play_id', 'defense_man_zone_type', 'was_pressure']
+        part_subset = participation[[c for c in part_cols if c in participation.columns]]
+        pbp = pd.merge(pbp, part_subset, 
+                       left_on=['game_id', 'play_id'], 
+                       right_on=['nflverse_game_id', 'play_id'], 
+                       how='left')
+        has_participation = True
+    except Exception as e:
+        has_participation = False
 
     # Load Rosters
     try:
@@ -212,10 +217,12 @@ def load_data(target_year, ref_date):
     except:
         pbp['receiver_pos'] = np.nan
     
-    return pbp, has_ftn
+    # Return all three variables
+    return pbp, has_ftn, has_participation
 
 # --- 2. CATEGORIES (Unchanged) ---
-def get_categories(df, has_ftn):
+# --- 2. CATEGORIES ---
+def get_categories(df, has_ftn, has_participation):
     cats = {}
     cats['Overall'] = (df['play_type'].isin(['run', 'pass']))
     cats['Run'] = (df['play_type'] == 'run')
@@ -232,9 +239,7 @@ def get_categories(df, has_ftn):
     cats['Target_WR'] = (df['play_type'] == 'pass') & (df['receiver_pos'] == 'WR')
     cats['Target_TE'] = (df['play_type'] == 'pass') & (df['receiver_pos'] == 'TE')
     cats['Target_RB'] = (df['play_type'] == 'pass') & (df['receiver_pos'] == 'RB')
-
-    cats['Quick_Game_Proxy'] = (df['play_type'] == 'pass') & (df['air_yards'] < 5) & \
-                               (df['qb_scramble'] == 0) & (df['sack'] == 0)
+    cats['Quick_Game_Proxy'] = (df['play_type'] == 'pass') & (df['air_yards'] < 5) & (df['qb_scramble'] == 0) & (df['sack'] == 0)
 
     if has_ftn:
         if 'is_blitz' in df.columns:
@@ -245,19 +250,23 @@ def get_categories(df, has_ftn):
             cats['Clean_Pocket']   = (df['play_type'] == 'pass') & (df['is_pressure'] == 0)
         if 'is_play_action' in df.columns:
             cats['Play_Action']    = (df['play_type'] == 'pass') & (df['is_play_action'] == 1)
-        if 'is_rpo' in df.columns:
-            cats['RPO'] = (df['is_rpo'] == 1)
-        if 'is_slot' in df.columns:
-            cats['Target_Slot'] = (df['play_type'] == 'pass') & (df['is_slot'] == 1)
+
+    # --- NEW: PARTICIPATION CATEGORIES ---
+    if has_participation:
+        if 'defense_man_zone_type' in df.columns:
+            cats['Vs_Man'] = (df['play_type'] == 'pass') & (df['defense_man_zone_type'] == 'MAN_COVERAGE')
+            cats['Vs_Zone'] = (df['play_type'] == 'pass') & (df['defense_man_zone_type'] == 'ZONE_COVERAGE')
+        if 'was_pressure' in df.columns:
+            cats['Pressured'] = (df['play_type'] == 'pass') & (df['was_pressure'] == True)
 
     return cats
 
 # --- 3. WEIGHTED CALCULATOR (Unchanged) ---
-def calculate_sos_adjusted_stats(df, has_ftn):
-    categories = get_categories(df, has_ftn)
+# --- 3. WEIGHTED CALCULATOR ---
+def calculate_sos_adjusted_stats(df, has_ftn, has_participation):
+    categories = get_categories(df, has_ftn, has_participation)
     results = []
     
-    # Global League Averages for this window
     league_avg_epa = np.average(df['epa'], weights=df['time_weight'])
     league_avg_sr = np.average(df['success'], weights=df['time_weight'])
     
@@ -268,37 +277,30 @@ def calculate_sos_adjusted_stats(df, has_ftn):
         subset['epa_w'] = subset['epa'] * subset['time_weight']
         subset['sr_w'] = subset['success'] * subset['time_weight']
         
-        # --- DEFENSE ADJUSTMENTS ---
+        # --- DEFENSE ADJUSTMENTS (Optimized) ---
         def_scouting = subset.groupby('defteam')[['epa_w', 'sr_w', 'time_weight']].sum()
-        def_scouting['def_avg_epa'] = def_scouting['epa_w'] / def_scouting['time_weight']
-        def_scouting['def_avg_sr'] = def_scouting['sr_w'] / def_scouting['time_weight']
+        valid_defs = def_scouting[def_scouting['time_weight'] >= MIN_WEIGHTED_PLAYS].copy()
+        valid_defs['def_avg_epa'] = valid_defs['epa_w'] / valid_defs['time_weight']
+        valid_defs['def_avg_sr'] = valid_defs['sr_w'] / valid_defs['time_weight']
         
-        def get_opponent_adj(def_team):
-            if def_team not in def_scouting.index: return 0, 0
-            row = def_scouting.loc[def_team]
-            if row['time_weight'] < MIN_WEIGHTED_PLAYS: return 0, 0
-            return (row['def_avg_epa'] - league_avg_epa), (row['def_avg_sr'] - league_avg_sr)
+        def_epa_map = (valid_defs['def_avg_epa'] - league_avg_epa).to_dict()
+        def_sr_map = (valid_defs['def_avg_sr'] - league_avg_sr).to_dict()
 
-        subset['opp_epa_adj'] = subset['defteam'].apply(lambda x: get_opponent_adj(x)[0])
-        subset['opp_sr_adj'] = subset['defteam'].apply(lambda x: get_opponent_adj(x)[1])
+        subset['opp_epa_adj'] = subset['defteam'].map(def_epa_map).fillna(0)
+        subset['opp_sr_adj'] = subset['defteam'].map(def_sr_map).fillna(0)
         
-        # HFA
+        # HFA & Apply Adj
         subset['is_home'] = np.where(subset['posteam'] == subset['home_team'], 1, 0)
         subset['hfa_adj'] = np.where(subset['is_home'] == 1, -HFA_EPA_VAL, HFA_EPA_VAL)
-        
-        # Apply Adj
         subset['epa_adjusted'] = subset['epa'] - subset['opp_epa_adj'] + subset['hfa_adj']
         subset['sr_adjusted'] = subset['success'] - subset['opp_sr_adj']
-        
         subset['adj_epa_w'] = subset['epa_adjusted'] * subset['time_weight']
         subset['adj_sr_w'] = subset['sr_adjusted'] * subset['time_weight']
         
         # --- OFFENSE AGGREGATION ---
         off_stats = subset.groupby('posteam')[['adj_epa_w', 'adj_sr_w', 'time_weight', 'play_id']].agg(
-            adj_epa_sum=('adj_epa_w', 'sum'),
-            adj_sr_sum=('adj_sr_w', 'sum'),
-            total_weight=('time_weight', 'sum'),
-            raw_plays=('play_id', 'count')
+            adj_epa_sum=('adj_epa_w', 'sum'), adj_sr_sum=('adj_sr_w', 'sum'),
+            total_weight=('time_weight', 'sum'), raw_plays=('play_id', 'count')
         )
         
         off_stats['final_epa'] = off_stats['adj_epa_sum'] / off_stats['total_weight']
@@ -319,32 +321,27 @@ def calculate_sos_adjusted_stats(df, has_ftn):
                     'SR_Adj': row['final_sr'],   'SR_Pct': row['sr_pct']
                 })
                 
-        # --- OFFENSE ADJUSTMENTS (FOR DEFENSE) ---
+        # --- OFFENSE ADJUSTMENTS FOR DEFENSE (Optimized) ---
         off_scouting = subset.groupby('posteam')[['epa_w', 'sr_w', 'time_weight']].sum()
-        off_scouting['off_avg_epa'] = off_scouting['epa_w'] / off_scouting['time_weight']
-        off_scouting['off_avg_sr'] = off_scouting['sr_w'] / off_scouting['time_weight']
+        valid_offs = off_scouting[off_scouting['time_weight'] >= MIN_WEIGHTED_PLAYS].copy()
+        valid_offs['off_avg_epa'] = valid_offs['epa_w'] / valid_offs['time_weight']
+        valid_offs['off_avg_sr'] = valid_offs['sr_w'] / valid_offs['time_weight']
         
-        def get_off_adj(off_team):
-            if off_team not in off_scouting.index: return 0, 0
-            row = off_scouting.loc[off_team]
-            if row['time_weight'] < MIN_WEIGHTED_PLAYS: return 0, 0
-            return (row['off_avg_epa'] - league_avg_epa), (row['off_avg_sr'] - league_avg_sr)
+        off_epa_map = (valid_offs['off_avg_epa'] - league_avg_epa).to_dict()
+        off_sr_map = (valid_offs['off_avg_sr'] - league_avg_sr).to_dict()
 
-        subset['off_epa_adj'] = subset['posteam'].apply(lambda x: get_off_adj(x)[0])
-        subset['off_sr_adj'] = subset['posteam'].apply(lambda x: get_off_adj(x)[1])
+        subset['off_epa_adj'] = subset['posteam'].map(off_epa_map).fillna(0)
+        subset['off_sr_adj'] = subset['posteam'].map(off_sr_map).fillna(0)
 
         subset['def_epa_adjusted'] = subset['epa'] - subset['off_epa_adj'] + subset['hfa_adj']
         subset['def_sr_adjusted'] = subset['success'] - subset['off_sr_adj']
-        
         subset['def_epa_w'] = subset['def_epa_adjusted'] * subset['time_weight']
         subset['def_sr_w'] = subset['def_sr_adjusted'] * subset['time_weight']
         
         # --- DEFENSE AGGREGATION ---
         def_stats = subset.groupby('defteam')[['def_epa_w', 'def_sr_w', 'time_weight', 'play_id']].agg(
-            adj_epa_sum=('def_epa_w', 'sum'),
-            adj_sr_sum=('def_sr_w', 'sum'),
-            total_weight=('time_weight', 'sum'),
-            raw_plays=('play_id', 'count')
+            adj_epa_sum=('def_epa_w', 'sum'), adj_sr_sum=('def_sr_w', 'sum'),
+            total_weight=('time_weight', 'sum'), raw_plays=('play_id', 'count')
         )
         
         def_stats['final_epa'] = def_stats['adj_epa_sum'] / def_stats['total_weight']
@@ -352,10 +349,8 @@ def calculate_sos_adjusted_stats(df, has_ftn):
         def_stats = def_stats[def_stats['total_weight'] >= MIN_WEIGHTED_PLAYS]
         
         if not def_stats.empty:
-            # Invert for Defense (Lower EPA is better, so we rank inverted)
             def_stats['inv_epa'] = def_stats['final_epa'] * -1
             def_stats['epa_pct'] = def_stats['inv_epa'].apply(lambda x: percentileofscore(def_stats['inv_epa'].values, x, kind='weak'))
-            
             def_stats['inv_sr'] = def_stats['final_sr'] * -1
             def_stats['sr_pct'] = def_stats['inv_sr'].apply(lambda x: percentileofscore(def_stats['inv_sr'].values, x, kind='weak'))
             
@@ -379,11 +374,12 @@ if __name__ == "__main__":
         # This ensures the decay treats the Super Bowl as "recent" and the season opener as "older"
         anchor_date = datetime(year + 1, 2, 20)
         
-        df, has_ftn = load_data(year, anchor_date)
+        # Change this block in your __main__ loop:
+        df, has_ftn, has_participation = load_data(year, anchor_date)
         
         if not df.empty:
             print(f"Calculating Weighted Percentiles for {year}...")
-            year_results = calculate_sos_adjusted_stats(df, has_ftn)
+            year_results = calculate_sos_adjusted_stats(df, has_ftn, has_participation)
             year_results['Season'] = year  # Tag the data with the season
             all_history.append(year_results)
         else:
