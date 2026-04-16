@@ -1,4 +1,4 @@
-name: Weekly 2 Collect Last Weeks Pick Data
+name: Weekly 1 Collect Last Weeks Pick Data
 
 on:
   schedule:
