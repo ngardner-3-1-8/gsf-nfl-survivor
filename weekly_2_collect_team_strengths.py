@@ -341,7 +341,7 @@ def loop_through_strengths(date):
         for year in range(START_YEAR, END_YEAR + 1):
             # We set the "Anchor Date" to mid-February of the following year
             # This ensures the decay treats the Super Bowl as "recent" and the season opener as "older"
-            anchor_date = datetime.datetime(year + 1, 2, 20)
+            anchor_date = = datetime(year + 1, 2, 20)
             
             df, has_ftn = load_data(year, anchor_date)
             
