@@ -4,6 +4,7 @@ import nflreadpy as nfl
 from scipy.stats import percentileofscore
 from datetime import datetime
 import warnings
+import calendar
 
 def loop_through_strengths(date):
     # 1. Get current date
