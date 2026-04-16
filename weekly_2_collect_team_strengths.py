@@ -380,7 +380,7 @@ def loop_through_strengths(date):
     OUTPUT_FILE = f"nfl-pbp-data/nfl_games_with_schematic_data_{START_YEAR}_{END_YEAR}.csv"
     
     # File Paths for your ratings
-    POWER_RATINGS_FILE = f"nfl-power-ratings/nfl_power_ratings_blended_week_{upcoming_week}_{END_YEAR}.csv"
+    POWER_RATINGS_FILE = f"nfl-power-ratings/nfl_power_ratings_blended_week_{starting_week}_{END_YEAR}.csv"
     HFA_RATINGS_FILE = "nfl-power-ratings/nfl_hfa_ratings.csv"
     
     # --- HELPER: TEAM MAPPING ---
@@ -767,7 +767,7 @@ def loop_through_strengths(date):
             # Only drop columns that actually exist in the dataframe
             existing_cols_to_drop = [c for c in cols_to_remove if c in final_df.columns]
             final_df = final_df.drop(columns=existing_cols_to_drop)
-            mask = final_df['week'] >= upcoming_week
+            mask = final_df['week'] >= starting_week
             final_df = final_df[mask]
     
             
