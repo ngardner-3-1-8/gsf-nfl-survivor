@@ -687,7 +687,7 @@ def loop_through_strengths(date):
             print("Loading Schedule...")
             schedule_df = nfl.load_schedules(list(range(START_YEAR, END_YEAR + 1)))
             if hasattr(schedule_df, "to_pandas"): schedule_df = schedule_df.to_pandas()
-            schedule_df = schedule_df[schedule_df['game_type'] != 'PRE'].copy()
+            schedule_df = schedule_df[schedule_df['game_type'] == 'REG'].copy()
             
             # 3. Add Rest & Impute Spreads (NEW STEP)
             schedule_df = add_rest_and_ratings(schedule_df)
