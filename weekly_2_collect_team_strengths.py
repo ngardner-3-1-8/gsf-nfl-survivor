@@ -767,7 +767,7 @@ def loop_through_strengths(date):
             # Only drop columns that actually exist in the dataframe
             existing_cols_to_drop = [c for c in cols_to_remove if c in final_df.columns]
             final_df = final_df.drop(columns=existing_cols_to_drop)
-            mask = final_df['week'] >= CURRENT_UPCOMING_WEEK
+            mask = final_df['week'] >= upcoming_week
             final_df = final_df[mask]
     
             
