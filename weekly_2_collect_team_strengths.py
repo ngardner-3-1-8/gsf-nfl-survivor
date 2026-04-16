@@ -108,7 +108,6 @@ def loop_through_strengths(date):
         pbp = pbp[(pbp['wp'] >= GARBAGE_MIN) & (pbp['wp'] <= GARBAGE_MAX)]
         pbp = pbp[pbp['play_type'].isin(['run', 'pass'])]
         pbp = pbp.dropna(subset=['epa', 'posteam', 'defteam'])
-        pbp =pbp[pbp['game_type'] == 'REG']
         # --- TIME DECAY WEIGHTS (Relative to History) ---
         pbp['game_date'] = pd.to_datetime(pbp['game_date'])
         
@@ -561,7 +560,7 @@ def loop_through_strengths(date):
             sched = sched.to_pandas()
         
         # Filter for regular season and playoffs only
-        sched = sched[sched['game_type'] != 'PRE'].copy()
+        sched = sched[sched['game_type'] == 'REG'].copy()
     
         # --- 1. FILL MISSING MONEYLINES (From previous step) ---
         print("Imputing missing moneylines and converting to decimal...")
