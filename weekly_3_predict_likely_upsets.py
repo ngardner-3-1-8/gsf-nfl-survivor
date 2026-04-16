@@ -70,7 +70,7 @@ def loop_through_predictions(date):
 
     # --- CONFIGURATION ---
     TRAIN_FILE = f"nfl-pbp-data/nfl_games_with_schematic_data_2008_{target_year - 1}.csv"
-    TEST_FILE = f"nfl-pbp-data/nfl_games_with_schematic_data_{target_year}_{target_year}.csv"
+    TEST_FILE = f"nfl-pbp-data/nfl_games_with_schematic_data_{target_year}_{target_year}_week_{starting_week}.csv"
     OUTPUT_FILE = f"nfl-power-ratings/nfl_{target_year}_week_{starting_week}_matchup_upset_predictions.csv"
     
     # --- UPDATED CATEGORIES ---
