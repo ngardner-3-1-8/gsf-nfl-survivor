@@ -71,7 +71,7 @@ def loop_through_predictions(date):
     # --- CONFIGURATION ---
     TRAIN_FILE = f"nfl-pbp-data/nfl_games_with_schematic_data_2008_{target_year - 1}.csv"
     TEST_FILE = f"nfl-pbp-data/nfl_games_with_schematic_data_{target_year}_{target_year}.csv"
-    OUTPUT_FILE = f"nfl-power-ratings/nfl_{target_year}_week_{upcoming_week}_matchup_upset_predictions.csv"
+    OUTPUT_FILE = f"nfl-power-ratings/nfl_{target_year}_week_{starting_week}_matchup_upset_predictions.csv"
     
     # --- UPDATED CATEGORIES ---
     MATCHUP_CATEGORIES = [
@@ -109,7 +109,7 @@ def loop_through_predictions(date):
             print("WARNING: Test file is empty. Cannot predict.")
             return
     
-        print(f"\n--- Processing Predictions for {target_year} Week {upcoming_week} ---")
+        print(f"\n--- Processing Predictions for {target_year} Week {starting_week} ---")
         
         train_df = calculate_mismatches(train_df)
         test_df = calculate_mismatches(test_df)
@@ -126,9 +126,9 @@ def loop_through_predictions(date):
         y_train = train_df['Upset'].astype(int)
         
         # ISOLATE test set to only the week we want to predict
-        predict_df = test_df[test_df['week'] == upcoming_week].copy()
+        predict_df = test_df[test_df['week'] == starting_week].copy()
         if predict_df.empty:
-            print(f"No games found for Week {upcoming_week} in the test data.")
+            print(f"No games found for Week {starting_week} in the test data.")
             return
             
         X_predict = predict_df[feature_cols].copy()
