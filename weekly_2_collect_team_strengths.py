@@ -162,10 +162,10 @@ def loop_through_strengths(date):
         except:
             pbp['receiver_pos'] = np.nan
         
-        return pbp, has_ftn
+        return pbp, has_ftn, has_participation
     
     # --- 2. CATEGORIES (Unchanged) ---
-    def get_categories(df, has_ftn):
+    def get_categories(df, has_ftn, has_participation):
         cats = {}
         cats['Overall'] = (df['play_type'].isin(['run', 'pass']))
         cats['Run'] = (df['play_type'] == 'run')
@@ -212,8 +212,8 @@ def loop_through_strengths(date):
         return cats
     
     # --- 3. WEIGHTED CALCULATOR (Unchanged) ---
-    def calculate_sos_adjusted_stats(df, has_ftn):
-        categories = get_categories(df, has_ftn)
+    def calculate_sos_adjusted_stats(df, has_ftn, has_participation):
+        categories = get_categories(df, has_ftn, has_participation)
         results = []
         
         # Global League Averages for this window
@@ -343,11 +343,11 @@ def loop_through_strengths(date):
             # This ensures the decay treats the Super Bowl as "recent" and the season opener as "older"
             anchor_date = datetime(year + 1, 2, 20)
             
-            df, has_ftn = load_data(year, anchor_date)
+            df, has_ftn, has_participation = load_data(year, anchor_date)
             
             if not df.empty:
                 print(f"Calculating Weighted Percentiles for {year}...")
-                year_results = calculate_sos_adjusted_stats(df, has_ftn)
+                year_results = calculate_sos_adjusted_stats(df, has_ftn, has_participation)
                 year_results['Season'] = year  # Tag the data with the season
                 all_history.append(year_results)
             else:
