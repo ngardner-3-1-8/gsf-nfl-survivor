@@ -4156,7 +4156,7 @@ def loop_through_simulations(date_str):
                     # Adjust performance based on Offense's EPA vs Man
                     epa_vs_man = off_adv.get('Offensive EPA vs Man', 0.0)
                     stats['mu'] += (epa_vs_man * 4.0)
-                    stats['complete'] += (epa_vs_man * 0.05) # Better EPA often implies better completion rates
+                    stats['complete'] += (epa_vs_man * 0.075) # Better EPA often implies better completion rates
                 else:
                     # Adjust performance based on Offense's EPA vs Zone
                     epa_vs_zone = off_adv.get('Offensive EPA vs Zone', 0.0)
