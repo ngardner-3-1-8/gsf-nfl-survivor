@@ -4140,10 +4140,10 @@ def loop_through_simulations(date_str):
                 
                 if is_pressured:
                     # If pressured, significantly increase sack risk and decrease efficiency
-                    stats['sack'] *= 1  # Pressure correlates heavily with sacks
+                    stats['sack'] *= 1.0  # Pressure correlates heavily with sacks
                     # Use 'Offensive EPA vs Pressure' to adjust yardage (EPA to yardage scaling factor ~5.0)
                     epa_adj = off_adv.get('Offensive EPA vs Pressure', -0.1)
-                    stats['mu'] += (epa_adj * 2.5) 
+                    stats['mu'] += (epa_adj * 4.0) 
                     comp_under_pressure = off_adv.get('Comp Rate vs Pressure', stats['complete'] - 0.10)
                     stats['complete'] = comp_under_pressure
 
@@ -4155,13 +4155,13 @@ def loop_through_simulations(date_str):
                 if is_man_coverage:
                     # Adjust performance based on Offense's EPA vs Man
                     epa_vs_man = off_adv.get('Offensive EPA vs Man', 0.0)
-                    stats['mu'] += (epa_vs_man * 2.5)
+                    stats['mu'] += (epa_vs_man * 4.0)
                     stats['complete'] += (epa_vs_man * 0.05) # Better EPA often implies better completion rates
                 else:
                     # Adjust performance based on Offense's EPA vs Zone
                     epa_vs_zone = off_adv.get('Offensive EPA vs Zone', 0.0)
-                    stats['mu'] += (epa_vs_zone * 5.0)
-                    stats['complete'] += (epa_vs_zone * 0.05)
+                    stats['mu'] += (epa_vs_zone * 4.0)
+                    stats['complete'] += (epa_vs_zone * 0.075)
                 # 1. Check Sack
                 if np.random.random() < stats['sack']:
                     # Replace yards = -7 with:
