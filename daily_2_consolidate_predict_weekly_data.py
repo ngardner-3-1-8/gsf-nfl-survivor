@@ -3505,7 +3505,7 @@ def loop_through_simulations(date_str):
     collect_schedule_travel_ranking_data_df = get_predicted_pick_percentages(collect_schedule_travel_ranking_data_df)
     
     # --- CONFIGURATION ---
-    SIMULATIONS = 100
+    SIMULATIONS = 2500
     HISTORY_DAYS = 840
     CURRENT_SEASON = target_year
     DECAY_RATE = 0.00475
@@ -5571,11 +5571,11 @@ def loop_through_simulations(date_str):
 
 if __name__ == "__main__":
     week_starting_dates = [
-#        "09/03/2025",
+        "09/03/2025"
 #        "09/10/2025", 
 #        "09/17/2025", 
 #        "09/24/2025", 
-        "10/01/2025" 
+#        "10/01/2025" 
 #        "10/08/2025",
 #        "10/15/2025",
 #        "10/22/2025", 
