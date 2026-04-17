@@ -3601,7 +3601,7 @@ def loop_through_simulations(date_str):
                 ]),
                 left_on=["game_id", "play_id"],
                 right_on=["nflverse_game_id", "play_id"],
-                how="inner"
+                how="left"
             ).filter(
                 (pl.col("game_date") >= start_date) & 
                 (pl.col("game_date") < end_date) & 
@@ -3610,6 +3610,11 @@ def loop_through_simulations(date_str):
                 (pl.col("posteam").is_not_null()) &
                 (pl.col("defteam").is_not_null())
             )
+            
+            league_avg_pressure = joined.select(pl.col("was_pressure").mean()).to_pandas().iloc[0, 0]
+            league_avg_man_rate = joined.select(
+                (pl.col("defense_man_zone_type") == "MAN_COVERAGE").mean()
+            ).to_pandas().iloc[0, 0]
     
             # 1. Calculate OFFENSIVE Aggregates (Group by posteam)
             off_stats = joined.group_by("posteam").agg([
@@ -3618,7 +3623,9 @@ def loop_through_simulations(date_str):
                 (pl.col("defense_man_zone_type") == "ZONE_COVERAGE").cast(pl.Float64).mean().alias("Zone Rate"),
                 pl.col("epa").filter(pl.col("was_pressure") == True).mean().alias("Offensive EPA vs Pressure"),
                 pl.col("epa").filter(pl.col("defense_man_zone_type") == "MAN_COVERAGE").mean().alias("Offensive EPA vs Man"),
-                pl.col("epa").filter(pl.col("defense_man_zone_type") == "ZONE_COVERAGE").mean().alias("Offensive EPA vs Zone")
+                pl.col("epa").filter(pl.col("defense_man_zone_type") == "ZONE_COVERAGE").mean().alias("Offensive EPA vs Zone"),
+                pl.col("complete_pass").filter(pl.col("was_pressure") == True).mean().alias("Comp Rate vs Pressure"),
+                pl.col("complete_pass").filter(pl.col("was_pressure") == False).mean().alias("Comp Rate Clean Pocket")
             ]).rename({"posteam": "team"}) # Rename so we can join cleanly
     
             # 2. Calculate DEFENSIVE Aggregates (Group by defteam)
@@ -3636,7 +3643,13 @@ def loop_through_simulations(date_str):
             if "LA" in final_dict and "LAR" not in final_dict:
                 final_dict["LAR"] = final_dict["LA"]
             
-            return final_dict
+            return {
+                "team_stats": final_dict,  # <--- Here is your final_dict!
+                "league_stats": {
+                    "pressure_avg": league_avg_pressure,
+                    "man_avg": league_avg_man_rate
+                }
+            }
             
         except Exception as e:
             print(f"Error loading 365-day stats: {e}")
@@ -3660,9 +3673,11 @@ def loop_through_simulations(date_str):
         return f"Opp {int(100-yardline)}"
     
     class AdvancedNFLSimulator:
-        def __init__(self):
+        def __init__(self, adv_stats=None, league_adv_stats=None):
             self.pbp = pd.DataFrame()
             self.profiles = {}
+            self.adv_stats = adv_stats or {}
+            self.league_adv_stats = league_adv_stats or {} # Define this so _resolve_play_outcome can use it
             self.def_mults = {}
             self.hfa_map = {} 
             self.league_avgs = {}
@@ -4015,6 +4030,7 @@ def loop_through_simulations(date_str):
             """Calculates the result of a play, injecting 'Breakaway' logic to fix low totals.
             Returns: (yards, is_complete, is_turnover, desc_tag)
             """
+            stats = stats.copy()
     
     # --- APPLY WEATHER PHYSICS ---
             if not is_dome:
@@ -4108,9 +4124,48 @@ def loop_through_simulations(date_str):
 
             # --- PASS LOGIC ---
             else:
+                # Inside _resolve_play_outcome, within the 'else' (pass) block:
+                team_stats = self.adv_stats.get('team_stats', {})
+                off_adv = team_stats.get(off, {})
+                def_adv = team_stats.get(def_, {})
+                
+                # 1. Determine Pressure State
+                # Use the matchup to find the probability of pressure
+                # Use the dynamic averages stored in the class:
+                league_pressure_avg = self.league_adv_stats.get('pressure_avg', 0.35)
+                prob_pressure = off_adv.get('Offensive Pressure Allowed Rate', league_pressure_avg) * \
+                                (def_adv.get('Defensive Pressure Generated Rate', league_pressure_avg) / league_pressure_avg)
+                
+                is_pressured = np.random.random() < prob_pressure
+                
+                if is_pressured:
+                    # If pressured, significantly increase sack risk and decrease efficiency
+                    stats['sack'] *= 1  # Pressure correlates heavily with sacks
+                    # Use 'Offensive EPA vs Pressure' to adjust yardage (EPA to yardage scaling factor ~5.0)
+                    epa_adj = off_adv.get('Offensive EPA vs Pressure', -0.1)
+                    stats['mu'] += (epa_adj * 2.5) 
+                    comp_under_pressure = off_adv.get('Comp Rate vs Pressure', stats['complete'] - 0.10)
+                    stats['complete'] = comp_under_pressure
+
+                # 2. Determine Coverage State (if not a sack)
+                man_avg = self.league_adv_stats.get('man_avg', 0.30)
+                man_rate = def_adv.get('Man Rate', man_avg)
+                is_man_coverage = np.random.random() < man_rate
+                
+                if is_man_coverage:
+                    # Adjust performance based on Offense's EPA vs Man
+                    epa_vs_man = off_adv.get('Offensive EPA vs Man', 0.0)
+                    stats['mu'] += (epa_vs_man * 2.5)
+                    stats['complete'] += (epa_vs_man * 0.05) # Better EPA often implies better completion rates
+                else:
+                    # Adjust performance based on Offense's EPA vs Zone
+                    epa_vs_zone = off_adv.get('Offensive EPA vs Zone', 0.0)
+                    stats['mu'] += (epa_vs_zone * 5.0)
+                    stats['complete'] += (epa_vs_zone * 0.05)
                 # 1. Check Sack
                 if np.random.random() < stats['sack']:
-                    yards = -7
+                    # Replace yards = -7 with:
+                    yards = -int(np.random.gamma(4, 1.6) + 1) 
                     is_complete = False
                     desc_tag = "SACK"
                     # Small chance of strip-sack
@@ -4152,7 +4207,7 @@ def loop_through_simulations(date_str):
                         if np.random.random() < 0.01:
                             is_turnover = True
                             desc_tag += " / FUMBLE"
-                    # 3. Standard Run (and apply similar to Standard Pass)
+                    # 3. Standard pass (and apply similar to Standard Pass)
                     else:
                         # Shift the distribution so 0 in Gamma = -3 yards in real life
                         shift = 3.0
