@@ -5565,8 +5565,8 @@ def loop_through_simulations(date_str):
             
             print("\nSimulation Complete!")
             # Ensure directory exists or remove prefix if not needed
-            final_combined_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance{upcoming_week}_TEST.csv", index=False)
-            print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_{upcoming_week}_TEST.csv'")
+            final_combined_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv", index=False)
+            print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv'")
 
 
 if __name__ == "__main__":
