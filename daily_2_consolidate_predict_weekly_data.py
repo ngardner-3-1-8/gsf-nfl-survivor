@@ -4206,7 +4206,7 @@ def loop_through_simulations(date_str):
                              'Sim_Total_Median', 'Sim_Spread_Variance', 'Sim_Spread_Std']
             monte_carlo_df[cols_to_round] = monte_carlo_df[cols_to_round].round(2)
             final_combined_df = collect_schedule_travel_ranking_data_df.merge(monte_carlo_df, left_index=True, right_on='Matchup_ID', how='left')
-
+            final_combined_df.to_csv("nfl-power-ratings/TEST.csv", index=False)
             # 1. Define the lists of columns to be averaged
             home_columns = [
                 'Home Team Sportsbook Fair Odds',
