@@ -4828,9 +4828,11 @@ def loop_through_simulations(date_str):
                 # Set it in the main dataframe (only for the games this team is playing in this week)
                 nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Home Team'] == team), 'Home Team Expected Availability'] = team_avail_percent
                 nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team), 'Away Team Expected Availability'] = team_avail_percent
+            
     
             # --- C. PREPARE & PREDICT *THIS* WEEK'S PICKS ---
             new_df = nfl_schedule_df.loc[current_week_mask].copy()
+            new_df['Date'] = new_df['Date_x']
             # Select all columns needed for prediction features
             selected_columns = [
                 'Week', 'Away Team', 'Home Team', 'Away Team Fair Odds', 'Home Team Fair Odds', 
@@ -4847,7 +4849,6 @@ def loop_through_simulations(date_str):
             
             # Ensure only valid columns are selected
             new_df = new_df[[col for col in selected_columns if col in new_df.columns]].copy()
-            new_df['Date'] = new_df['Date_x']
             new_df = new_df.rename(columns={'Date': 'Calendar Date'})
             new_df = new_df.rename(columns={'Week': 'Date'})
     
