@@ -4573,8 +4573,10 @@ def loop_through_simulations(date_str):
             
             print("\nSimulation Complete!")
             # Ensure directory exists or remove prefix if not needed
-            final_combined_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv", index=False)
-            print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv'")
+#            final_combined_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv", index=False)
+#            print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv'")
+
+            return final_combined_df
 
     # --- Main Function ---
     def get_predicted_pick_percentages(schedule_df):
@@ -5564,7 +5566,7 @@ def loop_through_simulations(date_str):
     	
         return nfl_schedule_df
 
-    collect_schedule_travel_ranking_data_df = get_predicted_pick_percentages(collect_schedule_travel_ranking_data_df)
+    collect_schedule_travel_ranking_data_df = get_predicted_pick_percentages(final_combined_df)
 
     collect_schedule_travel_ranking_data_df["Away Team Fair Odds"] = (
         collect_schedule_travel_ranking_data_df["Away Team Sportsbook Fair Odds"]
@@ -5575,6 +5577,8 @@ def loop_through_simulations(date_str):
         collect_schedule_travel_ranking_data_df["Home Team Sportsbook Fair Odds"]
         .fillna(collect_schedule_travel_ranking_data_df["Consensus Home Win Pct"])
     )
+    collect_schedule_travel_ranking_data_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv", index=False)
+    print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv'")
 
 
 if __name__ == "__main__":
