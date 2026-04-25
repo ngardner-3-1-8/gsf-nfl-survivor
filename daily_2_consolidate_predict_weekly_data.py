@@ -921,72 +921,37 @@ def loop_through_simulations(date_str):
         # Convert 'Date' column to datetime objects
         df['Date'] = pd.to_datetime(df['Date'])
     
-        # Iterate through each row in the DataFrame
-        for index, row in df.iterrows():
-            # Get the home and away teams
-            home_team = row['Home Team']
-            away_team = row['Away Team']
-            game_date = row['Date']
-    
-            # Calculate the start date of the 10-day window
-            ten_days_ago = game_date - pd.Timedelta(days=10)
-    
-            # Get the previous 10 days of games for the home team (regardless of home/away)
-            home_team_games = df[
-                ((df['Home Team'] == home_team) | (df['Away Team'] == home_team)) &
-                (df['Date'] >= ten_days_ago) & (df['Date'] <= game_date) 
-            ].sort_values('Date', ascending=False).head(10)
-    
-            # Get the previous 10 days of games for the away team (regardless of home/away)
-            away_team_games = df[
-                ((df['Home Team'] == away_team) | (df['Away Team'] == away_team)) &
-                (df['Date'] >= ten_days_ago) & (df['Date'] <= game_date)
-            ].sort_values('Date', ascending=False).head(10)
-    
-            # Check if home team has played 3 games in the last 10 days (regardless of home/away)
-            if len(home_team_games) >= 3:
-                df.loc[index, 'Home Team 3 games in 10 days'] = 'Yes'
-    
-            # Check if away team has played 3 games in the last 10 days (regardless of home/away)
-            if len(away_team_games) >= 3:
-                df.loc[index, 'Away Team 3 games in 10 days'] = 'Yes'
-    
-        # Create "HT 4 games in 17 days" and "AT 4 games in 17 Days" columns with default "No"
-        df['Home Team 4 games in 17 days'] = 'No'
-        df['Away Team 4 games in 17 days'] = 'No'
-    
-        # Convert 'Date' column to datetime objects
-        df['Date'] = pd.to_datetime(df['Date'])
-    
-        # Iterate through each row in the DataFrame
-        for index, row in df.iterrows():
-            # Get the home and away teams
-            home_team = row['Home Team']
-            away_team = row['Away Team']
-            game_date = row['Date']
-    
-            # Calculate the start date of the 10-day window
-            seventeen_days_ago = game_date - pd.Timedelta(days=17)
-    
-            # Get the previous 10 days of games for the home team (regardless of home/away)
-            home_team_games = df[
-                ((df['Home Team'] == home_team) | (df['Away Team'] == home_team)) &
-                (df['Date'] >= seventeen_days_ago) & (df['Date'] <= game_date) 
-            ].sort_values('Date', ascending=False).head(17)
-    
-            # Get the previous 10 days of games for the away team (regardless of home/away)
-            away_team_games = df[
-                ((df['Home Team'] == away_team) | (df['Away Team'] == away_team)) &
-                (df['Date'] >= seventeen_days_ago) & (df['Date'] <= game_date)
-            ].sort_values('Date', ascending=False).head(17)
-    
-            # Check if home team has played 3 games in the last 10 days (regardless of home/away)
-            if len(home_team_games) >= 4:
-                df.loc[index, 'Home Team 4 games in 17 days'] = 'Yes'
-    
-            # Check if away team has played 3 games in the last 10 days (regardless of home/away)
-            if len(away_team_games) >= 4:
-                df.loc[index, 'Away Team 4 games in 17 days'] = 'Yes'
+        # Fixed — build a lookup once, then map it
+        def games_in_window(df, team, date, days):
+            window_start = date - pd.Timedelta(days=days)
+            return ((
+                (df['Home Team'] == team) | (df['Away Team'] == team)
+            ) & (df['Date'] >= window_start) & (df['Date'] <= date)).sum()
+        
+        # Build lookup for all teams and dates at once
+        teams = pd.concat([
+            df[['Date', 'Home Team']].rename(columns={'Home Team': 'Team'}),
+            df[['Date', 'Away Team']].rename(columns={'Away Team': 'Team'})
+        ])
+        teams = teams.sort_values('Date')
+        
+        def count_recent(team_col, n_games, n_days):
+            result = []
+            for _, row in df.iterrows():
+                team = row[team_col]
+                date = row['Date']
+                window = teams[
+                    (teams['Team'] == team) &
+                    (teams['Date'] >= date - pd.Timedelta(days=n_days)) &
+                    (teams['Date'] <= date)
+                ]
+                result.append('Yes' if len(window) >= n_games else 'No')
+            return result
+        
+        df['Home Team 3 games in 10 days'] = count_recent('Home Team', 3, 10)
+        df['Away Team 3 games in 10 days'] = count_recent('Away Team', 3, 10)
+        df['Home Team 4 games in 17 days'] = count_recent('Home Team', 4, 17)
+        df['Away Team 4 games in 17 days'] = count_recent('Away Team', 4, 17)
     
     
         # Convert 'NA' to NaN
@@ -1000,29 +965,16 @@ def loop_through_simulations(date_str):
         df['Away Team Short Rest'] = 'No'
         df['Divisional Matchup?'] = (df['Home Team Division'] == df['Away Team Division']).astype(int)
         # Iterate through each row in the DataFrame
-        for index, row in df.iterrows():
-            # Get the home and away teams
-            home_team_rest = row['Home Team Weekly Rest']
-            away_team_rest = row['Away Team Weekly Rest']
-            game_date = row['Date']
-    
-            # Check for short rest and rest disadvantage
-            if (away_team_rest < 7) and (away_team_rest < home_team_rest):
-                # Update the 'Away Team Short Rest' for the specific row
-                df.loc[index, 'Away Team Short Rest'] = 'Yes'
-                
-        df['Home Team Short Rest'] = 'No'
-        # Iterate through each row in the DataFrame
-        for index, row in df.iterrows():
-            # Get the home and away teams
-            home_team_rest = row['Home Team Weekly Rest']
-            away_team_rest = row['Away Team Weekly Rest']
-            game_date = row['Date']
-    
-            # Check for short rest and rest disadvantage
-            if (home_team_rest < 7) and (home_team_rest < away_team_rest):
-                # Update the 'Away Team Short Rest' for the specific row
-                df.loc[index, 'Home Team Short Rest'] = 'Yes'
+        # Fixed — one line
+        df['Away Team Short Rest'] = np.where(
+            (df['Away Team Weekly Rest'] < 7) & (df['Away Team Weekly Rest'] < df['Home Team Weekly Rest']),
+            'Yes', 'No'
+        )
+        
+        df['Home Team Short Rest'] = np.where(
+            (df['Home Team Weekly Rest'] < 7) & (df['Home Team Weekly Rest'] < df['Away Team Weekly Rest']),
+            'Yes', 'No'
+        )
 
         df['Away Team Massey-Peabody Current Rank'] = df['Away Team'].map(lambda team: stadiums[team][6] if team in stadiums else 'NA')
         df['Home Team Massey-Peabody Current Rank'] = df['Home Team'].map(lambda team: stadiums[team][6] if team in stadiums else 'NA')
@@ -1384,7 +1336,7 @@ def loop_through_simulations(date_str):
                         formatted_time = east_time.strftime('%I:%M %p ET').replace('AM ET', 'am').replace('PM ET', 'pm').lstrip('0')
         
                         # Odds Aggregation
-                        game_odds = {'home': [], 'away': [], 'home_spread': [], 'away_spread': []}
+                        game_odds = {'home': [], 'away': [], 'home_spread': [], 'away_spread': [], 'totals': []}
                         for bookmaker in event['bookmakers']:
                             for market in bookmaker['markets']:
                                 if market['key'] == 'h2h':
@@ -1625,104 +1577,49 @@ def loop_through_simulations(date_str):
             csv_df['Generic Sports Fan Away Team Spread'] = csv_df['Home Team Adjusted Generic Sports Fan Current Rank'] - csv_df['Away Team Adjusted Generic Sports Fan Current Rank']
     		
             # Iterate through the DataFrame to apply overrides and calculate implied/fair odds
-            for index, row in csv_df.iterrows():
-                # Calculate Implied Odds for the final (potentially overridden) moneyline
-                away_moneyline = csv_df.loc[index, 'Away Team Sportsbook Moneyline']
-                home_moneyline = csv_df.loc[index, 'Home Team Sportsbook Moneyline']
+            # Fixed — define a reusable function and apply it to whole columns at once
+            def implied_odds(moneyline_series):
+                return np.where(
+                    moneyline_series.isna(), np.nan,
+                    np.where(
+                        moneyline_series > 0,
+                        100 / (moneyline_series + 100),
+                        moneyline_series.abs() / (moneyline_series.abs() + 100)
+                    )
+                )
+            
+            csv_df['Away Team Sportsbook Implied Odds to Win'] = implied_odds(csv_df['Away Team Sportsbook Moneyline'])
+            csv_df['Home Team Sportsbook Implied Odds to Win'] = implied_odds(csv_df['Home Team Sportsbook Moneyline'])
+            csv_df['Away Team Massey-Peabody Implied Odds to Win'] = implied_odds(csv_df['Massey-Peabody Away Team Moneyline'])
+            csv_df['Home Team Massey-Peabody Implied Odds to Win'] = implied_odds(csv_df['Massey-Peabody Home Team Moneyline'])
+            csv_df['Away Team Generic Sports Fan Implied Odds to Win'] = implied_odds(csv_df['Generic Sports Fan Away Team Moneyline'])
+            csv_df['Home Team Generic Sports Fan Implied Odds to Win'] = implied_odds(csv_df['Generic Sports Fan Home Team Moneyline'])
+
+            def fair_odds(implied_away, implied_home):
+                total = implied_away + implied_home
+                return (implied_away / total.replace(0, np.nan),
+                        implied_home / total.replace(0, np.nan))
+            
+            csv_df['Away Team Sportsbook Fair Odds'], csv_df['Home Team Sportsbook Fair Odds'] = fair_odds(
+                csv_df['Away Team Sportsbook Implied Odds to Win'],
+                csv_df['Home Team Sportsbook Implied Odds to Win']
+            )
+            csv_df['Away Team Massey-Peabody Fair Odds'], csv_df['Home Team Massey-Peabody Fair Odds'] = fair_odds(
+                csv_df['Away Team Massey-Peabody Implied Odds to Win'],
+                csv_df['Home Team Massey-Peabody Implied Odds to Win']
+            )
+            csv_df['Away Team Generic Sports Fan Fair Odds'], csv_df['Home Team Generic Sports Fan Fair Odds'] = fair_odds(
+                csv_df['Away Team Generic Sports Fan Implied Odds to Win'],
+                csv_df['Home Team Generic Sports Fan Implied Odds to Win']
+            )
         
-                # Handle potential NaN values before calculating implied odds
-                if pd.isna(away_moneyline):
-                    csv_df.loc[index, 'Away Team Sportsbook Implied Odds to Win'] = np.nan
-                elif away_moneyline > 0:
-                    csv_df.loc[index, 'Away Team Sportsbook Implied Odds to Win'] = 100 / (away_moneyline + 100)
-                else:
-                    csv_df.loc[index, 'Away Team Sportsbook Implied Odds to Win'] = abs(away_moneyline) / (abs(away_moneyline) + 100)
-                
-                if pd.isna(home_moneyline):
-                    csv_df.loc[index, 'Home Team Sportsbook Implied Odds to Win'] = np.nan
-                elif home_moneyline > 0:
-                    csv_df.loc[index, 'Home Team Sportsbook Implied Odds to Win'] = 100 / (home_moneyline + 100)
-                else:
-                    csv_df.loc[index, 'Home Team Sportsbook Implied Odds to Win'] = abs(home_moneyline) / (abs(home_moneyline) + 100)
-    
-    				
-                away_mp_moneyline = csv_df.loc[index, 'Massey-Peabody Away Team Moneyline']
-                home_mp_moneyline = csv_df.loc[index, 'Massey-Peabody Home Team Moneyline']
-        
-                # Handle potential NaN values before calculating implied odds
-                if pd.isna(away_mp_moneyline):
-                    csv_df.loc[index, 'Away Team Massey-Peabody Implied Odds to Win'] = np.nan
-                elif away_mp_moneyline > 0:
-                    csv_df.loc[index, 'Away Team Massey-Peabody Implied Odds to Win'] = 100 / (away_mp_moneyline + 100)
-                else:
-                    csv_df.loc[index, 'Away Team Massey-Peabody Implied Odds to Win'] = abs(away_mp_moneyline) / (abs(away_mp_moneyline) + 100)
-                
-                if pd.isna(home_mp_moneyline):
-                    csv_df.loc[index, 'Home Team Massey-Peabody Implied Odds to Win'] = np.nan
-                elif home_mp_moneyline > 0:
-                    csv_df.loc[index, 'Home Team Massey-Peabody Implied Odds to Win'] = 100 / (home_mp_moneyline + 100)
-                else:
-                    csv_df.loc[index, 'Home Team Massey-Peabody Implied Odds to Win'] = abs(home_mp_moneyline) / (abs(home_mp_moneyline) + 100)
-    
-                away_gsf_moneyline = csv_df.loc[index, 'Generic Sports Fan Away Team Moneyline']
-                home_gsf_moneyline = csv_df.loc[index, 'Generic Sports Fan Home Team Moneyline']
-        
-                # Handle potential NaN values before calculating implied odds
-                if pd.isna(away_gsf_moneyline):
-                    csv_df.loc[index, 'Away Team Generic Sports Fan Implied Odds to Win'] = np.nan
-                elif away_gsf_moneyline > 0:
-                    csv_df.loc[index, 'Away Team Generic Sports Fan Implied Odds to Win'] = 100 / (away_gsf_moneyline + 100)
-                else:
-                    csv_df.loc[index, 'Away Team Generic Sports Fan Implied Odds to Win'] = abs(away_gsf_moneyline) / (abs(away_gsf_moneyline) + 100)
-                
-                if pd.isna(home_gsf_moneyline):
-                    csv_df.loc[index, 'Home Team Generic Sports Fan Implied Odds to Win'] = np.nan
-                elif home_gsf_moneyline > 0:
-                    csv_df.loc[index, 'Home Team Generic Sports Fan Implied Odds to Win'] = 100 / (home_gsf_moneyline + 100)
-                else:
-                    csv_df.loc[index, 'Home Team Generic Sports Fan Implied Odds to Win'] = abs(home_gsf_moneyline) / (abs(home_gsf_moneyline) + 100)
-        
-                # Calculate Fair Odds for the final (potentially overridden) moneyline
-                away_implied_odds = csv_df.loc[index, 'Away Team Sportsbook Implied Odds to Win']
-                home_implied_odds = csv_df.loc[index, 'Home Team Sportsbook Implied Odds to Win']
-                
-                # Ensure sum is not zero or NaN before division
-                if pd.isna(away_implied_odds) or pd.isna(home_implied_odds) or (away_implied_odds + home_implied_odds) == 0:
-                    csv_df.loc[index, 'Away Team Sportsbook Fair Odds'] = np.nan
-                    csv_df.loc[index, 'Home Team Sportsbook Fair Odds'] = np.nan
-                else:
-                    csv_df.loc[index, 'Away Team Sportsbook Fair Odds'] = away_implied_odds / (away_implied_odds + home_implied_odds)
-                    csv_df.loc[index, 'Home Team Sportsbook Fair Odds'] = home_implied_odds / (away_implied_odds + home_implied_odds)
-        
-                # Calculate Fair Odds for Internal Moneyline (always calculated)
-                mp_away_implied_odds = csv_df.loc[index, 'Away Team Massey-Peabody Implied Odds to Win']
-                mp_home_implied_odds = csv_df.loc[index, 'Home Team Massey-Peabody Implied Odds to Win']
-                
-                if pd.isna(mp_away_implied_odds) or pd.isna(mp_home_implied_odds) or (mp_away_implied_odds + mp_home_implied_odds) == 0:
-                    csv_df.loc[index, 'Away Team Massey-Peabody Fair Odds'] = np.nan
-                    csv_df.loc[index, 'Home Team Massey-Peabody Fair Odds'] = np.nan
-                else:
-                    csv_df.loc[index, 'Away Team Massey-Peabody Fair Odds'] = mp_away_implied_odds / (mp_away_implied_odds + mp_home_implied_odds)
-                    csv_df.loc[index, 'Home Team Massey-Peabody Fair Odds'] = mp_home_implied_odds / (mp_away_implied_odds + mp_home_implied_odds)
-    
-                # Calculate Fair Odds for Internal Moneyline (always calculated)
-                gsf_away_implied_odds = csv_df.loc[index, 'Away Team Generic Sports Fan Implied Odds to Win']
-                gsf_home_implied_odds = csv_df.loc[index, 'Home Team Generic Sports Fan Implied Odds to Win']
-                
-                if pd.isna(gsf_away_implied_odds) or pd.isna(gsf_home_implied_odds) or (gsf_away_implied_odds + gsf_home_implied_odds) == 0:
-                    csv_df.loc[index, 'Away Team Generic Sports Fan Fair Odds'] = np.nan
-                    csv_df.loc[index, 'Home Team Generic Sports Fan Fair Odds'] = np.nan
-                else:
-                    csv_df.loc[index, 'Away Team Generic Sports Fan Fair Odds'] = gsf_away_implied_odds / (gsf_away_implied_odds + gsf_home_implied_odds)
-                    csv_df.loc[index, 'Home Team Generic Sports Fan Fair Odds'] = gsf_home_implied_odds / (gsf_away_implied_odds + gsf_home_implied_odds)
-        
-                # Round all calculated odds to 4 decimal places
-                for col in ['Away Team Massey-Peabody Implied Odds to Win', 'Home Team Massey-Peabody Implied Odds to Win', 'Away Team Sportsbook Implied Odds to Win',
-    					   'Home Team Sportsbook Implied Odds to Win', 'Away Team Generic Sports Fan Implied Odds to Win', 'Home Team Generic Sports Fan Implied Odds to Win',
-    					   'Away Team Sportsbook Fair Odds', 'Home Team Sportsbook Fair Odds', 'Away Team Massey-Peabody Fair Odds', 'Home Team Massey-Peabody Fair Odds',
-    					   'Away Team Generic Sports Fan Fair Odds', 'Home Team Generic Sports Fan Fair Odds']:
-                    if not pd.isna(csv_df.loc[index, col]): # Only round if not NaN
-                        csv_df.loc[index, col] = round(csv_df.loc[index, col], 4)
+            # Round all calculated odds to 4 decimal places
+            for col in ['Away Team Massey-Peabody Implied Odds to Win', 'Home Team Massey-Peabody Implied Odds to Win', 'Away Team Sportsbook Implied Odds to Win',
+                       'Home Team Sportsbook Implied Odds to Win', 'Away Team Generic Sports Fan Implied Odds to Win', 'Home Team Generic Sports Fan Implied Odds to Win',
+                       'Away Team Sportsbook Fair Odds', 'Home Team Sportsbook Fair Odds', 'Away Team Massey-Peabody Fair Odds', 'Home Team Massey-Peabody Fair Odds',
+                       'Away Team Generic Sports Fan Fair Odds', 'Home Team Generic Sports Fan Fair Odds']:
+                if not pd.isna(csv_df.loc[index, col]): # Only round if not NaN
+                    csv_df.loc[index, col] = round(csv_df.loc[index, col], 4)
         
             main_df_with_odds_df = csv_df
             return main_df_with_odds_df
