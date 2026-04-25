@@ -4576,8 +4576,6 @@ def loop_through_simulations(date_str):
 #            final_combined_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv", index=False)
 #            print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv'")
 
-            return final_combined_df
-
     # --- Main Function ---
     def get_predicted_pick_percentages(schedule_df):
         """
