@@ -2494,7 +2494,8 @@ def loop_through_simulations(date_str):
             
             # Join and filter (ADDED 'defteam' to the select block)
             joined = pbp.select([
-                "game_id", "play_id", "game_date", "posteam", "defteam", "epa", "pass_attempt", "play_type"
+                "game_id", "play_id", "game_date", "posteam", "defteam", 
+                "epa", "pass_attempt", "play_type", "complete_pass"
             ]).join(
                 participation.select([
                     "nflverse_game_id", "play_id", "defense_man_zone_type", "was_pressure"
