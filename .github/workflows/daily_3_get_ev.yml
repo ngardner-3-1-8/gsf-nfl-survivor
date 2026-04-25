@@ -5,8 +5,8 @@ on:
   workflow_dispatch:
   
   # Optional: Schedule this to run automatically (e.g., every Tuesday at 10:00 AM UTC)
-  # schedule:
-  #   - cron: '0 10 * * 2'
+   schedule:
+     - cron: '30 4 * * *'
 
 permissions:
   contents: write # Required to push the new CSVs back to the repo
