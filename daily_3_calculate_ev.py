@@ -239,7 +239,7 @@ def loop_through_ev(date_str):
                     scenario_df.loc[(scenario_df['Week_x'] == week) & (scenario_df['Away Team'] == team), 'Away Team EV'] = weighted_avg_ev.get(team, 0)
         
             # Export to CSV with the requested naming convention
-            output_filename = f"{prefix}_team_ev_week_{upcoming_week}_{target_year}.csv"
+            output_filename = f"circa-survivor-ev/{prefix}_team_ev_week_{upcoming_week}_{target_year}.csv"
             
             # You can choose to export the whole scenario_df, or just the relevant subset.
             scenario_df.to_csv(output_filename, index=False)
