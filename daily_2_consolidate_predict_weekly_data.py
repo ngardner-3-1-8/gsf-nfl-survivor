@@ -4730,7 +4730,7 @@ def loop_through_simulations(date_str):
         
         # 1. Load full schedule and copy
         nfl_schedule_df = schedule_df.copy()
-    
+        nfl_schedule_df['Week'] = nfl_schedule_df['Week_x']
         nfl_schedule_df['Week'] = pd.to_numeric(
                 nfl_schedule_df['Week'], 
                 errors='coerce'
