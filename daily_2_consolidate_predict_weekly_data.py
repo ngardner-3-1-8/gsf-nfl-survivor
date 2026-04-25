@@ -1406,6 +1406,7 @@ def loop_through_simulations(date_str):
         # ---------------------------------------------------------
         # Usage in Streamlit
         # ---------------------------------------------------------
+        API_KEY = os.environ.get('ODDS_API_KEY')
         
         if API_KEY != 'YOUR_API_KEY':
             # Fetch Data
