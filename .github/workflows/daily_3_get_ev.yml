@@ -1,0 +1,55 @@
+name: Daily 3 Update Circa Survivor EVs
+
+on:
+  # Allows you to trigger the workflow manually from the GitHub Actions tab
+  workflow_dispatch:
+  
+  # Optional: Schedule this to run automatically (e.g., every Tuesday at 10:00 AM UTC)
+  # schedule:
+  #   - cron: '0 10 * * 2'
+
+permissions:
+  contents: write # Required to push the new CSVs back to the repo
+
+jobs:
+  run-ev-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10' # Adjust if you are using a different version locally
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Installing the specific libraries imported in your script
+          pip install requests beautifulsoup4 pandas numpy pytz python-dateutil \
+                      scikit-learn tqdm ortools selenium undetected-chromedriver \
+                      polars nflreadpy scipy
+
+      - name: Run Daily 3 EV Calculation Script
+        run: |
+          # Replace 'get_ev.py' with the actual name of your python file
+          python get_ev.py
+
+      - name: Commit and Push CSVs
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          
+          # Stage the newly generated EV CSV files
+          git add circa-survivor-ev/*_team_ev_week_*.csv
+          
+          # Only commit and push if there are actual changes
+          if git diff-index --quiet HEAD; then
+            echo "No new changes to commit."
+          else
+            git commit -m "Automated EV projections update"
+            git push
+          fi
