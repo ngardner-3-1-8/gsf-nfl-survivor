@@ -1735,14 +1735,10 @@ def loop_through_simulations(date_str):
     
         df["Away Team Fair Odds"] = (
     	    df["Away Team Sportsbook Fair Odds"]
-    	    .fillna(df["Away Team Massey-Peabody Fair Odds"])
-    	    .fillna(df["Away Team Generic Sports Fan Fair Odds"])
     	)
     	
         df["Home Team Fair Odds"] = (
     	    df["Home Team Sportsbook Fair Odds"]
-    	    .fillna(df["Home Team Massey-Peabody Fair Odds"])
-    	    .fillna(df["Home Team Generic Sports Fan Fair Odds"])
     	)
     
         df["Away Team Expected Win Advantage"] = round(df["Away Team Fair Odds"] - 0.5, 4)
@@ -2513,996 +2509,6 @@ def loop_through_simulations(date_str):
             return 1.0      
         else:
             return float(availability)
-
-    # --- Main Function ---
-    def get_predicted_pick_percentages(schedule_df):
-        """
-        Calculates predicted pick percentages for each team in each week,
-        adjusting for team availability based on previous expected picks.
-        """
-    
-#        selected_contest = config['selected_contest'] 
-#        subcontest = config['subcontest'] 
-        starting_week = upcoming_week
-#        week_requiring_two_selections = config.get('weeks_two_picks', []) 
-#        week_requiring_three_selections = config.get('weeks_three_picks', []) 
-        # 1. Define the path to your current season picks
-        picks_file = f"circa-pick-history/{target_year}_survivor_picks.csv"
-        
-        # Wait to assign current_week_entries until AFTER you call the helper
-        if os.path.exists(picks_file):
-            print(f"📊 Calculating team availability from {picks_file}...")
-            # Unpack both returned variables
-            team_availability, current_week_entries = calculate_team_availability(picks_file, starting_week)
-        else:
-            print(f"⚠️ Warning: {picks_file} not found. Defaulting to 100% availability.")
-            team_availability = {} 
-            current_week_entries = circa_total_entries # Or whatever your default fallback is
-#        custom_pick_percentages = config.get('pick_percentages', {})
-#        current_week_entries = total_alive 
-        # NEW CONFIG OPTION: Set to True to auto-select best features
-        run_optimization = True 
-        n_features_to_keep = 30
-    
-        # Define features related to holiday games
-        holiday_cols = ['Thanksgiving Favorite', 'Thanksgiving Underdog', 'Christmas Favorite', 'Christmas Underdog', 'Pre Thanksgiving', 'Pre Christmas']
-    
-    
-        df = pd.read_csv('contest-historical-data/Circa_historical_data.csv')
-    
-        df.rename(columns={"Week": "Date"}, inplace=True)
-        df['Pick %'] = df['Pick %'].fillna(0.0)
-
-        # ============================================================
-        # 🛑 STRICT TEMPORAL FILTERING (Preventing Data Leakage)
-        # ============================================================
-        # Keep all years prior to the target_year
-        past_years_mask = df['Year'] < target_year
-        
-        # For the target_year, only keep weeks strictly prior to the upcoming_week
-        current_year_past_weeks_mask = (df['Year'] == target_year) & (df['Date'] < upcoming_week)
-        
-        # Combine masks to create our valid training pool
-        valid_history_mask = past_years_mask | current_year_past_weeks_mask
-        df_historical = df[valid_history_mask].copy()
-        
-        if df_historical.empty:
-            print(f"⚠️ Warning: No historical training data available prior to {target_year} Week {upcoming_week}.")
-            # You may need a fallback mechanism here if running week 1 of your very first historical year
-        # ============================================================
-        
-        # 1. DEFINE CANDIDATE FEATURES (The Full List)
-        base_features = ['Win %', 'Future Value (Stars)', 'Date', 'Away Team', 'Availability', 'Divisional Matchup?', 'Week_Mean_WinPct', 'Week_Mean_FV', 'Week_Max_WinPct', 
-                         'Week_Max_FV', 'Week_Min_WinPct', 'Week_Min_FV', 'Week_Std_WinPct', 'Week_Std_FV', 'Team_WinPct_RelativeToWeekMean', 'Team_FV_RelativeToWeekMean', 
-                         'Team_WinPct_RelativeToTopTeam', 'Team_FV_RelativeToTopTeam', 'Win % Rank', 'Star Rating Rank','Num_Teams_This_Week', 'Rank_Density', 'FV_Rank_Density', 
-                         'Future_Weeks_Top_Team', 'Future_Weeks_Over_80', 'Future_Weeks_70_80', 'Future_Weeks_60_70', 'Pre Christmas', 'Pre Thanksgiving', 'Christmas Underdog', 
-                         'Christmas Favorite', 'Thanksgiving Underdog', 'Thanksgiving Favorite', 'thanksgiving_week', 'christmas_week', 'Thursday_Home', 'Thursday_Away', 
-                         'Thursday_Underdog', 'Thursday_Favorite', 'Week_Mean_80', 'Week_Max_80', 'Week_Min_80', 'Week_Std_80', 'Team_80_RelativeToWeekMean', 
-                         'Team_80_RelativeToTopTeam', '80_Rank', '80_Rank_Density', 'Week_Mean_70_80', 'Week_Max_70_80', 'Week_Min_70_80', 'Week_Std_70_80', 
-                         'Team_70_80_RelativeToWeekMean', 'Team_70_80_RelativeToTopTeam', '70_80_Rank', '70_80_Rank_Density', 'Week_Mean_60_70', 'Week_Max_60_70', 'Week_Min_60_70', 
-                         'Week_Std_60_70', 'Team_60_70_RelativeToWeekMean', 'Team_60_70_RelativeToTopTeam', '60_70_Rank', '60_70_Rank_Density', 'Week_Mean_Top_Team', 'Week_Max_Top_Team', 
-                         'Week_Min_Top_Team', 'Week_Std_Top_Team', 'Team_Top_Team_RelativeToWeekMean', 'Team_Top_Team_RelativeToTopTeam', 'Top_Team_Rank', 'Top_Team_Rank_Density', 'Week_Mean_Availability', 
-                         'Week_Max_Availability', 'Week_Min_Availability', 'Week_Std_Availability', 'Team_Availability_RelativeToWeekMean', 'Team_Availability_RelativeToTopTeam', 'Availability_Rank', 
-                         'Availability_Rank_Density', 'Holiday Strength']
-        
-        # Add holiday columns if they exist in the data
-        base_features.extend([col for col in holiday_cols if col in df.columns])
-        base_features = list(set(base_features))
-        
-        # Filter: Ensure all features actually exist in the dataframe and are numeric
-        base_features = [f for f in base_features if f in df.columns and pd.api.types.is_numeric_dtype(df[f])]
-    
-    #    # (Your existing code for other contests...)
-    #    base_features = ['Win %', 'Future Value (Stars)', 'Date', 'Away Team', 'Divisional Matchup?', 'Week_Mean_WinPct', 'Week_Mean_FV', 'Week_Max_WinPct', 
-    #                     'Week_Max_FV', 'Week_Min_WinPct', 'Week_Min_FV', 'Week_Std_WinPct', 'Week_Std_FV', 'Team_WinPct_RelativeToWeekMean', 'Team_FV_RelativeToWeekMean', 
-    #                     'Team_WinPct_RelativeToTopTeam', 'Team_FV_RelativeToTopTeam', 'Win % Rank', 'Star Rating Rank','Num_Teams_This_Week', 'Rank_Density',
-    #                     'FV_Rank_Density',  'Future_Weeks_Top_Team', 'Future_Weeks_Over_80', 'Future_Weeks_70_80', 'Future_Weeks_60_70', 'Thursday_Home', 'Thursday_Away', 
-    #                     'Thursday_Underdog', 'Thursday_Favorite', 'Week_Mean_80', 'Week_Max_80', 'Week_Min_80', 'Week_Std_80', 'Team_80_RelativeToWeekMean', 
-    #                     'Team_80_RelativeToTopTeam', '80_Rank', '80_Rank_Density', 'Week_Mean_70_80', 'Week_Max_70_80', 'Week_Min_70_80', 'Week_Std_70_80', 
-    #                     'Team_70_80_RelativeToWeekMean', 'Team_70_80_RelativeToTopTeam', '70_80_Rank', '70_80_Rank_Density', 'Week_Mean_60_70', 'Week_Max_60_70', 'Week_Min_60_70', 
-    #                     'Week_Std_60_70', 'Team_60_70_RelativeToWeekMean', 'Team_60_70_RelativeToTopTeam', '60_70_Rank', '60_70_Rank_Density', 'Week_Mean_Top_Team', 'Week_Max_Top_Team', 
-    #                     'Week_Min_Top_Team', 'Week_Std_Top_Team', 'Team_Top_Team_RelativeToWeekMean', 'Team_Top_Team_RelativeToTopTeam', 'Top_Team_Rank', 'Top_Team_Rank_Density']
-            
-    
-# ============================================================
-        # 🌟 DUAL MODEL TRAINING (Current vs Future)
-        # ============================================================
-        assumed_public_pick_col = 'Public Pick %'
-        mandatory_features = ['Pre Thanksgiving', 'Pre Christmas', 'christmas_week', 'thanksgiving_week']
-        
-        # 1. Prepare base features (strictly exclude Public Pick % here)
-        clean_base = [f for f in base_features if f != assumed_public_pick_col]
-        
-        # 2. Define our two targets
-        # Model 9: Current Week (Uses RFE to find the best 9, including Public Pick if ranked high)
-        # Model 7: Future Weeks (Uses RFE to find the best 7 fundamentals)
-        model_configs = {
-            9: {'features': clean_base + [assumed_public_pick_col], 'target_n': 9},
-            7: {'features': clean_base, 'target_n': 7}
-        }
-        
-        trained_models = {}
-
-        for n_key, config in model_configs.items():
-            feat_list = [f for f in config['features'] if f in df_historical.columns]
-            
-            # Filter historical data for this specific feature set
-            if assumed_public_pick_col in feat_list:
-                df_train = df_historical.dropna(subset=[assumed_public_pick_col])
-            else:
-                df_train = df_historical
-            
-            X_train = df_train[feat_list].fillna(0)
-            y_train = df_train['Pick %']
-            
-            print(f"⚙️ Running RFE to find best features for Model {n_key}...")
-            
-            # Run RFE to rank features
-            base_rf = RandomForestRegressor(n_estimators=50, n_jobs=-1, random_state=42)
-            selector = RFE(estimator=base_rf, n_features_to_select=1, step=1)
-            selector.fit(X_train, y_train)
-            
-            # Create ranked list and select the Top N
-            ranks = pd.Series(selector.ranking_, index=feat_list).sort_values()
-            top_n_list = ranks.head(config['target_n']).index.tolist()
-            
-            # Combine Top N with Mandatory features (ensuring no duplicates)
-            final_features = list(dict.fromkeys(top_n_list + mandatory_features))
-            
-            # Final training on the selected subset
-            final_rf = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1, min_samples_leaf=5)
-            final_rf.fit(X_train[final_features], y_train)
-            
-            # Store for the simulation loop
-            trained_models[n_key] = {
-                'model': final_rf,
-                'features': final_features
-            }
-            print(f"✅ Model {n_key} ready! Features: {final_features}")
-
-        # ============================================================
-        # End of Training Block (Proceed to your simulation/testing)
-        # ============================================================
-    
-        print("Starting week-by-week pick percentage predictions...")
-        
-        # 1. Load full schedule and copy
-        nfl_schedule_df = schedule_df.copy()
-    
-        nfl_schedule_df['Week'] = pd.to_numeric(
-                nfl_schedule_df['Week'], 
-                errors='coerce'
-            ).fillna(-1).astype(int)
-    
-        if current_week_entries >= 0:
-            nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'] = current_week_entries
-        else:
-            # Handle the -1 (auto-estimate) case based on contest
-    #        if selected_contest == 'Circa':
-            default_entries = circa_total_entries # Example
-    #        elif selected_contest == 'Splash Sports':
-    #            if subcontest == "The Big Splash ($150 Entry)":
-    #                default_entries = splash_big_splash_total_entries
-    #            elif subcontest == "4 for 4 ($50 Entry)":
-    #                default_entries = splash_4_for_4_total_entries
-    #            elif subcontest == "Free RotoWire (Free Entry)":
-    #                default_entries = splash_rotowire_total_entries
-    #            elif subcontest == "For the Fans ($40 Entry)":
-    #                default_entries = splash_for_the_fans_total_entries
-    #            elif subcontest == "Walker's Ultimate Survivor ($25 Entry)":
-    #                default_entries = splash_walkers_25_total_entries
-    #            elif subcontest == "Ship It Nation ($25 Entry)":
-    #                default_entries = splash_ship_it_nation_total_entries
-    #            elif subcontest == "High Roller ($1000 Entry)":
-    #                default_entries = splash_high_roller_total_entries
-    #            elif subcontest == "Week 9 Bloody Survivor ($100 Entry)":
-    #                default_entries = splash_bloody_total_entries
-    #            else:
-    #                default_entries = 20000
-    #        else: # DraftKings
-    #             default_entries = 20000 # Example
-            nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'] = default_entries
-        # --- End POOL SIZE LOGIC ---
-    
-        # Ensure 'Total Remaining Entries at Start of Week' has been correctly initialized
-        # If the entry size is not set, the simulation will break.
-        if nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'].empty:
-             print(f"Error: 'Total Remaining Entries' not set for starting week {starting_week}. Assuming {default_entries}.")
-             nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'] = default_entries
-        
-        max_week = nfl_schedule_df['Week'].max() # Get max week from the data itself
-        
-        # 2. Initialize 'used' dictionary (U_prev_week)
-        S_at_sw = nfl_schedule_df[nfl_schedule_df['Week'] == starting_week]['Total Remaining Entries at Start of Week'].iloc[0]
-        U_prev_week: Dict[str, float] = {}
-        
-        # Get all unique teams
-        all_teams_series = pd.unique(nfl_schedule_df[['Home Team', 'Away Team']].values.ravel('K'))
-        all_teams = [team for team in all_teams_series if pd.notna(team)] 
-        
-        if S_at_sw > 0:
-            for team in all_teams:
-                avail_percent = get_expected_availability(team, team_availability) 
-                implied_used_count = S_at_sw * (1.0 - avail_percent)
-                U_prev_week[team] = max(0.0, min(implied_used_count, S_at_sw))
-        else:
-            print(f"Warning: S_at_sw is 0. Initializing U_prev_week to all zeros.")
-            for team in all_teams:
-                U_prev_week[team] = 0.0
-        
-        # 3. Initialize all columns you will calculate in the loop
-        calc_cols = [
-            'Home Team Expected Availability', 'Away Team Expected Availability',
-            'Home Pick %', 'Away Pick %', 'Expected Home Team Survivors', 
-            'Expected Away Team Survivors', 'Expected Home Team Eliminations', 
-            'Expected Away Team Eliminations'
-        ]
-        for col in calc_cols:
-            nfl_schedule_df[col] = np.nan
-    
-        # Loop through each week, starting from your defined starting week
-        for current_week in range(starting_week, int(max_week) + 1):
-            print(f"\n--- 🏈 Processing Week {current_week} of {max_week}--- (Simulation Week: Week {upcoming_week})")
-            current_week_mask = nfl_schedule_df['Week'] == current_week
-            if not current_week_mask.any():
-                print(f"Skipping week {current_week} (no data found).")
-                continue
-    
-            # --- A. GET TOTAL ENTRIES (S_w) ---
-            S_w = nfl_schedule_df.loc[current_week_mask, 'Total Remaining Entries at Start of Week'].iloc[0]
-            if pd.isna(S_w) or S_w <= 0:
-                print(f"Warning: 0 or NaN entries for Week {current_week}. Stopping sequential calculation.")
-                break
-    
-            # --- B. CALCULATE & SET *THIS* WEEK'S AVAILABILITY ---
-            for team in all_teams:
-                unavailable_count = U_prev_week.get(team, 0.0)
-                # (S_w - unavailable_count) is the number of remaining entries who CAN pick this team
-                # We divide by S_w to get the percentage of the remaining pool who can pick this team
-                team_avail_percent = (S_w - unavailable_count) / S_w
-                team_avail_percent = max(0.0, min(1.0, team_avail_percent)) # Clamp between 0 and 1
-    
-                
-                # Set it in the main dataframe (only for the games this team is playing in this week)
-                nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Home Team'] == team), 'Home Team Expected Availability'] = team_avail_percent
-                nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team), 'Away Team Expected Availability'] = team_avail_percent
-    
-            # --- C. PREPARE & PREDICT *THIS* WEEK'S PICKS ---
-            new_df = nfl_schedule_df.loc[current_week_mask].copy()
-            # Select all columns needed for prediction features
-            selected_columns = [
-                'Week', 'Away Team', 'Home Team', 'Away Team Fair Odds', 'Home Team Fair Odds', 
-                'Away Team Star Rating', 'Home Team Star Rating', 'Divisional Matchup Boolean', 
-                'Away Team Public Pick %', 'Home Team Public Pick %', 
-                'Away Team Expected Availability', 'Home Team Expected Availability', 
-    			'Away Team Thanksgiving Favorite', 'Away Team Thanksgiving Underdog', 
-    			'Home Team Thanksgiving Favorite', 'Home Team Thanksgiving Underdog', 
-    			'Away Team Christmas Favorite', 'Away Team Christmas Underdog',
-    			'Home Team Christmas Favorite', 'Home Team Christmas Underdog',
-    			'Away Team Pre Thanksgiving', 'Away Team Pre Christmas',
-    			'Home Team Pre Thanksgiving', 'Home Team Pre Christmas', 'Date'
-            ]
-            
-            # Ensure only valid columns are selected
-            new_df = new_df[[col for col in selected_columns if col in new_df.columns]].copy()
-            new_df = new_df.rename(columns={'Date': 'Calendar Date'})
-            new_df = new_df.rename(columns={'Week': 'Date'})
-    
-    	
-    
-            # Check if public pick data is available for this week's predictions
-            # Note: This check relies on 'Home Team Public Pick %' not being NaN
-            public_picks_available = (new_df['Home Team Public Pick %'].notna().any())
-            
-            # --- Create away_df and home_df (Feature Engineering) ---
-            # Helper function to rename columns consistently for prediction
-            def create_pick_df(df_in, team_type_1, team_type, opponent_type_1, opponent_type, is_away):
-                df_out = df_in.rename(columns={
-                    f'{team_type_1} Team': 'Team', 
-                    f'{opponent_type} Team': 'Opponent', 
-                    f'{team_type} Fair Odds': 'Win %', 
-                    f'{team_type} Star Rating': 'Future Value (Stars)', 
-                    'Divisional Matchup Boolean': 'Divisional Matchup?',
-                    f'{team_type} Expected Availability': 'Availability', 
-                    f'{team_type} Public Pick %': 'Public Pick %',
-    				f'{team_type} Thanksgiving Favorite': 'Thanksgiving Favorite',
-    				f'{team_type} Thanksgiving Underdog': 'Thanksgiving Underdog',
-    				f'{team_type} Christmas Favorite': 'Christmas Favorite',
-    				f'{team_type} Christmas Underdog': 'Christmas Underdog',
-    				f'{team_type} Pre Thanksgiving': 'Pre Thanksgiving',
-    				f'{team_type} Pre Christmas': 'Pre Christmas',
-                }).drop(columns=[f'{opponent_type_1} Fair Odds', f'{opponent_type_1} Star Rating', f'{opponent_type_1} Public Pick %', f'{opponent_type_1} Expected Availability'])
-                
-                df_out['Home/Away'] = 'Away' if is_away else 'Home'
-                df_out['Away Team'] = 1 if is_away else 0
-                df_out['Date'] = current_week
-                return df_out.copy()
-    
-            away_df = create_pick_df(new_df, 'Away', 'Away Team', 'Home Team', 'Home', True)
-            home_df = create_pick_df(new_df, 'Home', 'Home Team', 'Away Team', 'Away', False)
-    
-            # 3. CONCATENATE and NORMALIZE PICKS
-            pick_predictions_df = pd.concat([away_df, home_df], ignore_index=True)
-    
-            # ==============================================================================
-            # SECTION 4: NEW FEATURE ENGINEERING (RANKS AND RELATIVE STATS)
-            # ==============================================================================
-            
-            # Define group keys for weekly calculations
-            group_keys = ['Date']
-            
-            # 1. Calculate Weekly Win % Stats
-            # Using .transform() to broadcast the group-level stats to every row in that group
-            pick_predictions_df['Week_Mean_WinPct'] = pick_predictions_df.groupby(group_keys)['Win %'].transform('mean')
-            pick_predictions_df['Week_Max_WinPct'] = pick_predictions_df.groupby(group_keys)['Win %'].transform('max')
-            pick_predictions_df['Week_Min_WinPct'] = pick_predictions_df.groupby(group_keys)['Win %'].transform('min')
-            pick_predictions_df['Week_Std_WinPct'] = pick_predictions_df.groupby(group_keys)['Win %'].transform('std')
-            
-            pick_predictions_df['Week_Mean_FV'] = pick_predictions_df.groupby(group_keys)['Future Value (Stars)'].transform('mean')
-            pick_predictions_df['Week_Max_FV'] = pick_predictions_df.groupby(group_keys)['Future Value (Stars)'].transform('max')
-            pick_predictions_df['Week_Min_FV'] = pick_predictions_df.groupby(group_keys)['Future Value (Stars)'].transform('min')
-            pick_predictions_df['Week_Std_FV'] = pick_predictions_df.groupby(group_keys)['Future Value (Stars)'].transform('std')
-            
-            # Fill NaN for Std on weeks with only one game (if any)
-            pick_predictions_df['Week_Std_WinPct'] = pick_predictions_df['Week_Std_WinPct'].fillna(0)
-            
-            # Fill NaN for Std on weeks with only one game (if any)
-            pick_predictions_df['Week_Std_FV'] = pick_predictions_df['Week_Std_FV'].fillna(0)
-            
-            # 2. Calculate Team-Specific Relative Stats
-            pick_predictions_df['Team_WinPct_RelativeToWeekMean'] = pick_predictions_df['Win %'] - pick_predictions_df['Week_Mean_WinPct']
-            
-            # 2. Calculate Team-Specific Relative Stats
-            pick_predictions_df['Team_FV_RelativeToWeekMean'] = pick_predictions_df['Future Value (Stars)'] - pick_predictions_df['Week_Mean_FV']
-            
-            # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
-            pick_predictions_df['Team_WinPct_RelativeToTopTeam'] = pick_predictions_df['Win %'] / pick_predictions_df['Week_Max_WinPct']
-            pick_predictions_df['Team_WinPct_RelativeToTopTeam'] = pick_predictions_df['Team_WinPct_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)
-            
-            # Handle potential division by zero if Max_Win is 0 (unlikely, but safe)
-            pick_predictions_df['Team_FV_RelativeToTopTeam'] = pick_predictions_df['Future Value (Stars)'] / pick_predictions_df['Week_Max_FV']
-            pick_predictions_df['Team_FV_RelativeToTopTeam'] = pick_predictions_df['Team_FV_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)                                                                                                  
-            
-            # 3. Calculate Ranks (Win % and Star Rating)
-            # .rank(ascending=False) means the highest value gets rank 1 (e.g., "best")
-            pick_predictions_df['Win % Rank'] = pick_predictions_df.groupby(group_keys)['Win %'].rank(ascending=False, method='min')
-            pick_predictions_df['Star Rating Rank'] = pick_predictions_df.groupby(group_keys)['Future Value (Stars)'].rank(ascending=False, method='min')
-            
-            # 4. Calculate Rank Density
-            # First, get the number of teams (games) in each week
-            pick_predictions_df['Num_Teams_This_Week'] = pick_predictions_df.groupby(group_keys)['Team'].transform('count')
-            
-            # This normalizes the rank based on the number of available teams that week
-            pick_predictions_df['Rank_Density'] = pick_predictions_df['Win % Rank'] / pick_predictions_df['Num_Teams_This_Week']
-            
-            pick_predictions_df['FV_Rank_Density'] = pick_predictions_df['Star Rating Rank'] / pick_predictions_df['Num_Teams_This_Week']
-            
-    
-    
-    
-    		# ------------------------------------------------------------------------------
-            # NEW SECTION: Future Value & Holiday Features
-            # ------------------------------------------------------------------------------
-            
-            # A. Holiday Booleans
-            # Convert existing holiday specific columns into a single boolean "Is Holiday Game?"
-            # (Checks if either Favorite or Underdog status is > 0)
-            pick_predictions_df['christmas_week'] = (
-                pick_predictions_df['Date'] == christmas_week).astype(int)
-    
-            pick_predictions_df['thanksgiving_week'] = (
-                pick_predictions_df['Date'] == thanksgiving_week).astype(int)
-    
-            pick_predictions_df['Calendar Date'] = pd.to_datetime(pick_predictions_df['Calendar Date'])
-
-            # Create the "Thursday Night Game" column
-            # Logic:
-            # 1. Day of week is Thursday (dt.dayofweek == 3; Monday is 0, Sunday is 6)
-            # 2. christmas_week is 0
-            # 3. thanksgiving_week is 0
-            pick_predictions_df['Thursday Night Game'] = (
-                (pick_predictions_df['Calendar Date'].dt.dayofweek == 3) & 
-                (pick_predictions_df['christmas_week'] == 0) & 
-                (pick_predictions_df['thanksgiving_week'] == 0)
-            ).astype(int) # Convert boolean (True/False) to integer (1/0)
-
-    
-            # Home vs Away on Thursday
-            pick_predictions_df['Thursday_Home'] = (pick_predictions_df['Thursday Night Game'] == 1) & (pick_predictions_df['Away Team'] == 0)
-            pick_predictions_df['Thursday_Away'] = (pick_predictions_df['Thursday Night Game'] == 1) & (pick_predictions_df['Away Team'] == 1)
-    
-            # Favorite vs Underdog on Thursday
-            pick_predictions_df['Thursday_Favorite'] = (pick_predictions_df['Thursday Night Game'] == 1) & (pick_predictions_df['Win %'] > .5)
-            pick_predictions_df['Thursday_Underdog'] = (pick_predictions_df['Thursday Night Game'] == 1) & (pick_predictions_df['Win %'] <= .5)
-    
-            # Convert all to integers (1/0)
-            cols_to_convert = ['Thursday_Home', 'Thursday_Away', 'Thursday_Favorite', 'Thursday_Underdog']
-            pick_predictions_df[cols_to_convert] = pick_predictions_df[cols_to_convert].astype(int)
-    
-    
-            # B. Current Week Relative Strength
-            # "Win Percentage of the team minus the win percentage of the Top team that week."
-            # Note: 'Week_Max_WinPct' was calculated in Section 4
-            pick_predictions_df['WinPct_Diff_From_Top'] = pick_predictions_df['Win %'] - pick_predictions_df['Week_Max_WinPct']
-    
-            # C. Future Schedule Analysis (The "Look-ahead" counts)
-            # We need to look at nfl_schedule_df for all weeks GREATER than current_week
-            future_schedule = nfl_schedule_df[nfl_schedule_df['Week'] > current_week].copy()
-    
-            if not future_schedule.empty:
-                # 1. Flatten the future schedule to a simple (Team, Week, WinPct) format
-                fut_home = future_schedule[['Home Team', 'Home Team Fair Odds', 'Week']].rename(
-                    columns={'Home Team': 'Team', 'Home Team Fair Odds': 'WinPct'}
-                )
-                fut_away = future_schedule[['Away Team', 'Away Team Fair Odds', 'Week']].rename(
-                    columns={'Away Team': 'Team', 'Away Team Fair Odds': 'WinPct'}
-                )
-                fut_long = pd.concat([fut_home, fut_away], ignore_index=True)
-    
-                # 2. Identify if they are the "Top Team" in that future week
-                # Group by Week to find the Max Win % for that specific future week
-                weekly_max_series = fut_long.groupby('Week')['WinPct'].transform('max')
-                fut_long['Is_Top_Team'] = (fut_long['WinPct'] == weekly_max_series)
-    
-                total_future_weeks = future_schedule['Week'].nunique()
-                # 3. Calculate the counts per team
-                # Create boolean columns for the criteria
-                fut_long['Future_Weeks_Top_Team'] = fut_long['Is_Top_Team'].astype(int)
-                fut_long['Future_Weeks_Over_80'] = (fut_long['WinPct'] > 0.80).astype(int)
-                fut_long['Future_Weeks_70_80'] = ((fut_long['WinPct'] >= 0.70) & (fut_long['WinPct'] <= 0.80)).astype(int)
-                fut_long['Future_Weeks_60_70'] = ((fut_long['WinPct'] >= 0.60) & (fut_long['WinPct'] < 0.70)).astype(int)
-    
-                # 4. Aggregate by Team (Summing the weeks)
-                team_future_stats = fut_long.groupby('Team')[[
-                    'Future_Weeks_Top_Team', 
-                    'Future_Weeks_Over_80', 
-                    'Future_Weeks_70_80', 
-                    'Future_Weeks_60_70'
-                ]].sum().reset_index()
-    
-                if total_future_weeks > 0:
-                    stat_cols = ['Future_Weeks_Top_Team', 'Future_Weeks_Over_80', 'Future_Weeks_70_80', 'Future_Weeks_60_70']
-                    team_future_stats[stat_cols] = team_future_stats[stat_cols] / total_future_weeks
-    
-                # 5. Merge these stats back into the current prediction dataframe
-                pick_predictions_df = pick_predictions_df.merge(team_future_stats, on='Team', how='left')
-                
-                # Fill NaNs with 0 (for teams that might not have future games in the filtered set)
-                pick_predictions_df[['Future_Weeks_Top_Team', 'Future_Weeks_Over_80', 'Future_Weeks_70_80', 'Future_Weeks_60_70']] = \
-                    pick_predictions_df[['Future_Weeks_Top_Team', 'Future_Weeks_Over_80', 'Future_Weeks_70_80', 'Future_Weeks_60_70']].fillna(0)
-    
-            else:
-                # If no future weeks exist (last week of season), set all to 0
-                pick_predictions_df['Future_Weeks_Top_Team'] = 0
-                pick_predictions_df['Future_Weeks_Over_80'] = 0
-                pick_predictions_df['Future_Weeks_70_80'] = 0
-                pick_predictions_df['Future_Weeks_60_70'] = 0
-            
-            # ==============================================================================
-            # END SECTION 4
-            # ==============================================================================
-            
-            
-            
-            # 1. Calculate Weekly Win % Stats
-            # Using .transform() to broadcast the group-level stats to every row in that group
-            pick_predictions_df['Week_Mean_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Over_80'].transform('mean')
-            pick_predictions_df['Week_Max_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Over_80'].transform('max')
-            pick_predictions_df['Week_Min_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Over_80'].transform('min')
-            pick_predictions_df['Week_Std_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Over_80'].transform('std')
-            
-            # Fill NaN for Std on weeks with only one game (if any)
-            pick_predictions_df['Week_Std_80'] = pick_predictions_df['Week_Std_80'].fillna(0)
-            
-            # 2. Calculate Team-Specific Relative Stats
-            pick_predictions_df['Team_80_RelativeToWeekMean'] = pick_predictions_df['Future_Weeks_Over_80'] - pick_predictions_df['Week_Mean_80']
-            
-            # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
-            pick_predictions_df['Team_80_RelativeToTopTeam'] = pick_predictions_df['Future_Weeks_Over_80'] / pick_predictions_df['Week_Max_80']
-            pick_predictions_df['Team_80_RelativeToTopTeam'] = pick_predictions_df['Team_80_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)                                                                                        
-            
-            # 3. Calculate Ranks (Win % and Star Rating)
-            pick_predictions_df['80_Rank'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Over_80'].rank(ascending=False, method='min')
-            
-            # This normalizes the rank based on the number of available teams that week
-            pick_predictions_df['80_Rank_Density'] = pick_predictions_df['80_Rank'] / pick_predictions_df['Num_Teams_This_Week']
-            
-            
-            
-            # 1. Calculate Weekly Win % Stats
-            # Using .transform() to broadcast the group-level stats to every row in that group
-            pick_predictions_df['Week_Mean_70_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_70_80'].transform('mean')
-            pick_predictions_df['Week_Max_70_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_70_80'].transform('max')
-            pick_predictions_df['Week_Min_70_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_70_80'].transform('min')
-            pick_predictions_df['Week_Std_70_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_70_80'].transform('std')
-            
-            # Fill NaN for Std on weeks with only one game (if any)
-            pick_predictions_df['Week_Std_70_80'] = pick_predictions_df['Week_Std_70_80'].fillna(0)
-            
-            # 2. Calculate Team-Specific Relative Stats
-            pick_predictions_df['Team_70_80_RelativeToWeekMean'] = pick_predictions_df['Future_Weeks_70_80'] - pick_predictions_df['Week_Mean_70_80']
-            
-            # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
-            pick_predictions_df['Team_70_80_RelativeToTopTeam'] = pick_predictions_df['Future_Weeks_70_80'] / pick_predictions_df['Week_Max_70_80']
-            pick_predictions_df['Team_70_80_RelativeToTopTeam'] = pick_predictions_df['Team_70_80_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)                                                                                        
-            
-            # 3. Calculate Ranks (Win % and Star Rating)
-            pick_predictions_df['70_80_Rank'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_70_80'].rank(ascending=False, method='min')
-            
-            # This normalizes the rank based on the number of available teams that week
-            pick_predictions_df['70_80_Rank_Density'] = pick_predictions_df['70_80_Rank'] / pick_predictions_df['Num_Teams_This_Week']
-            
-            
-            
-            # 1. Calculate Weekly Win % Stats
-            # Using .transform() to broadcast the group-level stats to every row in that group
-            pick_predictions_df['Week_Mean_60_70'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_60_70'].transform('mean')
-            pick_predictions_df['Week_Max_60_70'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_60_70'].transform('max')
-            pick_predictions_df['Week_Min_60_70'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_60_70'].transform('min')
-            pick_predictions_df['Week_Std_60_70'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_60_70'].transform('std')
-            
-            # Fill NaN for Std on weeks with only one game (if any)
-            pick_predictions_df['Week_Std_60_70'] = pick_predictions_df['Week_Std_60_70'].fillna(0)
-            
-            # 2. Calculate Team-Specific Relative Stats
-            pick_predictions_df['Team_60_70_RelativeToWeekMean'] = pick_predictions_df['Future_Weeks_60_70'] - pick_predictions_df['Week_Mean_60_70']
-            
-            # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
-            pick_predictions_df['Team_60_70_RelativeToTopTeam'] = pick_predictions_df['Future_Weeks_60_70'] / pick_predictions_df['Week_Max_60_70']
-            pick_predictions_df['Team_60_70_RelativeToTopTeam'] = pick_predictions_df['Team_60_70_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)                                                                                        
-            
-            # 3. Calculate Ranks (Win % and Star Rating)
-            pick_predictions_df['60_70_Rank'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_60_70'].rank(ascending=False, method='min')
-            
-            # This normalizes the rank based on the number of available teams that week
-            pick_predictions_df['60_70_Rank_Density'] = pick_predictions_df['60_70_Rank'] / pick_predictions_df['Num_Teams_This_Week']
-            
-    
-            # 1. Calculate Weekly Win % Stats
-            # Using .transform() to broadcast the group-level stats to every row in that group
-            pick_predictions_df['Week_Mean_Top_Team'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Top_Team'].transform('mean')
-            pick_predictions_df['Week_Max_Top_Team'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Top_Team'].transform('max')
-            pick_predictions_df['Week_Min_Top_Team'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Top_Team'].transform('min')
-            pick_predictions_df['Week_Std_Top_Team'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Top_Team'].transform('std')
-            
-            # Fill NaN for Std on weeks with only one game (if any)
-            pick_predictions_df['Week_Std_Top_Team'] = pick_predictions_df['Week_Std_Top_Team'].fillna(0)
-            
-            # 2. Calculate Team-Specific Relative Stats
-            pick_predictions_df['Team_Top_Team_RelativeToWeekMean'] = pick_predictions_df['Future_Weeks_Top_Team'] - pick_predictions_df['Week_Mean_Top_Team']
-            
-            # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
-            pick_predictions_df['Team_Top_Team_RelativeToTopTeam'] = pick_predictions_df['Future_Weeks_Top_Team'] / pick_predictions_df['Week_Max_Top_Team']
-            pick_predictions_df['Team_Top_Team_RelativeToTopTeam'] = pick_predictions_df['Team_Top_Team_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)                                                                                        
-            
-            # 3. Calculate Ranks (Win % and Star Rating)
-            pick_predictions_df['Top_Team_Rank'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Top_Team'].rank(ascending=False, method='min')
-            
-            # This normalizes the rank based on the number of available teams that week
-            pick_predictions_df['Top_Team_Rank_Density'] = pick_predictions_df['Top_Team_Rank'] / pick_predictions_df['Num_Teams_This_Week']
-            
-            
-            # 1. Calculate Weekly Win % Stats
-            # Using .transform() to broadcast the group-level stats to every row in that group
-            pick_predictions_df['Week_Mean_Availability'] = pick_predictions_df.groupby(group_keys)['Availability'].transform('mean')
-            pick_predictions_df['Week_Max_Availability'] = pick_predictions_df.groupby(group_keys)['Availability'].transform('max')
-            pick_predictions_df['Week_Min_Availability'] = pick_predictions_df.groupby(group_keys)['Availability'].transform('min')
-            pick_predictions_df['Week_Std_Availability'] = pick_predictions_df.groupby(group_keys)['Availability'].transform('std')
-            
-            # Fill NaN for Std on weeks with only one game (if any)
-            pick_predictions_df['Week_Std_Availability'] = pick_predictions_df['Week_Std_Availability'].fillna(0)
-            
-            # 2. Calculate Team-Specific Relative Stats
-            pick_predictions_df['Team_Availability_RelativeToWeekMean'] = pick_predictions_df['Availability'] - pick_predictions_df['Week_Mean_Availability']
-            
-            # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
-            pick_predictions_df['Team_Availability_RelativeToTopTeam'] = pick_predictions_df['Availability'] / pick_predictions_df['Week_Max_Availability']
-            pick_predictions_df['Team_Availability_RelativeToTopTeam'] = pick_predictions_df['Team_Availability_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)                                                                                        
-            
-            # 3. Calculate Ranks (Win % and Star Rating)
-            pick_predictions_df['Availability_Rank'] = pick_predictions_df.groupby(group_keys)['Availability'].rank(ascending=False, method='min')
-            
-            # This normalizes the rank based on the number of available teams that week
-            pick_predictions_df['Availability_Rank_Density'] = pick_predictions_df['Availability_Rank'] / pick_predictions_df['Num_Teams_This_Week']
-    
-    
-            # 1. Create lookup maps for the Win % on the actual holiday weeks
-            # This isolates the team's strength specifically on the day of the holiday
-            xmas_map = pick_predictions_df[pick_predictions_df['christmas_week'] == 1].set_index(['Team'])['Win %']
-            tgiving_map = pick_predictions_df[pick_predictions_df['thanksgiving_week'] == 1].set_index(['Team'])['Win %']
-            
-            # 2. Map those holiday-specific Win percentages back to every row for that team/year
-            # This allows the "Pre holiday" rows to "know" how strong the team is on the upcoming holiday
-            pick_predictions_df['christmas_win_pct'] = pick_predictions_df.set_index(['Team']).index.map(xmas_map).fillna(0)
-            pick_predictions_df['thanksgiving_win_pct'] = pick_predictions_df.set_index(['Team']).index.map(tgiving_map).fillna(0)
-            
-            # 3. Apply your interaction logic
-            # This turns the 'Pre' binary flag into a continuous "Expectation" variable
-            pick_predictions_df['Pre Christmas'] = pick_predictions_df['Pre Christmas'] * pick_predictions_df['christmas_win_pct'] * (1 / pick_predictions_df['Date'])
-            pick_predictions_df['Pre Thanksgiving'] = pick_predictions_df['Pre Thanksgiving'] * pick_predictions_df['thanksgiving_win_pct'] * (1 / pick_predictions_df['Date'])
-            
-            # 4. Create the final aggregate feature
-            pick_predictions_df['Holiday Strength'] = pick_predictions_df['Pre Thanksgiving'] + pick_predictions_df['Pre Christmas']
-            
-            # --- LOOP THROUGH ALL 80 MODELS ---
-            print("--- Predicting and normalizing across all feature configurations ---")
-            
-            # Move this outside the 15-iteration loop so it only runs once per mode
-            pick_predictions_df['Availability'] = pick_predictions_df['Availability'].fillna(0.0)
-
-            
-            # --- DYNAMIC MODEL SELECTION ---
-            # Default to the 7-feature model
-            n_features = 7
-            
-            # Logic: Use 9-feature model ONLY IF it's the current week 
-            # AND the 'Public Pick %' column actually has data.
-            if current_week == upcoming_week:
-                if 'Public Pick %' in pick_predictions_df.columns:
-                    # Check if the column is NOT entirely null and NOT all zeros
-                    has_public_data = not pick_predictions_df['Public Pick %'].isnull().all() and \
-                                      (pick_predictions_df['Public Pick %'] != 0).any()
-                    
-                    if has_public_data:
-                        n_features = 9
-                    else:
-                        print(f"⚠️ Public Pick % is empty for Week {current_week}. Falling back to 7-feature model.")
-                else:
-                    print(f"⚠️ Public Pick % column missing. Falling back to 7-feature model.")
-
-            # Load the selected model
-            model_data = trained_models[n_features]
-            model = model_data['model']
-            features_to_use = model_data['features']
-            
-            # --- VERIFICATION PRINT ---
-            print(f"🏈 Week {current_week} | Predicting using {n_features} features model...")
-            print(f"Features Being Used: {features_to_use}")
-            
-            # 1. Ensure features exist in this week's data (Optimized set logic)
-            missing_cols = list(set(features_to_use) - set(pick_predictions_df.columns))
-            if missing_cols:
-                pick_predictions_df[missing_cols] = 0.0 
-                    
-            predict_data = pick_predictions_df[features_to_use].fillna(0) 
-             
-            # 2. Predict into a custom column name
-            col_name = f'Predicted_Pick_Pct'
-            pick_predictions_df[col_name] = model.predict(predict_data)
-
-            pick_predictions_df = pick_predictions_df.copy()
-            
-            # 3. Normalize to target sum (1.0, 2.0, or 3.0)
-            target_pick_sum = 1.0
-            # if current_week in week_requiring_two_selections:
-            #     target_pick_sum = 2.0
-            # elif current_week in week_requiring_three_selections:
-            #     target_pick_sum = 3.0
-                
-            current_sum = pick_predictions_df[col_name].sum()
-            if current_sum > 0:
-                pick_predictions_df[col_name] *= (target_pick_sum / current_sum)
-            else:
-                pick_predictions_df[col_name] = 0.0
-            
-            # 4. Independent Water-Filling Loop
-            for i in range(15): 
-                over_cap_mask = pick_predictions_df[col_name] > pick_predictions_df['Availability']
-                
-                if not over_cap_mask.any():
-                    break
-                    
-                excess_prob = (pick_predictions_df.loc[over_cap_mask, col_name] - pick_predictions_df.loc[over_cap_mask, 'Availability']).sum()
-                pick_predictions_df.loc[over_cap_mask, col_name] = pick_predictions_df.loc[over_cap_mask, 'Availability']
-                
-                non_violator_mask = ~over_cap_mask
-                sum_non_violators = pick_predictions_df.loc[non_violator_mask, col_name].sum()
-                
-                if sum_non_violators > 0:
-                    shares = pick_predictions_df.loc[non_violator_mask, col_name] / sum_non_violators
-                    pick_predictions_df.loc[non_violator_mask, col_name] += (excess_prob * shares)
-                else:
-                    break
-
-                # Final sanity clamp
-                pick_predictions_df[col_name] = pick_predictions_df[[col_name, 'Availability']].min(axis=1)
-
-                # 5. Map back to main nfl_schedule_df dynamically (Optimized - NO iterrows)
-                # Create a quick dictionary: {'ARI': 0.15, 'BAL': 0.35, ...}
-                pick_map = dict(zip(pick_predictions_df['Team'], pick_predictions_df[col_name]))
-                
-                # Apply fast mapping to Home Teams
-                home_mask = current_week_mask & nfl_schedule_df['Home Team'].isin(pick_map.keys())
-                nfl_schedule_df.loc[home_mask, f'Home {col_name}'] = nfl_schedule_df.loc[home_mask, 'Home Team'].map(pick_map)
-                # Apply fast mapping to Away Teams
-                away_mask = current_week_mask & nfl_schedule_df['Away Team'].isin(pick_map.keys())
-                nfl_schedule_df.loc[away_mask, f'Away {col_name}'] = nfl_schedule_df.loc[away_mask, 'Away Team'].map(pick_map)
-                # Every 20 models, clean up the dataframe memory
-                if n_features % 20 == 0:
-                    nfl_schedule_df = nfl_schedule_df.copy()
-            # ==============================================================================
-            # THE STATE DRIVER FIX
-            # ==============================================================================
-            # We have 80 columns of predictions, but the simulator can only follow one timeline.
-            # We explicitly set the "official" Pick % to the -feature model to drive U_prev_week
-            baseline_col = 'Predicted_Pick_Pct'
-            
-            for _, row in pick_predictions_df.iterrows():
-                team = row['Team']
-                # If for some reason the 30-feature model failed, fallback to 0 to prevent crashes
-                pick_percent = row.get(baseline_col, 0.0) 
-                
-                # Map Home Pick % for downstream math
-                nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Home Team'] == team), 'Home Pick %'] = pick_percent
-                
-                # Map Away Pick % for downstream math
-                nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team), 'Away Pick %'] = pick_percent
-    
-            # 5. Calculate Survivors and Eliminations for this week
-            nfl_schedule_df.loc[current_week_mask, 'Expected Home Team Survivors'] = \
-                nfl_schedule_df.loc[current_week_mask, 'Home Pick %'] * \
-                nfl_schedule_df.loc[current_week_mask, 'Home Team Fair Odds'] * S_w
-                
-            nfl_schedule_df.loc[current_week_mask, 'Expected Away Team Survivors'] = \
-                nfl_schedule_df.loc[current_week_mask, 'Away Pick %'] * \
-                nfl_schedule_df.loc[current_week_mask, 'Away Team Fair Odds'] * S_w
-                
-            nfl_schedule_df.loc[current_week_mask, 'Expected Home Team Eliminations'] = \
-                nfl_schedule_df.loc[current_week_mask, 'Home Pick %'] * \
-                (1.0 - nfl_schedule_df.loc[current_week_mask, 'Home Team Fair Odds']) * S_w
-                
-            nfl_schedule_df.loc[current_week_mask, 'Expected Away Team Eliminations'] = \
-                nfl_schedule_df.loc[current_week_mask, 'Away Pick %'] * \
-                (1.0 - nfl_schedule_df.loc[current_week_mask, 'Away Team Fair Odds']) * S_w
-                
-            # Calculate Total Survivors from this week
-            week_df_rows = nfl_schedule_df[current_week_mask]
-            total_survivors_this_week = week_df_rows['Expected Home Team Survivors'].sum() + week_df_rows['Expected Away Team Survivors'].sum()
-            
-            print(f"Total Entries Surviving Week {current_week}: {total_survivors_this_week:,.0f}")
-            
-            # --- E. UPDATE U_prev_week FOR *NEXT* WEEK'S ITERATION ---
-            
-            overall_survival_rate_this_week = 0.0
-            if S_w > 0:
-                overall_survival_rate_this_week = total_survivors_this_week / S_w
-    
-            U_next_week: Dict[str, float] = {}
-            survivors_who_picked_team: Dict[str, float] = {}
-            
-            # Calculate survivors based on the team they picked (val1)
-            for _, row in week_df_rows.iterrows():
-                survivors_who_picked_team[row['Home Team']] = survivors_who_picked_team.get(row['Home Team'], 0.0) + row['Expected Home Team Survivors']
-                survivors_who_picked_team[row['Away Team']] = survivors_who_picked_team.get(row['Away Team'], 0.0) + row['Expected Away Team Survivors']
-    
-            for team in all_teams:
-                # val1: Survivors who picked this team in *this* week (and are therefore now unavailable)
-                val1 = survivors_who_picked_team.get(team, 0.0)
-                
-                # val2: Survivors who had *already* used this team (U_prev_week) AND survived *this* week's overall rate.
-                num_already_used_team = U_prev_week.get(team, 0.0)
-                val2 = num_already_used_team * overall_survival_rate_this_week
-                
-                # The total used count for the next week
-                U_next_week[team] = val1 + val2
-                
-                # Clamp values
-                U_next_week[team] = max(0.0, min(U_next_week[team], total_survivors_this_week))
-    
-            # *** FEEDBACK LOOP ***
-            # The "used" dictionary for the next loop is the one we just calculated
-            U_prev_week = U_next_week.copy()
-    		
-            # Set the next week's starting pool size based on this week's survivors
-            next_week = current_week + 1
-            nfl_schedule_df.loc[nfl_schedule_df['Week'] == next_week, 'Total Remaining Entries at Start of Week'] = total_survivors_this_week
-    
-            
-            print(f"Projected Pool Size for Week {next_week}: {total_survivors_this_week:,.0f}")
-            
-        # Create the boolean mask once, as it's used twice
-#            multiplier_mask = (selected_contest == 'Splash Sports') & \
-#                          (nfl_schedule_df['Week'].isin(week_requiring_two_selections)) & \
-#        	              (subcontest != "Week 9 Bloody Survivor ($100 Entry)")
-#            multiplier_mask_3 = (selected_contest == 'Splash Sports') & \
-#                          (nfl_schedule_df['Week'].isin(week_requiring_three_selections)) & \
-#        	              (subcontest == "Week 9 Bloody Survivor ($100 Entry)")
-        	
-            nfl_schedule_df['Home Expected Survival Rate'] = nfl_schedule_df['Home Team Fair Odds'] * nfl_schedule_df['Home Pick %']
-#            nfl_schedule_df.loc[multiplier_mask, 'Home Expected Survival Rate'] *= 0.65
-#            nfl_schedule_df.loc[multiplier_mask_3, 'Home Expected Survival Rate'] *= 0.35
-            nfl_schedule_df['Home Expected Elimination Percent'] = nfl_schedule_df['Home Pick %'] - nfl_schedule_df['Home Expected Survival Rate']
-            nfl_schedule_df['Away Expected Survival Rate'] = nfl_schedule_df['Away Team Fair Odds'] * nfl_schedule_df['Away Pick %']
- #           nfl_schedule_df.loc[multiplier_mask, 'Away Expected Survival Rate'] *= 0.65
- #           nfl_schedule_df.loc[multiplier_mask_3, 'Away Expected Survival Rate'] *= 0.35
-            nfl_schedule_df['Away Expected Elimination Percent'] = nfl_schedule_df['Away Pick %'] - nfl_schedule_df['Away Expected Survival Rate']
-            nfl_schedule_df['Expected Eliminated Entry Percent From Game'] = nfl_schedule_df['Home Expected Elimination Percent'] + nfl_schedule_df['Away Expected Elimination Percent']
-            nfl_schedule_df['Expected Away Team Picks'] = nfl_schedule_df['Away Pick %'] * nfl_schedule_df['Total Remaining Entries at Start of Week']
-            nfl_schedule_df['Expected Home Team Picks'] = nfl_schedule_df['Home Pick %'] * nfl_schedule_df['Total Remaining Entries at Start of Week']
-    
-        ####################################################################################################
-        
-        def run_monte_carlo_simulation(nfl_schedule_df, num_trials=100):
-            """
-            Runs a Monte Carlo simulation to estimate the distribution of survivor
-            pool outcomes, based on the 'Expected Value' pick percentages.
-            
-            This function is defined *inside* get_predicted_pick_percentages
-            to access its scope (starting_week, max_week).
-            """
-            
-            print(f"Running Monte Carlo Simulation with {num_trials:,} trials...")
-            
-            # Get all unique team names from the schedule
-            all_teams_series = pd.unique(nfl_schedule_df[['Home Team', 'Away Team']].values.ravel('K'))
-            all_teams = [team for team in all_teams_series if pd.notna(team)]
-        
-            # --- Use variables from the outer function's scope ---
-            start_w = starting_week
-            end_w = max_week
-            # -----------------------------------------------------
-        
-            # Get the absolute starting pool size from the main DF
-            initial_pool_size = nfl_schedule_df.loc[
-                nfl_schedule_df['Week'] == start_w,
-                'Total Remaining Entries at Start of Week'
-            ].iloc[0]
-            
-            if pd.isna(initial_pool_size) or initial_pool_size <= 0:
-                print(f"Warning: Initial pool size for MC Sim is {initial_pool_size}. Defaulting to 1.")
-                initial_pool_size = 1
-            
-            initial_pool_size = int(initial_pool_size)
-        
-            # Collect results for aggregation
-            monte_results = []
-            
-            # Add a progress bar for Streamlit
-        
-            # --- Run all trials ---
-            for trial in range(num_trials):
-                
-                # Initialize this trial's state
-                remaining_entries_sim = initial_pool_size
-                week_records = []
-                
-                # --- Simulate each week sequentially for this trial ---
-                for week in range(start_w, int(end_w) + 1):
-                    
-                    # If all entries are eliminated, stop this trial
-                    if remaining_entries_sim <= 0:
-                        break
-                        
-                    week_df = nfl_schedule_df[nfl_schedule_df['Week'] == week].copy()
-                    if week_df.empty:
-                        continue
-        
-                    # --- 1. Robustness: Clean & Normalize Probabilities ---
-                    
-                    # Fill NaNs
-                    week_df[['Home Pick %', 'Away Pick %']] = week_df[['Home Pick %', 'Away Pick %']].fillna(0.0)
-                    week_df[['Home Team Fair Odds', 'Away Team Fair Odds']] = week_df[['Home Team Fair Odds', 'Away Team Fair Odds']].fillna(0.5)
-        
-                    # Re-normalize pick percentages for this week
-                    total_pick_prob = week_df['Home Pick %'].sum() + week_df['Away Pick %'].sum()
-                    if total_pick_prob <= 0:
-                        print(f"Warning: Zero pick prob in Wk {week}. Skipping sim.")
-                        continue # Cannot distribute picks
-                        
-                    week_df['Home Pick %'] = week_df['Home Pick %'] / total_pick_prob
-                    week_df['Away Pick %'] = week_df['Away Pick %'] / total_pick_prob
-        
-                    # --- 2. Simulation Step 1: Distribute Picks ---
-                    # Create a single list of all possible choices (teams) and their probabilities
-                    # This is critical for using the correct (multinomial) distribution
-                    
-                    # Get all teams playing and their associated pick probabilities
-                    choices = list(week_df['Home Team']) + list(week_df['Away Team'])
-                    probs = list(week_df['Home Pick %']) + list(week_df['Away Pick %'])
-                    
-                    # Ensure probabilities sum perfectly to 1 for the simulation
-                    probs = np.array(probs) / np.sum(probs)
-                    
-                    # Simulate the picks:
-                    # This one call distributes all 'remaining_entries_sim' among all choices
-                    picks_array = np.random.multinomial(n=remaining_entries_sim, pvals=probs)
-                    
-                    # Map results back to the dataframe
-                    picks_dict = dict(zip(choices, picks_array))
-                    week_df['Home Picks'] = week_df['Home Team'].map(picks_dict).fillna(0).astype(int)
-                    week_df['Away Picks'] = week_df['Away Team'].map(picks_dict).fillna(0).astype(int)
-        
-                    # --- 3. Simulation Step 2: Simulate Game Outcomes ---
-                    # CRITICAL FIX: Simulate game outcomes so that only one team can win.
-                    
-                    # Simulate home team win probability
-                    week_df['Home Wins'] = np.random.binomial(1, week_df['Home Team Fair Odds'])
-                    
-                    # Away team wins if home team *doesn't* (ignoring ties)
-                    week_df['Away Wins'] = 1 - week_df['Home Wins']
-                    
-                    # --- 4. Calculate Survivors & Eliminations ---
-                    home_survivors = (week_df['Home Picks'] * week_df['Home Wins']).sum()
-                    away_survivors = (week_df['Away Picks'] * week_df['Away Wins']).sum()
-                    
-                    survivors_this_week = home_survivors + away_survivors
-                    total_eliminations = remaining_entries_sim - survivors_this_week
-                    
-                    # Store week-level results for this trial
-                    week_records.append({
-                        'Week': week,
-                        'Trial': trial,
-                        'Eliminations': total_eliminations,
-                        'Survivors': survivors_this_week
-                    })
-                    
-                    # --- 5. Feedback Loop for Next Week ---
-                    remaining_entries_sim = survivors_this_week
-                    
-                # Add this trial's full weekly results to the main list
-                monte_results.extend(week_records)
-            
-            if not monte_results:
-                print("Warning: Monte Carlo simulation produced no results.")
-                return pd.DataFrame() # Return empty frame
-        
-            monte_df = pd.DataFrame(monte_results)
-            
-            # Group by week and get summary statistics
-            summary = monte_df.groupby('Week').agg({
-                'Eliminations': ['mean', 'std', 'median'],
-                'Survivors': ['mean', 'std', 'median']
-            }).reset_index()
-            
-            # Clean up the multi-index column names
-            summary.columns = [
-                'Week', 
-                'Avg Eliminations', 'Std Eliminations', 'Median Eliminations',
-                'Avg Survivors', 'Std Survivors', 'Median Survivors'
-            ]
-            
-            print("Monte Carlo simulation completed ✅")
-            return summary
-    
-        ###################################################################################################
-    
-        # --- OPTIONAL: Run Monte Carlo after predictions ---
-        monte_summary = run_monte_carlo_simulation(nfl_schedule_df, num_trials=100)
-    
-        # Merge back into main dataframe for charting
-        nfl_schedule_df = nfl_schedule_df.merge(
-            monte_summary[['Week', 'Avg Survivors', 'Avg Eliminations']],
-            on='Week',
-            how='left'
-        )
-    	# 1. Convert all 'object' columns to 'str' to handle mixed types
-        for col in nfl_schedule_df.select_dtypes(include=['object']).columns:
-            nfl_schedule_df[col] = nfl_schedule_df[col].astype(str).fillna('')
-    
-        # 2. Explicitly convert calculated columns to float
-        float_cols = [
-            'Home Team Expected Availability', 'Away Team Expected Availability',
-            'Home Pick %', 'Away Pick %', 'Expected Home Team Survivors', 
-            'Expected Away Team Survivors', 'Expected Home Team Eliminations', 
-            'Expected Away Team Eliminations', 'Total Remaining Entries at Start of Week'
-        ]
-        
-        for col in float_cols:
-            if col in nfl_schedule_df.columns:
-                # The errors='coerce' is a fallback, but simple .astype(float) is better
-                # since we expect only numbers or NaNs at this point.
-                nfl_schedule_df[col] = pd.to_numeric(nfl_schedule_df[col], errors='coerce') 
-    
-    #    if selected_contest == 'Circa':
-        nfl_schedule_df.to_csv("Circa_Predicted_pick_percent.csv", index=False)
-    #    elif selected_contest == 'Splash Sports':
-    #        nfl_schedule_df.to_csv("Splash_Predicted_pick_percent.csv", index=False)
-    #    else:
-    #        nfl_schedule_df.to_csv("DK_Predicted_pick_percent.csv", index=False)
-    	
-        return nfl_schedule_df
-
-    collect_schedule_travel_ranking_data_df = get_predicted_pick_percentages(collect_schedule_travel_ranking_data_df)
     
     # --- CONFIGURATION ---
     SIMULATIONS = 2500
@@ -5192,6 +4198,8 @@ def loop_through_simulations(date_str):
     
         # --- SAVE TO DATAFRAME ---
         monte_carlo_df = pd.DataFrame(simulation_results)
+
+        
         
         if not monte_carlo_df.empty:
             cols_to_round = ['Sim_Spread_Mean', 'Sim_Spread_Median', 'Sim_Total_Mean', 
@@ -5567,6 +4575,1006 @@ def loop_through_simulations(date_str):
             # Ensure directory exists or remove prefix if not needed
             final_combined_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv", index=False)
             print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv'")
+
+    # --- Main Function ---
+    def get_predicted_pick_percentages(schedule_df):
+        """
+        Calculates predicted pick percentages for each team in each week,
+        adjusting for team availability based on previous expected picks.
+        """
+    
+#        selected_contest = config['selected_contest'] 
+#        subcontest = config['subcontest'] 
+        starting_week = upcoming_week
+#        week_requiring_two_selections = config.get('weeks_two_picks', []) 
+#        week_requiring_three_selections = config.get('weeks_three_picks', []) 
+        # 1. Define the path to your current season picks
+        picks_file = f"circa-pick-history/{target_year}_survivor_picks.csv"
+        
+        # Wait to assign current_week_entries until AFTER you call the helper
+        if os.path.exists(picks_file):
+            print(f"📊 Calculating team availability from {picks_file}...")
+            # Unpack both returned variables
+            team_availability, current_week_entries = calculate_team_availability(picks_file, starting_week)
+        else:
+            print(f"⚠️ Warning: {picks_file} not found. Defaulting to 100% availability.")
+            team_availability = {} 
+            current_week_entries = circa_total_entries # Or whatever your default fallback is
+#        custom_pick_percentages = config.get('pick_percentages', {})
+#        current_week_entries = total_alive 
+        # NEW CONFIG OPTION: Set to True to auto-select best features
+        run_optimization = True 
+        n_features_to_keep = 30
+    
+        # Define features related to holiday games
+        holiday_cols = ['Thanksgiving Favorite', 'Thanksgiving Underdog', 'Christmas Favorite', 'Christmas Underdog', 'Pre Thanksgiving', 'Pre Christmas']
+    
+    
+        df = pd.read_csv('contest-historical-data/Circa_historical_data.csv')
+    
+        df.rename(columns={"Week": "Date"}, inplace=True)
+        df['Pick %'] = df['Pick %'].fillna(0.0)
+
+        # ============================================================
+        # 🛑 STRICT TEMPORAL FILTERING (Preventing Data Leakage)
+        # ============================================================
+        # Keep all years prior to the target_year
+        past_years_mask = df['Year'] < target_year
+        
+        # For the target_year, only keep weeks strictly prior to the upcoming_week
+        current_year_past_weeks_mask = (df['Year'] == target_year) & (df['Date'] < upcoming_week)
+        
+        # Combine masks to create our valid training pool
+        valid_history_mask = past_years_mask | current_year_past_weeks_mask
+        df_historical = df[valid_history_mask].copy()
+        
+        if df_historical.empty:
+            print(f"⚠️ Warning: No historical training data available prior to {target_year} Week {upcoming_week}.")
+            # You may need a fallback mechanism here if running week 1 of your very first historical year
+        # ============================================================
+        
+        # 1. DEFINE CANDIDATE FEATURES (The Full List)
+        base_features = ['Win %', 'Future Value (Stars)', 'Date', 'Away Team', 'Availability', 'Divisional Matchup?', 'Week_Mean_WinPct', 'Week_Mean_FV', 'Week_Max_WinPct', 
+                         'Week_Max_FV', 'Week_Min_WinPct', 'Week_Min_FV', 'Week_Std_WinPct', 'Week_Std_FV', 'Team_WinPct_RelativeToWeekMean', 'Team_FV_RelativeToWeekMean', 
+                         'Team_WinPct_RelativeToTopTeam', 'Team_FV_RelativeToTopTeam', 'Win % Rank', 'Star Rating Rank','Num_Teams_This_Week', 'Rank_Density', 'FV_Rank_Density', 
+                         'Future_Weeks_Top_Team', 'Future_Weeks_Over_80', 'Future_Weeks_70_80', 'Future_Weeks_60_70', 'Pre Christmas', 'Pre Thanksgiving', 'Christmas Underdog', 
+                         'Christmas Favorite', 'Thanksgiving Underdog', 'Thanksgiving Favorite', 'thanksgiving_week', 'christmas_week', 'Thursday_Home', 'Thursday_Away', 
+                         'Thursday_Underdog', 'Thursday_Favorite', 'Week_Mean_80', 'Week_Max_80', 'Week_Min_80', 'Week_Std_80', 'Team_80_RelativeToWeekMean', 
+                         'Team_80_RelativeToTopTeam', '80_Rank', '80_Rank_Density', 'Week_Mean_70_80', 'Week_Max_70_80', 'Week_Min_70_80', 'Week_Std_70_80', 
+                         'Team_70_80_RelativeToWeekMean', 'Team_70_80_RelativeToTopTeam', '70_80_Rank', '70_80_Rank_Density', 'Week_Mean_60_70', 'Week_Max_60_70', 'Week_Min_60_70', 
+                         'Week_Std_60_70', 'Team_60_70_RelativeToWeekMean', 'Team_60_70_RelativeToTopTeam', '60_70_Rank', '60_70_Rank_Density', 'Week_Mean_Top_Team', 'Week_Max_Top_Team', 
+                         'Week_Min_Top_Team', 'Week_Std_Top_Team', 'Team_Top_Team_RelativeToWeekMean', 'Team_Top_Team_RelativeToTopTeam', 'Top_Team_Rank', 'Top_Team_Rank_Density', 'Week_Mean_Availability', 
+                         'Week_Max_Availability', 'Week_Min_Availability', 'Week_Std_Availability', 'Team_Availability_RelativeToWeekMean', 'Team_Availability_RelativeToTopTeam', 'Availability_Rank', 
+                         'Availability_Rank_Density', 'Holiday Strength']
+        
+        # Add holiday columns if they exist in the data
+        base_features.extend([col for col in holiday_cols if col in df.columns])
+        base_features = list(set(base_features))
+        
+        # Filter: Ensure all features actually exist in the dataframe and are numeric
+        base_features = [f for f in base_features if f in df.columns and pd.api.types.is_numeric_dtype(df[f])]
+    
+    #    # (Your existing code for other contests...)
+    #    base_features = ['Win %', 'Future Value (Stars)', 'Date', 'Away Team', 'Divisional Matchup?', 'Week_Mean_WinPct', 'Week_Mean_FV', 'Week_Max_WinPct', 
+    #                     'Week_Max_FV', 'Week_Min_WinPct', 'Week_Min_FV', 'Week_Std_WinPct', 'Week_Std_FV', 'Team_WinPct_RelativeToWeekMean', 'Team_FV_RelativeToWeekMean', 
+    #                     'Team_WinPct_RelativeToTopTeam', 'Team_FV_RelativeToTopTeam', 'Win % Rank', 'Star Rating Rank','Num_Teams_This_Week', 'Rank_Density',
+    #                     'FV_Rank_Density',  'Future_Weeks_Top_Team', 'Future_Weeks_Over_80', 'Future_Weeks_70_80', 'Future_Weeks_60_70', 'Thursday_Home', 'Thursday_Away', 
+    #                     'Thursday_Underdog', 'Thursday_Favorite', 'Week_Mean_80', 'Week_Max_80', 'Week_Min_80', 'Week_Std_80', 'Team_80_RelativeToWeekMean', 
+    #                     'Team_80_RelativeToTopTeam', '80_Rank', '80_Rank_Density', 'Week_Mean_70_80', 'Week_Max_70_80', 'Week_Min_70_80', 'Week_Std_70_80', 
+    #                     'Team_70_80_RelativeToWeekMean', 'Team_70_80_RelativeToTopTeam', '70_80_Rank', '70_80_Rank_Density', 'Week_Mean_60_70', 'Week_Max_60_70', 'Week_Min_60_70', 
+    #                     'Week_Std_60_70', 'Team_60_70_RelativeToWeekMean', 'Team_60_70_RelativeToTopTeam', '60_70_Rank', '60_70_Rank_Density', 'Week_Mean_Top_Team', 'Week_Max_Top_Team', 
+    #                     'Week_Min_Top_Team', 'Week_Std_Top_Team', 'Team_Top_Team_RelativeToWeekMean', 'Team_Top_Team_RelativeToTopTeam', 'Top_Team_Rank', 'Top_Team_Rank_Density']
+            
+    
+# ============================================================
+        # 🌟 DUAL MODEL TRAINING (Current vs Future)
+        # ============================================================
+        assumed_public_pick_col = 'Public Pick %'
+        mandatory_features = ['Pre Thanksgiving', 'Pre Christmas', 'christmas_week', 'thanksgiving_week']
+        
+        # 1. Prepare base features (strictly exclude Public Pick % here)
+        clean_base = [f for f in base_features if f != assumed_public_pick_col]
+        
+        # 2. Define our two targets
+        # Model 9: Current Week (Uses RFE to find the best 9, including Public Pick if ranked high)
+        # Model 7: Future Weeks (Uses RFE to find the best 7 fundamentals)
+        model_configs = {
+            9: {'features': clean_base + [assumed_public_pick_col], 'target_n': 9},
+            7: {'features': clean_base, 'target_n': 7}
+        }
+        
+        trained_models = {}
+
+        for n_key, config in model_configs.items():
+            feat_list = [f for f in config['features'] if f in df_historical.columns]
+            
+            # Filter historical data for this specific feature set
+            if assumed_public_pick_col in feat_list:
+                df_train = df_historical.dropna(subset=[assumed_public_pick_col])
+            else:
+                df_train = df_historical
+            
+            X_train = df_train[feat_list].fillna(0)
+            y_train = df_train['Pick %']
+            
+            print(f"⚙️ Running RFE to find best features for Model {n_key}...")
+            
+            # Run RFE to rank features
+            base_rf = RandomForestRegressor(n_estimators=50, n_jobs=-1, random_state=42)
+            selector = RFE(estimator=base_rf, n_features_to_select=1, step=1)
+            selector.fit(X_train, y_train)
+            
+            # Create ranked list and select the Top N
+            ranks = pd.Series(selector.ranking_, index=feat_list).sort_values()
+            top_n_list = ranks.head(config['target_n']).index.tolist()
+            
+            # Combine Top N with Mandatory features (ensuring no duplicates)
+            final_features = list(dict.fromkeys(top_n_list + mandatory_features))
+            
+            # Final training on the selected subset
+            final_rf = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1, min_samples_leaf=5)
+            final_rf.fit(X_train[final_features], y_train)
+            
+            # Store for the simulation loop
+            trained_models[n_key] = {
+                'model': final_rf,
+                'features': final_features
+            }
+            print(f"✅ Model {n_key} ready! Features: {final_features}")
+
+        # ============================================================
+        # End of Training Block (Proceed to your simulation/testing)
+        # ============================================================
+    
+        print("Starting week-by-week pick percentage predictions...")
+        
+        # 1. Load full schedule and copy
+        nfl_schedule_df = schedule_df.copy()
+    
+        nfl_schedule_df['Week'] = pd.to_numeric(
+                nfl_schedule_df['Week'], 
+                errors='coerce'
+            ).fillna(-1).astype(int)
+    
+        if current_week_entries >= 0:
+            nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'] = current_week_entries
+        else:
+            # Handle the -1 (auto-estimate) case based on contest
+    #        if selected_contest == 'Circa':
+            default_entries = circa_total_entries # Example
+    #        elif selected_contest == 'Splash Sports':
+    #            if subcontest == "The Big Splash ($150 Entry)":
+    #                default_entries = splash_big_splash_total_entries
+    #            elif subcontest == "4 for 4 ($50 Entry)":
+    #                default_entries = splash_4_for_4_total_entries
+    #            elif subcontest == "Free RotoWire (Free Entry)":
+    #                default_entries = splash_rotowire_total_entries
+    #            elif subcontest == "For the Fans ($40 Entry)":
+    #                default_entries = splash_for_the_fans_total_entries
+    #            elif subcontest == "Walker's Ultimate Survivor ($25 Entry)":
+    #                default_entries = splash_walkers_25_total_entries
+    #            elif subcontest == "Ship It Nation ($25 Entry)":
+    #                default_entries = splash_ship_it_nation_total_entries
+    #            elif subcontest == "High Roller ($1000 Entry)":
+    #                default_entries = splash_high_roller_total_entries
+    #            elif subcontest == "Week 9 Bloody Survivor ($100 Entry)":
+    #                default_entries = splash_bloody_total_entries
+    #            else:
+    #                default_entries = 20000
+    #        else: # DraftKings
+    #             default_entries = 20000 # Example
+            nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'] = default_entries
+        # --- End POOL SIZE LOGIC ---
+    
+        # Ensure 'Total Remaining Entries at Start of Week' has been correctly initialized
+        # If the entry size is not set, the simulation will break.
+        if nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'].empty:
+             print(f"Error: 'Total Remaining Entries' not set for starting week {starting_week}. Assuming {default_entries}.")
+             nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'] = default_entries
+        
+        max_week = nfl_schedule_df['Week'].max() # Get max week from the data itself
+        
+        # 2. Initialize 'used' dictionary (U_prev_week)
+        S_at_sw = nfl_schedule_df[nfl_schedule_df['Week'] == starting_week]['Total Remaining Entries at Start of Week'].iloc[0]
+        U_prev_week: Dict[str, float] = {}
+        
+        # Get all unique teams
+        all_teams_series = pd.unique(nfl_schedule_df[['Home Team', 'Away Team']].values.ravel('K'))
+        all_teams = [team for team in all_teams_series if pd.notna(team)] 
+        
+        if S_at_sw > 0:
+            for team in all_teams:
+                avail_percent = get_expected_availability(team, team_availability) 
+                implied_used_count = S_at_sw * (1.0 - avail_percent)
+                U_prev_week[team] = max(0.0, min(implied_used_count, S_at_sw))
+        else:
+            print(f"Warning: S_at_sw is 0. Initializing U_prev_week to all zeros.")
+            for team in all_teams:
+                U_prev_week[team] = 0.0
+        
+        # 3. Initialize all columns you will calculate in the loop
+        calc_cols = [
+            'Home Team Expected Availability', 'Away Team Expected Availability',
+            'Home Pick %', 'Away Pick %', 'Expected Home Team Survivors', 
+            'Expected Away Team Survivors', 'Expected Home Team Eliminations', 
+            'Expected Away Team Eliminations'
+        ]
+        for col in calc_cols:
+            nfl_schedule_df[col] = np.nan
+    
+        # Loop through each week, starting from your defined starting week
+        for current_week in range(starting_week, int(max_week) + 1):
+            print(f"\n--- 🏈 Processing Week {current_week} of {max_week}--- (Simulation Week: Week {upcoming_week})")
+            current_week_mask = nfl_schedule_df['Week'] == current_week
+            if not current_week_mask.any():
+                print(f"Skipping week {current_week} (no data found).")
+                continue
+    
+            # --- A. GET TOTAL ENTRIES (S_w) ---
+            S_w = nfl_schedule_df.loc[current_week_mask, 'Total Remaining Entries at Start of Week'].iloc[0]
+            if pd.isna(S_w) or S_w <= 0:
+                print(f"Warning: 0 or NaN entries for Week {current_week}. Stopping sequential calculation.")
+                break
+    
+            # --- B. CALCULATE & SET *THIS* WEEK'S AVAILABILITY ---
+            for team in all_teams:
+                unavailable_count = U_prev_week.get(team, 0.0)
+                # (S_w - unavailable_count) is the number of remaining entries who CAN pick this team
+                # We divide by S_w to get the percentage of the remaining pool who can pick this team
+                team_avail_percent = (S_w - unavailable_count) / S_w
+                team_avail_percent = max(0.0, min(1.0, team_avail_percent)) # Clamp between 0 and 1
+    
+                
+                # Set it in the main dataframe (only for the games this team is playing in this week)
+                nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Home Team'] == team), 'Home Team Expected Availability'] = team_avail_percent
+                nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team), 'Away Team Expected Availability'] = team_avail_percent
+    
+            # --- C. PREPARE & PREDICT *THIS* WEEK'S PICKS ---
+            new_df = nfl_schedule_df.loc[current_week_mask].copy()
+            # Select all columns needed for prediction features
+            selected_columns = [
+                'Week', 'Away Team', 'Home Team', 'Away Team Fair Odds', 'Home Team Fair Odds', 
+                'Away Team Star Rating', 'Home Team Star Rating', 'Divisional Matchup Boolean', 
+                'Away Team Public Pick %', 'Home Team Public Pick %', 
+                'Away Team Expected Availability', 'Home Team Expected Availability', 
+    			'Away Team Thanksgiving Favorite', 'Away Team Thanksgiving Underdog', 
+    			'Home Team Thanksgiving Favorite', 'Home Team Thanksgiving Underdog', 
+    			'Away Team Christmas Favorite', 'Away Team Christmas Underdog',
+    			'Home Team Christmas Favorite', 'Home Team Christmas Underdog',
+    			'Away Team Pre Thanksgiving', 'Away Team Pre Christmas',
+    			'Home Team Pre Thanksgiving', 'Home Team Pre Christmas', 'Date'
+            ]
+            
+            # Ensure only valid columns are selected
+            new_df = new_df[[col for col in selected_columns if col in new_df.columns]].copy()
+            new_df = new_df.rename(columns={'Date': 'Calendar Date'})
+            new_df = new_df.rename(columns={'Week': 'Date'})
+    
+    	
+    
+            # Check if public pick data is available for this week's predictions
+            # Note: This check relies on 'Home Team Public Pick %' not being NaN
+            public_picks_available = (new_df['Home Team Public Pick %'].notna().any())
+            
+            # --- Create away_df and home_df (Feature Engineering) ---
+            # Helper function to rename columns consistently for prediction
+            def create_pick_df(df_in, team_type_1, team_type, opponent_type_1, opponent_type, is_away):
+                df_out = df_in.rename(columns={
+                    f'{team_type_1} Team': 'Team', 
+                    f'{opponent_type} Team': 'Opponent', 
+                    f'{team_type} Fair Odds': 'Win %', 
+                    f'{team_type} Star Rating': 'Future Value (Stars)', 
+                    'Divisional Matchup Boolean': 'Divisional Matchup?',
+                    f'{team_type} Expected Availability': 'Availability', 
+                    f'{team_type} Public Pick %': 'Public Pick %',
+    				f'{team_type} Thanksgiving Favorite': 'Thanksgiving Favorite',
+    				f'{team_type} Thanksgiving Underdog': 'Thanksgiving Underdog',
+    				f'{team_type} Christmas Favorite': 'Christmas Favorite',
+    				f'{team_type} Christmas Underdog': 'Christmas Underdog',
+    				f'{team_type} Pre Thanksgiving': 'Pre Thanksgiving',
+    				f'{team_type} Pre Christmas': 'Pre Christmas',
+                }).drop(columns=[f'{opponent_type_1} Fair Odds', f'{opponent_type_1} Star Rating', f'{opponent_type_1} Public Pick %', f'{opponent_type_1} Expected Availability'])
+                
+                df_out['Home/Away'] = 'Away' if is_away else 'Home'
+                df_out['Away Team'] = 1 if is_away else 0
+                df_out['Date'] = current_week
+                return df_out.copy()
+    
+            away_df = create_pick_df(new_df, 'Away', 'Away Team', 'Home Team', 'Home', True)
+            home_df = create_pick_df(new_df, 'Home', 'Home Team', 'Away Team', 'Away', False)
+    
+            # 3. CONCATENATE and NORMALIZE PICKS
+            pick_predictions_df = pd.concat([away_df, home_df], ignore_index=True)
+    
+            # ==============================================================================
+            # SECTION 4: NEW FEATURE ENGINEERING (RANKS AND RELATIVE STATS)
+            # ==============================================================================
+            
+            # Define group keys for weekly calculations
+            group_keys = ['Date']
+            
+            # 1. Calculate Weekly Win % Stats
+            # Using .transform() to broadcast the group-level stats to every row in that group
+            pick_predictions_df['Week_Mean_WinPct'] = pick_predictions_df.groupby(group_keys)['Win %'].transform('mean')
+            pick_predictions_df['Week_Max_WinPct'] = pick_predictions_df.groupby(group_keys)['Win %'].transform('max')
+            pick_predictions_df['Week_Min_WinPct'] = pick_predictions_df.groupby(group_keys)['Win %'].transform('min')
+            pick_predictions_df['Week_Std_WinPct'] = pick_predictions_df.groupby(group_keys)['Win %'].transform('std')
+            
+            pick_predictions_df['Week_Mean_FV'] = pick_predictions_df.groupby(group_keys)['Future Value (Stars)'].transform('mean')
+            pick_predictions_df['Week_Max_FV'] = pick_predictions_df.groupby(group_keys)['Future Value (Stars)'].transform('max')
+            pick_predictions_df['Week_Min_FV'] = pick_predictions_df.groupby(group_keys)['Future Value (Stars)'].transform('min')
+            pick_predictions_df['Week_Std_FV'] = pick_predictions_df.groupby(group_keys)['Future Value (Stars)'].transform('std')
+            
+            # Fill NaN for Std on weeks with only one game (if any)
+            pick_predictions_df['Week_Std_WinPct'] = pick_predictions_df['Week_Std_WinPct'].fillna(0)
+            
+            # Fill NaN for Std on weeks with only one game (if any)
+            pick_predictions_df['Week_Std_FV'] = pick_predictions_df['Week_Std_FV'].fillna(0)
+            
+            # 2. Calculate Team-Specific Relative Stats
+            pick_predictions_df['Team_WinPct_RelativeToWeekMean'] = pick_predictions_df['Win %'] - pick_predictions_df['Week_Mean_WinPct']
+            
+            # 2. Calculate Team-Specific Relative Stats
+            pick_predictions_df['Team_FV_RelativeToWeekMean'] = pick_predictions_df['Future Value (Stars)'] - pick_predictions_df['Week_Mean_FV']
+            
+            # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
+            pick_predictions_df['Team_WinPct_RelativeToTopTeam'] = pick_predictions_df['Win %'] / pick_predictions_df['Week_Max_WinPct']
+            pick_predictions_df['Team_WinPct_RelativeToTopTeam'] = pick_predictions_df['Team_WinPct_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)
+            
+            # Handle potential division by zero if Max_Win is 0 (unlikely, but safe)
+            pick_predictions_df['Team_FV_RelativeToTopTeam'] = pick_predictions_df['Future Value (Stars)'] / pick_predictions_df['Week_Max_FV']
+            pick_predictions_df['Team_FV_RelativeToTopTeam'] = pick_predictions_df['Team_FV_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)                                                                                                  
+            
+            # 3. Calculate Ranks (Win % and Star Rating)
+            # .rank(ascending=False) means the highest value gets rank 1 (e.g., "best")
+            pick_predictions_df['Win % Rank'] = pick_predictions_df.groupby(group_keys)['Win %'].rank(ascending=False, method='min')
+            pick_predictions_df['Star Rating Rank'] = pick_predictions_df.groupby(group_keys)['Future Value (Stars)'].rank(ascending=False, method='min')
+            
+            # 4. Calculate Rank Density
+            # First, get the number of teams (games) in each week
+            pick_predictions_df['Num_Teams_This_Week'] = pick_predictions_df.groupby(group_keys)['Team'].transform('count')
+            
+            # This normalizes the rank based on the number of available teams that week
+            pick_predictions_df['Rank_Density'] = pick_predictions_df['Win % Rank'] / pick_predictions_df['Num_Teams_This_Week']
+            
+            pick_predictions_df['FV_Rank_Density'] = pick_predictions_df['Star Rating Rank'] / pick_predictions_df['Num_Teams_This_Week']
+            
+    
+    
+    
+    		# ------------------------------------------------------------------------------
+            # NEW SECTION: Future Value & Holiday Features
+            # ------------------------------------------------------------------------------
+            
+            # A. Holiday Booleans
+            # Convert existing holiday specific columns into a single boolean "Is Holiday Game?"
+            # (Checks if either Favorite or Underdog status is > 0)
+            pick_predictions_df['christmas_week'] = (
+                pick_predictions_df['Date'] == christmas_week).astype(int)
+    
+            pick_predictions_df['thanksgiving_week'] = (
+                pick_predictions_df['Date'] == thanksgiving_week).astype(int)
+    
+            pick_predictions_df['Calendar Date'] = pd.to_datetime(pick_predictions_df['Calendar Date'])
+
+            # Create the "Thursday Night Game" column
+            # Logic:
+            # 1. Day of week is Thursday (dt.dayofweek == 3; Monday is 0, Sunday is 6)
+            # 2. christmas_week is 0
+            # 3. thanksgiving_week is 0
+            pick_predictions_df['Thursday Night Game'] = (
+                (pick_predictions_df['Calendar Date'].dt.dayofweek == 3) & 
+                (pick_predictions_df['christmas_week'] == 0) & 
+                (pick_predictions_df['thanksgiving_week'] == 0)
+            ).astype(int) # Convert boolean (True/False) to integer (1/0)
+
+    
+            # Home vs Away on Thursday
+            pick_predictions_df['Thursday_Home'] = (pick_predictions_df['Thursday Night Game'] == 1) & (pick_predictions_df['Away Team'] == 0)
+            pick_predictions_df['Thursday_Away'] = (pick_predictions_df['Thursday Night Game'] == 1) & (pick_predictions_df['Away Team'] == 1)
+    
+            # Favorite vs Underdog on Thursday
+            pick_predictions_df['Thursday_Favorite'] = (pick_predictions_df['Thursday Night Game'] == 1) & (pick_predictions_df['Win %'] > .5)
+            pick_predictions_df['Thursday_Underdog'] = (pick_predictions_df['Thursday Night Game'] == 1) & (pick_predictions_df['Win %'] <= .5)
+    
+            # Convert all to integers (1/0)
+            cols_to_convert = ['Thursday_Home', 'Thursday_Away', 'Thursday_Favorite', 'Thursday_Underdog']
+            pick_predictions_df[cols_to_convert] = pick_predictions_df[cols_to_convert].astype(int)
+    
+    
+            # B. Current Week Relative Strength
+            # "Win Percentage of the team minus the win percentage of the Top team that week."
+            # Note: 'Week_Max_WinPct' was calculated in Section 4
+            pick_predictions_df['WinPct_Diff_From_Top'] = pick_predictions_df['Win %'] - pick_predictions_df['Week_Max_WinPct']
+    
+            # C. Future Schedule Analysis (The "Look-ahead" counts)
+            # We need to look at nfl_schedule_df for all weeks GREATER than current_week
+            future_schedule = nfl_schedule_df[nfl_schedule_df['Week'] > current_week].copy()
+    
+            if not future_schedule.empty:
+                # 1. Flatten the future schedule to a simple (Team, Week, WinPct) format
+                fut_home = future_schedule[['Home Team', 'Home Team Fair Odds', 'Week']].rename(
+                    columns={'Home Team': 'Team', 'Home Team Fair Odds': 'WinPct'}
+                )
+                fut_away = future_schedule[['Away Team', 'Away Team Fair Odds', 'Week']].rename(
+                    columns={'Away Team': 'Team', 'Away Team Fair Odds': 'WinPct'}
+                )
+                fut_long = pd.concat([fut_home, fut_away], ignore_index=True)
+    
+                # 2. Identify if they are the "Top Team" in that future week
+                # Group by Week to find the Max Win % for that specific future week
+                weekly_max_series = fut_long.groupby('Week')['WinPct'].transform('max')
+                fut_long['Is_Top_Team'] = (fut_long['WinPct'] == weekly_max_series)
+    
+                total_future_weeks = future_schedule['Week'].nunique()
+                # 3. Calculate the counts per team
+                # Create boolean columns for the criteria
+                fut_long['Future_Weeks_Top_Team'] = fut_long['Is_Top_Team'].astype(int)
+                fut_long['Future_Weeks_Over_80'] = (fut_long['WinPct'] > 0.80).astype(int)
+                fut_long['Future_Weeks_70_80'] = ((fut_long['WinPct'] >= 0.70) & (fut_long['WinPct'] <= 0.80)).astype(int)
+                fut_long['Future_Weeks_60_70'] = ((fut_long['WinPct'] >= 0.60) & (fut_long['WinPct'] < 0.70)).astype(int)
+    
+                # 4. Aggregate by Team (Summing the weeks)
+                team_future_stats = fut_long.groupby('Team')[[
+                    'Future_Weeks_Top_Team', 
+                    'Future_Weeks_Over_80', 
+                    'Future_Weeks_70_80', 
+                    'Future_Weeks_60_70'
+                ]].sum().reset_index()
+    
+                if total_future_weeks > 0:
+                    stat_cols = ['Future_Weeks_Top_Team', 'Future_Weeks_Over_80', 'Future_Weeks_70_80', 'Future_Weeks_60_70']
+                    team_future_stats[stat_cols] = team_future_stats[stat_cols] / total_future_weeks
+    
+                # 5. Merge these stats back into the current prediction dataframe
+                pick_predictions_df = pick_predictions_df.merge(team_future_stats, on='Team', how='left')
+                
+                # Fill NaNs with 0 (for teams that might not have future games in the filtered set)
+                pick_predictions_df[['Future_Weeks_Top_Team', 'Future_Weeks_Over_80', 'Future_Weeks_70_80', 'Future_Weeks_60_70']] = \
+                    pick_predictions_df[['Future_Weeks_Top_Team', 'Future_Weeks_Over_80', 'Future_Weeks_70_80', 'Future_Weeks_60_70']].fillna(0)
+    
+            else:
+                # If no future weeks exist (last week of season), set all to 0
+                pick_predictions_df['Future_Weeks_Top_Team'] = 0
+                pick_predictions_df['Future_Weeks_Over_80'] = 0
+                pick_predictions_df['Future_Weeks_70_80'] = 0
+                pick_predictions_df['Future_Weeks_60_70'] = 0
+            
+            # ==============================================================================
+            # END SECTION 4
+            # ==============================================================================
+            
+            
+            
+            # 1. Calculate Weekly Win % Stats
+            # Using .transform() to broadcast the group-level stats to every row in that group
+            pick_predictions_df['Week_Mean_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Over_80'].transform('mean')
+            pick_predictions_df['Week_Max_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Over_80'].transform('max')
+            pick_predictions_df['Week_Min_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Over_80'].transform('min')
+            pick_predictions_df['Week_Std_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Over_80'].transform('std')
+            
+            # Fill NaN for Std on weeks with only one game (if any)
+            pick_predictions_df['Week_Std_80'] = pick_predictions_df['Week_Std_80'].fillna(0)
+            
+            # 2. Calculate Team-Specific Relative Stats
+            pick_predictions_df['Team_80_RelativeToWeekMean'] = pick_predictions_df['Future_Weeks_Over_80'] - pick_predictions_df['Week_Mean_80']
+            
+            # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
+            pick_predictions_df['Team_80_RelativeToTopTeam'] = pick_predictions_df['Future_Weeks_Over_80'] / pick_predictions_df['Week_Max_80']
+            pick_predictions_df['Team_80_RelativeToTopTeam'] = pick_predictions_df['Team_80_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)                                                                                        
+            
+            # 3. Calculate Ranks (Win % and Star Rating)
+            pick_predictions_df['80_Rank'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Over_80'].rank(ascending=False, method='min')
+            
+            # This normalizes the rank based on the number of available teams that week
+            pick_predictions_df['80_Rank_Density'] = pick_predictions_df['80_Rank'] / pick_predictions_df['Num_Teams_This_Week']
+            
+            
+            
+            # 1. Calculate Weekly Win % Stats
+            # Using .transform() to broadcast the group-level stats to every row in that group
+            pick_predictions_df['Week_Mean_70_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_70_80'].transform('mean')
+            pick_predictions_df['Week_Max_70_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_70_80'].transform('max')
+            pick_predictions_df['Week_Min_70_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_70_80'].transform('min')
+            pick_predictions_df['Week_Std_70_80'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_70_80'].transform('std')
+            
+            # Fill NaN for Std on weeks with only one game (if any)
+            pick_predictions_df['Week_Std_70_80'] = pick_predictions_df['Week_Std_70_80'].fillna(0)
+            
+            # 2. Calculate Team-Specific Relative Stats
+            pick_predictions_df['Team_70_80_RelativeToWeekMean'] = pick_predictions_df['Future_Weeks_70_80'] - pick_predictions_df['Week_Mean_70_80']
+            
+            # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
+            pick_predictions_df['Team_70_80_RelativeToTopTeam'] = pick_predictions_df['Future_Weeks_70_80'] / pick_predictions_df['Week_Max_70_80']
+            pick_predictions_df['Team_70_80_RelativeToTopTeam'] = pick_predictions_df['Team_70_80_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)                                                                                        
+            
+            # 3. Calculate Ranks (Win % and Star Rating)
+            pick_predictions_df['70_80_Rank'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_70_80'].rank(ascending=False, method='min')
+            
+            # This normalizes the rank based on the number of available teams that week
+            pick_predictions_df['70_80_Rank_Density'] = pick_predictions_df['70_80_Rank'] / pick_predictions_df['Num_Teams_This_Week']
+            
+            
+            
+            # 1. Calculate Weekly Win % Stats
+            # Using .transform() to broadcast the group-level stats to every row in that group
+            pick_predictions_df['Week_Mean_60_70'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_60_70'].transform('mean')
+            pick_predictions_df['Week_Max_60_70'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_60_70'].transform('max')
+            pick_predictions_df['Week_Min_60_70'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_60_70'].transform('min')
+            pick_predictions_df['Week_Std_60_70'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_60_70'].transform('std')
+            
+            # Fill NaN for Std on weeks with only one game (if any)
+            pick_predictions_df['Week_Std_60_70'] = pick_predictions_df['Week_Std_60_70'].fillna(0)
+            
+            # 2. Calculate Team-Specific Relative Stats
+            pick_predictions_df['Team_60_70_RelativeToWeekMean'] = pick_predictions_df['Future_Weeks_60_70'] - pick_predictions_df['Week_Mean_60_70']
+            
+            # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
+            pick_predictions_df['Team_60_70_RelativeToTopTeam'] = pick_predictions_df['Future_Weeks_60_70'] / pick_predictions_df['Week_Max_60_70']
+            pick_predictions_df['Team_60_70_RelativeToTopTeam'] = pick_predictions_df['Team_60_70_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)                                                                                        
+            
+            # 3. Calculate Ranks (Win % and Star Rating)
+            pick_predictions_df['60_70_Rank'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_60_70'].rank(ascending=False, method='min')
+            
+            # This normalizes the rank based on the number of available teams that week
+            pick_predictions_df['60_70_Rank_Density'] = pick_predictions_df['60_70_Rank'] / pick_predictions_df['Num_Teams_This_Week']
+            
+    
+            # 1. Calculate Weekly Win % Stats
+            # Using .transform() to broadcast the group-level stats to every row in that group
+            pick_predictions_df['Week_Mean_Top_Team'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Top_Team'].transform('mean')
+            pick_predictions_df['Week_Max_Top_Team'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Top_Team'].transform('max')
+            pick_predictions_df['Week_Min_Top_Team'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Top_Team'].transform('min')
+            pick_predictions_df['Week_Std_Top_Team'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Top_Team'].transform('std')
+            
+            # Fill NaN for Std on weeks with only one game (if any)
+            pick_predictions_df['Week_Std_Top_Team'] = pick_predictions_df['Week_Std_Top_Team'].fillna(0)
+            
+            # 2. Calculate Team-Specific Relative Stats
+            pick_predictions_df['Team_Top_Team_RelativeToWeekMean'] = pick_predictions_df['Future_Weeks_Top_Team'] - pick_predictions_df['Week_Mean_Top_Team']
+            
+            # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
+            pick_predictions_df['Team_Top_Team_RelativeToTopTeam'] = pick_predictions_df['Future_Weeks_Top_Team'] / pick_predictions_df['Week_Max_Top_Team']
+            pick_predictions_df['Team_Top_Team_RelativeToTopTeam'] = pick_predictions_df['Team_Top_Team_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)                                                                                        
+            
+            # 3. Calculate Ranks (Win % and Star Rating)
+            pick_predictions_df['Top_Team_Rank'] = pick_predictions_df.groupby(group_keys)['Future_Weeks_Top_Team'].rank(ascending=False, method='min')
+            
+            # This normalizes the rank based on the number of available teams that week
+            pick_predictions_df['Top_Team_Rank_Density'] = pick_predictions_df['Top_Team_Rank'] / pick_predictions_df['Num_Teams_This_Week']
+            
+            
+            # 1. Calculate Weekly Win % Stats
+            # Using .transform() to broadcast the group-level stats to every row in that group
+            pick_predictions_df['Week_Mean_Availability'] = pick_predictions_df.groupby(group_keys)['Availability'].transform('mean')
+            pick_predictions_df['Week_Max_Availability'] = pick_predictions_df.groupby(group_keys)['Availability'].transform('max')
+            pick_predictions_df['Week_Min_Availability'] = pick_predictions_df.groupby(group_keys)['Availability'].transform('min')
+            pick_predictions_df['Week_Std_Availability'] = pick_predictions_df.groupby(group_keys)['Availability'].transform('std')
+            
+            # Fill NaN for Std on weeks with only one game (if any)
+            pick_predictions_df['Week_Std_Availability'] = pick_predictions_df['Week_Std_Availability'].fillna(0)
+            
+            # 2. Calculate Team-Specific Relative Stats
+            pick_predictions_df['Team_Availability_RelativeToWeekMean'] = pick_predictions_df['Availability'] - pick_predictions_df['Week_Mean_Availability']
+            
+            # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
+            pick_predictions_df['Team_Availability_RelativeToTopTeam'] = pick_predictions_df['Availability'] / pick_predictions_df['Week_Max_Availability']
+            pick_predictions_df['Team_Availability_RelativeToTopTeam'] = pick_predictions_df['Team_Availability_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)                                                                                        
+            
+            # 3. Calculate Ranks (Win % and Star Rating)
+            pick_predictions_df['Availability_Rank'] = pick_predictions_df.groupby(group_keys)['Availability'].rank(ascending=False, method='min')
+            
+            # This normalizes the rank based on the number of available teams that week
+            pick_predictions_df['Availability_Rank_Density'] = pick_predictions_df['Availability_Rank'] / pick_predictions_df['Num_Teams_This_Week']
+    
+    
+            # 1. Create lookup maps for the Win % on the actual holiday weeks
+            # This isolates the team's strength specifically on the day of the holiday
+            xmas_map = pick_predictions_df[pick_predictions_df['christmas_week'] == 1].set_index(['Team'])['Win %']
+            tgiving_map = pick_predictions_df[pick_predictions_df['thanksgiving_week'] == 1].set_index(['Team'])['Win %']
+            
+            # 2. Map those holiday-specific Win percentages back to every row for that team/year
+            # This allows the "Pre holiday" rows to "know" how strong the team is on the upcoming holiday
+            pick_predictions_df['christmas_win_pct'] = pick_predictions_df.set_index(['Team']).index.map(xmas_map).fillna(0)
+            pick_predictions_df['thanksgiving_win_pct'] = pick_predictions_df.set_index(['Team']).index.map(tgiving_map).fillna(0)
+            
+            # 3. Apply your interaction logic
+            # This turns the 'Pre' binary flag into a continuous "Expectation" variable
+            pick_predictions_df['Pre Christmas'] = pick_predictions_df['Pre Christmas'] * pick_predictions_df['christmas_win_pct'] * (1 / pick_predictions_df['Date'])
+            pick_predictions_df['Pre Thanksgiving'] = pick_predictions_df['Pre Thanksgiving'] * pick_predictions_df['thanksgiving_win_pct'] * (1 / pick_predictions_df['Date'])
+            
+            # 4. Create the final aggregate feature
+            pick_predictions_df['Holiday Strength'] = pick_predictions_df['Pre Thanksgiving'] + pick_predictions_df['Pre Christmas']
+            
+            # --- LOOP THROUGH ALL 80 MODELS ---
+            print("--- Predicting and normalizing across all feature configurations ---")
+            
+            # Move this outside the 15-iteration loop so it only runs once per mode
+            pick_predictions_df['Availability'] = pick_predictions_df['Availability'].fillna(0.0)
+
+            
+            # --- DYNAMIC MODEL SELECTION ---
+            # Default to the 7-feature model
+            n_features = 7
+            
+            # Logic: Use 9-feature model ONLY IF it's the current week 
+            # AND the 'Public Pick %' column actually has data.
+            if current_week == upcoming_week:
+                if 'Public Pick %' in pick_predictions_df.columns:
+                    # Check if the column is NOT entirely null and NOT all zeros
+                    has_public_data = not pick_predictions_df['Public Pick %'].isnull().all() and \
+                                      (pick_predictions_df['Public Pick %'] != 0).any()
+                    
+                    if has_public_data:
+                        n_features = 9
+                    else:
+                        print(f"⚠️ Public Pick % is empty for Week {current_week}. Falling back to 7-feature model.")
+                else:
+                    print(f"⚠️ Public Pick % column missing. Falling back to 7-feature model.")
+
+            # Load the selected model
+            model_data = trained_models[n_features]
+            model = model_data['model']
+            features_to_use = model_data['features']
+            
+            # --- VERIFICATION PRINT ---
+            print(f"🏈 Week {current_week} | Predicting using {n_features} features model...")
+            print(f"Features Being Used: {features_to_use}")
+            
+            # 1. Ensure features exist in this week's data (Optimized set logic)
+            missing_cols = list(set(features_to_use) - set(pick_predictions_df.columns))
+            if missing_cols:
+                pick_predictions_df[missing_cols] = 0.0 
+                    
+            predict_data = pick_predictions_df[features_to_use].fillna(0) 
+             
+            # 2. Predict into a custom column name
+            col_name = f'Predicted_Pick_Pct'
+            pick_predictions_df[col_name] = model.predict(predict_data)
+
+            pick_predictions_df = pick_predictions_df.copy()
+            
+            # 3. Normalize to target sum (1.0, 2.0, or 3.0)
+            target_pick_sum = 1.0
+            # if current_week in week_requiring_two_selections:
+            #     target_pick_sum = 2.0
+            # elif current_week in week_requiring_three_selections:
+            #     target_pick_sum = 3.0
+                
+            current_sum = pick_predictions_df[col_name].sum()
+            if current_sum > 0:
+                pick_predictions_df[col_name] *= (target_pick_sum / current_sum)
+            else:
+                pick_predictions_df[col_name] = 0.0
+            
+            # 4. Independent Water-Filling Loop
+            for i in range(15): 
+                over_cap_mask = pick_predictions_df[col_name] > pick_predictions_df['Availability']
+                
+                if not over_cap_mask.any():
+                    break
+                    
+                excess_prob = (pick_predictions_df.loc[over_cap_mask, col_name] - pick_predictions_df.loc[over_cap_mask, 'Availability']).sum()
+                pick_predictions_df.loc[over_cap_mask, col_name] = pick_predictions_df.loc[over_cap_mask, 'Availability']
+                
+                non_violator_mask = ~over_cap_mask
+                sum_non_violators = pick_predictions_df.loc[non_violator_mask, col_name].sum()
+                
+                if sum_non_violators > 0:
+                    shares = pick_predictions_df.loc[non_violator_mask, col_name] / sum_non_violators
+                    pick_predictions_df.loc[non_violator_mask, col_name] += (excess_prob * shares)
+                else:
+                    break
+
+                # Final sanity clamp
+                pick_predictions_df[col_name] = pick_predictions_df[[col_name, 'Availability']].min(axis=1)
+
+                # 5. Map back to main nfl_schedule_df dynamically (Optimized - NO iterrows)
+                # Create a quick dictionary: {'ARI': 0.15, 'BAL': 0.35, ...}
+                pick_map = dict(zip(pick_predictions_df['Team'], pick_predictions_df[col_name]))
+                
+                # Apply fast mapping to Home Teams
+                home_mask = current_week_mask & nfl_schedule_df['Home Team'].isin(pick_map.keys())
+                nfl_schedule_df.loc[home_mask, f'Home {col_name}'] = nfl_schedule_df.loc[home_mask, 'Home Team'].map(pick_map)
+                # Apply fast mapping to Away Teams
+                away_mask = current_week_mask & nfl_schedule_df['Away Team'].isin(pick_map.keys())
+                nfl_schedule_df.loc[away_mask, f'Away {col_name}'] = nfl_schedule_df.loc[away_mask, 'Away Team'].map(pick_map)
+                # Every 20 models, clean up the dataframe memory
+                if n_features % 20 == 0:
+                    nfl_schedule_df = nfl_schedule_df.copy()
+            # ==============================================================================
+            # THE STATE DRIVER FIX
+            # ==============================================================================
+            # We have 80 columns of predictions, but the simulator can only follow one timeline.
+            # We explicitly set the "official" Pick % to the -feature model to drive U_prev_week
+            baseline_col = 'Predicted_Pick_Pct'
+            
+            for _, row in pick_predictions_df.iterrows():
+                team = row['Team']
+                # If for some reason the 30-feature model failed, fallback to 0 to prevent crashes
+                pick_percent = row.get(baseline_col, 0.0) 
+                
+                # Map Home Pick % for downstream math
+                nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Home Team'] == team), 'Home Pick %'] = pick_percent
+                
+                # Map Away Pick % for downstream math
+                nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team), 'Away Pick %'] = pick_percent
+    
+            # 5. Calculate Survivors and Eliminations for this week
+            nfl_schedule_df.loc[current_week_mask, 'Expected Home Team Survivors'] = \
+                nfl_schedule_df.loc[current_week_mask, 'Home Pick %'] * \
+                nfl_schedule_df.loc[current_week_mask, 'Home Team Fair Odds'] * S_w
+                
+            nfl_schedule_df.loc[current_week_mask, 'Expected Away Team Survivors'] = \
+                nfl_schedule_df.loc[current_week_mask, 'Away Pick %'] * \
+                nfl_schedule_df.loc[current_week_mask, 'Away Team Fair Odds'] * S_w
+                
+            nfl_schedule_df.loc[current_week_mask, 'Expected Home Team Eliminations'] = \
+                nfl_schedule_df.loc[current_week_mask, 'Home Pick %'] * \
+                (1.0 - nfl_schedule_df.loc[current_week_mask, 'Home Team Fair Odds']) * S_w
+                
+            nfl_schedule_df.loc[current_week_mask, 'Expected Away Team Eliminations'] = \
+                nfl_schedule_df.loc[current_week_mask, 'Away Pick %'] * \
+                (1.0 - nfl_schedule_df.loc[current_week_mask, 'Away Team Fair Odds']) * S_w
+                
+            # Calculate Total Survivors from this week
+            week_df_rows = nfl_schedule_df[current_week_mask]
+            total_survivors_this_week = week_df_rows['Expected Home Team Survivors'].sum() + week_df_rows['Expected Away Team Survivors'].sum()
+            
+            print(f"Total Entries Surviving Week {current_week}: {total_survivors_this_week:,.0f}")
+            
+            # --- E. UPDATE U_prev_week FOR *NEXT* WEEK'S ITERATION ---
+            
+            overall_survival_rate_this_week = 0.0
+            if S_w > 0:
+                overall_survival_rate_this_week = total_survivors_this_week / S_w
+    
+            U_next_week: Dict[str, float] = {}
+            survivors_who_picked_team: Dict[str, float] = {}
+            
+            # Calculate survivors based on the team they picked (val1)
+            for _, row in week_df_rows.iterrows():
+                survivors_who_picked_team[row['Home Team']] = survivors_who_picked_team.get(row['Home Team'], 0.0) + row['Expected Home Team Survivors']
+                survivors_who_picked_team[row['Away Team']] = survivors_who_picked_team.get(row['Away Team'], 0.0) + row['Expected Away Team Survivors']
+    
+            for team in all_teams:
+                # val1: Survivors who picked this team in *this* week (and are therefore now unavailable)
+                val1 = survivors_who_picked_team.get(team, 0.0)
+                
+                # val2: Survivors who had *already* used this team (U_prev_week) AND survived *this* week's overall rate.
+                num_already_used_team = U_prev_week.get(team, 0.0)
+                val2 = num_already_used_team * overall_survival_rate_this_week
+                
+                # The total used count for the next week
+                U_next_week[team] = val1 + val2
+                
+                # Clamp values
+                U_next_week[team] = max(0.0, min(U_next_week[team], total_survivors_this_week))
+    
+            # *** FEEDBACK LOOP ***
+            # The "used" dictionary for the next loop is the one we just calculated
+            U_prev_week = U_next_week.copy()
+    		
+            # Set the next week's starting pool size based on this week's survivors
+            next_week = current_week + 1
+            nfl_schedule_df.loc[nfl_schedule_df['Week'] == next_week, 'Total Remaining Entries at Start of Week'] = total_survivors_this_week
+    
+            
+            print(f"Projected Pool Size for Week {next_week}: {total_survivors_this_week:,.0f}")
+            
+        # Create the boolean mask once, as it's used twice
+#            multiplier_mask = (selected_contest == 'Splash Sports') & \
+#                          (nfl_schedule_df['Week'].isin(week_requiring_two_selections)) & \
+#        	              (subcontest != "Week 9 Bloody Survivor ($100 Entry)")
+#            multiplier_mask_3 = (selected_contest == 'Splash Sports') & \
+#                          (nfl_schedule_df['Week'].isin(week_requiring_three_selections)) & \
+#        	              (subcontest == "Week 9 Bloody Survivor ($100 Entry)")
+        	
+            nfl_schedule_df['Home Expected Survival Rate'] = nfl_schedule_df['Home Team Fair Odds'] * nfl_schedule_df['Home Pick %']
+#            nfl_schedule_df.loc[multiplier_mask, 'Home Expected Survival Rate'] *= 0.65
+#            nfl_schedule_df.loc[multiplier_mask_3, 'Home Expected Survival Rate'] *= 0.35
+            nfl_schedule_df['Home Expected Elimination Percent'] = nfl_schedule_df['Home Pick %'] - nfl_schedule_df['Home Expected Survival Rate']
+            nfl_schedule_df['Away Expected Survival Rate'] = nfl_schedule_df['Away Team Fair Odds'] * nfl_schedule_df['Away Pick %']
+ #           nfl_schedule_df.loc[multiplier_mask, 'Away Expected Survival Rate'] *= 0.65
+ #           nfl_schedule_df.loc[multiplier_mask_3, 'Away Expected Survival Rate'] *= 0.35
+            nfl_schedule_df['Away Expected Elimination Percent'] = nfl_schedule_df['Away Pick %'] - nfl_schedule_df['Away Expected Survival Rate']
+            nfl_schedule_df['Expected Eliminated Entry Percent From Game'] = nfl_schedule_df['Home Expected Elimination Percent'] + nfl_schedule_df['Away Expected Elimination Percent']
+            nfl_schedule_df['Expected Away Team Picks'] = nfl_schedule_df['Away Pick %'] * nfl_schedule_df['Total Remaining Entries at Start of Week']
+            nfl_schedule_df['Expected Home Team Picks'] = nfl_schedule_df['Home Pick %'] * nfl_schedule_df['Total Remaining Entries at Start of Week']
+    
+        ####################################################################################################
+        
+        def run_monte_carlo_simulation(nfl_schedule_df, num_trials=100):
+            """
+            Runs a Monte Carlo simulation to estimate the distribution of survivor
+            pool outcomes, based on the 'Expected Value' pick percentages.
+            
+            This function is defined *inside* get_predicted_pick_percentages
+            to access its scope (starting_week, max_week).
+            """
+            
+            print(f"Running Monte Carlo Simulation with {num_trials:,} trials...")
+            
+            # Get all unique team names from the schedule
+            all_teams_series = pd.unique(nfl_schedule_df[['Home Team', 'Away Team']].values.ravel('K'))
+            all_teams = [team for team in all_teams_series if pd.notna(team)]
+        
+            # --- Use variables from the outer function's scope ---
+            start_w = starting_week
+            end_w = max_week
+            # -----------------------------------------------------
+        
+            # Get the absolute starting pool size from the main DF
+            initial_pool_size = nfl_schedule_df.loc[
+                nfl_schedule_df['Week'] == start_w,
+                'Total Remaining Entries at Start of Week'
+            ].iloc[0]
+            
+            if pd.isna(initial_pool_size) or initial_pool_size <= 0:
+                print(f"Warning: Initial pool size for MC Sim is {initial_pool_size}. Defaulting to 1.")
+                initial_pool_size = 1
+            
+            initial_pool_size = int(initial_pool_size)
+        
+            # Collect results for aggregation
+            monte_results = []
+            
+            # Add a progress bar for Streamlit
+        
+            # --- Run all trials ---
+            for trial in range(num_trials):
+                
+                # Initialize this trial's state
+                remaining_entries_sim = initial_pool_size
+                week_records = []
+                
+                # --- Simulate each week sequentially for this trial ---
+                for week in range(start_w, int(end_w) + 1):
+                    
+                    # If all entries are eliminated, stop this trial
+                    if remaining_entries_sim <= 0:
+                        break
+                        
+                    week_df = nfl_schedule_df[nfl_schedule_df['Week'] == week].copy()
+                    if week_df.empty:
+                        continue
+        
+                    # --- 1. Robustness: Clean & Normalize Probabilities ---
+                    
+                    # Fill NaNs
+                    week_df[['Home Pick %', 'Away Pick %']] = week_df[['Home Pick %', 'Away Pick %']].fillna(0.0)
+                    week_df[['Home Team Fair Odds', 'Away Team Fair Odds']] = week_df[['Home Team Fair Odds', 'Away Team Fair Odds']].fillna(0.5)
+        
+                    # Re-normalize pick percentages for this week
+                    total_pick_prob = week_df['Home Pick %'].sum() + week_df['Away Pick %'].sum()
+                    if total_pick_prob <= 0:
+                        print(f"Warning: Zero pick prob in Wk {week}. Skipping sim.")
+                        continue # Cannot distribute picks
+                        
+                    week_df['Home Pick %'] = week_df['Home Pick %'] / total_pick_prob
+                    week_df['Away Pick %'] = week_df['Away Pick %'] / total_pick_prob
+        
+                    # --- 2. Simulation Step 1: Distribute Picks ---
+                    # Create a single list of all possible choices (teams) and their probabilities
+                    # This is critical for using the correct (multinomial) distribution
+                    
+                    # Get all teams playing and their associated pick probabilities
+                    choices = list(week_df['Home Team']) + list(week_df['Away Team'])
+                    probs = list(week_df['Home Pick %']) + list(week_df['Away Pick %'])
+                    
+                    # Ensure probabilities sum perfectly to 1 for the simulation
+                    probs = np.array(probs) / np.sum(probs)
+                    
+                    # Simulate the picks:
+                    # This one call distributes all 'remaining_entries_sim' among all choices
+                    picks_array = np.random.multinomial(n=remaining_entries_sim, pvals=probs)
+                    
+                    # Map results back to the dataframe
+                    picks_dict = dict(zip(choices, picks_array))
+                    week_df['Home Picks'] = week_df['Home Team'].map(picks_dict).fillna(0).astype(int)
+                    week_df['Away Picks'] = week_df['Away Team'].map(picks_dict).fillna(0).astype(int)
+        
+                    # --- 3. Simulation Step 2: Simulate Game Outcomes ---
+                    # CRITICAL FIX: Simulate game outcomes so that only one team can win.
+                    
+                    # Simulate home team win probability
+                    week_df['Home Wins'] = np.random.binomial(1, week_df['Home Team Fair Odds'])
+                    
+                    # Away team wins if home team *doesn't* (ignoring ties)
+                    week_df['Away Wins'] = 1 - week_df['Home Wins']
+                    
+                    # --- 4. Calculate Survivors & Eliminations ---
+                    home_survivors = (week_df['Home Picks'] * week_df['Home Wins']).sum()
+                    away_survivors = (week_df['Away Picks'] * week_df['Away Wins']).sum()
+                    
+                    survivors_this_week = home_survivors + away_survivors
+                    total_eliminations = remaining_entries_sim - survivors_this_week
+                    
+                    # Store week-level results for this trial
+                    week_records.append({
+                        'Week': week,
+                        'Trial': trial,
+                        'Eliminations': total_eliminations,
+                        'Survivors': survivors_this_week
+                    })
+                    
+                    # --- 5. Feedback Loop for Next Week ---
+                    remaining_entries_sim = survivors_this_week
+                    
+                # Add this trial's full weekly results to the main list
+                monte_results.extend(week_records)
+            
+            if not monte_results:
+                print("Warning: Monte Carlo simulation produced no results.")
+                return pd.DataFrame() # Return empty frame
+        
+            monte_df = pd.DataFrame(monte_results)
+            
+            # Group by week and get summary statistics
+            summary = monte_df.groupby('Week').agg({
+                'Eliminations': ['mean', 'std', 'median'],
+                'Survivors': ['mean', 'std', 'median']
+            }).reset_index()
+            
+            # Clean up the multi-index column names
+            summary.columns = [
+                'Week', 
+                'Avg Eliminations', 'Std Eliminations', 'Median Eliminations',
+                'Avg Survivors', 'Std Survivors', 'Median Survivors'
+            ]
+            
+            print("Monte Carlo simulation completed ✅")
+            return summary
+    
+        ###################################################################################################
+    
+        # --- OPTIONAL: Run Monte Carlo after predictions ---
+        monte_summary = run_monte_carlo_simulation(nfl_schedule_df, num_trials=100)
+    
+        # Merge back into main dataframe for charting
+        nfl_schedule_df = nfl_schedule_df.merge(
+            monte_summary[['Week', 'Avg Survivors', 'Avg Eliminations']],
+            on='Week',
+            how='left'
+        )
+    	# 1. Convert all 'object' columns to 'str' to handle mixed types
+        for col in nfl_schedule_df.select_dtypes(include=['object']).columns:
+            nfl_schedule_df[col] = nfl_schedule_df[col].astype(str).fillna('')
+    
+        # 2. Explicitly convert calculated columns to float
+        float_cols = [
+            'Home Team Expected Availability', 'Away Team Expected Availability',
+            'Home Pick %', 'Away Pick %', 'Expected Home Team Survivors', 
+            'Expected Away Team Survivors', 'Expected Home Team Eliminations', 
+            'Expected Away Team Eliminations', 'Total Remaining Entries at Start of Week'
+        ]
+        
+        for col in float_cols:
+            if col in nfl_schedule_df.columns:
+                # The errors='coerce' is a fallback, but simple .astype(float) is better
+                # since we expect only numbers or NaNs at this point.
+                nfl_schedule_df[col] = pd.to_numeric(nfl_schedule_df[col], errors='coerce') 
+    
+    #    if selected_contest == 'Circa':
+        nfl_schedule_df.to_csv("Circa_Predicted_pick_percent.csv", index=False)
+    #    elif selected_contest == 'Splash Sports':
+    #        nfl_schedule_df.to_csv("Splash_Predicted_pick_percent.csv", index=False)
+    #    else:
+    #        nfl_schedule_df.to_csv("DK_Predicted_pick_percent.csv", index=False)
+    	
+        return nfl_schedule_df
+
+    collect_schedule_travel_ranking_data_df = get_predicted_pick_percentages(collect_schedule_travel_ranking_data_df)
+
+        collect_schedule_travel_ranking_data_df["Away Team Fair Odds"] = (
+    	    collect_schedule_travel_ranking_data_df["Away Team Sportsbook Fair Odds"]
+    	    .fillna(collect_schedule_travel_ranking_data_df["Consensus Away Win Pct"])
+    	)
+    	
+        collect_schedule_travel_ranking_data_df["Home Team Fair Odds"] = (
+    	    collect_schedule_travel_ranking_data_df["Home Team Sportsbook Fair Odds"]
+    	    .fillna(collect_schedule_travel_ranking_data_df["Consensus Home Win Pct"])
+    	)
 
 
 if __name__ == "__main__":
