@@ -36,7 +36,7 @@ jobs:
       - name: Run Daily 3 EV Calculation Script
         run: |
           # Replace 'get_ev.py' with the actual name of your python file
-          python get_ev.py
+          python daily_3_calculate_ev.py
 
       - name: Commit and Push CSVs
         run: |
