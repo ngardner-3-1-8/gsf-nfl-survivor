@@ -5566,15 +5566,15 @@ def loop_through_simulations(date_str):
 
     collect_schedule_travel_ranking_data_df = get_predicted_pick_percentages(collect_schedule_travel_ranking_data_df)
 
-        collect_schedule_travel_ranking_data_df["Away Team Fair Odds"] = (
-    	    collect_schedule_travel_ranking_data_df["Away Team Sportsbook Fair Odds"]
-    	    .fillna(collect_schedule_travel_ranking_data_df["Consensus Away Win Pct"])
-    	)
-    	
-        collect_schedule_travel_ranking_data_df["Home Team Fair Odds"] = (
-    	    collect_schedule_travel_ranking_data_df["Home Team Sportsbook Fair Odds"]
-    	    .fillna(collect_schedule_travel_ranking_data_df["Consensus Home Win Pct"])
-    	)
+    collect_schedule_travel_ranking_data_df["Away Team Fair Odds"] = (
+        collect_schedule_travel_ranking_data_df["Away Team Sportsbook Fair Odds"]
+        .fillna(collect_schedule_travel_ranking_data_df["Consensus Away Win Pct"])
+    )
+    
+    collect_schedule_travel_ranking_data_df["Home Team Fair Odds"] = (
+        collect_schedule_travel_ranking_data_df["Home Team Sportsbook Fair Odds"]
+        .fillna(collect_schedule_travel_ranking_data_df["Consensus Home Win Pct"])
+    )
 
 
 if __name__ == "__main__":
