@@ -798,7 +798,7 @@ def loop_through_simulations(date_str):
                      df.loc[index, 'Home Team Next Location'] = team_next_location[home_team]
             else:
                 df.loc[index, 'Away Team Next Opponent'] = "Playoffs?"
-                df.loc[index, 'Away Team Next Opponent'] = "Playoffs?"
+                df.loc[index, 'Home Team Next Opponent'] = "Playoffs?"
                 df.loc[index, 'Away Team Next Location'] = "Playoffs?"
                 df.loc[index, 'Home Team Next Location'] = "Playoffs?"
     
@@ -1411,7 +1411,6 @@ def loop_through_simulations(date_str):
         # ---------------------------------------------------------
         # Usage in Streamlit
         # ---------------------------------------------------------
-        API_KEY = '34671f7aeaa8f4fbee2398163f2f45d3'# Replace with actual key
         
         if API_KEY != 'YOUR_API_KEY':
             # Fetch Data
@@ -1613,13 +1612,15 @@ def loop_through_simulations(date_str):
                 csv_df['Home Team Generic Sports Fan Implied Odds to Win']
             )
         
-            # Round all calculated odds to 4 decimal places
-            for col in ['Away Team Massey-Peabody Implied Odds to Win', 'Home Team Massey-Peabody Implied Odds to Win', 'Away Team Sportsbook Implied Odds to Win',
-                       'Home Team Sportsbook Implied Odds to Win', 'Away Team Generic Sports Fan Implied Odds to Win', 'Home Team Generic Sports Fan Implied Odds to Win',
-                       'Away Team Sportsbook Fair Odds', 'Home Team Sportsbook Fair Odds', 'Away Team Massey-Peabody Fair Odds', 'Home Team Massey-Peabody Fair Odds',
-                       'Away Team Generic Sports Fan Fair Odds', 'Home Team Generic Sports Fan Fair Odds']:
-                if not pd.isna(csv_df.loc[index, col]): # Only round if not NaN
-                    csv_df.loc[index, col] = round(csv_df.loc[index, col], 4)
+            cols_to_round = [
+                'Away Team Massey-Peabody Implied Odds to Win', 'Home Team Massey-Peabody Implied Odds to Win',
+                'Away Team Sportsbook Implied Odds to Win', 'Home Team Sportsbook Implied Odds to Win',
+                'Away Team Generic Sports Fan Implied Odds to Win', 'Home Team Generic Sports Fan Implied Odds to Win',
+                'Away Team Sportsbook Fair Odds', 'Home Team Sportsbook Fair Odds',
+                'Away Team Massey-Peabody Fair Odds', 'Home Team Massey-Peabody Fair Odds',
+                'Away Team Generic Sports Fan Fair Odds', 'Home Team Generic Sports Fan Fair Odds'
+            ]
+            csv_df[cols_to_round] = csv_df[cols_to_round].round(4)
         
             main_df_with_odds_df = csv_df
             return main_df_with_odds_df
