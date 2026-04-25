@@ -35,9 +35,7 @@ jobs:
 
       - name: Run Daily 2 Consolidate and Predict Upcoming Weekly Data
         env:
-          # If your script uses secrets, map them here. 
-          # You need to update your python script to read these via os.getenv('API_KEY')
-          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }} 
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
           python daily_2_consolidate_predict_weekly_data.py
 
