@@ -44,7 +44,7 @@ jobs:
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           
           # Stage the newly generated EV CSV files
-          git add circa-survivor-ev/*_team_ev_week_*.csv
+          git add circa-survivor-ev/*_team_ev_week_*.csv nfl-power-ratings/*.csv
           
           # Only commit and push if there are actual changes
           if git diff-index --quiet HEAD; then
