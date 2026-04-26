@@ -48,26 +48,71 @@ def root():
     return {"status": "ok", "message": "Circa Survivor API is running"}
 
 
+# Updated schedule endpoint
 @app.get("/api/schedule")
-def get_schedule(
-    week: int = Query(None, description="Filter to a specific week"),
-    year: int = Query(None, description="Season year"),
-):
+def get_schedule(week: int = Query(None)):
     try:
-        filepath = find_latest_file(RATINGS_DIR, "final_sim_results_*.csv")
-        df = pd.read_csv(filepath)
-        df = clean_df(df)
+        data = load_current_data(DATA_DIR)
+        df = clean_df(data["sim_df"])
 
         if week is not None:
             df = df[df["Week_x"] == week]
 
-        weeks = sorted(df["Week_x"].dropna().unique().tolist())
-
         return {
-            "source_file": os.path.basename(filepath),
-            "weeks": weeks,
+            "upcoming_week": data["upcoming_week"],
+            "target_year": data["target_year"],
+            "source_file": data["sim_file"],
+            "weeks": sorted(df["Week_x"].dropna().unique().tolist()),
             "total_games": len(df),
             "games": df.to_dict(orient="records"),
+        }
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Updated EV endpoint
+@app.get("/api/ev")
+def get_ev(
+    model: str = Query("consensus"),
+    week: int = Query(None),
+):
+    valid_models = ["consensus", "sportsbook", "mp", "gsf", "sim"]
+    if model not in valid_models:
+        raise HTTPException(status_code=400, detail=f"Invalid model. Choose from: {valid_models}")
+    try:
+        data = load_current_data(DATA_DIR, model=model)
+        df = clean_df(data["ev_df"])
+
+        if week is not None:
+            df = df[df["Week_x"] == week]
+
+        return {
+            "model": model,
+            "upcoming_week": data["upcoming_week"],
+            "target_year": data["target_year"],
+            "source_file": data["ev_file"],
+            "total_rows": len(df),
+            "games": df.to_dict(orient="records"),
+        }
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Updated weeks endpoint
+@app.get("/api/weeks")
+def get_available_weeks():
+    try:
+        data = load_current_data(DATA_DIR)
+        df = data["sim_df"]
+        weeks = sorted(df["Week_x"].dropna().unique().tolist())
+        return {
+            "upcoming_week": data["upcoming_week"],
+            "target_year": data["target_year"],
+            "weeks": weeks,
         }
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
