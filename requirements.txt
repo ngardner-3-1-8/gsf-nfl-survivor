@@ -22,3 +22,6 @@ tabulate
 scipy
 matplotlib
 seaborn
+fastapi
+uvicorn
+python-multipart
