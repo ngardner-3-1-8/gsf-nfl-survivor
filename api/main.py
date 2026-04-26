@@ -1,10 +1,10 @@
 import os
-import glob
 import pandas as pd
 import numpy as np
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from api.models import OptimizeRequest, OptimizeResponse
+from api.data_loader import load_current_data
 
 app = FastAPI(title="Circa Survivor API", version="1.0.0")
 
@@ -24,16 +24,6 @@ app.add_middleware(
 
 # Paths — Railway runs from the repo root
 DATA_DIR = os.environ.get("DATA_DIR", ".")
-RATINGS_DIR = os.path.join(DATA_DIR, "nfl-power-ratings")
-EV_DIR = os.path.join(DATA_DIR, "circa-survivor-ev")
-
-
-def find_latest_file(directory: str, pattern: str) -> str:
-    """Find the most recently modified file matching a pattern."""
-    files = glob.glob(os.path.join(directory, pattern))
-    if not files:
-        raise FileNotFoundError(f"No files matching '{pattern}' in {directory}")
-    return max(files, key=os.path.getmtime)
 
 
 def clean_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -118,6 +108,22 @@ def get_available_weeks():
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/optimize")
+def optimize(request: OptimizeRequest):
+    """
+    OR-Tools optimizer — stub for now.
+    Returns a placeholder so the frontend can be built against this
+    contract before the solver is written in Phase 2.
+    """
+    return OptimizeResponse(
+        ev_solutions=[],
+        ranking_solutions=[],
+        total_ev=0.0,
+        total_win_pct=0.0,
+        feasible=False,
+        message="Optimizer not yet implemented — coming in Phase 2."
+    )
 
 # ---------------------------------------------------------------
 # Railway startup — reads PORT from environment (Railway sets this)
