@@ -121,7 +121,7 @@ def loop_through_ev(date_str):
     
     
     def calculate_ev(df, config: dict, use_cache=False):
-        start_w = 'upcoming_week'
+        start_w = upcoming_week
         end_w = 20
     
         # 1. Enforce team abbreviation standardization
@@ -164,73 +164,56 @@ def loop_through_ev(date_str):
     
         # Update 1: Add the dynamic columns to the arguments
         def calculate_all_scenarios(week_df, away_prob_col, home_prob_col):
-            num_games = len(week_df)
-            teams = week_df['Home Team'].tolist() + week_df['Away Team'].tolist()
-            num_teams = len(teams)
-    
-            all_outcomes_matrix = np.array(list(itertools.product(['Home Win', 'Away Win'], repeat=num_games)))
-            num_scenarios = all_outcomes_matrix.shape[0]
-    
-            ev_df = pd.DataFrame(index=range(num_scenarios), columns=teams)
-            scenario_weights = np.zeros(num_scenarios)
-    
-            # Vectorized calculations within the scenario loop
-            for i in range(num_scenarios):
-                outcome = all_outcomes_matrix[i]
-                winning_teams = np.where(outcome == 'Home Win', week_df['Home Team'].values, week_df['Away Team'].values)
-                winning_team_indices = np.isin(teams, winning_teams)
-    
-                # Update 2: Replace the old if/else logic with the dynamic columns passed from the loop
-                winning_probs = np.where(
-                    outcome == 'Home Win', 
-                    week_df[home_prob_col].values, 
-                    week_df[away_prob_col].values
-                )
-    
-                scenario_weights[i] = np.prod(winning_probs)
-    
-                # Assuming 'Home Pick %' and 'Away Pick %' are static across scenarios
-                pick_percentages = np.where(outcome == 'Home Win', week_df['Home Pick %'].values, week_df['Away Pick %'].values)
-                surviving_entries = np.sum(pick_percentages)
-    
-                ev_values = np.zeros(num_teams)
-                ev_values[winning_team_indices] = 1 / surviving_entries if surviving_entries > 0 else 0
-                ev_df.iloc[i] = ev_values
-    
-            weighted_avg_ev = (ev_df * scenario_weights[:, np.newaxis]).sum(axis=0) / scenario_weights.sum()
-            return weighted_avg_ev, all_outcomes_matrix, scenario_weights
-        def get_pick_percentage(week_df, team_name):
-            # Check if the team is a home team in any game this week
-            if team_name in week_df['Home Team'].values:
-                return week_df[week_df['Home Team'] == team_name]['Home Pick %'].iloc[0]
-            # Check if the team is an away team
-            elif team_name in week_df['Away Team'].values:
-                return week_df[week_df['Away Team'] == team_name]['Away Pick %'].iloc[0]
-            # Return 0 if the team is not found (this shouldn't happen with correct data)
+            """
+            Calculates EV for each team using the direct formula instead of
+            enumerating all 2^N outcome combinations.
+            
+            EV(team) = P(team wins) / E[total survivors this week]
+            
+            E[survivors] = sum of (each team's pick% * their win probability)
+            This is the expected fraction of the pool that advances.
+            """
+            home_probs = week_df[home_prob_col].values
+            away_probs = week_df[away_prob_col].values
+            home_picks = week_df['Home Pick %'].values
+            away_picks = week_df['Away Pick %'].values
+        
+            # Expected total survivor share (sum of pick% * win_prob across all teams)
+            expected_survivors = np.sum(home_probs * home_picks) + np.sum(away_probs * away_picks)
+        
+            ev_results = {}
+            for i, row in week_df.iterrows():
+                if expected_survivors > 0:
+                    ev_results[row['Home Team']] = row[home_prob_col] / expected_survivors
+                    ev_results[row['Away Team']] = row[away_prob_col] / expected_survivors
+                else:
+                    ev_results[row['Home Team']] = 0
+                    ev_results[row['Away Team']] = 0
+        
+            # Return signature matches original to avoid changing the caller
+            return ev_results, None, None
     
         all_weeks_ev = {} #Store the EV values for each week
     
-        for scenario_name, config in probability_scenarios.items():
-            away_prob_col = config["away_col"]
-            home_prob_col = config["home_col"]
-            prefix = config["prefix"]
+        for scenario_name, scenario_config in probability_scenarios.items():
+            away_prob_col = scenario_config["away_col"]
+            home_prob_col = scenario_config["home_col"]
+            prefix = scenario_config["prefix"]
         
             # Create a fresh copy of the future schedule for this specific scenario
             scenario_df = df_future.copy()
-            all_weeks_ev = {} 
             
             # Optional: add scenario name to tqdm for better console tracking
-            for week in tqdm(range(upcoming_week, end_w), desc=f"Processing {prefix.upper()} EV", leave=False):
-                week_df = scenario_df[scenario_df['Week_x'] == week].copy()
-                
-                # Pass the dynamic probability columns to your EV function
-                weighted_avg_ev, all_outcomes, scenario_weights = calculate_all_scenarios(
-                    week_df, 
-                    away_prob_col=away_prob_col, 
-                    home_prob_col=home_prob_col
-                )
+        ev_results, _, _ = calculate_all_scenarios(
+            week_df,
+            away_prob_col=away_prob_col,
+            home_prob_col=home_prob_col
+        )
         
-                all_weeks_ev[week] = weighted_avg_ev
+        for team in week_df['Home Team'].unique():
+            scenario_df.loc[(scenario_df['Week_x'] == week) & (scenario_df['Home Team'] == team), 'Home Team EV'] = ev_results.get(team, 0)
+        for team in week_df['Away Team'].unique():
+            scenario_df.loc[(scenario_df['Week_x'] == week) & (scenario_df['Away Team'] == team), 'Away Team EV'] = ev_results.get(team, 0)
         
                 # Assign EV values back to the scenario dataframe
                 for team in week_df['Home Team'].unique():
