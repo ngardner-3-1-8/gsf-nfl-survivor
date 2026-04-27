@@ -25,12 +25,24 @@ class SchedulingConstraints(BaseModel):
     min_away_spread: float = 3.0           # only active if avoid_away_close=True
 
     # Bayesian / ranking consistency constraint
-    bayesian_constraint: Literal[
-        "none",
-        "preseason_and_current_and_travel",
-        "current_and_travel",
-        "preseason_and_current"
-    ] = "none"
+    # ── Massey-Peabody Bayesian constraints ──
+    mp_bayesian_all_metrics: bool = False          # Same Winner Across All Metrics
+    mp_bayesian_preseason_and_current: bool = False # Same Current and Preseason Adjusted Winner
+    mp_bayesian_current_and_adjusted: bool = False  # Same Current and Adjusted Current Winner
+    
+    # ── Generic Sports Fan Bayesian constraints ──
+    gsf_bayesian_adjusted: bool = False            # Same Adjusted Winner
+    gsf_bayesian_preseason_and_current: bool = False # Current and Preseason Adjusted Winner
+    gsf_bayesian_current_and_adjusted: bool = False  # Same Current and Adjusted Current Winner
+    
+    # ── Sportsbook / Sim / Consensus cross-model constraints ──
+    sportsbook_bayesian_preseason_and_current: bool = False
+    sim_bayesian_preseason_and_current: bool = False
+    consensus_bayesian_preseason_and_current: bool = False
+    
+    # Require ALL selected Bayesian constraints to be satisfied (True)
+    # vs. ANY one of them (False)
+    bayesian_require_all: bool = False
 
 
 # ─────────────────────────────────────────────
