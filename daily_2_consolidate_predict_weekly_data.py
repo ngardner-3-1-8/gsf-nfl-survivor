@@ -4149,10 +4149,10 @@ def loop_through_simulations(date_str):
                     return f"+{int(round(odds))}"
             
             # 1. Apply the conversion to create the new columns
-            # Note: Using 'Consenus' as requested in your prompt
+            # Note: Using 'Consensus' as requested in your prompt
             
-            final_combined_df['Consenus Home Team Odds'] = final_combined_df['Consensus Home Win Pct'].apply(prob_to_american)
-            final_combined_df['Consenus Away Team Odds'] = final_combined_df['Consensus Away Win Pct'].apply(prob_to_american)
+            final_combined_df['Consensus Home Team Odds'] = final_combined_df['Consensus Home Win Pct'].apply(prob_to_american)
+            final_combined_df['Consensus Away Team Odds'] = final_combined_df['Consensus Away Win Pct'].apply(prob_to_american)
             # ============================================================
             # 🎲 BETTING EDGE CALCULATIONS (Current Week Only)
             # ============================================================
@@ -5476,8 +5476,8 @@ def loop_through_simulations(date_str):
             'Home Team',
             'Away Team Sportsbook Fair Odds',
             'Home Team Sportsbook Fair Odds',
-            'Consenus Away Win Pct', # Kept your spelling to match your CSV
-            'Consenus Home Win Pct',
+            'Consensus Away Win Pct', # Kept your spelling to match your CSV
+            'Consensus Home Win Pct',
             'Sim_Away_Win_Pct',      # Fixed duplicate
             'Sim_Home_Win_Pct'
         ]
@@ -5500,7 +5500,7 @@ def loop_through_simulations(date_str):
     
         # Note: Corrected to check Home >= .5 for Home Team
         preseason_df['Preseason Consensus Favorite'] = np.where(
-            preseason_df['Consenus Home Win Pct'] >= 0.5,
+            preseason_df['Consensus Home Win Pct'] >= 0.5,
             preseason_df['Home Team'],
             preseason_df['Away Team']
         )
@@ -5509,8 +5509,8 @@ def loop_through_simulations(date_str):
         rename_dict = {
             'Away Team Sportsbook Fair Odds': 'Preseason Away Team Sportsbook Fair Odds',
             'Home Team Sportsbook Fair Odds': 'Preseason Home Team Sportsbook Fair Odds',
-            'Consenus Away Win Pct': 'Preseason Consenus Away Win Pct',
-            'Consenus Home Win Pct': 'Preseason Consenus Home Win Pct',
+            'Consensus Away Win Pct': 'Preseason Consensus Away Win Pct',
+            'Consensus Home Win Pct': 'Preseason Consensus Home Win Pct',
             'Sim_Away_Win_Pct': 'Preseason Sim_Away_Win_Pct',
             'Sim_Home_Win_Pct': 'Preseason Sim_Home_Win_Pct'
         }
@@ -5532,7 +5532,7 @@ def loop_through_simulations(date_str):
     
         # Corrected logic: If Away Win Pct >= 0.5, Away is favorite
         collect_schedule_travel_ranking_data_df['Consensus Favorite'] = np.where(
-            collect_schedule_travel_ranking_data_df['Consenus Away Win Pct'] >= 0.5,
+            collect_schedule_travel_ranking_data_df['Consensus Away Win Pct'] >= 0.5,
             collect_schedule_travel_ranking_data_df['Away Team'], 
             collect_schedule_travel_ranking_data_df['Home Team']
         )
