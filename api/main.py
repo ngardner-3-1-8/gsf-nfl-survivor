@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from api.models import OptimizeRequest, OptimizeResponse
 from api.data_loader import load_current_data
+from api.optimizer import run_optimizer
 
 app = FastAPI(title="Circa Survivor API", version="1.0.0")
 
@@ -38,7 +39,6 @@ def root():
     return {"status": "ok", "message": "Circa Survivor API is running"}
 
 
-# Updated schedule endpoint
 @app.get("/api/schedule")
 def get_schedule(week: int = Query(None)):
     try:
@@ -62,7 +62,6 @@ def get_schedule(week: int = Query(None)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Updated EV endpoint
 @app.get("/api/ev")
 def get_ev(
     model: str = Query("consensus"),
@@ -70,7 +69,10 @@ def get_ev(
 ):
     valid_models = ["consensus", "sportsbook", "mp", "gsf", "sim"]
     if model not in valid_models:
-        raise HTTPException(status_code=400, detail=f"Invalid model. Choose from: {valid_models}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid model. Choose from: {valid_models}"
+        )
     try:
         data = load_current_data(DATA_DIR, model=model)
         df = clean_df(data["ev_df"])
@@ -92,7 +94,6 @@ def get_ev(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Updated weeks endpoint
 @app.get("/api/weeks")
 def get_available_weeks():
     try:
@@ -109,21 +110,23 @@ def get_available_weeks():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/api/optimize")
 def optimize(request: OptimizeRequest):
     """
-    OR-Tools optimizer — stub for now.
-    Returns a placeholder so the frontend can be built against this
-    contract before the solver is written in Phase 2.
+    Runs the OR-Tools SCIP optimizer with user-defined constraints.
+    Returns up to N EV-optimized and N win%-optimized solutions.
     """
-    return OptimizeResponse(
-        ev_solutions=[],
-        ranking_solutions=[],
-        total_ev=0.0,
-        total_win_pct=0.0,
-        feasible=False,
-        message="Optimizer not yet implemented — coming in Phase 2."
-    )
+    try:
+        data = load_current_data(DATA_DIR)
+        sim_df = data["sim_df"]
+        result = run_optimizer(sim_df, request)
+        return result
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ---------------------------------------------------------------
 # Railway startup — reads PORT from environment (Railway sets this)
