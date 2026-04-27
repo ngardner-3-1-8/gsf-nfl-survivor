@@ -5427,7 +5427,7 @@ def loop_through_simulations(date_str):
     
         # --- OPTIONAL: Run Monte Carlo after predictions ---
         monte_summary = run_monte_carlo_simulation(nfl_schedule_df, num_trials=100)
-    
+        
         # Merge back into main dataframe for charting
         nfl_schedule_df = nfl_schedule_df.merge(
             monte_summary[['Week', 'Avg Survivors', 'Avg Eliminations']],
@@ -5462,6 +5462,109 @@ def loop_through_simulations(date_str):
         return nfl_schedule_df
 
     collect_schedule_travel_ranking_data_df = get_predicted_pick_percentages(final_combined_df)
+
+
+    # 1. Load the preseason file safely
+    file_path = f"nfl-power-ratings/final_sim_results_with_variance_week_1_{target_year}.csv"
+    
+    if os.path.exists(file_path):
+        preseason_df = pd.read_csv(file_path)
+    
+        # 2. Define the exact columns you want to keep and calculate off of
+        columns_to_keep = [
+            'Away Team',
+            'Home Team',
+            'Away Team Sportsbook Fair Odds',
+            'Home Team Sportsbook Fair Odds',
+            'Consenus Away Win Pct', # Kept your spelling to match your CSV
+            'Consenus Home Win Pct',
+            'Sim_Away_Win_Pct',      # Fixed duplicate
+            'Sim_Home_Win_Pct'
+        ]
+        
+        # Filter columns down early to save memory
+        preseason_df = preseason_df[columns_to_keep].copy()
+    
+        # 3. Calculate Preseason Favorites using vectorized np.where
+        preseason_df['Preseason Sportsbook Favorite'] = np.where(
+            preseason_df['Home Team Sportsbook Fair Odds'] >= 0.5,
+            preseason_df['Home Team'],
+            preseason_df['Away Team']
+        )
+    
+        preseason_df['Preseason Sim Favorite'] = np.where(
+            preseason_df['Sim_Home_Win_Pct'] >= 0.5,
+            preseason_df['Home Team'],
+            preseason_df['Away Team']
+        )
+    
+        # Note: Corrected to check Home >= .5 for Home Team
+        preseason_df['Preseason Consensus Favorite'] = np.where(
+            preseason_df['Consenus Home Win Pct'] >= 0.5,
+            preseason_df['Home Team'],
+            preseason_df['Away Team']
+        )
+    
+        # 4. Rename columns to include the "Preseason" prefix (except the merge keys)
+        rename_dict = {
+            'Away Team Sportsbook Fair Odds': 'Preseason Away Team Sportsbook Fair Odds',
+            'Home Team Sportsbook Fair Odds': 'Preseason Home Team Sportsbook Fair Odds',
+            'Consenus Away Win Pct': 'Preseason Consenus Away Win Pct',
+            'Consenus Home Win Pct': 'Preseason Consenus Home Win Pct',
+            'Sim_Away_Win_Pct': 'Preseason Sim_Away_Win_Pct',
+            'Sim_Home_Win_Pct': 'Preseason Sim_Home_Win_Pct'
+        }
+        preseason_df = preseason_df.rename(columns=rename_dict)
+    
+        # 5. Merge with your current weekly dataframe
+        # Merging on specific matchups (Away Team & Home Team)
+        collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data_df.merge(
+            preseason_df, on=['Away Team', 'Home Team'], how='left'
+        )
+    
+        # 6. Calculate Current Favorites (Assuming you have a current Sportsbook favorite already, 
+        # but calculating the other two here based on your pseudo-code)
+        collect_schedule_travel_ranking_data_df['Sim Favorite'] = np.where(
+            collect_schedule_travel_ranking_data_df['Sim_Home_Win_Pct'] >= 0.5,
+            collect_schedule_travel_ranking_data_df['Home Team'],
+            collect_schedule_travel_ranking_data_df['Away Team']
+        )
+    
+        # Corrected logic: If Away Win Pct >= 0.5, Away is favorite
+        collect_schedule_travel_ranking_data_df['Consensus Favorite'] = np.where(
+            collect_schedule_travel_ranking_data_df['Consenus Away Win Pct'] >= 0.5,
+            collect_schedule_travel_ranking_data_df['Away Team'], 
+            collect_schedule_travel_ranking_data_df['Home Team']
+        )
+        
+        # Ensure current Sportsbook Favorite exists for the comparison
+        if 'Sportsbook Favorite' not in collect_schedule_travel_ranking_data_df.columns:
+             collect_schedule_travel_ranking_data_df['Sportsbook Favorite'] = np.where(
+                collect_schedule_travel_ranking_data_df['Home Team Sportsbook Fair Odds'] >= 0.5,
+                collect_schedule_travel_ranking_data_df['Home Team'],
+                collect_schedule_travel_ranking_data_df['Away Team']
+            )
+    
+        # 7. Add Bayesian Same/Different Columns
+        collect_schedule_travel_ranking_data_df['Sportsbook Bayesian Same Current and Preseason Adjusted Winner'] = np.where(
+            collect_schedule_travel_ranking_data_df['Preseason Sportsbook Favorite'] == collect_schedule_travel_ranking_data_df['Sportsbook Favorite'],
+            'Same',
+            'Different'
+        )
+    
+        # Using the columns you requested for Sim and Consensus comparisons
+        collect_schedule_travel_ranking_data_df['Sim Bayesian Same Current and Preseason Adjusted Winner'] = np.where(
+            collect_schedule_travel_ranking_data_df['Preseason Sim Favorite'] == collect_schedule_travel_ranking_data_df['Sim Favorite'], # Adjusted to compare Sim to Sim
+            'Same',
+            'Different'
+        )
+    
+        collect_schedule_travel_ranking_data_df['Consensus Bayesian Same Current and Preseason Adjusted Winner'] = np.where(
+            collect_schedule_travel_ranking_data_df['Preseason Consensus Favorite'] == collect_schedule_travel_ranking_data_df['Consensus Favorite'], # Adjusted to compare Consensus to Consensus
+            'Same',
+            'Different'
+        )
+    
 
     collect_schedule_travel_ranking_data_df["Away Team Fair Odds"] = (
         collect_schedule_travel_ranking_data_df["Away Team Sportsbook Fair Odds"]
