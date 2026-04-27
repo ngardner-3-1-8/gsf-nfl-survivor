@@ -183,59 +183,40 @@ def loop_through_ev(date_str):
     
             return ev_results
     
-        all_weeks_ev = {} #Store the EV values for each week
+        for scenario_name, scenario_config in probability_scenarios.items():
+            away_prob_col = scenario_config["away_col"]
+            home_prob_col = scenario_config["home_col"]
+            prefix = scenario_config["prefix"]
     
-        # NEW: Initialize the new columns in the master df to avoid SettingWithCopyWarnings
-        for config in probability_scenarios.values():
-            prefix = config["prefix"]
-            df[f"{prefix}_Home_Team_EV"] = 0.0
-            df[f"{prefix}_Away_Team_EV"] = 0.0
-
-        for scenario_name, config in probability_scenarios.items():
-            away_prob_col = config["away_col"]
-            home_prob_col = config["home_col"]
-            prefix = config["prefix"]
-        
-            # Create a fresh copy of the future schedule for this specific scenario
             scenario_df = df_future.copy()
-            
-            # Optional: add scenario name to tqdm for better console tracking
-            for week in tqdm(range(upcoming_week, end_w), desc=f"Processing {prefix.upper()} EV", leave=False):
+    
+            for week in tqdm(range(start_w, end_w), desc=f"Processing {prefix.upper()} EV", leave=False):
                 week_df = scenario_df[scenario_df['Week_x'] == week].copy()
-                
-                # Pass the dynamic probability columns to your EV function
-                weighted_avg_ev, all_outcomes, scenario_weights = calculate_all_scenarios(
-                    week_df, 
-                    away_prob_col=away_prob_col, 
+    
+                if week_df.empty:
+                    continue
+    
+                ev_results = calculate_all_scenarios(
+                    week_df,
+                    away_prob_col=away_prob_col,
                     home_prob_col=home_prob_col
                 )
-        
-                all_weeks_ev[week] = weighted_avg_ev
-        
-                # Assign EV values back to the individual scenario dataframe AND the master dataframe
+    
                 for team in week_df['Home Team'].unique():
-                    ev_val = weighted_avg_ev.get(team, 0)
-                    # 1. Write to the individual scenario DF
-                    scenario_df.loc[(scenario_df['Week_x'] == week) & (scenario_df['Home Team'] == team), 'Home Team EV'] = ev_val
-                    # 2. Write to the Master DF with a prefixed column name
-                    df.loc[(df['Week_x'] == week) & (df['Home Team'] == team), f"{prefix}_Home_Team_EV"] = ev_val
-                    
+                    scenario_df.loc[
+                        (scenario_df['Week_x'] == week) & (scenario_df['Home Team'] == team),
+                        'Home Team EV'
+                    ] = ev_results.get(team, 0)
+    
                 for team in week_df['Away Team'].unique():
-                    ev_val = weighted_avg_ev.get(team, 0)
-                    # 1. Write to the individual scenario DF
-                    scenario_df.loc[(scenario_df['Week_x'] == week) & (scenario_df['Away Team'] == team), 'Away Team EV'] = ev_val
-                    # 2. Write to the Master DF with a prefixed column name
-                    df.loc[(df['Week_x'] == week) & (df['Away Team'] == team), f"{prefix}_Away_Team_EV"] = ev_val
-        
-            # Export the individual scenario CSV
+                    scenario_df.loc[
+                        (scenario_df['Week_x'] == week) & (scenario_df['Away Team'] == team),
+                        'Away Team EV'
+                    ] = ev_results.get(team, 0)
+    
             output_filename = f"circa-survivor-ev/{prefix}_team_ev_week_{upcoming_week}_{target_year}.csv"
             scenario_df.to_csv(output_filename, index=False)
             print(f"Successfully exported: {output_filename}")
-
-        # NEW: Export the consolidated master dataframe containing all new EV columns
-        master_output_filename = f"nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv"
-        df.to_csv(master_output_filename, index=False)
-        print(f"Successfully exported Master Consolidation: {master_output_filename}")
     
     calculate_ev(df, config={})
 if __name__ == "__main__":
