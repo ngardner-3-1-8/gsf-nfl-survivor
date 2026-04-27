@@ -18,7 +18,7 @@ from concurrent.futures import ProcessPoolExecutor
 import itertools
 import re
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options # Make sure this is present!
+from selenium.webdriver.chrome.options import Options 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -81,7 +81,7 @@ def loop_through_ev(date_str):
         completed_weeks = week_end_dates[week_end_dates <= today]
         if not completed_weeks.empty:
             # The "standard_nfl_week" is now the last FULLY completed week
-            standard_nfl_week = int(completed_weeks.index.max())           
+            standard_nfl_week = int(completed_weeks.index.max())            
             # 3. Your starting point for simulations is the next week (the one in progress or upcoming)
             starting_week = standard_nfl_week + 1
             upcoming_week = starting_week
@@ -114,7 +114,8 @@ def loop_through_ev(date_str):
     NUM_WEEKS_TO_KEEP = starting_week - 1
     current_year_plus_1 = current_year + 1 #current_year + 1
     
-    INPUT_FILE = pd.read_csv(f"nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv")
+    main_file_path = f"nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv"
+    INPUT_FILE = pd.read_csv(main_file_path)
     
     df = INPUT_FILE
     
@@ -123,14 +124,13 @@ def loop_through_ev(date_str):
     def calculate_ev(df, config: dict, use_cache=False):
         start_w = upcoming_week
     
-        # 1. Enforce team abbreviation standardization
+        # 1. Enforce team abbreviation standardization directly on main df
         replace_dict = {'JAC': 'JAX', 'LAR': 'LA'}
         df['Away Team'] = df['Away Team'].replace(replace_dict)
         df['Home Team'] = df['Home Team'].replace(replace_dict)
     
-        # 2. Filter for upcoming weeks
-        df_future = df[df['Week_x'] >= upcoming_week].copy()
-        end_w = int(df_future['Week_x'].max()) + 1
+        # Find ending week bounds based on the full file
+        end_w = int(df['Week_x'].max()) + 1
     
         probability_scenarios = {
             "sportsbook": {
@@ -187,11 +187,18 @@ def loop_through_ev(date_str):
             away_prob_col = scenario_config["away_col"]
             home_prob_col = scenario_config["home_col"]
             prefix = scenario_config["prefix"]
-    
-            scenario_df = df_future.copy()
+            
+            # Create dynamically named columns for the scenario on the main DataFrame
+            home_ev_col = f"{prefix}_Home_EV"
+            away_ev_col = f"{prefix}_Away_EV"
+            
+            # Initialize with default value for past weeks or empty rows
+            df[home_ev_col] = 0.0
+            df[away_ev_col] = 0.0
     
             for week in tqdm(range(start_w, end_w), desc=f"Processing {prefix.upper()} EV", leave=False):
-                week_df = scenario_df[scenario_df['Week_x'] == week].copy()
+                # Filter rows for the current week being processed
+                week_df = df[df['Week_x'] == week].copy()
     
                 if week_df.empty:
                     continue
@@ -202,23 +209,25 @@ def loop_through_ev(date_str):
                     home_prob_col=home_prob_col
                 )
     
+                # Write results back to the MAIN df
                 for team in week_df['Home Team'].unique():
-                    scenario_df.loc[
-                        (scenario_df['Week_x'] == week) & (scenario_df['Home Team'] == team),
-                        'Home Team EV'
+                    df.loc[
+                        (df['Week_x'] == week) & (df['Home Team'] == team),
+                        home_ev_col
                     ] = ev_results.get(team, 0)
     
                 for team in week_df['Away Team'].unique():
-                    scenario_df.loc[
-                        (scenario_df['Week_x'] == week) & (scenario_df['Away Team'] == team),
-                        'Away Team EV'
+                    df.loc[
+                        (df['Week_x'] == week) & (df['Away Team'] == team),
+                        away_ev_col
                     ] = ev_results.get(team, 0)
     
-            output_filename = f"circa-survivor-ev/{prefix}_team_ev_week_{upcoming_week}_{target_year}.csv"
-            scenario_df.to_csv(output_filename, index=False)
-            print(f"Successfully exported: {output_filename}")
+        # Save the updated main dataframe overwriting the original input file
+        df.to_csv(main_file_path, index=False)
+        print(f"\nSuccessfully appended all EV columns and saved to: {main_file_path}")
     
     calculate_ev(df, config={})
+
 if __name__ == "__main__":
     formatted_date = datetime.now().strftime("%m/%d/%Y")
     week_starting_dates = [
