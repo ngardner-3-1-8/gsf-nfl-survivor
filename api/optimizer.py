@@ -345,21 +345,55 @@ def apply_constraints(
             if travel < -850:
                 solver.Add(picks[i] == 0)
 
-        # ── Bayesian constraint ──
-        bc = s.bayesian_constraint
-        if bc != "none":
-            same_all = str(row.get("Same Winner?", "No"))
-            same_adj = str(row.get("Same Adjusted Preseason Winner?", "No"))
-            same_current = str(row.get("Same Current and Adjusted Current Winner?", "No"))
-
-            if bc == "preseason_and_current_and_travel":
-                if same_all != "Yes":
+        # ── Bayesian constraints ──
+        # Maps each toggle → the CSV column it checks
+        BAYESIAN_CHECKS = [
+            (s.mp_bayesian_all_metrics,
+                "Massey-Peabody Bayesian Same Winner Across All Metrics"),
+            (s.mp_bayesian_preseason_and_current,
+                "Massey-Peabody Bayesian Same Current and Preseason Adjusted Winner"),
+            (s.mp_bayesian_current_and_adjusted,
+                "Massey-Peabody Bayesian Same Current and Adjusted Current Winner"),
+            (s.gsf_bayesian_adjusted,
+                "Generic Sports Fan Bayesian Same Adjusted Winner"),
+            (s.gsf_bayesian_preseason_and_current,
+                "Generic Sports Fan Bayesian Current and Preseason Adjusted Winner"),
+            (s.gsf_bayesian_current_and_adjusted,
+                "Generic Sports Fan Bayesian Same Current and Adjusted Current Winner"),
+            (s.sportsbook_bayesian_preseason_and_current,
+                "Sportsbook Same Current and Preseason Adjusted Winner"),
+            (s.sim_bayesian_preseason_and_current,
+                "Sim Same Current and Preseason Adjusted Winner"),
+            (s.consensus_bayesian_preseason_and_current,
+                "Consensus Same Current and Preseason Adjusted Winner"),
+        ]
+        
+        # Only evaluate constraints the user has actually toggled on
+        active_checks = [(enabled, col) for enabled, col in BAYESIAN_CHECKS if enabled]
+        
+        if active_checks:
+            results = []
+            for enabled, col in active_checks:
+                # Gracefully handle missing or empty columns
+                if col not in df.columns:
+                    # Column doesn't exist — treat as not satisfied
+                    results.append(False)
+                    continue
+                val = row.get(col, None)
+                if val is None or (isinstance(val, float) and np.isnan(val)):
+                    # Empty value — treat as not satisfied
+                    results.append(False)
+                    continue
+                # Accept True, 1, "True", "Yes", "1" as passing
+                results.append(str(val).strip() in ("True", "Yes", "1", "true", "yes"))
+        
+            if s.bayesian_require_all:
+                # ALL active constraints must pass
+                if not all(results):
                     solver.Add(picks[i] == 0)
-            elif bc == "current_and_travel":
-                if same_current != "Yes":
-                    solver.Add(picks[i] == 0)
-            elif bc == "preseason_and_current":
-                if same_adj != "Yes":
+            else:
+                # AT LEAST ONE active constraint must pass
+                if not any(results):
                     solver.Add(picks[i] == 0)
 
         # ── Prohibited weekly picks ──
