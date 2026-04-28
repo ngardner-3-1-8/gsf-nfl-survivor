@@ -323,22 +323,18 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek }) {
       <SectionHeader title="Team Constraints" />
       <div className="flex flex-col gap-1.5">
         <label className="text-xs text-gray-400 font-medium uppercase tracking-wide">
-          Prohibited teams
+          Prohibited teams (season-long)
         </label>
         <textarea
           value={prohibitedTeams}
           onChange={e => setProhibitedTeams(e.target.value)}
           placeholder="Kansas City Chiefs, Cleveland Browns..."
           rows={3}
-          className="
-            bg-gray-900 border border-gray-700 text-white text-sm rounded-lg
-            px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600
-            focus:border-transparent resize-none placeholder-gray-600
-          "
+          className="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent resize-none placeholder-gray-600"
         />
         <p className="text-xs text-gray-600">Comma-separated team names</p>
       </div>
-
+      
       <div className="flex flex-col gap-1.5 mt-3">
         <label className="text-xs text-gray-400 font-medium uppercase tracking-wide">
           Required picks
@@ -348,13 +344,23 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek }) {
           onChange={e => setRequiredPicks(e.target.value)}
           placeholder={"Kansas City Chiefs: 3\nBuffalo Bills: 7"}
           rows={3}
-          className="
-            bg-gray-900 border border-gray-700 text-white text-sm rounded-lg
-            px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600
-            focus:border-transparent resize-none placeholder-gray-600
-          "
+          className="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent resize-none placeholder-gray-600"
         />
         <p className="text-xs text-gray-600">One per line: Team Name: week number</p>
+      </div>
+      
+      <div className="flex flex-col gap-1.5 mt-3">
+        <label className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+          Avoid team on specific week
+        </label>
+        <textarea
+          value={prohibitedWeeklyPicks}
+          onChange={e => setProhibitedWeeklyPicks(e.target.value)}
+          placeholder={"Kansas City Chiefs: 3\nBuffalo Bills: 7, 12"}
+          rows={3}
+          className="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent resize-none placeholder-gray-600"
+        />
+        <p className="text-xs text-gray-600">One per line: Team Name: week, week...</p>
       </div>
 
       {/* Run button */}
