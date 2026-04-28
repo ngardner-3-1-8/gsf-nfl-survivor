@@ -121,6 +121,11 @@ class PickResult(BaseModel):
     home_or_away: str
     opponent: str
     spread: Optional[float] = None
+    temperature: Optional[float] = None
+    precipitation: Optional[float] = None
+    wind: Optional[float] = None
+    is_thanksgiving: bool = False
+    is_christmas: bool = False
 
 class OptimizeResponse(BaseModel):
     # EV-optimized solutions
