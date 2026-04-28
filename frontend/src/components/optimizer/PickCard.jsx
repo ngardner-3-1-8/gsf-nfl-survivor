@@ -20,8 +20,8 @@ function weatherEmoji(temp, precip, wind) {
   if (t <= 32)            return '🥶⛅'    // Freezing
   if (t <= 50 && w > 15) return '🧥💨'    // Cold + windy
   if (t <= 50)            return '🧥'      // Cold
-  if (t <= 70 && w > 20) return '⛅💨'    // Mild + very windy
-  if (t <= 70 && w > 15) return '☀️💨'    // Warm + breezy
+  if (t <= 70 && w > 15) return '⛅💨'    // Mild + very windy
+  if (t >= 70 && w > 15) return '☀️💨'    // Warm + breezy
   if (t >= 90)            return '🥵'      // Very hot — must come before ≥ 65
   if (t >= 65)            return '☀️'      // Warm/sunny
   if (w > 15)             return '💨'      // Mild but windy
