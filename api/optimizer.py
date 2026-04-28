@@ -266,32 +266,32 @@ def apply_constraints(
             }
         
             def is_favored_by(model: str) -> bool:
-                """Returns True if this row's team is favored according to the given model."""
                 if model == "sportsbook":
                     return team == str(row.get("Favorite", ""))
                 elif model == "mp":
-                    winner_col = "Massey-Peabody Adjusted Current Winner"
-                    if winner_col not in df.columns:
-                        return True  # column missing — don't penalise
-                    return team == str(row.get(winner_col, ""))
-                elif model == "gsf":
-                    winner_col = "Generic Sports Fan Adjusted Current Winner"
-                    if winner_col not in df.columns:
+                    col = "Massey-Peabody Current Winner"
+                    if col not in df.columns:
                         return True
-                    return team == str(row.get(winner_col, ""))
+                    return team == str(row.get(col, ""))
+                elif model == "gsf":
+                    col = "Generic Sports Fan Current Winner"
+                    if col not in df.columns:
+                        return True
+                    return team == str(row.get(col, ""))
                 elif model == "sim":
-                    if is_away:
-                        val = float(row.get("Sim_Away_Win_Pct", 0.5) or 0.5)
-                    else:
-                        val = float(row.get("Sim_Home_Win_Pct", 0.5) or 0.5)
-                    return val > 0.5
+                    col = "Sim Favorite"   # col 292 — now exists directly
+                    if col not in df.columns:
+                        # fall back to win pct comparison
+                        pct_col = "Sim_Away_Win_Pct" if is_away else "Sim_Home_Win_Pct"
+                        return float(row.get(pct_col, 0.5) or 0.5) > 0.5
+                    return team == str(row.get(col, ""))
                 elif model == "consensus":
-                    if is_away:
-                        val = float(row.get("Consensus Away Win Pct", 0.5) or 0.5)
-                    else:
-                        val = float(row.get("Consensus Home Win Pct", 0.5) or 0.5)
-                    return val > 0.5
-                return True  # unknown model — don't penalise
+                    col = "Consensus Favorite"   # col 293 — now exists directly
+                    if col not in df.columns:
+                        pct_col = "Consensus Away Win Pct" if is_away else "Consensus Home Win Pct"
+                        return float(row.get(pct_col, 0.5) or 0.5) > 0.5
+                    return team == str(row.get(col, ""))
+                return True
         
             if fq == "all":
                 # Team must be favored by every single model
