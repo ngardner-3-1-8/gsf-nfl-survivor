@@ -18,3 +18,8 @@ export async function runOptimizer(constraints) {
   if (!res.ok) throw new Error('Optimizer request failed')
   return res.json()
 }
+export async function fetchLastUpdated() {
+  const res = await fetch(`${API_URL}/api/last-updated`)
+  if (!res.ok) throw new Error('Failed to fetch last updated')
+  return res.json()
+}
