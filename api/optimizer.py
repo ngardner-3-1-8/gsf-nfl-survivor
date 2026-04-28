@@ -421,11 +421,10 @@ def apply_constraints(
     # ── Required picks (force specific team-week combinations) ──
     for team, req_week in request.required_picks.items():
         if req_week > 0:
-            required_indices = df[
-                (df["Team"] == team) & (df["Week_Num"] == req_week)
-            ].index.tolist()
-            if required_indices:
-                solver.Add(picks[required_indices[0]] == 1)
+            required_mask = (df["Team"] == team) & (df["Week_Num"] == req_week)
+            required_positions = [i for i, val in enumerate(required_mask) if val]
+            if required_positions:
+                solver.Add(picks[required_positions[0]] == 1)
 
     # ── One pick per week ──
     for week in df["Week_Num"].unique():
