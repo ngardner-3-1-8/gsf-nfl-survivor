@@ -1,4 +1,5 @@
 import os
+import json
 import pandas as pd
 import numpy as np
 from datetime import datetime, timezone
@@ -117,13 +118,11 @@ def get_last_updated():
     try:
         data = load_current_data(DATA_DIR)
         timestamp_path = os.path.join(DATA_DIR, "last_updated.json")
-        
+
+        timestamps = {"sim_updated": "Unknown"}
         if os.path.exists(timestamp_path):
-            with open(timestamp_path) as f:
-                import json
+            with open(timestamp_path, "r") as f:
                 timestamps = json.load(f)
-        else:
-            timestamps = {"sim_updated": "Unknown"}
 
         return {
             **timestamps,
