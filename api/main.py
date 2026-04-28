@@ -13,7 +13,8 @@ app = FastAPI(title="Circa Survivor API", version="1.0.0")
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
-    os.environ.get("FRONTEND_URL", ""),  # set this in Railway vars later
+    "https://ngardner-3-1-8.github.io",
+    os.environ.get("FRONTEND_URL", ""),
 ]
 
 app.add_middleware(
