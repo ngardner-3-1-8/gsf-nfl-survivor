@@ -133,6 +133,17 @@ def get_last_updated():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/debug-paths")
+def debug_paths():
+    import glob
+    return {
+        "DATA_DIR": DATA_DIR,
+        "cwd": os.getcwd(),
+        "last_updated_path": os.path.join(DATA_DIR, "last_updated.json"),
+        "last_updated_exists": os.path.exists(os.path.join(DATA_DIR, "last_updated.json")),
+        "root_files": os.listdir(DATA_DIR)[:20],
+    }
+
 
 @app.post("/api/optimize")
 def optimize(request: OptimizeRequest):
