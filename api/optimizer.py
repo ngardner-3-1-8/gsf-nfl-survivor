@@ -68,6 +68,9 @@ AWAY_COL_MAP = {
     "Away Team Previous Location":                     "Previous Game Location",
     "Away Team Next Opponent":                         "Next Opponent",
     "Away Team Next Location":                         "Next Game Location",
+    "Temperature":                                     "Temperature",
+    "Precipitation":                                   "Precipitation",
+    "Wind":                                            "Wind",
 }
 
 HOME_COL_MAP = {
@@ -121,6 +124,9 @@ HOME_COL_MAP = {
     "Home Team Previous Location":                     "Previous Game Location",
     "Home Team Next Opponent":                         "Next Opponent",
     "Home Team Next Location":                         "Next Game Location",
+    "Temperature":                                     "Temperature",
+    "Precipitation":                                   "Precipitation",
+    "Wind":                                            "Wind",
 }
 
 OBJECTIVE_EV_COLS = {
