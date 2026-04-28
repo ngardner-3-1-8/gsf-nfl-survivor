@@ -83,6 +83,7 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek }) {
   // Team constraints
   const [prohibitedTeams, setProhibitedTeams] = useState('')
   const [requiredPicks, setRequiredPicks] = useState('')
+  const [prohibitedWeeklyPicks, setProhibitedWeeklyPicks] = useState('')
 
   const toggleScheduling = (key) => {
     setScheduling(prev => ({ ...prev, [key]: !prev[key] }))
@@ -107,6 +108,20 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek }) {
         required[team] = parseInt(week)
       }
     })
+    
+    // Parse prohibited weekly picks (format: "Team Name: week, week, week")
+    const prohibitedWeekly = {}
+    prohibitedWeeklyPicks.split('\n').forEach(line => {
+      const colonIdx = line.indexOf(':')
+      if (colonIdx === -1) return
+      const team = line.slice(0, colonIdx).trim()
+      const weeks = line.slice(colonIdx + 1).split(',')
+        .map(w => parseInt(w.trim()))
+        .filter(w => !isNaN(w))
+      if (team && weeks.length > 0) {
+        prohibitedWeekly[team] = weeks
+      }
+    })
 
     onSubmit({
       objective,
@@ -117,6 +132,7 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek }) {
       favored_qualifier: favoredQualifier,
       prohibited_teams: prohibited,
       required_picks: required,
+      prohibited_weekly_picks: prohibitedWeekly,
       scheduling: {
         ...scheduling,
         ...bayesian,
