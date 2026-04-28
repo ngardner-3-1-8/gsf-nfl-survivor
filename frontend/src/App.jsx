@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import OptimizerView from './components/optimizer/OptimizerView'
 import { useState, useEffect } from 'react'
 import { fetchLastUpdated } from './api/client'
