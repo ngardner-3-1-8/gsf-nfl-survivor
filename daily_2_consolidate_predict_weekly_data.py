@@ -2305,6 +2305,7 @@ def loop_through_simulations(date_str):
         
     
     collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data(schedule_df)
+    collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data_df[collect_schedule_travel_ranking_data_df['Week'] >= upcoming_week]
 
     def calculate_team_availability(picks_data_path, upcoming_week):
         """
@@ -2405,7 +2406,7 @@ def loop_through_simulations(date_str):
             return float(availability)
     
     # --- CONFIGURATION ---
-    SIMULATIONS = 2500
+    SIMULATIONS = 10000
     HISTORY_DAYS = 840
     CURRENT_SEASON = target_year
     DECAY_RATE = 0.00475
@@ -3990,7 +3991,7 @@ def loop_through_simulations(date_str):
 
 # --- NEW: Filter to only simulate the upcoming week's games ---
         weekly_games_df = collect_schedule_travel_ranking_data_df[
-            collect_schedule_travel_ranking_data_df['Week'] == upcoming_week
+            collect_schedule_travel_ranking_data_df['Week'] >= upcoming_week
         ].copy()
         for index, row in weekly_games_df.iterrows():
 ####        for index, row in collect_schedule_travel_ranking_data_df.iterrows():
@@ -5281,7 +5282,7 @@ def loop_through_simulations(date_str):
     
         ####################################################################################################
         
-        def run_monte_carlo_simulation(nfl_schedule_df, num_trials=100):
+        def run_monte_carlo_simulation(nfl_schedule_df, num_trials=10000):
             """
             Runs a Monte Carlo simulation to estimate the distribution of survivor
             pool outcomes, based on the 'Expected Value' pick percentages.
@@ -5572,6 +5573,20 @@ def loop_through_simulations(date_str):
     )
     
     collect_schedule_travel_ranking_data_df["Home Team Fair Odds"] = (
+        collect_schedule_travel_ranking_data_df["Home Team Sportsbook Fair Odds"]
+        .fillna(collect_schedule_travel_ranking_data_df["Consensus Home Win Pct"])
+    )
+    # 1. Create the indicator columns first
+    collect_schedule_travel_ranking_data_df["Away_Odds_Imputed"] = collect_schedule_travel_ranking_data_df["Away Team Sportsbook Fair Odds"].isna()
+    collect_schedule_travel_ranking_data_df["Home_Odds_Imputed"] = collect_schedule_travel_ranking_data_df["Home Team Sportsbook Fair Odds"].isna()
+    
+    # 2. Now perform the fillna
+    collect_schedule_travel_ranking_data_df["Away Team Sportsbook Fair Odds"] = (
+        collect_schedule_travel_ranking_data_df["Away Team Sportsbook Fair Odds"]
+        .fillna(collect_schedule_travel_ranking_data_df["Consensus Away Win Pct"])
+    )
+    
+    collect_schedule_travel_ranking_data_df["Home Team Sportsbook Fair Odds"] = (
         collect_schedule_travel_ranking_data_df["Home Team Sportsbook Fair Odds"]
         .fillna(collect_schedule_travel_ranking_data_df["Consensus Home Win Pct"])
     )
