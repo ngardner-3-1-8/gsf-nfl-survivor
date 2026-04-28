@@ -111,6 +111,29 @@ def get_available_weeks():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/last-updated")
+def get_last_updated():
+    try:
+        data = load_current_data(DATA_DIR)
+        sim_path = os.path.join(DATA_DIR, "nfl-power-ratings", data["sim_file"])
+        ev_path = os.path.join(DATA_DIR, "circa-survivor-ev", data["ev_file"])
+
+        def fmt(path):
+            if os.path.exists(path):
+                ts = os.path.getmtime(path)
+                from datetime import timezone
+                return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%b %d, %Y at %I:%M %p UTC")
+            return "Unknown"
+
+        return {
+            "sim_updated": fmt(sim_path),
+            "ev_updated": fmt(ev_path),
+            "upcoming_week": data["upcoming_week"],
+            "target_year": data["target_year"],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/optimize")
 def optimize(request: OptimizeRequest):
