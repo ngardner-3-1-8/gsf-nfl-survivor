@@ -1,4 +1,7 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const raw = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+// Ensure the URL always starts with http
+const API_URL = raw.startsWith('http') ? raw : `https://${raw}`
 
 export async function fetchWeeks() {
   const res = await fetch(`${API_URL}/api/weeks`)
