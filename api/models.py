@@ -82,8 +82,11 @@ class OptimizeRequest(BaseModel):
     must_be_favored: bool = False
     favored_qualifier: Literal[
         "sportsbook",
-        "internal",
-        "both"
+        "mp",
+        "gsf",
+        "sim",
+        "consensus",
+        "all"       # must be favored by every model
     ] = "sportsbook"
 
     # --- Team availability this week ---
