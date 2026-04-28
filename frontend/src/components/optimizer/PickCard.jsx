@@ -7,12 +7,12 @@ function weatherEmoji(temp, precip, wind) {
 
   if (p > 0.3) return '🌧️'       // Heavy rain
   if (p > 0.1) return '🌦️'       // Light rain
-  if (t <= 20) return '❄️'        // Freezing / snow likely
-  if (t <= 35 && w > 15) return '🥶' // Cold and windy
+  if (t <= 32) return '❄️'        // Freezing / snow likely
+  if (t <= 35 && w > 15) return '🥶💨' // Cold and windy
   if (t <= 45) return '🧥'        // Cold
   if (w > 20) return '💨'         // Very windy
   if (t >= 90) return '🥵'        // Very hot
-  if (t >= 75) return '☀️'        // Sunny / warm
+  if (t >= 60) return '☀️'        // Sunny / warm
   return '⛅'                      // Default: partly cloudy
 }
 
