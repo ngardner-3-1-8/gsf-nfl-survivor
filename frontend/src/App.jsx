@@ -41,6 +41,12 @@ export default function App() {
               {tab}
             </button>
           ))}
+          {lastUpdated && (
+            <div className="ml-auto text-xs text-gray-500">
+              <span className="text-gray-600">Week {lastUpdated.upcoming_week} · Updated </span>
+              {lastUpdated.sim_updated}
+            </div>
+          )}
         </div>
       </nav>
 
