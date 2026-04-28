@@ -4,12 +4,11 @@ import Select from '../ui/Select'
 import SectionHeader from '../ui/SectionHeader'
 
 const OBJECTIVE_OPTIONS = [
-  { value: 'consensus', label: 'Consensus' },
-  { value: 'sportsbook', label: 'Sportsbook' },
-  { value: 'mp', label: 'Massey-Peabody' },
-  { value: 'gsf', label: 'Generic Sports Fan' },
-  { value: 'sim', label: 'Simulation' },
-  { value: 'win_pct', label: 'Win Probability' },
+  { value: 'consensus', label: 'Consensus (EV + Win Odds)' },
+  { value: 'sportsbook', label: 'Sportsbook (EV + Win Odds)' },
+  { value: 'mp', label: 'Massey-Peabody (EV + Win Odds)' },
+  { value: 'gsf', label: 'Generic Sports Fan (EV + Win Odds)' },
+  { value: 'sim', label: 'Simulation (EV + Win Odds)' },
 ]
 
 const SOLUTIONS_OPTIONS = [
