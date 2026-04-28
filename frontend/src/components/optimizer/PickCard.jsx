@@ -1,4 +1,43 @@
-export default function PickCard({ solution, index, label }) {
+// Helper: weather emoji from temperature, precipitation, wind
+function weatherEmoji(temp, precip, wind) {
+  if (temp === null || temp === undefined) return ''
+  const t = parseFloat(temp)
+  const p = parseFloat(precip) || 0
+  const w = parseFloat(wind) || 0
+
+  if (p > 0.3) return '🌧️'       // Heavy rain
+  if (p > 0.1) return '🌦️'       // Light rain
+  if (t <= 20) return '❄️'        // Freezing / snow likely
+  if (t <= 35 && w > 15) return '🥶' // Cold and windy
+  if (t <= 45) return '🧥'        // Cold
+  if (w > 20) return '💨'         // Very windy
+  if (t >= 90) return '🥵'        // Very hot
+  if (t >= 75) return '☀️'        // Sunny / warm
+  return '⛅'                      // Default: partly cloudy
+}
+
+// Helper: holiday emoji
+function holidayEmoji(row) {
+  if (row.Away_Team_Thanksgiving_Favorite === 1 ||
+      row.Home_Team_Thanksgiving_Favorite === 1 ||
+      row.Away_Team_Thanksgiving_Underdog === 1 ||
+      row.Home_Team_Thanksgiving_Underdog === 1) return '🦃'
+  if (row.Away_Team_Christmas_Favorite === 1 ||
+      row.Home_Team_Christmas_Favorite === 1 ||
+      row.Away_Team_Christmas_Underdog === 1 ||
+      row.Home_Team_Christmas_Underdog === 1) return '🎄'
+  return ''
+}
+
+// Helper: pick% color — top 2 red, next 3 yellow, rest green
+// allPickPcts is a sorted array of all pick percentages for that week
+function pickPctColor(pct, rank) {
+  if (rank <= 2) return 'text-red-400'
+  if (rank <= 5) return 'text-yellow-400'
+  return 'text-green-400'
+}
+
+export default function PickCard({ solution, index, label, allWeeklyPickPcts }) {
   const totalEV = solution.reduce((sum, p) => sum + p.ev, 0)
   const avgWin = solution.reduce((sum, p) => sum + p.win_pct, 0) / solution.length
 
@@ -7,9 +46,7 @@ export default function PickCard({ solution, index, label }) {
       {/* Card header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
         <div className="flex items-center gap-2">
-          {index === 0 && (
-            <span className="text-yellow-400 text-xs">★</span>
-          )}
+          {index === 0 && <span className="text-yellow-400 text-xs">★</span>}
           <span className="text-sm font-semibold text-white">
             {label} — Solution {index + 1}
           </span>
@@ -26,59 +63,65 @@ export default function PickCard({ solution, index, label }) {
           <thead>
             <tr className="text-xs text-gray-500 border-b border-gray-800">
               <th className="text-left px-4 py-2 font-medium">Wk</th>
+              <th className="text-left px-4 py-2 font-medium">🗓</th>
               <th className="text-left px-4 py-2 font-medium">Team</th>
               <th className="text-left px-4 py-2 font-medium">vs</th>
               <th className="text-left px-4 py-2 font-medium">H/A</th>
-              <th className="text-right px-4 py-2 font-medium">Spread</th>
+              <th className="text-left px-4 py-2 font-medium">🌤</th>
               <th className="text-right px-4 py-2 font-medium">Win%</th>
               <th className="text-right px-4 py-2 font-medium">EV</th>
               <th className="text-right px-4 py-2 font-medium">Pick%</th>
             </tr>
           </thead>
           <tbody>
-            {solution.map((pick, i) => (
-              <tr
-                key={i}
-                className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors"
-              >
-                <td className="px-4 py-2.5 text-gray-400 font-mono text-xs">
-                  {pick.week}
-                </td>
-                <td className="px-4 py-2.5 font-semibold text-white">
-                  {pick.team}
-                </td>
-                <td className="px-4 py-2.5 text-gray-400 text-xs">
-                  {pick.opponent}
-                </td>
-                <td className="px-4 py-2.5">
-                  <span className={`
-                    text-xs font-medium px-1.5 py-0.5 rounded
-                    ${pick.home_or_away === 'Home'
-                      ? 'bg-blue-900/50 text-blue-300'
-                      : 'bg-gray-800 text-gray-400'}
-                  `}>
-                    {pick.home_or_away}
-                  </span>
-                </td>
-                <td className="px-4 py-2.5 text-right font-mono text-xs text-gray-300">
-                  {pick.spread > 0 ? '+' : ''}{pick.spread?.toFixed(1) ?? '—'}
-                </td>
-                <td className="px-4 py-2.5 text-right font-mono text-xs">
-                  <span className={
-                    pick.win_pct >= 0.7 ? 'text-green-400' :
-                    pick.win_pct >= 0.6 ? 'text-yellow-400' : 'text-gray-300'
-                  }>
-                    {(pick.win_pct * 100).toFixed(1)}%
-                  </span>
-                </td>
-                <td className="px-4 py-2.5 text-right font-mono text-xs text-green-400">
-                  {pick.ev.toFixed(4)}
-                </td>
-                <td className="px-4 py-2.5 text-right font-mono text-xs text-gray-400">
-                  {(pick.pick_pct * 100).toFixed(1)}%
-                </td>
-              </tr>
-            ))}
+            {solution.map((pick, i) => {
+              const isClose = pick.win_pct < 0.65
+              const weekPcts = allWeeklyPickPcts?.[pick.week] || []
+              // Rank among all teams that week (1 = highest pick%)
+              const rank = weekPcts.filter(p => p > pick.pick_pct).length + 1
+              const weather = weatherEmoji(pick.temperature, pick.precipitation, pick.wind)
+              const holiday = holidayEmoji(pick)
+
+              return (
+                <tr
+                  key={i}
+                  className={`
+                    border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors
+                    ${isClose ? 'bg-yellow-950/10' : ''}
+                  `}
+                >
+                  <td className="px-4 py-2.5 text-gray-400 font-mono text-xs">{pick.week}</td>
+                  <td className="px-4 py-2.5 text-base">{holiday}</td>
+                  <td className="px-4 py-2.5 font-semibold text-white">{pick.team}</td>
+                  <td className="px-4 py-2.5 text-gray-400 text-xs">{pick.opponent}</td>
+                  <td className="px-4 py-2.5">
+                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                      pick.home_or_away === 'Home'
+                        ? 'bg-blue-900/50 text-blue-300'
+                        : 'bg-gray-800 text-gray-400'
+                    }`}>
+                      {pick.home_or_away}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 text-base">{weather}</td>
+                  <td className="px-4 py-2.5 text-right font-mono text-xs">
+                    <span className={`${
+                      pick.win_pct >= 0.75 ? 'text-green-400' :
+                      pick.win_pct >= 0.65 ? 'text-yellow-400' : 'text-red-400'
+                    }`}>
+                      {(pick.win_pct * 100).toFixed(1)}%
+                      {isClose && <span className="ml-1 text-yellow-500" title="Close game">⚠️</span>}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 text-right font-mono text-xs text-green-400">
+                    {pick.ev.toFixed(4)}
+                  </td>
+                  <td className={`px-4 py-2.5 text-right font-mono text-xs ${pickPctColor(pick.pick_pct, rank)}`}>
+                    {(pick.pick_pct * 100).toFixed(1)}%
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
