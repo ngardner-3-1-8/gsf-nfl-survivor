@@ -51,7 +51,7 @@ AWAY_COL_MAP = {
     "Away Team Fair Odds":                             "Fair Odds Consensus",
     "Away Team Sportsbook Spread":                     "Spread Based on Sportsbook Odds",
     "Massey-Peabody Away Team Spread":                 "Spread Based on MP",
-    "Sportsbook Favorite":                             "Favorite",
+    "Favorite":                                        "Favorite",
     "Away Team Massey-Peabody Preseason Rank":         "Preseason Rank",
     "Away Team Adjusted MP + GSF Average Preseason Rank": "Adjusted Preseason Rank",
     "Home Team Adjusted MP + GSF Average Preseason Rank": "Opp Adjusted Preseason Rank",
@@ -105,7 +105,7 @@ HOME_COL_MAP = {
     "Home Team Fair Odds":                             "Fair Odds Consensus",
     "Home Team Sportsbook Spread":                     "Spread Based on Sportsbook Odds",
     "Massey-Peabody Home Team Spread":                 "Spread Based on MP",
-    "Sportsbook Favorite":                             "Favorite",
+    "Favorite":                                        "Favorite",
     "Home Team Massey-Peabody Preseason Rank":         "Preseason Rank",
     "Home Team Adjusted MP + GSF Average Preseason Rank": "Adjusted Preseason Rank",
     "Away Team Adjusted MP + GSF Average Preseason Rank": "Opp Adjusted Preseason Rank",
@@ -239,32 +239,28 @@ def apply_constraints(
     s = request.scheduling
     fq = request.favored_qualifier  # "sportsbook", "internal", or "both"
 
-    for i in range(len(df)):
-        row = df.iloc[i]
-        is_away = bool(row.get("Team Is Away", False))
-        spread_sb = float(row.get("Sportsbook Spread", 0) or 0)
-        spread_int = float(row.get("Adjusted Current Difference", 0) or 0)
-        adj_winner = str(row.get("Adjusted Current Winner", ""))
-        favorite = str(row.get("Favorite", ""))
-        team = str(row.get("Team", ""))
-        week_num = int(row.get("Week_Num", 0))
-
-        # ── Must be favored ──
-        # ── Must be favored ──
-        if request.must_be_favored:
-            fq = request.favored_qualifier
-        
-            # Maps each qualifier → the CSV column that identifies the favorite
-            # For spread-based models, the team is favored if their spread is negative
-            # For fair odds models, the team is favored if their odds > 0.5
-            FAVORED_COL_MAP = {
-                "sportsbook": ("Favorite",              None),
-                "mp":         ("Massey-Peabody Current Winner",         None),
-                "gsf":        ("Generic Sports Fan Current Winner",     None),
-                "sim":        ("Sim_Home_Win_Pct",       "Sim_Away_Win_Pct"),   # compare by value
-                "consensus":  ("Consensus Home Win Pct", "Consensus Away Win Pct"),
-            }
-        
+    # ── Bayesian constraints ──
+    # Maps each toggle → the CSV column it checks
+    BAYESIAN_CHECKS = [
+        (s.mp_bayesian_all_metrics,
+            "Massey-Peabody Bayesian Same Winner Across All Metrics"),
+        (s.mp_bayesian_preseason_and_current,
+            "Massey-Peabody Bayesian Same Current and Preseason Adjusted Winner"),
+        (s.mp_bayesian_current_and_adjusted,
+            "Massey-Peabody Bayesian Same Current and Adjusted Current Winner"),
+        (s.gsf_bayesian_adjusted,
+            "Generic Sports Fan Bayesian Same Adjusted Winner Across All Metrics"),
+        (s.gsf_bayesian_preseason_and_current,
+            "Generic Sports Fan Bayesian Current and Preseason Adjusted Winner"),
+        (s.gsf_bayesian_current_and_adjusted,
+            "Generic Sports Fan Bayesian Same Current and Adjusted Current Winner"),
+        (s.sportsbook_bayesian_preseason_and_current,
+            "Sportsbook Same Current and Preseason Adjusted Winner"),
+        (s.sim_bayesian_preseason_and_current,
+            "Sim Same Current and Preseason Adjusted Winner"),
+        (s.consensus_bayesian_preseason_and_current,
+            "Consensus Same Current and Preseason Adjusted Winner")
+    ]
             def is_favored_by(model: str) -> bool:
                 if model == "sportsbook":
                     return team == str(row.get("Favorite", ""))
@@ -292,6 +288,31 @@ def apply_constraints(
                         return float(row.get(pct_col, 0.5) or 0.5) > 0.5
                     return team == str(row.get(col, ""))
                 return True
+    for i in range(len(df)):
+        row = df.iloc[i]
+        is_away = bool(row.get("Team Is Away", False))
+        spread_sb = float(row.get("Sportsbook Spread", 0) or 0)
+        spread_int = float(row.get("Adjusted Current Difference", 0) or 0)
+        adj_winner = str(row.get("Adjusted Current Winner", ""))
+        favorite = str(row.get("Favorite", ""))
+        team = str(row.get("Team", ""))
+        week_num = int(row.get("Week_Num", 0))
+
+        # ── Must be favored ──
+        # ── Must be favored ──
+        if request.must_be_favored:
+            fq = request.favored_qualifier
+        
+            # Maps each qualifier → the CSV column that identifies the favorite
+            # For spread-based models, the team is favored if their spread is negative
+            # For fair odds models, the team is favored if their odds > 0.5
+            FAVORED_COL_MAP = {
+                "sportsbook": ("Favorite",              None),
+                "mp":         ("Massey-Peabody Current Winner",         None),
+                "gsf":        ("Generic Sports Fan Current Winner",     None),
+                "sim":        ("Sim_Home_Win_Pct",       "Sim_Away_Win_Pct"),   # compare by value
+                "consensus":  ("Consensus Home Win Pct", "Consensus Away Win Pct"),
+            }
         
             if fq == "all":
                 # Team must be favored by every single model
@@ -386,29 +407,6 @@ def apply_constraints(
             travel = float(row.get("Travel Advantage", 0) or 0)
             if travel < -850:
                 solver.Add(picks[i] == 0)
-
-        # ── Bayesian constraints ──
-        # Maps each toggle → the CSV column it checks
-        BAYESIAN_CHECKS = [
-            (s.mp_bayesian_all_metrics,
-                "Massey-Peabody Bayesian Same Winner Across All Metrics"),
-            (s.mp_bayesian_preseason_and_current,
-                "Massey-Peabody Bayesian Same Current and Preseason Adjusted Winner"),
-            (s.mp_bayesian_current_and_adjusted,
-                "Massey-Peabody Bayesian Same Current and Adjusted Current Winner"),
-            (s.gsf_bayesian_adjusted,
-                "Generic Sports Fan Bayesian Same Adjusted Winner Across All Metrics"),
-            (s.gsf_bayesian_preseason_and_current,
-                "Generic Sports Fan Bayesian Current and Preseason Adjusted Winner"),
-            (s.gsf_bayesian_current_and_adjusted,
-                "Generic Sports Fan Bayesian Same Current and Adjusted Current Winner"),
-            (s.sportsbook_bayesian_preseason_and_current,
-                "Sportsbook Same Current and Preseason Adjusted Winner"),
-            (s.sim_bayesian_preseason_and_current,
-                "Sim Same Current and Preseason Adjusted Winner"),
-            (s.consensus_bayesian_preseason_and_current,
-                "Consensus Same Current and Preseason Adjusted Winner"),
-        ]
         
         # Only evaluate constraints the user has actually toggled on
         active_checks = [(enabled, col) for enabled, col in BAYESIAN_CHECKS if enabled]
