@@ -29,7 +29,7 @@ jobs:
         working-directory: frontend
         run: npm run build
         env:
-          VITE_API_URL: ${{ secrets.RAILWAY_API_URL }}
+          VITE_API_URL: https://gsf-nfl-survivor-production.up.railway.app
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
