@@ -504,6 +504,19 @@ def run_solver(
                 home_or_away="Away" if bool(row.get("Team Is Away", False)) else "Home",
                 opponent=str(row.get("Opponent", "")),
                 spread=round(float(row.get("Sportsbook Spread", 0) or 0), 1),
+                # Weather
+                temperature=float(row["Temperature"]) if pd.notna(row.get("Temperature")) else None,
+                precipitation=float(row["Precipitation"]) if pd.notna(row.get("Precipitation")) else None,
+                wind=float(row["Wind"]) if pd.notna(row.get("Wind")) else None,
+                # Holiday
+                is_thanksgiving=bool(
+                    row.get("Thanksgiving Favorite", 0) == 1 or
+                    row.get("Thanksgiving Underdog", 0) == 1
+                ),
+                is_christmas=bool(
+                    row.get("Christmas Favorite", 0) == 1 or
+                    row.get("Christmas Underdog", 0) == 1
+                ),
             ))
 
         solutions.append(pick_results)
