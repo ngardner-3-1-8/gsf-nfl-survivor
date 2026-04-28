@@ -239,8 +239,7 @@ def apply_constraints(
     s = request.scheduling
     fq = request.favored_qualifier  # "sportsbook", "internal", or "both"
 
-    # ── Bayesian constraints ──
-    # Maps each toggle → the CSV column it checks
+    # Move ABOVE the row loop — these never change between rows
     BAYESIAN_CHECKS = [
         (s.mp_bayesian_all_metrics,
             "Massey-Peabody Bayesian Same Winner Across All Metrics"),
@@ -255,78 +254,65 @@ def apply_constraints(
         (s.gsf_bayesian_current_and_adjusted,
             "Generic Sports Fan Bayesian Same Current and Adjusted Current Winner"),
         (s.sportsbook_bayesian_preseason_and_current,
-            "Sportsbook Same Current and Preseason Adjusted Winner"),
+            "Sportsbook Bayesian Same Current and Preseason Adjusted Winner"),
         (s.sim_bayesian_preseason_and_current,
-            "Sim Same Current and Preseason Adjusted Winner"),
+            "Sim Bayesian Same Current and Preseason Adjusted Winner"),
         (s.consensus_bayesian_preseason_and_current,
-            "Consensus Same Current and Preseason Adjusted Winner")
+            "Consensus Bayesian Same Current and Preseason Adjusted Winner"),
     ]
-            def is_favored_by(model: str) -> bool:
-                if model == "sportsbook":
-                    return team == str(row.get("Favorite", ""))
-                elif model == "mp":
-                    col = "Massey-Peabody Current Winner"
-                    if col not in df.columns:
-                        return True
-                    return team == str(row.get(col, ""))
-                elif model == "gsf":
-                    col = "Generic Sports Fan Current Winner"
-                    if col not in df.columns:
-                        return True
-                    return team == str(row.get(col, ""))
-                elif model == "sim":
-                    col = "Sim Favorite"   # col 292 — now exists directly
-                    if col not in df.columns:
-                        # fall back to win pct comparison
-                        pct_col = "Sim_Away_Win_Pct" if is_away else "Sim_Home_Win_Pct"
-                        return float(row.get(pct_col, 0.5) or 0.5) > 0.5
-                    return team == str(row.get(col, ""))
-                elif model == "consensus":
-                    col = "Consensus Favorite"   # col 293 — now exists directly
-                    if col not in df.columns:
-                        pct_col = "Consensus Away Win Pct" if is_away else "Consensus Home Win Pct"
-                        return float(row.get(pct_col, 0.5) or 0.5) > 0.5
-                    return team == str(row.get(col, ""))
-                return True
+    
+    active_bayesian_checks = [(enabled, col) for enabled, col in BAYESIAN_CHECKS if enabled]
+    
+    # Fair odds columns per model — away first, home second
+    FAIR_ODDS_COLS = {
+        "sportsbook": ("Away Team Sportsbook Fair Odds",        "Home Team Sportsbook Fair Odds"),
+        "mp":         ("Away Team Massey-Peabody Fair Odds",    "Home Team Massey-Peabody Fair Odds"),
+        "gsf":        ("Away Team Generic Sports Fan Fair Odds","Home Team Generic Sports Fan Fair Odds"),
+        "sim":        ("Sim_Away_Win_Pct",                      "Sim_Home_Win_Pct"),
+        "consensus":  ("Consensus Away Win Pct",                "Consensus Home Win Pct"),
+    }
+    
+    def is_favored_by(model: str, team: str, row, is_away: bool) -> bool:
+        """
+        Returns True if the team is favored (fair odds > 0.5) according to
+        the given model. Gracefully handles missing columns.
+        """
+        cols = FAIR_ODDS_COLS.get(model)
+        if not cols:
+            return True  # unknown model — don't penalise
+        away_col, home_col = cols
+        col = away_col if is_away else home_col
+        if col not in df.columns:
+            return True  # column missing — don't penalise
+        val = row.get(col, None)
+        if val is None or (isinstance(val, float) and np.isnan(val)):
+            return True  # empty value — don't penalise
+        return float(val) > 0.5
+
+    
+    fq = request.favored_qualifier  # set once outside the loop
+    
     for i in range(len(df)):
         row = df.iloc[i]
         is_away = bool(row.get("Team Is Away", False))
         spread_sb = float(row.get("Sportsbook Spread", 0) or 0)
         spread_int = float(row.get("Adjusted Current Difference", 0) or 0)
-        adj_winner = str(row.get("Adjusted Current Winner", ""))
-        favorite = str(row.get("Favorite", ""))
         team = str(row.get("Team", ""))
         week_num = int(row.get("Week_Num", 0))
-
-        # ── Must be favored ──
+    
         # ── Must be favored ──
         if request.must_be_favored:
-            fq = request.favored_qualifier
-        
-            # Maps each qualifier → the CSV column that identifies the favorite
-            # For spread-based models, the team is favored if their spread is negative
-            # For fair odds models, the team is favored if their odds > 0.5
-            FAVORED_COL_MAP = {
-                "sportsbook": ("Favorite",              None),
-                "mp":         ("Massey-Peabody Current Winner",         None),
-                "gsf":        ("Generic Sports Fan Current Winner",     None),
-                "sim":        ("Sim_Home_Win_Pct",       "Sim_Away_Win_Pct"),   # compare by value
-                "consensus":  ("Consensus Home Win Pct", "Consensus Away Win Pct"),
-            }
-        
             if fq == "all":
-                # Team must be favored by every single model
                 all_models = ["sportsbook", "mp", "gsf", "sim", "consensus"]
-                if not all(is_favored_by(m) for m in all_models):
+                if not all(is_favored_by(m, team, row, is_away) for m in all_models):
                     solver.Add(picks[i] == 0)
             else:
-                # Team must be favored by the selected model
-                if not is_favored_by(fq):
+                if not is_favored_by(fq, team, row, is_away):
                     solver.Add(picks[i] == 0)
-
+    
         # ── Away teams in close matchups ──
         if s.avoid_away_close and is_away:
-            if fq == "internal":
+            if fq in ("mp", "gsf"):
                 if spread_int <= s.min_away_spread:
                     solver.Add(picks[i] == 0)
             else:
@@ -334,12 +320,12 @@ def apply_constraints(
                 # e.g. -3.5 means favored by 3.5. Avoid if not favored by enough
                 if spread_sb > -s.min_away_spread:
                     solver.Add(picks[i] == 0)
-
+    
         # ── Close divisional matchups ──
         if s.avoid_close_divisional:
             is_div = row.get("Divisional Matchup?", 0)
             if is_div == 1 or is_div == "Divisional" or is_div is True:
-                if fq == "internal":
+                if fq in ("mp", "gsf"):
                     if spread_int <= s.min_div_spread:
                         solver.Add(picks[i] == 0)
                 else:
@@ -408,31 +394,23 @@ def apply_constraints(
             if travel < -850:
                 solver.Add(picks[i] == 0)
         
-        # Only evaluate constraints the user has actually toggled on
-        active_checks = [(enabled, col) for enabled, col in BAYESIAN_CHECKS if enabled]
-        
-        if active_checks:
+        # ── Bayesian constraints ──
+        if active_bayesian_checks:
             results = []
-            for enabled, col in active_checks:
-                # Gracefully handle missing or empty columns
+            for enabled, col in active_bayesian_checks:
                 if col not in df.columns:
-                    # Column doesn't exist — treat as not satisfied
                     results.append(False)
                     continue
                 val = row.get(col, None)
                 if val is None or (isinstance(val, float) and np.isnan(val)):
-                    # Empty value — treat as not satisfied
                     results.append(False)
                     continue
-                # Accept True, 1, "True", "Yes", "1" as passing
                 results.append(str(val).strip() in ("True", "Yes", "1", "true", "yes"))
-        
+    
             if s.bayesian_require_all:
-                # ALL active constraints must pass
                 if not all(results):
                     solver.Add(picks[i] == 0)
             else:
-                # AT LEAST ONE active constraint must pass
                 if not any(results):
                     solver.Add(picks[i] == 0)
 
