@@ -39,7 +39,7 @@ const BAYESIAN_OPTIONS = [
 export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek }) {
   // Core settings
   const [objective, setObjective] = useState('consensus')
-  const [numSolutions, setNumSolutions] = useState(10)
+  const [numSolutions, setNumSolutions] = useState(1)
   const [startWeek, setStartWeek] = useState(upcomingWeek || 1)
   const [endWeek, setEndWeek] = useState(20)
 
