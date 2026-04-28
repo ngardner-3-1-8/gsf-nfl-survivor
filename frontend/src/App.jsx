@@ -1,8 +1,17 @@
 import { useState } from 'react'
 import OptimizerView from './components/optimizer/OptimizerView'
+import { useState, useEffect } from 'react'
+import { fetchLastUpdated } from './api/client'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('optimizer')
+  const [lastUpdated, setLastUpdated] = useState(null)
+
+  useEffect(() => {
+    fetchLastUpdated()
+      .then(data => setLastUpdated(data))
+      .catch(() => {})
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
