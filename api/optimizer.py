@@ -270,12 +270,12 @@ def apply_constraints(
                 if model == "sportsbook":
                     return team == str(row.get("Favorite", ""))
                 elif model == "mp":
-                    winner_col = "Massey-Peabody Current Winner"
+                    winner_col = "Massey-Peabody Adjusted Current Winner"
                     if winner_col not in df.columns:
                         return True  # column missing — don't penalise
                     return team == str(row.get(winner_col, ""))
                 elif model == "gsf":
-                    winner_col = "Generic Sports Fan Current Winner"
+                    winner_col = "Generic Sports Fan Adjusted Current Winner"
                     if winner_col not in df.columns:
                         return True
                     return team == str(row.get(winner_col, ""))
@@ -397,7 +397,7 @@ def apply_constraints(
             (s.mp_bayesian_current_and_adjusted,
                 "Massey-Peabody Bayesian Same Current and Adjusted Current Winner"),
             (s.gsf_bayesian_adjusted,
-                "Generic Sports Fan Bayesian Same Adjusted Winner"),
+                "Generic Sports Fan Bayesian Same Adjusted Winner Across All Metrics"),
             (s.gsf_bayesian_preseason_and_current,
                 "Generic Sports Fan Bayesian Current and Preseason Adjusted Winner"),
             (s.gsf_bayesian_current_and_adjusted,
