@@ -237,7 +237,6 @@ def apply_constraints(
     Each constraint sets picks[i] == 0 for rows that violate it.
     """
     s = request.scheduling
-    fq = request.favored_qualifier  # "sportsbook", "internal", or "both"
 
     # Move ABOVE the row loop — these never change between rows
     BAYESIAN_CHECKS = [
