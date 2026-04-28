@@ -14,7 +14,7 @@ export default function App() {
           <div className="flex items-center gap-2 mr-4">
             <span className="font-bold text-lg">🏈</span>
             <span className="font-semibold text-white tracking-tight">
-              Circa Survivor
+              Generic Sports Fan Survivor
             </span>
           </div>
 
