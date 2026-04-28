@@ -250,15 +250,57 @@ def apply_constraints(
         week_num = int(row.get("Week_Num", 0))
 
         # ── Must be favored ──
+        # ── Must be favored ──
         if request.must_be_favored:
-            if fq == "sportsbook":
-                if team != favorite:
+            fq = request.favored_qualifier
+        
+            # Maps each qualifier → the CSV column that identifies the favorite
+            # For spread-based models, the team is favored if their spread is negative
+            # For fair odds models, the team is favored if their odds > 0.5
+            FAVORED_COL_MAP = {
+                "sportsbook": ("Favorite",              None),
+                "mp":         ("Massey-Peabody Current Winner",         None),
+                "gsf":        ("Generic Sports Fan Current Winner",     None),
+                "sim":        ("Sim_Home_Win_Pct",       "Sim_Away_Win_Pct"),   # compare by value
+                "consensus":  ("Consensus Home Win Pct", "Consensus Away Win Pct"),
+            }
+        
+            def is_favored_by(model: str) -> bool:
+                """Returns True if this row's team is favored according to the given model."""
+                if model == "sportsbook":
+                    return team == str(row.get("Favorite", ""))
+                elif model == "mp":
+                    winner_col = "Massey-Peabody Current Winner"
+                    if winner_col not in df.columns:
+                        return True  # column missing — don't penalise
+                    return team == str(row.get(winner_col, ""))
+                elif model == "gsf":
+                    winner_col = "Generic Sports Fan Current Winner"
+                    if winner_col not in df.columns:
+                        return True
+                    return team == str(row.get(winner_col, ""))
+                elif model == "sim":
+                    if is_away:
+                        val = float(row.get("Sim_Away_Win_Pct", 0.5) or 0.5)
+                    else:
+                        val = float(row.get("Sim_Home_Win_Pct", 0.5) or 0.5)
+                    return val > 0.5
+                elif model == "consensus":
+                    if is_away:
+                        val = float(row.get("Consensus Away Win Pct", 0.5) or 0.5)
+                    else:
+                        val = float(row.get("Consensus Home Win Pct", 0.5) or 0.5)
+                    return val > 0.5
+                return True  # unknown model — don't penalise
+        
+            if fq == "all":
+                # Team must be favored by every single model
+                all_models = ["sportsbook", "mp", "gsf", "sim", "consensus"]
+                if not all(is_favored_by(m) for m in all_models):
                     solver.Add(picks[i] == 0)
-            elif fq == "internal":
-                if team != adj_winner:
-                    solver.Add(picks[i] == 0)
-            elif fq == "both":
-                if team != favorite or team != adj_winner:
+            else:
+                # Team must be favored by the selected model
+                if not is_favored_by(fq):
                     solver.Add(picks[i] == 0)
 
         # ── Away teams in close matchups ──
