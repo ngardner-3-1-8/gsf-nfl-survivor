@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from api.models import OptimizeRequest, OptimizeResponse
@@ -121,7 +122,6 @@ def get_last_updated():
         def fmt(path):
             if os.path.exists(path):
                 ts = os.path.getmtime(path)
-                from datetime import timezone
                 return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%b %d, %Y at %I:%M %p UTC")
             return "Unknown"
 
