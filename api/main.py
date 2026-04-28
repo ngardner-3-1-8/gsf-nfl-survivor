@@ -116,18 +116,17 @@ def get_available_weeks():
 def get_last_updated():
     try:
         data = load_current_data(DATA_DIR)
-        sim_path = os.path.join(DATA_DIR, "nfl-power-ratings", data["sim_file"])
-        ev_path = os.path.join(DATA_DIR, "circa-survivor-ev", data["ev_file"])
-
-        def fmt(path):
-            if os.path.exists(path):
-                ts = os.path.getmtime(path)
-                return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%b %d, %Y at %I:%M %p UTC")
-            return "Unknown"
+        timestamp_path = os.path.join(DATA_DIR, "last_updated.json")
+        
+        if os.path.exists(timestamp_path):
+            with open(timestamp_path) as f:
+                import json
+                timestamps = json.load(f)
+        else:
+            timestamps = {"sim_updated": "Unknown"}
 
         return {
-            "sim_updated": fmt(sim_path),
-            "ev_updated": fmt(ev_path),
+            **timestamps,
             "upcoming_week": data["upcoming_week"],
             "target_year": data["target_year"],
         }
