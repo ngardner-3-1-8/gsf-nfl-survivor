@@ -5,15 +5,27 @@ function weatherEmoji(temp, precip, wind) {
   const p = parseFloat(precip) || 0
   const w = parseFloat(wind) || 0
 
-  if (p > 0.3) return '🌧️'       // Heavy rain
-  if (p > 0.1) return '🌦️'       // Light rain
-  if (t <= 32) return '❄️'        // Freezing / snow likely
-  if (t <= 35 && w > 15) return '🥶💨' // Cold and windy
-  if (t <= 45) return '🧥'        // Cold
-  if (w > 20) return '💨'         // Very windy
-  if (t >= 90) return '🥵'        // Very hot
-  if (t >= 60) return '☀️'        // Sunny / warm
-  return '⛅'                      // Default: partly cloudy
+  // Precipitation first — check cold vs warm variants
+  if (p > 0.3 && t < 32) return '❄️🌨️'   // Heavy snow
+  if (p > 0.3 && t < 40) return '🥶🌧️'   // Heavy rain, very cold
+  if (p > 0.3)            return '🌧️'      // Heavy rain
+  if (p > 0.1 && t < 32) return '🌨️'      // Light snow
+  if (p > 0.1 && t < 40) return '🥶🌦️'   // Light rain, very cold
+  if (p > 0.1)            return '🌦️'      // Light rain
+
+  // No precipitation — check temperature + wind
+  // Temperature checks must go from coldest to hottest
+  if (t <= 20)            return '🥶🧊⛄'  // Extreme cold
+  if (t <= 30 && w > 15) return '🥶💨'    // Freezing + windy
+  if (t <= 32)            return '🥶⛅'    // Freezing
+  if (t <= 50 && w > 15) return '🧥💨'    // Cold + windy
+  if (t <= 50)            return '🧥'      // Cold
+  if (t <= 70 && w > 20) return '⛅💨'    // Mild + very windy
+  if (t <= 70 && w > 15) return '☀️💨'    // Warm + breezy
+  if (t >= 90)            return '🥵'      // Very hot — must come before ≥ 65
+  if (t >= 65)            return '☀️'      // Warm/sunny
+  if (w > 15)             return '💨'      // Mild but windy
+  return '⛅'                              // Default: partly cloudy
 }
 
 // Helper: holiday emoji
