@@ -44,12 +44,12 @@ export default function App() {
               <div className="ml-auto flex flex-col items-end text-xs text-gray-500">
                 <span>
                   <span className="text-gray-600">
-                    Week {lastUpdated.upcoming_week} · Sim updated{' '}
+                    Week {lastUpdated.upcoming_week} · Simulations and Odds Data updated{' '}
                   </span>
                   {lastUpdated.sim_updated}
                 </span>
                 <span>
-                  <span className="text-gray-600">MP Rankings updated{' '}</span>
+                  <span className="text-gray-600">Massey-Peabody Rankings updated{' '}</span>
                   {lastUpdated.mp_updated && lastUpdated.mp_updated !== 'Unknown'
                     ? lastUpdated.mp_updated
                     : 'Not yet uploaded this week'}
