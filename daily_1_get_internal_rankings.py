@@ -566,10 +566,10 @@ def loop_through_rankings(date):
             filename = f"nfl-power-ratings/nfl_power_ratings_blended_week_{CURRENT_UPCOMING_WEEK}_{target_year}.csv"
             
             # 2. Compare if file exists
-            if os.path.exists('nfl-power-ratings/mp_ratings.csv'):
+            if os.path.exists(f'nfl-power-ratings/mp_ratings_week_{starting_week}_{target_year}.csv'):
                 print("Found MP Ratings file. Merging and analyzing...")
                 try:
-                    final_df = compare_models(df, 'nfl-power-ratings/mp_ratings.csv')
+                    final_df = compare_models(df, f'nfl-power-ratings/mp_ratings_week_{starting_week}_{target_year}.csv')
                 except Exception as e:
                     print(f"Error during merge: {e}. Saving internal ratings only.")
                     final_df = df
