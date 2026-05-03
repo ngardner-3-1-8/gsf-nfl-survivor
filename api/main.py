@@ -118,12 +118,21 @@ def get_available_weeks():
 def get_last_updated():
     try:
         data = load_current_data(DATA_DIR)
-        mp_path = os.path.join(DATA_DIR, "mp_ratings_last_updated.json")
+
+        # Sim results timestamp
+        sim_path = os.path.join(DATA_DIR, "last_updated.json")
+        timestamps = {"sim_updated": "Unknown"}
+        if os.path.exists(sim_path):
+            with open(sim_path, "r") as f:
+                timestamps = json.load(f)
+
+        # MP rankings timestamp
+        mp_path = os.path.join(DATA_DIR, "mp_rankings_last_updated.json")
         mp_timestamps = {"mp_updated": "Unknown"}
         if os.path.exists(mp_path):
             with open(mp_path, "r") as f:
                 mp_timestamps = json.load(f)
-        
+
         return {
             **timestamps,
             **mp_timestamps,
