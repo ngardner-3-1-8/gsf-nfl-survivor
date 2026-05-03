@@ -43,15 +43,17 @@ export default function App() {
             {lastUpdated && (
               <div className="ml-auto flex flex-col items-end text-xs text-gray-500">
                 <span>
-                  <span className="text-gray-600">Week {lastUpdated.upcoming_week} · Sim updated </span>
+                  <span className="text-gray-600">
+                    Week {lastUpdated.upcoming_week} · Sim updated{' '}
+                  </span>
                   {lastUpdated.sim_updated}
                 </span>
-                {lastUpdated.mp_updated && lastUpdated.mp_updated !== "Unknown" && (
-                  <span>
-                    <span className="text-gray-600">MP Rankings updated </span>
-                    {lastUpdated.mp_updated}
-                  </span>
-                )}
+                <span>
+                  <span className="text-gray-600">MP Rankings updated{' '}</span>
+                  {lastUpdated.mp_updated && lastUpdated.mp_updated !== 'Unknown'
+                    ? lastUpdated.mp_updated
+                    : 'Not yet uploaded this week'}
+                </span>
               </div>
             )}
         </div>
