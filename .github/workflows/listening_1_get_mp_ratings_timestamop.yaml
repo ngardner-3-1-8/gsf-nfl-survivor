@@ -1,0 +1,30 @@
+name: Write MP Rankings Timestamp
+on:
+  push:
+    paths:
+      - 'nfl-power-ratings/mp_rankings_*.csv'
+permissions:
+  contents: write
+jobs:
+  timestamp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write timestamp
+        run: |
+          python3 -c "
+          import json
+          from datetime import datetime
+          import pytz
+          eastern = pytz.timezone('America/New_York')
+          now = datetime.now(pytz.utc).astimezone(eastern)
+          timestamp = now.strftime('%b %d, %Y at %I:%M %p ET')
+          with open('mp_rankings_last_updated.json', 'w') as f:
+              json.dump({'mp_updated': timestamp}, f)
+          "
+      - name: Commit timestamp
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add mp_rankings_last_updated.json
+          git diff --staged --quiet || git commit -m "Update MP rankings timestamp" && git push
