@@ -127,7 +127,7 @@ def get_last_updated():
                 timestamps = json.load(f)
 
         # MP rankings timestamp
-        mp_path = os.path.join(DATA_DIR, "mp_rankings_last_updated.json")
+        mp_path = os.path.join(DATA_DIR, "mp_ratings_last_updated.json")
         mp_timestamps = {"mp_updated": "Unknown"}
         if os.path.exists(mp_path):
             with open(mp_path, "r") as f:
