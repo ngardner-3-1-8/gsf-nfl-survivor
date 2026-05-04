@@ -701,16 +701,16 @@ def loop_through_simulations(date_str):
     	# 5. Create the final DataFrame
     	# Because 'data' is a list of dicts, pandas automatically matches the keys to column names
         df = pd.DataFrame(data)
-        df['Circa Week'] = df['Week']
+        df['Circa Week'] = df['Week'].astype(str)
         df['Date'] = pd.to_datetime(df['Date'], format='%b %d, %Y')
         # Adjust January games to 2025 in the DataFrame
         df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
         df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 1
 
-        df.loc[df['Date'] == pd.to_datetime(thanksgiving_date), 'Week'] = 'Thanksgiving'
-        df.loc[df['Date'] == pd.to_datetime(black_friday), 'Week'] = 'Thanksgiving'
-        df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Week'] = 'Christmas'
-        df.loc[df['Date'] == pd.to_datetime(boxing_day), 'Week'] = 'Christmas'
+        df.loc[df['Date'] == pd.to_datetime(thanksgiving_date), 'Circa Week'] = 'Thanksgiving'
+        df.loc[df['Date'] == pd.to_datetime(black_friday), 'Circa Week'] = 'Thanksgiving'
+        df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
+        df.loc[df['Date'] == pd.to_datetime(boxing_day), 'Circa Week'] = 'Christmas'
     
     
         # Convert 'Week' back to string format if needed
