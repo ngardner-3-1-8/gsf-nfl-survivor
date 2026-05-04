@@ -503,6 +503,18 @@ def run_solver(
         pick_results = []
         for i in sorted(chosen_indices, key=lambda x: df.iloc[x]["Week_Num"]):
             row = df.iloc[i]
+
+            # Update holiday detection to handle both string and integer values
+            thanksgiving_val = str(row.get("Thanksgiving Favorite", "")).strip()
+            christmas_val = str(row.get("Christmas Favorite", "")).strip()
+            underdog_thanksgiving = str(row.get("Thanksgiving Underdog", "")).strip()
+            underdog_christmas = str(row.get("Christmas Underdog", "")).strip()
+            
+            is_thanksgiving = thanksgiving_val in ("1", "Thanksgiving", "True", "true") or \
+                              underdog_thanksgiving in ("1", "Thanksgiving", "True", "true")
+            is_christmas = christmas_val in ("1", "Christmas", "True", "true") or \
+                           underdog_christmas in ("1", "Christmas", "True", "true")
+            
             pick_results.append(PickResult(
                 week=int(row["Week_Num"]),
                 circa_week=str(row["Circa_Week"]) if pd.notna(row.get("Circa_Week")) else None,
@@ -518,6 +530,7 @@ def run_solver(
                 precipitation=float(row["Precipitation"]) if pd.notna(row.get("Precipitation")) else None,
                 wind=float(row["Wind"]) if pd.notna(row.get("Wind")) else None,
                 # Holiday
+                
                 is_thanksgiving=bool(
                     row.get("Thanksgiving Favorite", 0) == 1 or
                     row.get("Thanksgiving Underdog", 0) == 1
