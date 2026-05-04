@@ -28,17 +28,10 @@ function weatherEmoji(temp, precip, wind) {
   return '⛅'                              // Default: partly cloudy
 }
 
-// Helper: holiday emoji
-function holidayEmoji(row) {
-  if (row.Away_Team_Thanksgiving_Favorite === 1 ||
-      row.Home_Team_Thanksgiving_Favorite === 1 ||
-      row.Away_Team_Thanksgiving_Underdog === 1 ||
-      row.Home_Team_Thanksgiving_Underdog === 1) return '🦃'
-  if (row.Away_Team_Christmas_Favorite === 1 ||
-      row.Home_Team_Christmas_Favorite === 1 ||
-      row.Away_Team_Christmas_Underdog === 1 ||
-      row.Home_Team_Christmas_Underdog === 1) return '🎄'
-  return ''
+function holidayEmoji(pick) {
+  const turkey = pick.is_thanksgiving ? '🦃' : ''
+  const tree = pick.is_christmas ? '🎄' : ''
+  return turkey + tree  // shows one, both, or neither
 }
 
 // Helper: pick% color — top 2 red, next 3 yellow, rest green
@@ -102,8 +95,8 @@ export default function PickCard({ solution, index, label, allWeeklyPickPcts }) 
                     ${isClose ? 'bg-yellow-950/10' : ''}
                   `}
                 >
-                  <td className="px-4 py-2.5 text-gray-400 font-mono text-xs">{pick.week}</td>
-                  <td className="px-4 py-2.5 text-base">{holiday}</td>
+                  <td className="px-4 py-2.5 text-gray-400 font-mono text-xs">{pick.circa_week || pick.week}</td>
+                  <td className="px-4 py-2.5 text-base">{holidayEmoji(pick)}</td>
                   <td className="px-4 py-2.5 font-semibold text-white">{pick.team}</td>
                   <td className="px-4 py-2.5 text-gray-400 text-xs">{pick.opponent}</td>
                   <td className="px-4 py-2.5">
