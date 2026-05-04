@@ -169,17 +169,36 @@ def get_pick_percentages():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/debug-paths")
-def debug_paths():
-    import glob
-    return {
-        "DATA_DIR": DATA_DIR,
-        "cwd": os.getcwd(),
-        "last_updated_path": os.path.join(DATA_DIR, "last_updated.json"),
-        "last_updated_exists": os.path.exists(os.path.join(DATA_DIR, "last_updated.json")),
-        "root_files": os.listdir(DATA_DIR)[:20],
-    }
+@app.get("/api/weeks")
+def get_available_weeks():
+    try:
+        data = load_current_data(DATA_DIR)
+        df = data["sim_df"]
 
+        # Build list of {week, circa_week} objects for upcoming weeks only
+        upcoming = data["upcoming_week"]
+
+        week_col = "Week_x" if "Week_x" in df.columns else "Week"
+        circa_col = "Circa Week" if "Circa Week" in df.columns else None
+
+        weeks_df = df[[week_col] + ([circa_col] if circa_col else [])].drop_duplicates()
+        weeks_df = weeks_df[weeks_df[week_col] >= upcoming].sort_values(week_col)
+
+        week_options = []
+        for _, row in weeks_df.iterrows():
+            w = int(row[week_col])
+            label = str(row[circa_col]) if circa_col and pd.notna(row.get(circa_col)) else f"Week {w}"
+            week_options.append({"week": w, "label": label})
+
+        return {
+            "upcoming_week": upcoming,
+            "target_year": data["target_year"],
+            "weeks": week_options,
+        }
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/optimize")
 def optimize(request: OptimizeRequest):
