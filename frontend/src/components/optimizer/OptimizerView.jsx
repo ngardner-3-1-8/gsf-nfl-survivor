@@ -16,7 +16,12 @@ export default function OptimizerView() {
     fetchWeeks()
       .then(data => {
         setUpcomingWeek(data.upcoming_week || 1)
-        setWeekOptions(data.weeks || [])  // now an array of {week, label}
+        // Handle both old format (array of ints) and new format (array of objects)
+        const weeks = data.weeks || []
+        const options = weeks.map(w =>
+          typeof w === 'object' ? w : { week: w, label: `Week ${w}` }
+        )
+        setWeekOptions(options)
       })
       .catch(() => {})
 
