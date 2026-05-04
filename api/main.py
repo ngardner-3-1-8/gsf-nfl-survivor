@@ -142,6 +142,33 @@ def get_last_updated():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/pick-percentages")
+def get_pick_percentages():
+    try:
+        data = load_current_data(DATA_DIR)
+        df = data["sim_df"]
+
+        # Build a lookup of all teams' pick% for every week
+        records = []
+        for _, row in df.iterrows():
+            week = row.get("Week_x") or row.get("Week")
+            records.append({
+                "week": week,
+                "team": row.get("Home Team"),
+                "pick_pct": row.get("Home Pick %", 0) or 0,
+            })
+            records.append({
+                "week": week,
+                "team": row.get("Away Team"),
+                "pick_pct": row.get("Away Pick %", 0) or 0,
+            })
+
+        return {"picks": records}
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/debug-paths")
 def debug_paths():
     import glob
