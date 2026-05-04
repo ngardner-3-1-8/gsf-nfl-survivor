@@ -1,5 +1,6 @@
 // Helper: weather emoji from temperature, precipitation, wind
 function weatherEmoji(temp, precip, wind) {
+  if (dome) return '🏟️'
   if (temp === null || temp === undefined) return ''
   const t = parseFloat(temp)
   const p = parseFloat(precip) || 0
@@ -70,10 +71,15 @@ export default function PickCard({ solution, index, label, allWeeklyPickPcts }) 
             <tr className="text-xs text-gray-500 border-b border-gray-800">
               <th className="text-left px-4 py-2 font-medium">Wk</th>
               <th className="text-left px-4 py-2 font-medium">🗓</th>
+              <th className="text-left px-4 py-2 font-medium">Day</th>
               <th className="text-left px-4 py-2 font-medium">Team</th>
+              <th className="text-left px-4 py-2 font-medium">Starting QB</th>
               <th className="text-left px-4 py-2 font-medium">vs</th>
               <th className="text-left px-4 py-2 font-medium">H/A</th>
               <th className="text-left px-4 py-2 font-medium">🌤</th>
+              <th className="text-right px-4 py-2 font-medium">Rest</th>
+              <th className="text-right px-4 py-2 font-medium">Rest+/-</th>
+              <th className="text-right px-4 py-2 font-medium">Cum Rest</th>
               <th className="text-right px-4 py-2 font-medium">Win%</th>
               <th className="text-right px-4 py-2 font-medium">EV</th>
               <th className="text-right px-4 py-2 font-medium">Pick%</th>
@@ -85,7 +91,7 @@ export default function PickCard({ solution, index, label, allWeeklyPickPcts }) 
               const weekPcts = allWeeklyPickPcts?.[pick.week] || []
               // Rank among all teams that week (1 = highest pick%)
               const rank = weekPcts.filter(p => p > pick.pick_pct).length + 1
-              const weather = weatherEmoji(pick.temperature, pick.precipitation, pick.wind)
+              const weather = weatherEmoji(pick.temperature, pick.precipitation, pick.wind, pick.dome)
               const holiday = holidayEmoji(pick)
 
               return (
@@ -98,7 +104,11 @@ export default function PickCard({ solution, index, label, allWeeklyPickPcts }) 
                 >
                   <td className="px-4 py-2.5 text-gray-400 font-mono text-xs">{pick.circa_week || pick.week}</td>
                   <td className="px-4 py-2.5 text-base">{holidayEmoji(pick)}</td>
+                  <td className="px-4 py-2.5 text-gray-400 text-xs">{pick.day_of_week || '—'}</td>
                   <td className="px-4 py-2.5 font-semibold text-white">{pick.team}</td>
+                  <td className="px-4 py-2.5 text-gray-300 text-xs">
+                    {pick.starting_qb || '—'}
+                  </td>
                   <td className="px-4 py-2.5 text-gray-400 text-xs">{pick.opponent}</td>
                   <td className="px-4 py-2.5">
                     <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
@@ -110,6 +120,25 @@ export default function PickCard({ solution, index, label, allWeeklyPickPcts }) 
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-base">{weather}</td>
+                  <td className="px-4 py-2.5 text-right font-mono text-xs text-gray-300">
+                    {pick.days_of_rest ?? '—'}
+                  </td>
+                  <td className={`px-4 py-2.5 text-right font-mono text-xs ${
+                    pick.rest_advantage > 0 ? 'text-green-400' :
+                    pick.rest_advantage < 0 ? 'text-red-400' : 'text-gray-400'
+                  }`}>
+                    {pick.rest_advantage != null
+                      ? (pick.rest_advantage > 0 ? '+' : '') + pick.rest_advantage
+                      : '—'}
+                  </td>
+                  <td className={`px-4 py-2.5 text-right font-mono text-xs ${
+                    pick.cumulative_rest > 0 ? 'text-green-400' :
+                    pick.cumulative_rest < 0 ? 'text-red-400' : 'text-gray-400'
+                  }`}>
+                    {pick.cumulative_rest != null
+                      ? (pick.cumulative_rest > 0 ? '+' : '') + pick.cumulative_rest
+                      : '—'}
+                  </td>
                   <td className="px-4 py-2.5 text-right font-mono text-xs">
                     <span className={`${
                       pick.win_pct >= 0.75 ? 'text-green-400' :
