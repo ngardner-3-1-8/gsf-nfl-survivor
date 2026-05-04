@@ -125,8 +125,14 @@ class PickResult(BaseModel):
     temperature: Optional[float] = None
     precipitation: Optional[float] = None
     wind: Optional[float] = None
+    dome: bool = False
+    starting_qb: Optional[str] = None
     is_thanksgiving: bool = False
     is_christmas: bool = False
+    day_of_week: Optional[str] = None      # "Thursday Night", "Monday Night", "Sunday", etc.
+    days_of_rest: Optional[int] = None     # this team's rest days
+    rest_advantage: Optional[float] = None # positive = this team has more rest
+    cumulative_rest: Optional[float] = None
 
 class OptimizeResponse(BaseModel):
     # EV-optimized solutions
