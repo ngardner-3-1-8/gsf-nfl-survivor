@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Toggle from '../ui/Toggle'
 import Select from '../ui/Select'
 import SectionHeader from '../ui/SectionHeader'
@@ -29,25 +29,15 @@ const FAVORED_OPTIONS = [
   { value: 'all',        label: 'All Models' },
 ]
 
-const BAYESIAN_OPTIONS = [
-  { value: 'none',                         label: 'None' },
-  { value: 'preseason_and_current_and_travel', label: 'Preseason + Current + Travel' },
-  { value: 'current_and_travel',           label: 'Current + Travel' },
-  { value: 'preseason_and_current',        label: 'Preseason + Current' },
-]
-
-export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek }) {
-  // Core settings
+export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek, weekOptions }) {
   const [objective, setObjective] = useState('consensus')
   const [numSolutions, setNumSolutions] = useState(1)
   const [startWeek, setStartWeek] = useState(upcomingWeek || 1)
   const [endWeek, setEndWeek] = useState(20)
 
-  // Must be favored
   const [mustBeFavored, setMustBeFavored] = useState(false)
   const [favoredQualifier, setFavoredQualifier] = useState('sportsbook')
 
-  // Scheduling constraints
   const [scheduling, setScheduling] = useState({
     avoid_away_short_rest: false,
     avoid_away_divisional: false,
@@ -66,7 +56,6 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek }) {
     min_away_spread: 3.0,
   })
 
-  // Bayesian constraints
   const [bayesian, setBayesian] = useState({
     mp_bayesian_all_metrics: false,
     mp_bayesian_preseason_and_current: false,
@@ -80,10 +69,17 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek }) {
     bayesian_require_all: false,
   })
 
-  // Team constraints
   const [prohibitedTeams, setProhibitedTeams] = useState('')
   const [requiredPicks, setRequiredPicks] = useState('')
   const [prohibitedWeeklyPicks, setProhibitedWeeklyPicks] = useState('')
+
+  // Update week range defaults when weekOptions loads
+  useEffect(() => {
+    if (upcomingWeek) setStartWeek(upcomingWeek)
+    if (weekOptions?.length > 0) {
+      setEndWeek(weekOptions[weekOptions.length - 1].week)
+    }
+  }, [upcomingWeek, weekOptions])
 
   const toggleScheduling = (key) => {
     setScheduling(prev => ({ ...prev, [key]: !prev[key] }))
@@ -94,13 +90,11 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek }) {
   }
 
   const handleSubmit = () => {
-    // Parse prohibited teams (comma separated)
     const prohibited = prohibitedTeams
       .split(',')
       .map(t => t.trim())
       .filter(Boolean)
 
-    // Parse required picks (format: "Team Name:week")
     const required = {}
     requiredPicks.split('\n').forEach(line => {
       const [team, week] = line.split(':').map(s => s.trim())
@@ -108,8 +102,7 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek }) {
         required[team] = parseInt(week)
       }
     })
-    
-    // Parse prohibited weekly picks (format: "Team Name: week, week, week")
+
     const prohibitedWeekly = {}
     prohibitedWeeklyPicks.split('\n').forEach(line => {
       const colonIdx = line.indexOf(':')
@@ -167,18 +160,18 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek }) {
           label="Start week"
           value={startWeek}
           onChange={v => setStartWeek(Number(v))}
-          options={Array.from({ length: 20 }, (_, i) => ({
-            value: i + 1,
-            label: `Week ${i + 1}`,
+          options={(weekOptions || []).map(w => ({
+            value: w.week,
+            label: w.label,
           }))}
         />
         <Select
           label="End week"
           value={endWeek}
           onChange={v => setEndWeek(Number(v))}
-          options={Array.from({ length: 20 }, (_, i) => ({
-            value: i + 1,
-            label: `Week ${i + 1}`,
+          options={(weekOptions || []).map(w => ({
+            value: w.week,
+            label: w.label,
           }))}
         />
       </div>
@@ -350,7 +343,7 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek }) {
         />
         <p className="text-xs text-gray-600">Comma-separated team names</p>
       </div>
-      
+
       <div className="flex flex-col gap-1.5 mt-3">
         <label className="text-xs text-gray-400 font-medium uppercase tracking-wide">
           Required picks
@@ -364,7 +357,7 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek }) {
         />
         <p className="text-xs text-gray-600">One per line: Team Name: week number</p>
       </div>
-      
+
       <div className="flex flex-col gap-1.5 mt-3">
         <label className="text-xs text-gray-400 font-medium uppercase tracking-wide">
           Avoid team on specific week
