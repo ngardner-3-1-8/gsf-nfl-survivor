@@ -114,6 +114,7 @@ class OptimizeRequest(BaseModel):
 # ─────────────────────────────────────────────
 class PickResult(BaseModel):
     week: int
+    circa_week: Optional[str] = None
     team: str
     ev: float
     win_pct: float
