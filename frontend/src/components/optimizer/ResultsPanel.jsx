@@ -1,5 +1,6 @@
 import PickCard from './PickCard'
 
+
 export default function ResultsPanel({ results, loading, error, allPickPcts }) {
 
   // Build weekly sorted arrays from the real CSV data
