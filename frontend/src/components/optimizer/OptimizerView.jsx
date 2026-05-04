@@ -10,6 +10,7 @@ export default function OptimizerView() {
   const [upcomingWeek, setUpcomingWeek] = useState(1)
   const [allPickPcts, setAllPickPcts] = useState({})
   const [weekOptions, setWeekOptions] = useState([])
+  
 
   useEffect(() => {
     fetchWeeks()
