@@ -9,7 +9,6 @@ from api.models import OptimizeRequest, OptimizeResponse
 from api.data_loader import load_current_data
 from api.optimizer import run_optimizer
 
-
 app = FastAPI(title="Circa Survivor API", version="1.0.0")
 
 # Allow requests from local dev and your future GitHub Pages URL
