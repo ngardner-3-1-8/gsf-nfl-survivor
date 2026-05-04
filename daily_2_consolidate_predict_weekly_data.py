@@ -5601,7 +5601,7 @@ def loop_through_simulations(date_str):
 
 if __name__ == "__main__":
     week_starting_dates = [
-#        "09/03/2025"
+        "09/03/2025"
 #        "09/10/2025", 
 #        "09/17/2025", 
 #        "09/24/2025", 
@@ -5620,7 +5620,7 @@ if __name__ == "__main__":
 #        "12/17/2025"
 #        "12/24/2025",
 #        "12/26/2025",
-        "12/31/2025"
+#        "12/31/2025"
     ]
 
     for date in week_starting_dates:
