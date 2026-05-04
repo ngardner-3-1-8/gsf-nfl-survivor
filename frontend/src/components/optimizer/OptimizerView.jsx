@@ -15,6 +15,12 @@ export default function OptimizerView() {
       .catch(() => {}) // silently fail — default to week 1
   }, [])
 
+  export async function fetchPickPercentages() {
+    const res = await fetch(`${API_URL}/api/pick-percentages`)
+    if (!res.ok) throw new Error('Failed to fetch pick percentages')
+    return res.json()
+  }
+
   const handleSubmit = async (constraints) => {
     setLoading(true)
     setError(null)
