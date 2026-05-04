@@ -9,10 +9,14 @@ export default function OptimizerView() {
   const [error, setError] = useState(null)
   const [upcomingWeek, setUpcomingWeek] = useState(1)
   const [allPickPcts, setAllPickPcts] = useState({})
+  const [weekOptions, setWeekOptions] = useState([])
 
   useEffect(() => {
     fetchWeeks()
-      .then(data => setUpcomingWeek(data.upcoming_week || 1))
+      .then(data => {
+        setUpcomingWeek(data.upcoming_week || 1)
+        setWeekOptions(data.weeks || [])  // now an array of {week, label}
+      })
       .catch(() => {})
 
     fetchPickPercentages()
@@ -49,6 +53,7 @@ export default function OptimizerView() {
           onSubmit={handleSubmit}
           loading={loading}
           upcomingWeek={upcomingWeek}
+          weekOptions={weekOptions}
         />
       </div>
       <div className="min-h-[400px]">
