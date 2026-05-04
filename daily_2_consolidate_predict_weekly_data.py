@@ -706,6 +706,17 @@ def loop_through_simulations(date_str):
         # Adjust January games to 2025 in the DataFrame
         df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
         df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 1
+
+        df['Circa Week'] = df['Week']
+        df.loc[df['Date'] == pd.to_datetime(thanksgiving_date), 'Week'] = 'Thanksgiving'
+        df.loc[df['Date'] == pd.to_datetime(black_friday), 'Week'] = 'Thanksgiving'
+        df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Week'] = 'Christmas'
+        df.loc[df['Date'] == pd.to_datetime(boxing_day), 'Week'] = 'Christmas'
+
+        thanksgiving_date = get_thanksgiving(target_year)
+        black_friday = thanksgiving_date + timedelta(days=1)
+        christmas_day = datetime(target_year, 12, 25)
+        boxing_day = datetime(target_year, 12, 26)
     
     
         # Convert 'Week' back to string format if needed
