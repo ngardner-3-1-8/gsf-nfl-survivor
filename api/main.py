@@ -174,7 +174,6 @@ def get_available_weeks():
         data = load_current_data(DATA_DIR)
         df = data["sim_df"]
 
-        # Build list of {week, circa_week} objects for upcoming weeks only
         upcoming = data["upcoming_week"]
 
         week_col = "Week_x" if "Week_x" in df.columns else "Week"
