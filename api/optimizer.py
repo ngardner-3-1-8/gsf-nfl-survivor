@@ -69,6 +69,15 @@ AWAY_COL_MAP = {
     "Away Team Previous Location":                     "Previous Game Location",
     "Away Team Next Opponent":                         "Next Opponent",
     "Away Team Next Location":                         "Next Game Location",
+    "Date_x":                                          "Date",
+    "Time":                                            "Game_Time",
+    "Dome":                                            "Dome",
+    "Away Team Starting QB":                           "Starting_QB",
+    "Thursday Night Game":                             "Thursday Night Game",
+    "Away Team Weekly Rest":                           "Days_of_Rest",
+    "Weekly Away Rest Advantage":                      "Rest_Advantage",
+    "Away Cumulative Rest Advantage":                  "Cumulative_Rest",
+    "Circa Week":                                      "Circa_Week",
     "Temperature":                                     "Temperature",
     "Precipitation":                                   "Precipitation",
     "Wind":                                            "Wind",
@@ -126,6 +135,15 @@ HOME_COL_MAP = {
     "Home Team Previous Location":                     "Previous Game Location",
     "Home Team Next Opponent":                         "Next Opponent",
     "Home Team Next Location":                         "Next Game Location",
+    "Date_x":                                          "Date",
+    "Time":                                            "Game_Time",
+    "Dome":                                            "Dome",
+    "Home Team Starting QB":                           "Starting_QB",
+    "Thursday Night Game":                             "Thursday Night Game",
+    "Home Team Weekly Rest":                           "Days_of_Rest",
+    "Weekly Away Rest Advantage":                      "Rest_Advantage",
+    "Home Cumulative Rest Advantage":                  "Cumulative_Rest",
+    "Circa Week":                                      "Circa_Week",
     "Temperature":                                     "Temperature",
     "Precipitation":                                   "Precipitation",
     "Wind":                                            "Wind",
@@ -514,6 +532,39 @@ def run_solver(
                               underdog_thanksgiving in ("1", "Thanksgiving", "True", "true")
             is_christmas = christmas_val in ("1", "Christmas", "True", "true") or \
                            underdog_christmas in ("1", "Christmas", "True", "true")
+            dome_val = row.get("Dome", None)
+            is_dome = bool(dome_val) if dome_val is not None and pd.notna(dome_val) else None
+            # Derive day of week from Date column
+            day_label = None
+            try:
+                from datetime import datetime as dt
+                date_val = row.get("Date")
+                if date_val and pd.notna(date_val):
+                    date_obj = pd.to_datetime(date_val)
+                    day_name = date_obj.strftime("%A")  # Monday, Tuesday, etc.
+                    game_time = str(row.get("Game_Time", "") or "")
+                    is_tnf = str(row.get("Thursday Night Game", "False")).strip() == "True"
+                    # Check for Monday Night Football (after 7pm ET on Monday)
+                    is_mnf = day_name == "Monday" and game_time >= "19:00"
+                    # Check for Sunday Night Football (after 7pm ET on Sunday)
+                    is_snf = day_name == "Sunday" and game_time >= "19:00"
+            
+                    if is_tnf:
+                        day_label = "Thu 🌙"
+                    elif is_mnf:
+                        day_label = "Mon 🌙"
+                    elif is_snf:
+                        day_label = "Sun 🌙"
+                    elif day_name == "Sunday":
+                        day_label = "Sun"
+                    elif day_name == "Saturday":
+                        day_label = "Sat"
+                    elif day_name == "Friday":
+                        day_label = "Fri"
+                    else:
+                        day_label = day_name[:3]
+            except Exception:
+                pass
             
             pick_results.append(PickResult(
                 week=int(row["Week_Num"]),
@@ -539,6 +590,11 @@ def run_solver(
                     row.get("Christmas Favorite", 0) == 1 or
                     row.get("Christmas Underdog", 0) == 1
                 ),
+                days_of_rest=int(row["Days_of_Rest"]) if pd.notna(row.get("Days_of_Rest")) else None,
+                rest_advantage=round(float(row["Rest_Advantage"]), 1) if pd.notna(row.get("Rest_Advantage")) else None,
+                cumulative_rest=round(float(row["Cumulative_Rest"]), 1) if pd.notna(row.get("Cumulative_Rest")) else None,
+                dome=is_dome,
+                starting_qb=str(row["Starting_QB"]) if pd.notna(row.get("Starting_QB")) else None,
             ))
 
         solutions.append(pick_results)
