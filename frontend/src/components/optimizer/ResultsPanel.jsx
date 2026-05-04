@@ -1,23 +1,14 @@
 import PickCard from './PickCard'
 
-// Build a lookup of all pick percentages per week across all solutions
-// so PickCard can rank each team's pick% within its week
-function buildWeeklyPickPcts(solutions) {
-  const weekly = {}
-  solutions.forEach(solution => {
-    solution.forEach(pick => {
-      if (!weekly[pick.week]) weekly[pick.week] = []
-      weekly[pick.week].push(pick.pick_pct)
-    })
-  })
-  // Sort descending so rank = index + 1
-  Object.keys(weekly).forEach(week => {
-    weekly[week].sort((a, b) => b - a)
-  })
-  return weekly
-}
+export default function ResultsPanel({ results, loading, error, allPickPcts }) {
 
-export default function ResultsPanel({ results, loading, error }) {
+  // Build weekly sorted arrays from the real CSV data
+  // Must be computed before any early returns so it's always available
+  const allWeeklyPickPcts = {}
+  Object.entries(allPickPcts || {}).forEach(([week, teams]) => {
+    allWeeklyPickPcts[week] = Object.values(teams).sort((a, b) => b - a)
+  })
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
@@ -54,14 +45,12 @@ export default function ResultsPanel({ results, loading, error }) {
         <p className="text-yellow-400 text-sm font-medium">No solution found</p>
         <p className="text-yellow-300 text-sm mt-1">{results.message}</p>
         <p className="text-gray-400 text-xs mt-2">
-          Try relaxing some constraints — for example, turn off a few scheduling filters or expand the week range.
+          Try relaxing some constraints — for example, turn off a few scheduling
+          filters or expand the week range.
         </p>
       </div>
     )
   }
-
-  const allSolutions = [...(results.ev_solutions || []), ...(results.ranking_solutions || [])]
-  const allWeeklyPickPcts = buildWeeklyPickPcts(allSolutions)
 
   return (
     <div className="flex flex-col gap-6">
