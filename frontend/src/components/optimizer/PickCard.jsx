@@ -4,6 +4,7 @@ function weatherEmoji(temp, precip, wind) {
   const t = parseFloat(temp)
   const p = parseFloat(precip) || 0
   const w = parseFloat(wind) || 0
+  
 
   // Precipitation first — check cold vs warm variants
   if (p > 0.3 && t < 32) return '❄️🌨️'   // Heavy snow
