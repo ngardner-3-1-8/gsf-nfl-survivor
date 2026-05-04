@@ -505,6 +505,7 @@ def run_solver(
             row = df.iloc[i]
             pick_results.append(PickResult(
                 week=int(row["Week_Num"]),
+                circa_week=str(row["Circa_Week"]) if pd.notna(row.get("Circa_Week")) else None,
                 team=str(row["Team"]),
                 ev=round(float(row.get("EV", 0) or 0), 4),
                 win_pct=round(float(row.get("Win Pct", 0) or 0), 4),
