@@ -1,6 +1,4 @@
 const raw = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-
-// Ensure the URL always starts with http
 const API_URL = raw.startsWith('http') ? raw : `https://${raw}`
 
 export async function fetchWeeks() {
@@ -18,6 +16,13 @@ export async function runOptimizer(constraints) {
   if (!res.ok) throw new Error('Optimizer request failed')
   return res.json()
 }
+
+export async function fetchPickPercentages() {
+  const res = await fetch(`${API_URL}/api/pick-percentages`)
+  if (!res.ok) throw new Error('Failed to fetch pick percentages')
+  return res.json()
+}
+
 export async function fetchLastUpdated() {
   const res = await fetch(`${API_URL}/api/last-updated`)
   if (!res.ok) throw new Error('Failed to fetch last updated')
