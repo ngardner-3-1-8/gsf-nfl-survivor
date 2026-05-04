@@ -11,6 +11,7 @@ from api.optimizer import run_optimizer
 
 app = FastAPI(title="Circa Survivor API", version="1.0.0")
 
+
 # Allow requests from local dev and your future GitHub Pages URL
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
