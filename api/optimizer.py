@@ -20,9 +20,6 @@ AWAY_COL_MAP = {
     "Away Team":                                        "Team",
     "Home Team":                                        "Opponent",
     "Week":                                             "Week_Num",
-    "Circa Week":                                      "Circa_Week",
-    "Date_x":                                          "Date",
-    "Time":                                            "Time",
     "Actual Stadium":                                  "Location",
     "Thursday Night Game":                             "Thursday Night Game",
     "Divisional Matchup?":                             "Divisional Matchup?",
@@ -87,9 +84,6 @@ HOME_COL_MAP = {
     "Home Team":                                        "Team",
     "Away Team":                                        "Opponent",
     "Week":                                             "Week_Num",
-    "Circa Week":                                      "Circa_Week",
-    "Date_x":                                          "Date",
-    "Time":                                            "Time",
     "Actual Stadium":                                  "Location",
     "Thursday Night Game":                             "Thursday Night Game",
     "Divisional Matchup?":                             "Divisional Matchup?",
@@ -141,7 +135,7 @@ HOME_COL_MAP = {
     "Home Team Starting QB":                           "Starting_QB",
     "Thursday Night Game":                             "Thursday Night Game",
     "Home Team Weekly Rest":                           "Days_of_Rest",
-    "Weekly Away Rest Advantage":                      "Rest_Advantage",
+    "Weekly Home Rest Advantage":                      "Rest_Advantage",
     "Home Cumulative Rest Advantage":                  "Cumulative_Rest",
     "Circa Week":                                      "Circa_Week",
     "Temperature":                                     "Temperature",
@@ -581,15 +575,8 @@ def run_solver(
                 precipitation=float(row["Precipitation"]) if pd.notna(row.get("Precipitation")) else None,
                 wind=float(row["Wind"]) if pd.notna(row.get("Wind")) else None,
                 # Holiday
-                
-                is_thanksgiving=bool(
-                    row.get("Thanksgiving Favorite", 0) == 1 or
-                    row.get("Thanksgiving Underdog", 0) == 1
-                ),
-                is_christmas=bool(
-                    row.get("Christmas Favorite", 0) == 1 or
-                    row.get("Christmas Underdog", 0) == 1
-                ),
+                is_thanksgiving=is_thanksgiving,
+                is_christmas=is_christmas,
                 days_of_rest=int(row["Days_of_Rest"]) if pd.notna(row.get("Days_of_Rest")) else None,
                 rest_advantage=round(float(row["Rest_Advantage"]), 1) if pd.notna(row.get("Rest_Advantage")) else None,
                 cumulative_rest=round(float(row["Cumulative_Rest"]), 1) if pd.notna(row.get("Cumulative_Rest")) else None,
