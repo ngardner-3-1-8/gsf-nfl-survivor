@@ -96,23 +96,6 @@ def get_ev(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@app.get("/api/weeks")
-def get_available_weeks():
-    try:
-        data = load_current_data(DATA_DIR)
-        df = data["sim_df"]
-        weeks = sorted(df["Week_x"].dropna().unique().tolist())
-        return {
-            "upcoming_week": data["upcoming_week"],
-            "target_year": data["target_year"],
-            "weeks": weeks,
-        }
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.get("/api/last-updated")
 def get_last_updated():
     try:
