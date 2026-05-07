@@ -163,7 +163,7 @@ def get_available_weeks():
         circa_col = "Circa Week" if "Circa Week" in df.columns else None
 
         weeks_df = df[[week_col] + ([circa_col] if circa_col else [])].drop_duplicates()
-        weeks_df = weeks_df[weeks_df[week_col] >= upcoming].sort_values(week_col)
+####        weeks_df = weeks_df[weeks_df[week_col] >= upcoming].sort_values(week_col)
 
         week_options = []
         for _, row in weeks_df.iterrows():
