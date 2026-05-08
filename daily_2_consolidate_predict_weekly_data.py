@@ -694,69 +694,69 @@ def loop_through_simulations(date_str):
 
     	
         for index, row in df.iterrows():
-    	    # 1. Use the row itself for the base data
-    	    game_id = row['game_id']
-    	    season = row['Season']
-    	    week = row['Week']
-    	    last_date = row['Date']
-    	    gametime = row['Time']
-    	    away_team = row['Away Team']
-    	    home_team = row['Home Team']
-    	    location = row['Location']
-    	    away_qb = row['Away QB']
-    	    home_qb = row['Home QB']
-    	    away_qb_id = row['away_qb_id']
-    	    home_qb_id = row['home_qb_id']
+            # 1. Use the row itself for the base data
+            game_id = row['game_id']
+            season = row['Season']
+            week = row['Week']
+            last_date = row['Date']
+            gametime = row['Time']
+            away_team = row['Away Team']
+            home_team = row['Home Team']
+            location = row['Location']
+            away_qb = row['Away QB']
+            home_qb = row['Home QB']
+            away_qb_id = row['away_qb_id']
+            home_qb_id = row['home_qb_id']
     
     
     	
-    	    # 2. Calculate rest (Logic remains the same)
-    	    away_rest_days = (last_date - last_game[away_team]).days if away_team in last_game else 0
-    	    home_rest_days = (last_date - last_game[home_team]).days if home_team in last_game else 0
+            # 2. Calculate rest (Logic remains the same)
+            away_rest_days = (last_date - last_game[away_team]).days if away_team in last_game else 0
+            home_rest_days = (last_date - last_game[home_team]).days if home_team in last_game else 0
     	    
-    	    away_advantage = away_rest_days - home_rest_days
-    	    home_advantage = home_rest_days - away_rest_days
+            away_advantage = away_rest_days - home_rest_days
+            home_advantage = home_rest_days - away_rest_days
     	
-    	    cumulative_advantage[away_team] = cumulative_advantage.get(away_team, 0) + away_advantage
-    	    cumulative_advantage[home_team] = cumulative_advantage.get(home_team, 0) + home_advantage
+            cumulative_advantage[away_team] = cumulative_advantage.get(away_team, 0) + away_advantage
+            cumulative_advantage[home_team] = cumulative_advantage.get(home_team, 0) + home_advantage
     	
     	    # 3. Handle Back-to-Back Logic
-    	    back_to_back_away = (away_team in last_away_game and last_away_game[away_team] == week - 1)
-    	    last_away_game[away_team] = week
-    	    last_game[away_team] = last_date
-    	    last_game[home_team] = last_date
+            back_to_back_away = (away_team in last_away_game and last_away_game[away_team] == week - 1)
+            last_away_game[away_team] = week
+            last_game[away_team] = last_date
+            last_game[home_team] = last_date
 
             loc_info = get_actual_location(row, international_games, stadiums)
     	
-    	    # 4. STORE AS DICTIONARY (Much safer than a list)
-    	    # This maps specific values to specific column names immediately
-    	    new_row = {
-    	        'Game ID': game_id,
-    	        'Season': season,
-    	        'Week': week,
-    	        'Date': last_date,
-    	        'Time': gametime,
-    	        'Away Team': away_team,
-    	        'Home Team': home_team,
-    	        'Location': location,
-    	        'Away QB': away_qb,
-    	        'Home QB': home_qb,
-    	        'Away QB ID': away_qb_id,
-    	        'Home QB ID': home_qb_id,
-    	        'Away Team Weekly Rest': away_rest_days,
-    	        'Home Team Weekly Rest': home_rest_days,
-    	        'Weekly Away Rest Advantage': away_advantage,
-    	        'Weekly Home Rest Advantage': home_advantage,
-    	        'Away Cumulative Rest Advantage': cumulative_advantage[away_team],
-    	        'Home Cumulative Rest Advantage': cumulative_advantage[home_team],
-    	        'Actual Stadium': loc_info["actual_stadium"],
+            # 4. STORE AS DICTIONARY (Much safer than a list)
+            # This maps specific values to specific column names immediately
+            new_row = {
+                'Game ID': game_id,
+                'Season': season,
+                'Week': week,
+                'Date': last_date,
+                'Time': gametime,
+                'Away Team': away_team,
+                'Home Team': home_team,
+                'Location': location,
+                'Away QB': away_qb,
+                'Home QB': home_qb,
+                'Away QB ID': away_qb_id,
+                'Home QB ID': home_qb_id,
+                'Away Team Weekly Rest': away_rest_days,
+                'Home Team Weekly Rest': home_rest_days,
+                'Weekly Away Rest Advantage': away_advantage,
+                'Weekly Home Rest Advantage': home_advantage,
+                'Away Cumulative Rest Advantage': cumulative_advantage[away_team],
+                'Home Cumulative Rest Advantage': cumulative_advantage[home_team],
+                'Actual Stadium': loc_info["actual_stadium"],
                 'Actual Stadium Latitude': loc_info["actual_lat"],
                 'Actual Stadium Longitude': loc_info["actual_lon"],
                 'Actual Stadium TimeZone': loc_info["actual_timezone"],
                 'International Game': loc_info["is_international"],
-    	        'Back to Back Away Games': back_to_back_away
-    	    }
-    	    data.append(new_row)
+                'Back to Back Away Games': back_to_back_away
+            }
+            data.append(new_row)
     	
     	# 5. Create the final DataFrame
     	# Because 'data' is a list of dicts, pandas automatically matches the keys to column names
