@@ -424,30 +424,17 @@ def apply_constraints(
 
         # ── Weekly rest disadvantage ──
         if s.avoid_weekly_rest_disadvantage:
-            rest_col = "Weekly Rest Advantage"
-            if rest_col in df.columns:
-                rest_adv = row.get(rest_col, None)
-                if rest_adv is not None and not (isinstance(rest_adv, float) and np.isnan(rest_adv)):
-                    if float(rest_adv) < 0:
-                        solver.Add(picks[i] == 0)
+            rest_adv = row.get("Rest_Advantage", None)
+            if rest_adv is not None and not (isinstance(rest_adv, float) and np.isnan(rest_adv)):
+                if float(rest_adv) < 0:
+                    solver.Add(picks[i] == 0)
 
         # Cumulative rest disadvantage
-        # ── Cumulative rest disadvantage ──
         if s.avoid_cumulative_rest:
-            cum_col = "Season-Long Rest Advantage Including This Week"
-            if cum_col in df.columns:
-                rest_adv = row.get(cum_col, None)
-                if rest_adv is not None and not (isinstance(rest_adv, float) and np.isnan(rest_adv)):
-                    if float(rest_adv) < 0:
-                        solver.Add(picks[i] == 0)
-            else:
-                # Fall back to the non-current-week version
-                cum_col_alt = "Season-Long Rest Advantage"
-                if cum_col_alt in df.columns:
-                    rest_adv = row.get(cum_col_alt, None)
-                    if rest_adv is not None and not (isinstance(rest_adv, float) and np.isnan(rest_adv)):
-                        if float(rest_adv) < 0:
-                            solver.Add(picks[i] == 0)
+            cum_adv = row.get("Cumulative_Rest", None)
+            if cum_adv is not None and not (isinstance(cum_adv, float) and np.isnan(cum_adv)):
+                if float(cum_adv) < 0:
+                    solver.Add(picks[i] == 0)
 
         # Travel disadvantage
         if s.avoid_travel_disadvantage and is_away:
