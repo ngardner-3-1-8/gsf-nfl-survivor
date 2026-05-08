@@ -553,48 +553,44 @@ def loop_through_simulations(date_str):
     ALL_TEAMS = list(STADIUM_INFO.keys())
     
     def load_international_games(target_year: int, schedules_dir: str = "nfl-schedules") -> dict:
-        """
-        Loads the international games file for the given year.
-        Returns a dict keyed by game_id for fast lookup.
-        Returns empty dict if file doesn't exist.
-        """
         filepath = os.path.join(schedules_dir, f"{target_year}_international_games.json")
+        print(f"DEBUG load_international_games: looking for {filepath}")
         if not os.path.exists(filepath):
+            print(f"DEBUG international games file NOT FOUND at {filepath}")
             return {}
         with open(filepath, "r") as f:
             data = json.load(f)
-        # Key by game_id for O(1) lookup
-        return {g["game_id"]: g for g in data.get("games", [])}
+        games = {g["game_id"]: g for g in data.get("games", [])}
+        print(f"DEBUG loaded {len(games)} international games: {list(games.keys())}")
+        return games
     
-    
+        
     def get_actual_location(row: dict, international_games: dict, stadiums: dict) -> dict:
-        """
-        Returns the actual stadium info for a game.
-        - If Location == "Neutral", looks up international_games by game_id
-        - Falls back to home stadium if not found in international_games
-        - If Location == "Home", uses home stadium as normal
-    
-        Returns dict with keys:
-            actual_stadium, actual_lat, actual_lon, actual_timezone, is_international
-        """
         home_team = row.get("Home Team") or row.get("home_team")
         game_id = row.get("Game ID") or row.get("game_id")
         location_type = str(row.get("Location", "Home")).strip()
     
-        is_international = False
+        print(f"DEBUG get_actual_location: game_id={game_id}, home_team={home_team}, location_type='{location_type}'")
     
-        if location_type == "Neutral" and game_id in international_games:
-            intl = international_games[game_id]
-            return {
-                "actual_stadium": intl["stadium"],
-                "actual_lat":     intl["latitude"],
-                "actual_lon":     intl["longitude"],
-                "actual_timezone": intl["timezone"],
-                "is_international": True,
-            }
+        if location_type == "Neutral":
+            print(f"DEBUG Neutral game found. Checking international_games for game_id={game_id}")
+            print(f"DEBUG Available international game_ids: {list(international_games.keys())}")
+            if game_id in international_games:
+                intl = international_games[game_id]
+                print(f"DEBUG Match found! Using {intl['stadium']}")
+                return {
+                    "actual_stadium":   intl["stadium"],
+                    "actual_lat":       intl["latitude"],
+                    "actual_lon":       intl["longitude"],
+                    "actual_timezone":  intl["timezone"],
+                    "is_international": True,
+                }
+            else:
+                print(f"DEBUG No match found in international_games — falling back to home stadium")
     
         # Default — use home team's stadium
         home_info = stadiums.get(home_team, {})
+        print(f"DEBUG Using home stadium for {home_team}: {home_info[0] if home_info else 'NOT FOUND'}")
         return {
             "actual_stadium":   home_info[0] if home_info else row.get("Actual Stadium", ""),
             "actual_lat":       home_info[1] if home_info else None,
