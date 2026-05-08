@@ -206,6 +206,10 @@ def prepare_df(sim_df: pd.DataFrame, request: OptimizeRequest) -> pd.DataFrame:
     away_df["Win Pct"] = df[away_win_col].values if away_win_col in df.columns else 0.0
     away_df["Sportsbook Spread"] = df["Away Team Sportsbook Spread"].values if "Away Team Sportsbook Spread" in df.columns else 0.0
     away_df["Game_Index"] = df.index
+    # Away display columns — bypass duplicate key limitation in AWAY_COL_MAP
+    away_df["Days_of_Rest"] = df["Away Team Weekly Rest"].values if "Away Team Weekly Rest" in df.columns else None
+    away_df["Rest_Advantage"] = df["Weekly Away Rest Advantage"].values if "Weekly Away Rest Advantage" in df.columns else None
+    away_df["Cumulative_Rest"] = df["Away Cumulative Rest Advantage"].values if "Away Cumulative Rest Advantage" in df.columns else None
 
     # ── Home team rows ──
     home_cols = {k: v for k, v in HOME_COL_MAP.items() if k in df.columns}
@@ -217,6 +221,10 @@ def prepare_df(sim_df: pd.DataFrame, request: OptimizeRequest) -> pd.DataFrame:
     home_df["Game_Index"] = df.index
     home_df["Away Team Short Rest"] = "No"
     home_df["Back to Back Away Games"] = False
+    # Home display columns
+    home_df["Days_of_Rest"] = df["Home Team Weekly Rest"].values if "Home Team Weekly Rest" in df.columns else None
+    home_df["Rest_Advantage"] = df["Weekly Home Rest Advantage"].values if "Weekly Home Rest Advantage" in df.columns else None
+    home_df["Cumulative_Rest"] = df["Home Cumulative Rest Advantage"].values if "Home Cumulative Rest Advantage" in df.columns else None
 
     # Concatenate and immediately reset to a clean 0-based index
     combined = pd.concat([away_df, home_df], ignore_index=True)
