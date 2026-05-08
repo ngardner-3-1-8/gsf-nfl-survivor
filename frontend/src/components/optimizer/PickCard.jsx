@@ -1,5 +1,5 @@
 // Helper: weather emoji from temperature, precipitation, wind
-function weatherEmoji(temp, precip, wind) {
+function weatherEmoji(temp, precip, wind, dome) {
   if (dome) return '🏟️'
   if (temp === null || temp === undefined) return ''
   const t = parseFloat(temp)
@@ -94,6 +94,7 @@ export default function PickCard({ solution, index, label, allWeeklyPickPcts }) 
               const weather = weatherEmoji(pick.temperature, pick.precipitation, pick.wind, pick.dome)
               const holiday = holidayEmoji(pick)
 
+      
               return (
                 <tr
                   key={i}
