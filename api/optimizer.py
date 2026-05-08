@@ -336,23 +336,43 @@ def apply_constraints(
                     solver.Add(picks[i] == 0)
 
         # Away teams in close matchups
+        # ── Away teams in close matchups ──
         if s.avoid_away_close and is_away:
-            if fq in ("mp", "gsf"):
-                if spread_int <= s.min_away_spread:
+            # Use the same fair odds column as the selected objective
+            col_map = {
+                "sportsbook": "Fair Odds Based on Sportsbook Odds",
+                "mp":         "Fair Odds Based on MP",
+                "gsf":        "Fair Odds Based on GSF",
+                "sim":        "Win Pct",
+                "consensus":  "Fair Odds Consensus",
+                "win_pct":    "Fair Odds Consensus",
+            }
+            col = col_map.get(request.objective, "Fair Odds Consensus")
+            if col in df.columns:
+                val = row.get(col, None)
+                if val is None or (isinstance(val, float) and np.isnan(val)):
+                    pass  # missing data — don't penalise
+                elif float(val) < 0.65:
                     solver.Add(picks[i] == 0)
-            else:
-                if spread_sb > -s.min_away_spread:
-                    solver.Add(picks[i] == 0)
-
-        # Close divisional matchups
+        
+        # ── Close divisional matchups ──
         if s.avoid_close_divisional:
             is_div = row.get("Divisional Matchup?", 0)
             if is_div == 1 or is_div == "Divisional" or is_div is True:
-                if fq in ("mp", "gsf"):
-                    if spread_int <= s.min_div_spread:
-                        solver.Add(picks[i] == 0)
-                else:
-                    if spread_sb > -s.min_div_spread:
+                col_map = {
+                    "sportsbook": "Fair Odds Based on Sportsbook Odds",
+                    "mp":         "Fair Odds Based on MP",
+                    "gsf":        "Fair Odds Based on GSF",
+                    "sim":        "Win Pct",
+                    "consensus":  "Fair Odds Consensus",
+                    "win_pct":    "Fair Odds Consensus",
+                }
+                col = col_map.get(request.objective, "Fair Odds Consensus")
+                if col in df.columns:
+                    val = row.get(col, None)
+                    if val is None or (isinstance(val, float) and np.isnan(val)):
+                        pass
+                    elif float(val) < 0.65:
                         solver.Add(picks[i] == 0)
 
         # Away divisional matchups
