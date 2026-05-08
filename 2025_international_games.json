@@ -1,9 +1,9 @@
 {
   "games": [
     {
-      "game_id": "2025_01_LAC_KC",
-      "home_team": "Kansas City Chiefs",
-      "away_team": "Los Angeles Chargers",
+      "game_id": "2025_01_KC_LAC",
+      "home_team": "Los Angeles Chargers",
+      "away_team": "Kansas City Chiefs",
       "date": "2025-09-05",
       "stadium": "Corinthians Arena",
       "city": "São Paulo, Brazil",
@@ -53,7 +53,7 @@
       "network": "NFL Network"
     },
     {
-      "game_id": "2025_07_LAR_JAX",
+      "game_id": "2025_07_LA_JAX",
       "home_team": "Jacksonville Jaguars",
       "away_team": "Los Angeles Rams",
       "date": "2025-10-19",
