@@ -36,7 +36,6 @@ AWAY_COL_MAP = {
     "Week":                                             "Week_Num",
     "Actual Stadium":                                   "Actual Stadium",
     "International Game":                               "International Game",
-    "Thursday Night Game":                             "Thursday Night Game",
     "Divisional Matchup?":                             "Divisional Matchup?",
     "Away Team Short Rest":                            "Away Team Short Rest",
     "Away Team 3 games in 10 days":                    "3 Games in 10 Days",
@@ -101,7 +100,6 @@ HOME_COL_MAP = {
     "Week":                                             "Week_Num",
     "Actual Stadium":                                   "Actual Stadium",
     "International Game":                               "International Game",
-    "Thursday Night Game":                             "Thursday Night Game",
     "Divisional Matchup?":                             "Divisional Matchup?",
     "Away Team Short Rest":                            "Away Team Short Rest",
     "Home Team 3 games in 10 days":                    "3 Games in 10 Days",
@@ -416,19 +414,32 @@ def apply_constraints(
             if str(row.get("Back to Back Away Games", "False")).strip() == "True":
                 solver.Add(picks[i] == 0)
 
-        # Weekly rest disadvantage
+        # ── Weekly rest disadvantage ──
         if s.avoid_weekly_rest_disadvantage:
-            rest_adv = float(row.get("Weekly Rest Advantage", 0) or 0)
-            if rest_adv < 0:
-                solver.Add(picks[i] == 0)
+            rest_col = "Weekly Rest Advantage"
+            if rest_col in df.columns:
+                rest_adv = row.get(rest_col, None)
+                if rest_adv is not None and not (isinstance(rest_adv, float) and np.isnan(rest_adv)):
+                    if float(rest_adv) < 0:
+                        solver.Add(picks[i] == 0)
 
         # Cumulative rest disadvantage
+        # ── Cumulative rest disadvantage ──
         if s.avoid_cumulative_rest:
-            rest_adv = float(row.get("Season-Long Rest Advantage Including This Week", 0) or 0)
-            if is_away and rest_adv < -10:
-                solver.Add(picks[i] == 0)
-            elif not is_away and rest_adv < -5:
-                solver.Add(picks[i] == 0)
+            cum_col = "Season-Long Rest Advantage Including This Week"
+            if cum_col in df.columns:
+                rest_adv = row.get(cum_col, None)
+                if rest_adv is not None and not (isinstance(rest_adv, float) and np.isnan(rest_adv)):
+                    if float(rest_adv) < 0:
+                        solver.Add(picks[i] == 0)
+            else:
+                # Fall back to the non-current-week version
+                cum_col_alt = "Season-Long Rest Advantage"
+                if cum_col_alt in df.columns:
+                    rest_adv = row.get(cum_col_alt, None)
+                    if rest_adv is not None and not (isinstance(rest_adv, float) and np.isnan(rest_adv)):
+                        if float(rest_adv) < 0:
+                            solver.Add(picks[i] == 0)
 
         # Travel disadvantage
         if s.avoid_travel_disadvantage and is_away:
