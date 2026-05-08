@@ -12,6 +12,20 @@ from typing import List, Tuple
 
 from api.models import OptimizeRequest, OptimizeResponse, PickResult
 
+def safe_float(val, default=None):
+    """Convert to float, returning default if None, NaN or inf."""
+    try:
+        if val is None:
+            return default
+        f = float(val)
+        if f != f:  # NaN check
+            return default
+        if f == float('inf') or f == float('-inf'):
+            return default
+        return f
+    except (TypeError, ValueError):
+        return default
+
 # ─────────────────────────────────────────────────────────────
 # Column mapping — current CSV → internal solver names
 # ─────────────────────────────────────────────────────────────
@@ -563,24 +577,23 @@ def run_solver(
                 week=int(row["Week_Num"]),
                 circa_week=str(row["Circa_Week"]) if pd.notna(row.get("Circa_Week")) else None,
                 team=str(row["Team"]),
-                ev=round(float(row.get("EV", 0) or 0), 4),
-                win_pct=round(float(row.get("Win Pct", 0) or 0), 4),
-                pick_pct=round(float(row.get("Expected Pick Percent", 0) or 0), 4),
+                ev=safe_float(row.get("EV"), 0.0),
+                win_pct=safe_float(row.get("Win Pct"), 0.0),
+                pick_pct=safe_float(row.get("Expected Pick Percent"), 0.0),
                 home_or_away="Away" if bool(row.get("Team Is Away", False)) else "Home",
                 opponent=str(row.get("Opponent", "")),
-                spread=round(float(row.get("Sportsbook Spread", 0) or 0), 1),
-                # Weather
-                temperature=float(row["Temperature"]) if pd.notna(row.get("Temperature")) else None,
-                precipitation=float(row["Precipitation"]) if pd.notna(row.get("Precipitation")) else None,
-                wind=float(row["Wind"]) if pd.notna(row.get("Wind")) else None,
-                # Holiday
-                is_thanksgiving=is_thanksgiving,
-                is_christmas=is_christmas,
-                days_of_rest=int(row["Days_of_Rest"]) if pd.notna(row.get("Days_of_Rest")) else None,
-                rest_advantage=round(float(row["Rest_Advantage"]), 1) if pd.notna(row.get("Rest_Advantage")) else None,
-                cumulative_rest=round(float(row["Cumulative_Rest"]), 1) if pd.notna(row.get("Cumulative_Rest")) else None,
+                spread=safe_float(row.get("Sportsbook Spread")),
+                temperature=safe_float(row.get("Temperature")),
+                precipitation=safe_float(row.get("Precipitation")),
+                wind=safe_float(row.get("Wind")),
                 dome=is_dome,
                 starting_qb=str(row["Starting_QB"]) if pd.notna(row.get("Starting_QB")) else None,
+                is_thanksgiving=is_thanksgiving,
+                is_christmas=is_christmas,
+                day_of_week=day_label,
+                days_of_rest=int(row["Days_of_Rest"]) if pd.notna(row.get("Days_of_Rest")) else None,
+                rest_advantage=safe_float(row.get("Rest_Advantage")),
+                cumulative_rest=safe_float(row.get("Cumulative_Rest")),
             ))
 
         solutions.append(pick_results)
