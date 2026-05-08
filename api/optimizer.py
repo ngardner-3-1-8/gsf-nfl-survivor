@@ -376,8 +376,7 @@ def apply_constraints(
 
         # International
         if s.avoid_international:
-            location = str(row.get("Location", "")).lower()
-            if "london" in location or "munich" in location or "madrid" in location:
+            if bool(row.get("International Game", False)):
                 solver.Add(picks[i] == 0)
 
         # TNF all teams
