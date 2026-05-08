@@ -1,0 +1,95 @@
+{
+  "games": [
+    {
+      "game_id": "2025_01_LAC_KC",
+      "home_team": "Kansas City Chiefs",
+      "away_team": "Los Angeles Chargers",
+      "date": "2025-09-05",
+      "stadium": "Corinthians Arena",
+      "city": "São Paulo, Brazil",
+      "timezone": "America/Sao_Paulo",
+      "latitude": -23.5453,
+      "longitude": -46.4733,
+      "kickoff_et": "20:00",
+      "network": "YouTube"
+    },
+    {
+      "game_id": "2025_04_MIN_PIT",
+      "home_team": "Pittsburgh Steelers",
+      "away_team": "Minnesota Vikings",
+      "date": "2025-09-28",
+      "stadium": "Croke Park",
+      "city": "Dublin, Ireland",
+      "timezone": "Europe/Dublin",
+      "latitude": 53.3609,
+      "longitude": -6.2511,
+      "kickoff_et": "09:30",
+      "network": "NFL Network"
+    },
+    {
+      "game_id": "2025_05_MIN_CLE",
+      "home_team": "Cleveland Browns",
+      "away_team": "Minnesota Vikings",
+      "date": "2025-10-05",
+      "stadium": "Tottenham Hotspur Stadium",
+      "city": "London, UK",
+      "timezone": "Europe/London",
+      "latitude": 51.6042,
+      "longitude": -0.0665,
+      "kickoff_et": "09:30",
+      "network": "NFL Network"
+    },
+    {
+      "game_id": "2025_06_DEN_NYJ",
+      "home_team": "New York Jets",
+      "away_team": "Denver Broncos",
+      "date": "2025-10-12",
+      "stadium": "Tottenham Hotspur Stadium",
+      "city": "London, UK",
+      "timezone": "Europe/London",
+      "latitude": 51.6042,
+      "longitude": -0.0665,
+      "kickoff_et": "09:30",
+      "network": "NFL Network"
+    },
+    {
+      "game_id": "2025_07_LAR_JAX",
+      "home_team": "Jacksonville Jaguars",
+      "away_team": "Los Angeles Rams",
+      "date": "2025-10-19",
+      "stadium": "Wembley Stadium",
+      "city": "London, UK",
+      "timezone": "Europe/London",
+      "latitude": 51.5560,
+      "longitude": -0.2795,
+      "kickoff_et": "09:30",
+      "network": "NFL Network"
+    },
+    {
+      "game_id": "2025_10_ATL_IND",
+      "home_team": "Indianapolis Colts",
+      "away_team": "Atlanta Falcons",
+      "date": "2025-11-09",
+      "stadium": "Olympic Stadium",
+      "city": "Berlin, Germany",
+      "timezone": "Europe/Berlin",
+      "latitude": 52.5147,
+      "longitude": 13.2395,
+      "kickoff_et": "09:30",
+      "network": "NFL Network"
+    },
+    {
+      "game_id": "2025_11_WAS_MIA",
+      "home_team": "Miami Dolphins",
+      "away_team": "Washington Commanders",
+      "date": "2025-11-16",
+      "stadium": "Santiago Bernabéu Stadium",
+      "city": "Madrid, Spain",
+      "timezone": "Europe/Madrid",
+      "latitude": 40.4531,
+      "longitude": -3.6883,
+      "kickoff_et": "09:30",
+      "network": "NFL Network"
+    }
+  ]
+}
