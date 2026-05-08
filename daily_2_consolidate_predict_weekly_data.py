@@ -2471,7 +2471,7 @@ def loop_through_simulations(date_str):
             return float(availability)
     
     # --- CONFIGURATION ---
-    SIMULATIONS = 5000
+    SIMULATIONS = 5
     HISTORY_DAYS = 840
     CURRENT_SEASON = target_year
     DECAY_RATE = 0.00475
@@ -5495,7 +5495,7 @@ def loop_through_simulations(date_str):
         ###################################################################################################
     
         # --- OPTIONAL: Run Monte Carlo after predictions ---
-        monte_summary = run_monte_carlo_simulation(nfl_schedule_df, num_trials=100)
+        monte_summary = run_monte_carlo_simulation(nfl_schedule_df, num_trials=1)
         
         # Merge back into main dataframe for charting
         nfl_schedule_df = nfl_schedule_df.merge(
