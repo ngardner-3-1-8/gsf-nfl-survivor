@@ -69,7 +69,7 @@ AWAY_COL_MAP = {
     "Date_x":                                          "Date",
     "Time":                                            "Game_Time",
     "Dome":                                            "Dome",
-    "Away Team Starting QB":                           "Starting_QB",
+    "Away_Starting_QB":                                "Starting_QB",
     "Thursday Night Game":                             "Thursday Night Game",
     "Away Team Weekly Rest":                           "Days_of_Rest",
     "Weekly Away Rest Advantage":                      "Rest_Advantage",
@@ -132,7 +132,7 @@ HOME_COL_MAP = {
     "Date_x":                                          "Date",
     "Time":                                            "Game_Time",
     "Dome":                                            "Dome",
-    "Home Team Starting QB":                           "Starting_QB",
+    "Home_Starting_QB":                                "Starting_QB",
     "Thursday Night Game":                             "Thursday Night Game",
     "Home Team Weekly Rest":                           "Days_of_Rest",
     "Weekly Home Rest Advantage":                      "Rest_Advantage",
@@ -278,20 +278,19 @@ def apply_constraints(
     ]
     active_bayesian_checks = [(enabled, col) for enabled, col in BAYESIAN_CHECKS if enabled]
 
+    # Use the renamed internal column names that exist after prepare_df
     FAIR_ODDS_COLS = {
-        "sportsbook": ("Away Team Sportsbook Fair Odds",         "Home Team Sportsbook Fair Odds"),
-        "mp":         ("Away Team Massey-Peabody Fair Odds",     "Home Team Massey-Peabody Fair Odds"),
-        "gsf":        ("Away Team Generic Sports Fan Fair Odds", "Home Team Generic Sports Fan Fair Odds"),
-        "sim":        ("Sim_Away_Win_Pct",                       "Sim_Home_Win_Pct"),
-        "consensus":  ("Consensus Away Win Pct",                 "Consensus Home Win Pct"),
+        "sportsbook": "Fair Odds Based on Sportsbook Odds",
+        "mp":         "Fair Odds Based on MP",
+        "gsf":        "Fair Odds Based on GSF",
+        "sim":        "Win Pct",        # set directly in prepare_df from Sim_Away/Home_Win_Pct
+        "consensus":  "Fair Odds Consensus",
     }
-
+    
     def is_favored_by(model: str, team: str, row, is_away: bool) -> bool:
-        cols = FAIR_ODDS_COLS.get(model)
-        if not cols:
+        col = FAIR_ODDS_COLS.get(model)
+        if not col:
             return True
-        away_col, home_col = cols
-        col = away_col if is_away else home_col
         if col not in df.columns:
             return True
         val = row.get(col, None)
