@@ -552,6 +552,57 @@ def loop_through_simulations(date_str):
     
     ALL_TEAMS = list(STADIUM_INFO.keys())
     
+    def load_international_games(target_year: int, schedules_dir: str = "nfl-schedules") -> dict:
+        """
+        Loads the international games file for the given year.
+        Returns a dict keyed by game_id for fast lookup.
+        Returns empty dict if file doesn't exist.
+        """
+        filepath = os.path.join(schedules_dir, f"{target_year}_international_games.json")
+        if not os.path.exists(filepath):
+            return {}
+        with open(filepath, "r") as f:
+            data = json.load(f)
+        # Key by game_id for O(1) lookup
+        return {g["game_id"]: g for g in data.get("games", [])}
+    
+    
+    def get_actual_location(row: dict, international_games: dict, stadiums: dict) -> dict:
+        """
+        Returns the actual stadium info for a game.
+        - If Location == "Neutral", looks up international_games by game_id
+        - Falls back to home stadium if not found in international_games
+        - If Location == "Home", uses home stadium as normal
+    
+        Returns dict with keys:
+            actual_stadium, actual_lat, actual_lon, actual_timezone, is_international
+        """
+        home_team = row.get("Home Team") or row.get("home_team")
+        game_id = row.get("Game ID") or row.get("game_id")
+        location_type = str(row.get("Location", "Home")).strip()
+    
+        is_international = False
+    
+        if location_type == "Neutral" and game_id in international_games:
+            intl = international_games[game_id]
+            return {
+                "actual_stadium": intl["stadium"],
+                "actual_lat":     intl["latitude"],
+                "actual_lon":     intl["longitude"],
+                "actual_timezone": intl["timezone"],
+                "is_international": True,
+            }
+    
+        # Default — use home team's stadium
+        home_info = stadiums.get(home_team, {})
+        return {
+            "actual_stadium":   home_info[0] if home_info else row.get("Actual Stadium", ""),
+            "actual_lat":       home_info[1] if home_info else None,
+            "actual_lon":       home_info[2] if home_info else None,
+            "actual_timezone":  home_info[3] if home_info else None,
+            "is_international": False,
+        }
+
     
     def collect_schedule_travel_ranking_data(schedule_df):
     # Get the user's custom rankings from the config
@@ -638,6 +689,9 @@ def loop_through_simulations(date_str):
         last_away_game = {}     # Stores the week of the last away game for each team
         cumulative_advantage = {} # Stores running total of rest advantage
         data = []
+
+        international_games = load_international_games(target_year)
+
     	
         for index, row in df.iterrows():
     	    # 1. Use the row itself for the base data
@@ -671,6 +725,8 @@ def loop_through_simulations(date_str):
     	    last_away_game[away_team] = week
     	    last_game[away_team] = last_date
     	    last_game[home_team] = last_date
+
+            loc_info = get_actual_location(row, international_games, stadiums)
     	
     	    # 4. STORE AS DICTIONARY (Much safer than a list)
     	    # This maps specific values to specific column names immediately
@@ -693,7 +749,11 @@ def loop_through_simulations(date_str):
     	        'Weekly Home Rest Advantage': home_advantage,
     	        'Away Cumulative Rest Advantage': cumulative_advantage[away_team],
     	        'Home Cumulative Rest Advantage': cumulative_advantage[home_team],
-    	        'Actual Stadium': row['Stadium'],
+    	        'Actual Stadium': loc_info["actual_stadium"],
+                'Actual Stadium Latitude': loc_info["actual_lat"],
+                'Actual Stadium Longitude': loc_info["actual_lon"],
+                'Actual Stadium TimeZone': loc_info["actual_timezone"],
+                'International Game': loc_info["is_international"],
     	        'Back to Back Away Games': back_to_back_away
     	    }
     	    data.append(new_row)
