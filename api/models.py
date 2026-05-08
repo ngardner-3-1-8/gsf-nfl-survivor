@@ -133,6 +133,8 @@ class PickResult(BaseModel):
     days_of_rest: Optional[int] = None     # this team's rest days
     rest_advantage: Optional[float] = None # positive = this team has more rest
     cumulative_rest: Optional[float] = None
+    stadium: Optional[str] = None
+    is_international: bool = False
 
 class OptimizeResponse(BaseModel):
     # EV-optimized solutions
