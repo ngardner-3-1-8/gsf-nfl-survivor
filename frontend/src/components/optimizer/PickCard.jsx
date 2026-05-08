@@ -72,6 +72,7 @@ export default function PickCard({ solution, index, label, allWeeklyPickPcts }) 
               <th className="text-left px-4 py-2 font-medium">Wk</th>
               <th className="text-left px-4 py-2 font-medium">🗓</th>
               <th className="text-left px-4 py-2 font-medium">Day</th>
+              <th className="text-left px-4 py-2 font-medium">Stadium</th>
               <th className="text-left px-4 py-2 font-medium">Team</th>
               <th className="text-left px-4 py-2 font-medium">Starting QB</th>
               <th className="text-left px-4 py-2 font-medium">vs</th>
@@ -106,6 +107,7 @@ export default function PickCard({ solution, index, label, allWeeklyPickPcts }) 
                   <td className="px-4 py-2.5 text-gray-400 font-mono text-xs">{pick.circa_week || pick.week}</td>
                   <td className="px-4 py-2.5 text-base">{holidayEmoji(pick)}</td>
                   <td className="px-4 py-2.5 text-gray-400 text-xs">{pick.day_of_week || '—'}</td>
+                  <td className={`px-4 py-2.5 text-xs ${pick.is_international ? 'text-red-400 font-medium' : 'text-white'}`}>{pick.stadium || '—'}</td>
                   <td className="px-4 py-2.5 font-semibold text-white">{pick.team}</td>
                   <td className="px-4 py-2.5 text-gray-300 text-xs">
                     {pick.starting_qb || '—'}
