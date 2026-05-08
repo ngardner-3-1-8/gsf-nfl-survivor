@@ -8,6 +8,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.models import OptimizeRequest, OptimizeResponse
 from api.data_loader import load_current_data
 from api.optimizer import run_optimizer
+import math
+from fastapi.responses import JSONResponse
+
+def sanitize(obj):
+    """Recursively replace nan/inf with None for JSON serialization."""
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    if isinstance(obj, dict):
+        return {k: sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [sanitize(v) for v in obj]
+    return obj
 
 app = FastAPI(title="Circa Survivor API", version="1.0.0")
 
@@ -32,9 +46,12 @@ DATA_DIR = os.environ.get("DATA_DIR", ".")
 
 
 def clean_df(df: pd.DataFrame) -> pd.DataFrame:
-    """Replace NaN and inf values so the DataFrame serialises to JSON cleanly."""
+    """Replace NaN, inf and other non-JSON-compliant values."""
+    # Replace inf values first
     df = df.replace([np.inf, -np.inf], None)
-    df = df.where(pd.notnull(df), None)
+    # Convert to object dtype temporarily to handle mixed types
+    for col in df.columns:
+        df[col] = df[col].where(pd.notnull(df[col]), None)
     return df
 
 
@@ -48,11 +65,9 @@ def get_schedule(week: int = Query(None)):
     try:
         data = load_current_data(DATA_DIR)
         df = clean_df(data["sim_df"])
-
         if week is not None:
             df = df[df["Week_x"] == week]
-
-        return {
+        result = {
             "upcoming_week": data["upcoming_week"],
             "target_year": data["target_year"],
             "source_file": data["sim_file"],
@@ -60,6 +75,7 @@ def get_schedule(week: int = Query(None)):
             "total_games": len(df),
             "games": df.to_dict(orient="records"),
         }
+        return JSONResponse(content=sanitize(result))
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -67,24 +83,16 @@ def get_schedule(week: int = Query(None)):
 
 
 @app.get("/api/ev")
-def get_ev(
-    model: str = Query("consensus"),
-    week: int = Query(None),
-):
+def get_ev(model: str = Query("consensus"), week: int = Query(None)):
     valid_models = ["consensus", "sportsbook", "mp", "gsf", "sim"]
     if model not in valid_models:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid model. Choose from: {valid_models}"
-        )
+        raise HTTPException(status_code=400, detail=f"Invalid model. Choose from: {valid_models}")
     try:
         data = load_current_data(DATA_DIR, model=model)
         df = clean_df(data["ev_df"])
-
         if week is not None:
             df = df[df["Week_x"] == week]
-
-        return {
+        result = {
             "model": model,
             "upcoming_week": data["upcoming_week"],
             "target_year": data["target_year"],
@@ -92,6 +100,7 @@ def get_ev(
             "total_rows": len(df),
             "games": df.to_dict(orient="records"),
         }
+        return JSONResponse(content=sanitize(result))
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -130,8 +139,6 @@ def get_pick_percentages():
     try:
         data = load_current_data(DATA_DIR)
         df = data["sim_df"]
-
-        # Build a lookup of all teams' pick% for every week
         records = []
         for _, row in df.iterrows():
             week = row.get("Week_x") or row.get("Week")
@@ -145,8 +152,7 @@ def get_pick_percentages():
                 "team": row.get("Away Team"),
                 "pick_pct": row.get("Away Pick %", 0) or 0,
             })
-
-        return {"picks": records}
+        return JSONResponse(content=sanitize({"picks": records}))
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
