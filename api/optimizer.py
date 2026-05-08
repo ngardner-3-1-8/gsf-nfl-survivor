@@ -595,6 +595,8 @@ def run_solver(
                 days_of_rest=int(row["Days_of_Rest"]) if pd.notna(row.get("Days_of_Rest")) else None,
                 rest_advantage=safe_float(row.get("Rest_Advantage")),
                 cumulative_rest=safe_float(row.get("Cumulative_Rest")),
+                stadium=str(row["Actual Stadium"]) if pd.notna(row.get("Actual Stadium")) else None,
+                is_international=bool(row.get("International Game", False)),
             ))
 
         solutions.append(pick_results)
