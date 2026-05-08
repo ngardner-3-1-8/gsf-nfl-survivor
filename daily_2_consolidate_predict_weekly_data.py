@@ -553,7 +553,7 @@ def loop_through_simulations(date_str):
     ALL_TEAMS = list(STADIUM_INFO.keys())
     
     def load_international_games(target_year: int, schedules_dir: str = "nfl-schedules") -> dict:
-        filepath = os.path.join(schedules_dir, f"{target_year}_international_games.json")
+        filepath = f"{target_year}_international_games.json"
         print(f"DEBUG load_international_games: looking for {filepath}")
         if not os.path.exists(filepath):
             print(f"DEBUG international games file NOT FOUND at {filepath}")
