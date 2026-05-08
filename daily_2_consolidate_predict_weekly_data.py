@@ -554,14 +554,11 @@ def loop_through_simulations(date_str):
     
     def load_international_games(target_year: int, schedules_dir: str = "nfl-schedules") -> dict:
         filepath = f"{target_year}_international_games.json"
-        print(f"DEBUG load_international_games: looking for {filepath}")
         if not os.path.exists(filepath):
-            print(f"DEBUG international games file NOT FOUND at {filepath}")
             return {}
         with open(filepath, "r") as f:
             data = json.load(f)
         games = {g["game_id"]: g for g in data.get("games", [])}
-        print(f"DEBUG loaded {len(games)} international games: {list(games.keys())}")
         return games
     
         
@@ -570,14 +567,10 @@ def loop_through_simulations(date_str):
         game_id = row.get("Game ID") or row.get("game_id")
         location_type = str(row.get("Location", "Home")).strip()
     
-        print(f"DEBUG get_actual_location: game_id={game_id}, home_team={home_team}, location_type='{location_type}'")
     
         if location_type == "Neutral":
-            print(f"DEBUG Neutral game found. Checking international_games for game_id={game_id}")
-            print(f"DEBUG Available international game_ids: {list(international_games.keys())}")
             if game_id in international_games:
                 intl = international_games[game_id]
-                print(f"DEBUG Match found! Using {intl['stadium']}")
                 return {
                     "actual_stadium":   intl["stadium"],
                     "actual_lat":       intl["latitude"],
@@ -590,7 +583,6 @@ def loop_through_simulations(date_str):
     
         # Default — use home team's stadium
         home_info = stadiums.get(home_team, {})
-        print(f"DEBUG Using home stadium for {home_team}: {home_info[0] if home_info else 'NOT FOUND'}")
         return {
             "actual_stadium":   home_info[0] if home_info else row.get("Actual Stadium", ""),
             "actual_lat":       home_info[1] if home_info else None,
