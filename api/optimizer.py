@@ -504,3 +504,193 @@ def apply_constraints(
         team_picks = [picks[i] for i in range(len(df)) if df.iloc[i]["Team"] == team]
         if team_picks:
             solver.Add(solver.Sum(team_picks) <= 1)
+
+
+# ─────────────────────────────────────────────────────────────
+# Step 3 — Run the solver N times
+# ─────────────────────────────────────────────────────────────
+
+def run_solver(
+    df: pd.DataFrame,
+    request: OptimizeRequest,
+    maximize_ev: bool,
+) -> Tuple[List[List[PickResult]], bool, str]:
+    """
+    Runs the SCIP solver up to request.number_solutions times.
+    Each iteration adds a constraint forbidding the previous solution.
+    df must have a clean 0-based index.
+    """
+    # Guarantee clean index for this solver run
+    df = df.reset_index(drop=True)
+
+    solutions: List[List[PickResult]] = []
+    forbidden_solutions: List[List[int]] = []
+    objective_label = "EV" if maximize_ev else "Win %"
+
+    for iteration in range(request.number_solutions):
+        solver = pywraplp.Solver.CreateSolver("SCIP")
+        if not solver:
+            return [], False, "SCIP solver unavailable"
+
+        picks = {i: solver.IntVar(0, 1, f"pick_{i}") for i in range(len(df))}
+
+        apply_constraints(solver, picks, df, request)
+
+        # Forbid all previous solutions
+        for prev_indices in forbidden_solutions:
+            prev_vars = [picks[i] for i in prev_indices if i in picks]
+            if prev_vars:
+                solver.Add(solver.Sum([1 - v for v in prev_vars]) >= 1)
+
+        # Set objective
+        if maximize_ev:
+            solver.Maximize(solver.Sum([
+                picks[i] * float(df.iloc[i].get("EV", 0) or 0)
+                for i in range(len(df))
+            ]))
+        else:
+            solver.Maximize(solver.Sum([
+                picks[i] * float(df.iloc[i].get("Win Pct", 0) or 0)
+                for i in range(len(df))
+            ]))
+
+        status = solver.Solve()
+
+        if status != pywraplp.Solver.OPTIMAL:
+            if iteration == 0:
+                return [], False, (
+                    f"No feasible solution found for {objective_label} objective. "
+                    f"Try relaxing some constraints."
+                )
+            else:
+                break
+
+        chosen_indices = [i for i in range(len(df)) if picks[i].solution_value() > 0.5]
+        forbidden_solutions.append(chosen_indices)
+
+        pick_results = []
+        for i in sorted(chosen_indices, key=lambda x: df.iloc[x]["Week_Num"]):
+            row = df.iloc[i]
+
+            # Update holiday detection to handle both string and integer values
+            thanksgiving_val = str(row.get("Thanksgiving Favorite", "")).strip()
+            christmas_val = str(row.get("Christmas Favorite", "")).strip()
+            underdog_thanksgiving = str(row.get("Thanksgiving Underdog", "")).strip()
+            underdog_christmas = str(row.get("Christmas Underdog", "")).strip()
+            
+            is_thanksgiving = thanksgiving_val in ("1", "Thanksgiving", "True", "true") or \
+                              underdog_thanksgiving in ("1", "Thanksgiving", "True", "true")
+            is_christmas = christmas_val in ("1", "Christmas", "True", "true") or \
+                           underdog_christmas in ("1", "Christmas", "True", "true")
+            dome_val = row.get("Dome", None)
+            is_dome = bool(dome_val) if dome_val is not None and pd.notna(dome_val) else None
+            # Derive day of week from Date column
+            day_label = None
+            try:
+                from datetime import datetime as dt
+                date_val = row.get("Date")
+                if date_val and pd.notna(date_val):
+                    date_obj = pd.to_datetime(date_val)
+                    day_name = date_obj.strftime("%A")  # Monday, Tuesday, etc.
+                    game_time = str(row.get("Game_Time", "") or "")
+                    is_tnf = str(row.get("Thursday Night Game", "False")).strip() == "True"
+                    # Check for Monday Night Football (after 7pm ET on Monday)
+                    is_mnf = day_name == "Monday" and game_time >= "19:00"
+                    # Check for Sunday Night Football (after 7pm ET on Sunday)
+                    is_snf = day_name == "Sunday" and game_time >= "19:00"
+            
+                    if is_tnf:
+                        day_label = "Thu 🌙"
+                    elif is_mnf:
+                        day_label = "Mon 🌙"
+                    elif is_snf:
+                        day_label = "Sun 🌙"
+                    elif day_name == "Sunday":
+                        day_label = "Sun"
+                    elif day_name == "Saturday":
+                        day_label = "Sat"
+                    elif day_name == "Friday":
+                        day_label = "Fri"
+                    else:
+                        day_label = day_name[:3]
+            except Exception:
+                pass
+            
+            pick_results.append(PickResult(
+                week=int(row["Week_Num"]),
+                circa_week=str(row["Circa_Week"]) if pd.notna(row.get("Circa_Week")) else None,
+                team=str(row["Team"]),
+                ev=safe_float(row.get("EV"), 0.0),
+                win_pct=safe_float(row.get("Win Pct"), 0.0),
+                pick_pct=safe_float(row.get("Expected Pick Percent"), 0.0),
+                home_or_away="Away" if bool(row.get("Team Is Away", False)) else "Home",
+                opponent=str(row.get("Opponent", "")),
+                spread=safe_float(row.get("Sportsbook Spread")),
+                temperature=safe_float(row.get("Temperature")),
+                precipitation=safe_float(row.get("Precipitation")),
+                wind=safe_float(row.get("Wind")),
+                dome=is_dome,
+                starting_qb=str(row["Starting_QB"]) if pd.notna(row.get("Starting_QB")) else None,
+                is_thanksgiving=is_thanksgiving,
+                is_christmas=is_christmas,
+                day_of_week=day_label,
+                days_of_rest=int(row["Days_of_Rest"]) if pd.notna(row.get("Days_of_Rest")) else None,
+                rest_advantage=safe_float(row.get("Rest_Advantage")),
+                cumulative_rest=safe_float(row.get("Cumulative_Rest")),
+                stadium=str(row["Actual Stadium"]) if pd.notna(row.get("Actual Stadium")) else None,
+                is_international=bool(row.get("International Game", False)),
+            ))
+
+        solutions.append(pick_results)
+
+    n = len(solutions)
+    return solutions, True, f"Found {n} {objective_label} solution{'s' if n != 1 else ''}."
+
+
+# ─────────────────────────────────────────────────────────────
+# Step 4 — Main entry point called by main.py
+# ─────────────────────────────────────────────────────────────
+
+def run_optimizer(sim_df: pd.DataFrame, request: OptimizeRequest) -> OptimizeResponse:
+    """
+    Full optimizer pipeline:
+      1. Prepare team-centric DataFrame
+      2. Run EV solver N times
+      3. Run win% solver N times
+      4. Return combined OptimizeResponse
+    """
+    try:
+        df = prepare_df(sim_df, request)
+    except Exception as e:
+        return OptimizeResponse(
+            feasible=False,
+            message=f"Data preparation failed: {str(e)}"
+        )
+
+    if df.empty:
+        return OptimizeResponse(
+            feasible=False,
+            message="No games found for the selected week range and constraints."
+        )
+
+    ev_solutions, ev_feasible, ev_message = run_solver(df, request, maximize_ev=True)
+    rank_solutions, rank_feasible, rank_message = run_solver(df, request, maximize_ev=False)
+
+    feasible = ev_feasible or rank_feasible
+    message_parts = []
+    if ev_message:
+        message_parts.append(f"EV: {ev_message}")
+    if rank_message:
+        message_parts.append(f"Win%: {rank_message}")
+
+    total_ev = sum(p.ev for p in ev_solutions[0]) if ev_solutions else 0.0
+    total_win_pct = sum(p.win_pct for p in ev_solutions[0]) if ev_solutions else 0.0
+
+    return OptimizeResponse(
+        ev_solutions=ev_solutions,
+        ranking_solutions=rank_solutions,
+        total_ev=round(total_ev, 4),
+        total_win_pct=round(total_win_pct, 4),
+        feasible=feasible,
+        message=" | ".join(message_parts),
+    )
