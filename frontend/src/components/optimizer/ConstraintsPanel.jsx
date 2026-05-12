@@ -234,7 +234,7 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek, week
       />
       <Toggle
         label="Avoid international games"
-        description="London, Munich, Madrid"
+        description="London, Munich, Madrid, Rio, Melbourne"
         checked={scheduling.avoid_international}
         onChange={() => toggleScheduling('avoid_international')}
       />
@@ -250,6 +250,7 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek, week
       />
       <Toggle
         label="Avoid travel disadvantage"
+        description="Team that had to travel over 850 miles more than the opponent"
         checked={scheduling.avoid_travel_disadvantage}
         onChange={() => toggleScheduling('avoid_travel_disadvantage')}
       />
