@@ -277,6 +277,16 @@ def apply_constraints(
     """
     s = request.scheduling
 
+    # ── Required picks — use positional index not DataFrame index ──
+    for team, req_week in request.required_picks.items():
+        if req_week > 0:
+            required_positions = [
+                i for i in range(len(df))
+                if df.iloc[i]["Team"] == team and df.iloc[i]["Week_Num"] == req_week
+            ]
+            if required_positions:
+                solver.Add(picks[required_positions[0]] == 1)
+
     # Built once outside the row loop — never changes between rows
     BAYESIAN_CHECKS = [
         (s.mp_bayesian_all_metrics,
@@ -308,6 +318,14 @@ def apply_constraints(
         "sim":        "Win Pct",        # set directly in prepare_df from Sim_Away/Home_Win_Pct
         "consensus":  "Fair Odds Consensus",
     }
+
+    # ── Per-row constraints ──
+    for i in range(len(df)):
+        # Skip all constraints for required picks
+        if i in required_positions:
+            continue
+
+        row = df.iloc[i]    
     
     def is_favored_by(model: str, team: str, row, is_away: bool) -> bool:
         col = FAIR_ODDS_COLS.get(model)
@@ -453,7 +471,7 @@ def apply_constraints(
                 if val is None or (isinstance(val, float) and np.isnan(val)):
                     bay_results.append(False)
                     continue
-                bay_results.append(str(val).strip() in ("True", "Yes", "1", "true", "yes"))
+                bay_results.append(str(val).strip().lower() in ("true", "yes", "1", "same"))
 
             if s.bayesian_require_all:
                 if not all(bay_results):
@@ -466,16 +484,6 @@ def apply_constraints(
         if team in request.prohibited_weekly_picks:
             if week_num in request.prohibited_weekly_picks[team]:
                 solver.Add(picks[i] == 0)
-
-    # ── Required picks — use positional index not DataFrame index ──
-    for team, req_week in request.required_picks.items():
-        if req_week > 0:
-            required_positions = [
-                i for i in range(len(df))
-                if df.iloc[i]["Team"] == team and df.iloc[i]["Week_Num"] == req_week
-            ]
-            if required_positions:
-                solver.Add(picks[required_positions[0]] == 1)
 
     # ── One pick per week ──
     for week in df["Week_Num"].unique():
