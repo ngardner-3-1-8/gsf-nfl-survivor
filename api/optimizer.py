@@ -1,3 +1,269 @@
+# api/optimizer.py
+#
+# Circa Survivor OR-Tools optimizer.
+# Receives a merged sim DataFrame and an OptimizeRequest,
+# runs the SCIP solver N times (forbidding each previous solution),
+# and returns two lists of solutions: one maximizing EV, one maximizing win %.
+
+import pandas as pd
+import numpy as np
+from ortools.linear_solver import pywraplp
+from typing import List, Tuple
+
+from api.models import OptimizeRequest, OptimizeResponse, PickResult
+
+def safe_float(val, default=None):
+    """Convert to float, returning default if None, NaN or inf."""
+    try:
+        if val is None:
+            return default
+        f = float(val)
+        if f != f:  # NaN check
+            return default
+        if f == float('inf') or f == float('-inf'):
+            return default
+        return f
+    except (TypeError, ValueError):
+        return default
+
+# ─────────────────────────────────────────────────────────────
+# Column mapping — current CSV → internal solver names
+# ─────────────────────────────────────────────────────────────
+
+AWAY_COL_MAP = {
+    "Away Team":                                        "Team",
+    "Home Team":                                        "Opponent",
+    "Week":                                             "Week_Num",
+    "Actual Stadium":                                   "Actual Stadium",
+    "International Game":                               "International Game",
+    "Divisional Matchup?":                             "Divisional Matchup?",
+    "Away Team Short Rest":                            "Away Team Short Rest",
+    "Away Team 3 games in 10 days":                    "3 Games in 10 Days",
+    "Away Team 4 games in 17 days":                    "4 Games in 17 Days",
+    "Back to Back Away Games":                         "Back to Back Away Games",
+    "Away Travel Advantage":                           "Travel Advantage",
+    "Away Weekly Timezone Difference":                 "Weekly Timezone Difference",
+    "Away Team Weekly Rest":                           "Weekly Rest",
+    "Weekly Away Rest Advantage":                      "Weekly Rest Advantage",
+    "Away Cumulative Rest Advantage":                  "Season-Long Rest Advantage",
+    "Away Team Current Week Cumulative Rest Advantage":"Season-Long Rest Advantage Including This Week",
+    "Away Team Massey-Peabody Current Rank":           "MP Current Rank",
+    "Away Team Generic Sports Fan Current Rank":       "GSF Current Rank",
+    "Away Team Adjusted Massey-Peabody Current Rank":  "Adjusted Current Rank",
+    "Away Team Adjusted Generic Sports Fan Current Rank": "Opp Adjusted Current Rank_team",
+    "Home Team Adjusted Massey-Peabody Current Rank":  "Opp Adjusted Current Rank",
+    "Adjusted MP + GSF Average Current Difference":    "Adjusted Current Difference",
+    "Adjusted MP + GSF Average Current Winner":        "Adjusted Current Winner",
+    "Away Team Sportsbook Fair Odds":                  "Fair Odds Based on Sportsbook Odds",
+    "Away Team Massey-Peabody Fair Odds":              "Fair Odds Based on MP",
+    "Away Team Generic Sports Fan Fair Odds":          "Fair Odds Based on GSF",
+    "Consensus Away Win Pct":                          "Fair Odds Consensus",
+    "Away Team Sportsbook Spread":                     "Spread Based on Sportsbook Odds",
+    "Massey-Peabody Away Team Spread":                 "Spread Based on MP",
+    "Favorite":                                        "Favorite",
+    "Away Team Massey-Peabody Preseason Rank":         "Preseason Rank",
+    "Away Team Adjusted MP + GSF Average Preseason Rank": "Adjusted Preseason Rank",
+    "Home Team Adjusted MP + GSF Average Preseason Rank": "Opp Adjusted Preseason Rank",
+    "Away Team Thanksgiving Favorite":                 "Thanksgiving Favorite",
+    "Away Team Christmas Favorite":                    "Christmas Favorite",
+    "Away Team Thanksgiving Underdog":                 "Thanksgiving Underdog",
+    "Away Team Christmas Underdog":                    "Christmas Underdog",
+    "Away Team Expected Availability":                 "Expected Availability",
+    "Away Pick %":                                     "Expected Pick Percent",
+    "Away Expected Survival Rate":                     "Expected Survival Rate",
+    "Away Expected Elimination Percent":               "Expected Contest Elimination Percent",
+    "Expected Away Team Picks":                        "Expected Picks",
+    "Expected Away Team Survivors":                    "Expected Survivors",
+    "Expected Away Team Eliminations":                 "Expected Eliminations",
+    "Total Remaining Entries at Start of Week":        "Total Remaining Entries at Start of Week",
+    "Away Team Previous Opponent":                     "Previous Opponent",
+    "Away Team Previous Location":                     "Previous Game Location",
+    "Away Team Next Opponent":                         "Next Opponent",
+    "Away Team Next Location":                         "Next Game Location",
+    "Date_x":                                          "Date",
+    "Time":                                            "Game_Time",
+    "Dome":                                            "Dome",
+    "Away_Starting_QB":                                "Starting_QB",
+    "Thursday Night Game":                             "Thursday Night Game",
+    "Away Team Weekly Rest":                           "Days_of_Rest",
+    "Weekly Away Rest Advantage":                      "Rest_Advantage",
+    "Away Cumulative Rest Advantage":                  "Cumulative_Rest",
+    "Circa Week":                                      "Circa_Week",
+    "Temperature":                                     "Temperature",
+    "Precipitation":                                   "Precipitation",
+    "Wind":                                            "Wind",
+}
+
+HOME_COL_MAP = {
+    "Home Team":                                        "Team",
+    "Away Team":                                        "Opponent",
+    "Week":                                             "Week_Num",
+    "Actual Stadium":                                   "Actual Stadium",
+    "International Game":                               "International Game",
+    "Divisional Matchup?":                             "Divisional Matchup?",
+    "Away Team Short Rest":                            "Away Team Short Rest",
+    "Home Team 3 games in 10 days":                    "3 Games in 10 Days",
+    "Home Team 4 games in 17 days":                    "4 Games in 17 Days",
+    "Back to Back Away Games":                         "Back to Back Away Games",
+    "Home Travel Advantage":                           "Travel Advantage",
+    "Home Weekly Timezone Difference":                 "Weekly Timezone Difference",
+    "Home Team Weekly Rest":                           "Weekly Rest",
+    "Weekly Home Rest Advantage":                      "Weekly Rest Advantage",
+    "Home Cumulative Rest Advantage":                  "Season-Long Rest Advantage",
+    "Home Team Current Week Cumulative Rest Advantage":"Season-Long Rest Advantage Including This Week",
+    "Home Team Massey-Peabody Current Rank":           "MP Current Rank",
+    "Home Team Generic Sports Fan Current Rank":       "GSF Current Rank",
+    "Home Team Adjusted Massey-Peabody Current Rank":  "Adjusted Current Rank",
+    "Away Team Adjusted Massey-Peabody Current Rank":  "Opp Adjusted Current Rank",
+    "Adjusted MP + GSF Average Current Difference":    "Adjusted Current Difference",
+    "Adjusted MP + GSF Average Current Winner":        "Adjusted Current Winner",
+    "Home Team Sportsbook Fair Odds":                  "Fair Odds Based on Sportsbook Odds",
+    "Home Team Massey-Peabody Fair Odds":              "Fair Odds Based on MP",
+    "Home Team Generic Sports Fan Fair Odds":          "Fair Odds Based on GSF",
+    "Consensus Home Win Pct":                          "Fair Odds Consensus",
+    "Home Team Sportsbook Spread":                     "Spread Based on Sportsbook Odds",
+    "Massey-Peabody Home Team Spread":                 "Spread Based on MP",
+    "Favorite":                                        "Favorite",
+    "Home Team Massey-Peabody Preseason Rank":         "Preseason Rank",
+    "Home Team Adjusted MP + GSF Average Preseason Rank": "Adjusted Preseason Rank",
+    "Away Team Adjusted MP + GSF Average Preseason Rank": "Opp Adjusted Preseason Rank",
+    "Home Team Thanksgiving Favorite":                 "Thanksgiving Favorite",
+    "Home Team Christmas Favorite":                    "Christmas Favorite",
+    "Home Team Thanksgiving Underdog":                 "Thanksgiving Underdog",
+    "Home Team Christmas Underdog":                    "Christmas Underdog",
+    "Home Team Expected Availability":                 "Expected Availability",
+    "Home Pick %":                                     "Expected Pick Percent",
+    "Home Expected Survival Rate":                     "Expected Survival Rate",
+    "Home Expected Elimination Percent":               "Expected Contest Elimination Percent",
+    "Expected Home Team Picks":                        "Expected Picks",
+    "Expected Home Team Survivors":                    "Expected Survivors",
+    "Expected Home Team Eliminations":                 "Expected Eliminations",
+    "Total Remaining Entries at Start of Week":        "Total Remaining Entries at Start of Week",
+    "Home Team Previous Opponent":                     "Previous Opponent",
+    "Home Team Previous Location":                     "Previous Game Location",
+    "Home Team Next Opponent":                         "Next Opponent",
+    "Home Team Next Location":                         "Next Game Location",
+    "Date_x":                                          "Date",
+    "Time":                                            "Game_Time",
+    "Dome":                                            "Dome",
+    "Home_Starting_QB":                                "Starting_QB",
+    "Thursday Night Game":                             "Thursday Night Game",
+    "Home Team Weekly Rest":                           "Days_of_Rest",
+    "Weekly Home Rest Advantage":                      "Rest_Advantage",
+    "Home Cumulative Rest Advantage":                  "Cumulative_Rest",
+    "Circa Week":                                      "Circa_Week",
+    "Temperature":                                     "Temperature",
+    "Precipitation":                                   "Precipitation",
+    "Wind":                                            "Wind",
+}
+
+OBJECTIVE_EV_COLS = {
+    "consensus":  ("consensus_Away_EV",  "consensus_Home_EV"),
+    "sportsbook": ("sportsbook_Away_EV", "sportsbook_Home_EV"),
+    "mp":         ("mp_Away_EV",         "mp_Home_EV"),
+    "gsf":        ("gsf_Away_EV",        "gsf_Home_EV"),
+    "sim":        ("sim_Away_EV",        "sim_Home_EV"),
+    "win_pct":    ("Consensus Away Win Pct", "Consensus Home Win Pct"),
+}
+
+OBJECTIVE_WIN_PCT_COLS = {
+    "consensus":  ("Consensus Away Win Pct",             "Consensus Home Win Pct"),
+    "sportsbook": ("Away Team Sportsbook Fair Odds",     "Home Team Sportsbook Fair Odds"),
+    "mp":         ("Away Team Massey-Peabody Fair Odds", "Home Team Massey-Peabody Fair Odds"),
+    "gsf":        ("Away Team Generic Sports Fan Fair Odds", "Home Team Generic Sports Fan Fair Odds"),
+    "sim":        ("Sim_Away_Win_Pct",                   "Sim_Home_Win_Pct"),
+    "win_pct":    ("Consensus Away Win Pct",             "Consensus Home Win Pct"),
+}
+
+
+# ─────────────────────────────────────────────────────────────
+# Step 1 — Prepare the team-centric DataFrame
+# ─────────────────────────────────────────────────────────────
+
+def prepare_df(sim_df: pd.DataFrame, request: OptimizeRequest) -> pd.DataFrame:
+    """
+    Converts the game-centric sim CSV into a team-centric DataFrame
+    (one row per team per game), then applies week range and
+    prohibited team filters.
+
+    IMPORTANT: always returns a DataFrame with a clean 0-based integer index
+    so that positional indexing (df.iloc[i]) and dict keys (picks[i]) align.
+    """
+    df = sim_df.copy().reset_index(drop=True)
+
+    away_ev_col, home_ev_col = OBJECTIVE_EV_COLS.get(
+        request.objective, ("consensus_Away_EV", "consensus_Home_EV")
+    )
+    away_win_col, home_win_col = OBJECTIVE_WIN_PCT_COLS.get(
+        request.objective, ("Consensus Away Win Pct", "Consensus Home Win Pct")
+    )
+
+    # ── Away team rows ──
+    away_cols = {k: v for k, v in AWAY_COL_MAP.items() if k in df.columns}
+    away_df = df[list(away_cols.keys())].rename(columns=away_cols).copy()
+    away_df["Team Is Away"] = True
+    away_df["EV"] = df[away_ev_col].values if away_ev_col in df.columns else 0.0
+    away_df["Win Pct"] = df[away_win_col].values if away_win_col in df.columns else 0.0
+    away_df["Sportsbook Spread"] = df["Away Team Sportsbook Spread"].values if "Away Team Sportsbook Spread" in df.columns else 0.0
+    away_df["Game_Index"] = df.index
+    # Away display columns — bypass duplicate key limitation in AWAY_COL_MAP
+    away_df["Days_of_Rest"] = df["Away Team Weekly Rest"].values if "Away Team Weekly Rest" in df.columns else None
+    away_df["Rest_Advantage"] = df["Weekly Away Rest Advantage"].values if "Weekly Away Rest Advantage" in df.columns else None
+    away_df["Cumulative_Rest"] = df["Away Cumulative Rest Advantage"].values if "Away Cumulative Rest Advantage" in df.columns else None
+
+    # ── Home team rows ──
+    home_cols = {k: v for k, v in HOME_COL_MAP.items() if k in df.columns}
+    home_df = df[list(home_cols.keys())].rename(columns=home_cols).copy()
+    home_df["Team Is Away"] = False
+    home_df["EV"] = df[home_ev_col].values if home_ev_col in df.columns else 0.0
+    home_df["Win Pct"] = df[home_win_col].values if home_win_col in df.columns else 0.0
+    home_df["Sportsbook Spread"] = df["Home Team Sportsbook Spread"].values if "Home Team Sportsbook Spread" in df.columns else 0.0
+    home_df["Game_Index"] = df.index
+    home_df["Away Team Short Rest"] = "No"
+    home_df["Back to Back Away Games"] = False
+    # Home display columns
+    home_df["Days_of_Rest"] = df["Home Team Weekly Rest"].values if "Home Team Weekly Rest" in df.columns else None
+    home_df["Rest_Advantage"] = df["Weekly Home Rest Advantage"].values if "Weekly Home Rest Advantage" in df.columns else None
+    home_df["Cumulative_Rest"] = df["Home Cumulative Rest Advantage"].values if "Home Cumulative Rest Advantage" in df.columns else None
+
+    # Concatenate and immediately reset to a clean 0-based index
+    combined = pd.concat([away_df, home_df], ignore_index=True)
+
+    # Filter week range — reset index after every filter
+    combined = combined[
+        (combined["Week_Num"] >= request.start_week) &
+        (combined["Week_Num"] <= request.end_week)
+    ].reset_index(drop=True)
+
+    # Filter prohibited teams — reset index after every filter
+    if request.prohibited_teams:
+        combined = combined[
+            ~combined["Team"].isin(request.prohibited_teams)
+        ].reset_index(drop=True)
+
+    # Custom pick percentage overrides
+    for week_key, team_overrides in request.custom_pick_percentages.items():
+        try:
+            week_num = int(week_key.replace("week_", ""))
+        except ValueError:
+            continue
+        for team, pct in team_overrides.items():
+            if pct >= 0:
+                mask = (combined["Week_Num"] == week_num) & (combined["Team"] == team)
+                combined.loc[mask, "Expected Pick Percent"] = pct
+
+    # Custom ranking overrides
+    for team, ranking in request.custom_rankings.items():
+        mask = combined["Team"] == team
+        combined.loc[mask, "Adjusted Current Rank"] = ranking
+
+    # Final safety reset — guarantees iloc[i] == picks key i
+    return combined.reset_index(drop=True)
+
+
+# ─────────────────────────────────────────────────────────────
+# Step 2 — Apply constraints to the solver
+# ─────────────────────────────────────────────────────────────
 def apply_constraints(
     solver: pywraplp.Solver,
     picks: dict,
