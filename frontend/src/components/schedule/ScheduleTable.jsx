@@ -36,8 +36,8 @@ const COLUMNS = {
     key: '_sim_spread_avg',
     label: 'MC Spread Avg',
     render: (_, r) => {
-      const mean = parseFloat(r['Monte Carlo Away Team Spread'])
-      const median = parseFloat(r['Monte Carlo Home Team Spread'])
+      const mean = parseFloat(r['Sim_Spread_Mean'])
+      const median = parseFloat(r['Sim_Spread_Median'])
       if (isNaN(mean) || isNaN(median)) return <span className="text-gray-600">—</span>
       return spreadCell((mean + median) / 2)
     }
@@ -88,16 +88,42 @@ const COLUMNS = {
     { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
     { key: 'Away Team', label: 'Away Team' },
     { key: 'Home Team', label: 'Home Team' },
-    { key: 'GSF Spread Bet', label: 'GSF Spread Bet', render: v => v || '—' },
-    { key: 'GSF Spread Edge', label: 'GSF Edge', render: v => edgeCell(v) },
-    { key: 'Massey-Peabody Spread Bet', label: 'MP Spread Bet', render: v => v || '—' },
-    { key: 'Massey-Peabody Spread Edge', label: 'MP Edge', render: v => edgeCell(v) },
-    { key: 'Consensus Spread Bet', label: 'Con Spread Bet', render: v => v || '—' },
-    { key: 'Consensus Spread Edge', label: 'Con Edge', render: v => edgeCell(v) },
-    { key: 'GSF Moneyline Bet', label: 'GSF ML Bet', render: v => v || '—' },
-    { key: 'Massey-Peabody Moneyline Bet', label: 'MP ML Bet', render: v => v || '—' },
-    { key: 'Consensus Moneyline Bet', label: 'Con ML Bet', render: v => v || '—' },
+    // Spread bets
+    { key: 'GSF Spread Bet', label: 'GSF Spread', render: v => v || '—' },
+    { key: 'GSF Spread Edge', label: 'GSF Spread Edge', render: v => edgeCell(v) },
+    { key: 'Massey-Peabody Spread Bet', label: 'MP Spread', render: v => v || '—' },
+    { key: 'Massey-Peabody Spread Edge', label: 'MP Spread Edge', render: v => edgeCell(v) },
+    { key: 'Monte Carlo Spread Bet', label: 'MC Spread', render: v => v || '—' },
+    { key: 'Monte Carlo Spread Edge', label: 'MC Spread Edge', render: v => edgeCell(v) },
+    { key: 'Consensus Spread Bet', label: 'Con Spread', render: v => v || '—' },
+    { key: 'Consensus Spread Edge', label: 'Con Spread Edge', render: v => edgeCell(v) },
+    // Moneyline bets — edges are percentages
+    { key: 'GSF Moneyline Bet', label: 'GSF ML', render: v => v || '—' },
+    { key: 'GSF Moneyline Edge', label: 'GSF ML Edge', render: v => edgePctCell(v) },
+    { key: 'Massey-Peabody Moneyline Bet', label: 'MP ML', render: v => v || '—' },
+    { key: 'Massey-Peabody Moneyline Edge', label: 'MP ML Edge', render: v => edgePctCell(v) },
+    { key: 'Monte Carlo Moneyline Bet', label: 'MC ML', render: v => v || '—' },
+    { key: 'Monte Carlo Moneyline Edge', label: 'MC ML Edge', render: v => edgePctCell(v) },
+    { key: 'Consensus Moneyline Bet', label: 'Con ML', render: v => v || '—' },
+    { key: 'Consensus Moneyline Edge', label: 'Con ML Edge', render: v => edgePctCell(v) },
+    // Total
+    { key: 'Monte Carlo Total Bet', label: 'MC Total', render: v => v || '—' },
+    { key: 'Monte Carlo Total Edge', label: 'MC Total Edge', render: v => edgeCell(v) },
     { key: 'MC Bet Direction', label: 'MC Direction', render: v => v || '—' },
+  ],
+  'Bayesian': [
+    { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
+    { key: 'Away Team', label: 'Away Team' },
+    { key: 'Home Team', label: 'Home Team' },
+    { key: 'Massey-Peabody Bayesian Same Winner Across All Metrics', label: 'MP All Metrics', render: v => bayesianCell(v) },
+    { key: 'Generic Sports Fan Bayesian Same Adjusted Winner Across All Metrics', label: 'GSF All Metrics', render: v => bayesianCell(v) },
+    { key: 'Massey-Peabody Bayesian Same Current and Preseason Adjusted Winner', label: 'MP Pre + Current', render: v => bayesianCell(v) },
+    { key: 'Generic Sports Fan Bayesian Current and Preseason Adjusted Winner', label: 'GSF Pre + Current', render: v => bayesianCell(v) },
+    { key: 'Massey-Peabody Bayesian Same Current and Adjusted Current Winner', label: 'MP Current + Adj', render: v => bayesianCell(v) },
+    { key: 'Generic Sports Fan Bayesian Same Current and Adjusted Current Winner', label: 'GSF Current + Adj', render: v => bayesianCell(v) },
+    { key: 'Sportsbook Bayesian Same Current and Preseason Adjusted Winner', label: 'SB Pre + Current', render: v => bayesianCell(v) },
+    { key: 'Sim Bayesian Same Current and Preseason Adjusted Winner', label: 'Sim Pre + Current', render: v => bayesianCell(v) },
+    { key: 'Consensus Bayesian Same Current and Preseason Adjusted Winner', label: 'Con Pre + Current', render: v => bayesianCell(v) },
   ],
 }
 
