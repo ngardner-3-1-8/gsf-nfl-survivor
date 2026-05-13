@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { fetchLastUpdated } from './api/client'
 import OptimizerView from './components/optimizer/OptimizerView'
 import ScheduleView from './components/schedule/ScheduleView'
+import RankingsView from './components/rankings/RankingsView'
+
 
 // Placeholder components — we'll replace these one by one
 const ComingSoon = ({ name }) => (
@@ -36,7 +38,7 @@ export default function App() {
     switch (activeTab) {
       case 'optimizer':    return <OptimizerView />
       case 'schedule':     return <ScheduleView />
-      case 'rankings':     return <ComingSoon name="Rankings" />
+      case 'rankings':     return <RankingsView />
       case 'bets':         return <ComingSoon name="Bets" />
       case 'ev-calc':      return <ComingSoon name="EV Calculator" />
       case 'contest':      return <ComingSoon name="Contest Analytics" />
