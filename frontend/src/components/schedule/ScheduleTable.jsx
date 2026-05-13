@@ -187,6 +187,13 @@ function spreadCell(val) {
   return <span className="text-gray-400 font-mono text-xs">{formatted}</span>
 }
 
+function totalCell(val) {
+  const v = parseFloat(val)
+  if (isNaN(v)) return <span className="text-gray-600">—</span>
+  const formatted = (v > 0 ? '' : '') + v.toFixed(1)
+  return <span className="text-gray-400 font-mono text-xs">{formatted}</span>
+}
+
 function restCell(val) {
   const v = parseFloat(val)
   if (isNaN(v)) return <span className="text-gray-600">—</span>
