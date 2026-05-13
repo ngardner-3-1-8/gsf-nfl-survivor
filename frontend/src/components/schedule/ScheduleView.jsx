@@ -3,7 +3,7 @@ import { fetchSchedule } from '../../api/client'
 import ScheduleFilters from './ScheduleFilters'
 import ScheduleTable from './ScheduleTable'
 
-const COLUMN_VIEWS = ['Overview', 'Odds & Win%', 'Situational', 'Contest', 'Betting']
+const COLUMN_VIEWS = ['Overview', 'Odds & Win%', 'Situational', 'Contest', 'Betting', 'Bayesian']
 
 export default function ScheduleView() {
   const [games, setGames] = useState([])
