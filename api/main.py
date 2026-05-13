@@ -275,6 +275,174 @@ def get_rankings():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/recommended-bets")
+def get_recommended_bets():
+    try:
+        data = load_current_data(DATA_DIR)
+        df = data["sim_df"]
+        df = df.replace([np.inf, -np.inf], np.nan)
+
+        def tier(bet_type, edge_val, gsf_edge=None, mc_edge=None):
+            """Assign S/A/B tier based on historical profitability."""
+            e = float(edge_val) if edge_val is not None and not pd.isna(edge_val) else None
+            if e is None:
+                return None
+
+            if bet_type == "mc_spread":
+                if e >= 4.0: return "S"
+                if 1.0 <= e < 2.0: return "A"
+                if e >= 0 and not (2.0 <= e < 3.0): return "B"
+                return None  # skip 2-3 band
+
+            if bet_type == "mc_ml":
+                if e >= 0.20: return "S"
+                if e >= 0.15: return "S"
+                if e >= 0.10: return "A"
+                if e >= 0.05: return "B"
+                return None
+
+            if bet_type == "mc_total":
+                if e >= 5.0: return "S"
+                if e >= 3.0: return "A"
+                if 1.0 <= e < 2.0: return "B"
+                return None  # skip 2-3 band
+
+            if bet_type == "gsf_spread":
+                if 2.0 <= e < 3.0: return "A"
+                return None  # all other GSF spread tiers lose money
+
+            if bet_type == "combined_spread":
+                # MC and GSF agree — strong signal
+                if e >= 0: return "A"
+
+            return None
+
+        bets = []
+        for _, row in df.iterrows():
+            game = {
+                "away_team": row.get("Away Team"),
+                "home_team": row.get("Home Team"),
+                "week": row.get("Week_x") or row.get("Week"),
+                "circa_week": row.get("Circa Week"),
+                "date": str(row.get("Date_x", "")),
+                "game_time": str(row.get("Time", "")),
+            }
+
+            # ── MC Spread ──
+            mc_spread_bet = row.get("Monte Carlo Spread Bet")
+            mc_spread_edge = row.get("Monte Carlo Spread Edge")
+            if mc_spread_bet and not pd.isna(mc_spread_bet) and str(mc_spread_bet).strip():
+                t = tier("mc_spread", mc_spread_edge)
+                if t:
+                    bets.append({
+                        **game,
+                        "bet_type": "Spread",
+                        "model": "Monte Carlo",
+                        "pick": str(mc_spread_bet),
+                        "edge": round(float(mc_spread_edge), 2) if not pd.isna(mc_spread_edge) else None,
+                        "tier": t,
+                        "unit_wager": row.get("MC Spread Unit Wager"),
+                        "unit_to_win": row.get("MC Spread Unit to Win"),
+                        "kelly_wager": row.get("MC Spread Kelly Wager"),
+                        "kelly_to_win": row.get("MC Spread Kelly To Win"),
+                    })
+
+            # ── MC Moneyline ──
+            mc_ml_bet = row.get("Monte Carlo Moneyline Bet")
+            mc_ml_edge = row.get("Monte Carlo Moneyline Edge")
+            if mc_ml_bet and not pd.isna(mc_ml_bet) and str(mc_ml_bet).strip():
+                t = tier("mc_ml", mc_ml_edge)
+                if t:
+                    bets.append({
+                        **game,
+                        "bet_type": "Moneyline",
+                        "model": "Monte Carlo",
+                        "pick": str(mc_ml_bet),
+                        "edge": round(float(mc_ml_edge) * 100, 1) if not pd.isna(mc_ml_edge) else None,
+                        "edge_unit": "%",
+                        "tier": t,
+                        "unit_wager": row.get("MC ML Unit Wager"),
+                        "unit_to_win": row.get("MC ML Unit to Win"),
+                        "kelly_wager": row.get("MC ML Kelly Wager"),
+                        "kelly_to_win": row.get("MC ML Kelly To Win"),
+                    })
+
+            # ── MC Total ──
+            mc_total_bet = row.get("Monte Carlo Total Bet")
+            mc_total_edge = row.get("Monte Carlo Total Edge")
+            if mc_total_bet and not pd.isna(mc_total_bet) and str(mc_total_bet).strip():
+                t = tier("mc_total", mc_total_edge)
+                if t:
+                    bets.append({
+                        **game,
+                        "bet_type": "Total",
+                        "model": "Monte Carlo",
+                        "pick": str(mc_total_bet),
+                        "edge": round(float(mc_total_edge), 2) if not pd.isna(mc_total_edge) else None,
+                        "tier": t,
+                        "unit_wager": row.get("MC Total Unit Wager"),
+                        "unit_to_win": row.get("MC Total Unit to Win"),
+                        "kelly_wager": row.get("MC Total Kelly Wager"),
+                        "kelly_to_win": row.get("MC Total Kelly To Win"),
+                        "direction": row.get("MC Bet Direction"),
+                    })
+
+            # ── GSF Spread (2.0-3.0 only) ──
+            gsf_spread_bet = row.get("GSF Spread Bet")
+            gsf_spread_edge = row.get("GSF Spread Edge")
+            if gsf_spread_bet and not pd.isna(gsf_spread_bet) and str(gsf_spread_bet).strip():
+                t = tier("gsf_spread", gsf_spread_edge)
+                if t:
+                    bets.append({
+                        **game,
+                        "bet_type": "Spread",
+                        "model": "GSF",
+                        "pick": str(gsf_spread_bet),
+                        "edge": round(float(gsf_spread_edge), 2) if not pd.isna(gsf_spread_edge) else None,
+                        "tier": t,
+                        "unit_wager": None,
+                        "kelly_wager": None,
+                    })
+
+            # ── Combined Spread (MC + GSF agree) ──
+            con_spread_bet = row.get("Consensus Spread Bet")
+            con_spread_edge = row.get("Consensus Spread Edge")
+            if (con_spread_bet and not pd.isna(con_spread_bet) and str(con_spread_bet).strip()
+                    and mc_spread_bet and gsf_spread_bet
+                    and str(mc_spread_bet).strip() == str(gsf_spread_bet).strip()):
+                t = tier("combined_spread", con_spread_edge)
+                if t:
+                    bets.append({
+                        **game,
+                        "bet_type": "Spread",
+                        "model": "Combined (MC+GSF)",
+                        "pick": str(con_spread_bet),
+                        "edge": round(float(con_spread_edge), 2) if not pd.isna(con_spread_edge) else None,
+                        "tier": t,
+                        "unit_wager": None,
+                        "kelly_wager": None,
+                        "note": "MC and GSF agree",
+                    })
+
+        # Sort: S first, then A, then B; within tier sort by edge descending
+        tier_order = {"S": 0, "A": 1, "B": 2}
+        bets.sort(key=lambda b: (tier_order.get(b["tier"], 9), -(b["edge"] or 0)))
+
+        return JSONResponse(content=sanitize({
+            "upcoming_week": data["upcoming_week"],
+            "target_year": data["target_year"],
+            "bets": bets,
+            "counts": {
+                "S": sum(1 for b in bets if b["tier"] == "S"),
+                "A": sum(1 for b in bets if b["tier"] == "A"),
+                "B": sum(1 for b in bets if b["tier"] == "B"),
+            }
+        }))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ---------------------------------------------------------------
 # Railway startup — reads PORT from environment (Railway sets this)
