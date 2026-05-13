@@ -43,3 +43,9 @@ export async function fetchRankings() {
   if (!res.ok) throw new Error('Failed to fetch rankings')
   return res.json()
 }
+
+export async function fetchRecommendedBets() {
+  const res = await fetch(`${API_URL}/api/recommended-bets`)
+  if (!res.ok) throw new Error('Failed to fetch recommended bets')
+  return res.json()
+}
