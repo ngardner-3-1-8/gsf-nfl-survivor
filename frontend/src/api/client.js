@@ -37,3 +37,9 @@ export async function fetchSchedule(week = null) {
   if (!res.ok) throw new Error('Failed to fetch schedule')
   return res.json()
 }
+
+export async function fetchRankings() {
+  const res = await fetch(`${API_URL}/api/rankings`)
+  if (!res.ok) throw new Error('Failed to fetch rankings')
+  return res.json()
+}
