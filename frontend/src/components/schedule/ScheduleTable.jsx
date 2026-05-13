@@ -34,8 +34,16 @@ const COLUMNS = {
   { key: 'Massey-Peabody Home Team Spread', label: 'Home MP Spread', render: v => spreadCell(v) },
   { key: 'Sim_Spread_Mean', label: 'Home Sim Spread Mean', render: v => spreadCell(v) },
   { key: 'Sim_Spread_Median', label: 'Home Sim Spread Median', render: v => spreadCell(v) },
-  { key: 'Sim_Spread_Mean', label: 'Away Sim Spread Mean', render: v => spreadCell(v) },
-  { key: 'Sim_Spread_Median', label: 'Away Sim Spread Median', render: v => spreadCell(v) },
+  {
+    key: '_away_sim_spread_mean',
+    label: 'Away Sim Spread Mean',
+    render: (_, r) => spreadCell(parseFloat(r['Sim_Spread_Mean']) * -1)
+  },
+  {
+    key: '_away_sim_spread_median',
+    label: 'Away Sim Spread Median',
+    render: (_, r) => spreadCell(parseFloat(r['Sim_Spread_Median']) * -1)
+  },
   { key: 'Sim_Spread_Variance_Label', label: 'Sim Spread Variance', render: v => varianceLabelCell(v) },
   { key: 'Sim_Total_Mean', label: 'Sim Total Mean', render: v => totalCell(v) },
   { key: 'Sim_Total_Median', label: 'Sim Total Median', render: v => totalCell(v) },
@@ -190,8 +198,7 @@ function spreadCell(val) {
 function totalCell(val) {
   const v = parseFloat(val)
   if (isNaN(v)) return <span className="text-gray-600">—</span>
-  const formatted = (v > 0 ? '' : '') + v.toFixed(1)
-  return <span className="text-gray-400 font-mono text-xs">{formatted}</span>
+  return <span className="text-gray-400 font-mono text-xs">{v.toFixed(1)}</span>
 }
 
 function restCell(val) {
