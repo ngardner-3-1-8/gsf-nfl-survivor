@@ -36,7 +36,7 @@ const COLUMNS = {
   { key: 'Sim_Spread_Median', label: 'Home Sim Spread Median', render: v => spreadCell(v) },
   { key: 'Sim_Spread_Mean', label: 'Away Sim Spread Mean', render: v => spreadCell(v) },
   { key: 'Sim_Spread_Median', label: 'Away Sim Spread Median', render: v => spreadCell(v) },
-  { key: 'Sim_Spread_Variance_Label', label: 'Sim Spread Variance', render: v => spreadCell(v) },
+  { key: 'Sim_Spread_Variance_Label', label: 'Sim Spread Variance', render: v => varianceLabelCell(v) },
   { key: 'Sim_Total_Mean', label: 'Sim Total Mean', render: v => spreadCell(v) },
   { key: 'Sim_Total_Median', label: 'Sim Total Median', render: v => spreadCell(v) },
 ],
@@ -207,6 +207,24 @@ function edgePctCell(val) {
   if (v > 0) return <span className="text-green-400 font-mono text-xs">{formatted}</span>
   if (v < 0) return <span className="text-red-400 font-mono text-xs">{formatted}</span>
   return <span className="text-gray-400 font-mono text-xs">0.0%</span>
+}
+
+function varianceLabelCell(val) {
+  if (val == null || val === '') return <span className="text-gray-600">—</span>
+  const v = String(val).trim().toLowerCase()
+  const styles = {
+    'low':      'bg-green-900/50 text-green-400',
+    'med-low':  'bg-lime-900/50 text-lime-400',
+    'med':      'bg-yellow-900/50 text-yellow-400',
+    'med-high': 'bg-orange-900/50 text-orange-400',
+    'high':     'bg-red-900/50 text-red-400',
+  }
+  const cls = styles[v] || 'bg-gray-800 text-gray-400'
+  return (
+    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${cls}`}>
+      {String(val).trim()}
+    </span>
+  )
 }
 
 function bayesianCell(val) {
