@@ -73,6 +73,11 @@ const COLUMNS = {
     { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
     { key: 'Away Team', label: 'Away Team' },
     { key: 'Home Team', label: 'Home Team' },
+    { key: 'Away Team Sportsbook Fair Odds', label: 'Away SB Odds', render: v => winPctCell(v) },
+    { key: 'Home Team Sportsbook Fair Odds', label: 'Home SB Odds', render: v => winPctCell(v) }, 
+    { key: 'Total Line', label: 'Sportsbook Total', render: v => winPctCell(v) },
+    { key: 'Away Team Sportsbook Spread', label: 'Away SB Spread', render: v => spreadCell(v) },
+    { key: 'Home Team Sportsbook Spread', label: 'Home SB Spread', render: v => spreadCell(v) },     
     // Spread bets
     { key: 'GSF Spread Bet', label: 'GSF Spread', render: v => v || '—' },
     { key: 'GSF Spread Edge', label: 'GSF Spread Edge', render: v => edgeCell(v) },
