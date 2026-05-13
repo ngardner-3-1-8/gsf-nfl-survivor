@@ -204,6 +204,77 @@ def optimize(request: OptimizeRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/rankings")
+def get_rankings():
+    try:
+        data = load_current_data(DATA_DIR)
+        upcoming_week = data["upcoming_week"]
+        target_year = data["target_year"]
+        ratings_dir = os.path.join(DATA_DIR, "nfl-power-ratings")
+
+        # Load current week file
+        current_file = os.path.join(
+            ratings_dir,
+            f"nfl_power_ratings_blended_week_{upcoming_week}_{target_year}.csv"
+        )
+        if not os.path.exists(current_file):
+            # Fall back to closest available
+            import glob
+            files = glob.glob(os.path.join(ratings_dir, f"nfl_power_ratings_blended_week_*_{target_year}.csv"))
+            if not files:
+                raise FileNotFoundError(f"No rankings file found for {target_year}")
+            def extract_week(p):
+                try:
+                    return int(os.path.basename(p).split("_week_")[1].split(f"_{target_year}")[0])
+                except:
+                    return 0
+            files_with_weeks = [(extract_week(f), f) for f in files]
+            valid = [(w, f) for w, f in files_with_weeks if w <= upcoming_week]
+            current_file = max(valid if valid else files_with_weeks, key=lambda x: x[0])[1]
+
+        df = pd.read_csv(current_file)
+        df = clean_df(df)
+
+        # Try to load Week 1 preseason file for comparison
+        preseason_file = os.path.join(
+            ratings_dir,
+            f"nfl_power_ratings_blended_week_1_{target_year}.csv"
+        )
+        preseason_data = {}
+        if os.path.exists(preseason_file) and current_file != preseason_file:
+            pre_df = pd.read_csv(preseason_file)
+            for _, row in pre_df.iterrows():
+                team = str(row.get("Team", ""))
+                preseason_data[team] = {
+                    "Preseason Power Rating": row.get("Power Rating"),
+                    "Preseason MP Rating":    row.get("MP_Rating"),
+                    "Preseason Rank":         row.get("Rank"),
+                }
+
+        # Merge preseason data in
+        records = []
+        for _, row in df.iterrows():
+            rec = row.to_dict()
+            team = str(rec.get("Team", ""))
+            if team in preseason_data:
+                rec.update(preseason_data[team])
+            else:
+                rec["Preseason Power Rating"] = None
+                rec["Preseason MP Rating"] = None
+                rec["Preseason Rank"] = None
+            records.append(rec)
+
+        return JSONResponse(content=sanitize({
+            "upcoming_week": upcoming_week,
+            "target_year": target_year,
+            "has_preseason": bool(preseason_data),
+            "rankings": records,
+        }))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ---------------------------------------------------------------
 # Railway startup — reads PORT from environment (Railway sets this)
