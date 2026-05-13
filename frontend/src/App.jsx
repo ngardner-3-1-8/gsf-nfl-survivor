@@ -1,6 +1,7 @@
 import OptimizerView from './components/optimizer/OptimizerView'
 import { useState, useEffect } from 'react'
 import { fetchLastUpdated } from './api/client'
+import ScheduleView from './components/schedule/ScheduleView'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('optimizer')
@@ -62,9 +63,7 @@ export default function App() {
       {/* Page content */}
       <main className="max-w-screen-2xl mx-auto px-6 py-6">
         {activeTab === 'optimizer' && <OptimizerView />}
-        {activeTab === 'schedule' && (
-          <div className="text-gray-500 text-sm">Schedule view coming soon...</div>
-        )}
+        {activeTab === 'schedule' && <ScheduleView />}
         {activeTab === 'analytics' && (
           <div className="text-gray-500 text-sm">Analytics view coming soon...</div>
         )}
