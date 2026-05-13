@@ -28,3 +28,12 @@ export async function fetchLastUpdated() {
   if (!res.ok) throw new Error('Failed to fetch last updated')
   return res.json()
 }
+
+export async function fetchSchedule(week = null) {
+  const url = week
+    ? `${API_URL}/api/schedule?week=${week}`
+    : `${API_URL}/api/schedule`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Failed to fetch schedule')
+  return res.json()
+}
