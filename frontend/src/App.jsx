@@ -3,6 +3,7 @@ import { fetchLastUpdated } from './api/client'
 import OptimizerView from './components/optimizer/OptimizerView'
 import ScheduleView from './components/schedule/ScheduleView'
 import RankingsView from './components/rankings/RankingsView'
+import RecommendedBetsView from './components/bets/RecommendedBetsView'
 
 
 // Placeholder components — we'll replace these one by one
@@ -39,7 +40,7 @@ export default function App() {
       case 'optimizer':    return <OptimizerView />
       case 'schedule':     return <ScheduleView />
       case 'rankings':     return <RankingsView />
-      case 'bets':         return <ComingSoon name="Bets" />
+      case 'bets':         return <RecommendedBetsView />
       case 'ev-calc':      return <ComingSoon name="EV Calculator" />
       case 'contest':      return <ComingSoon name="Contest Analytics" />
       case 'transactions': return <ComingSoon name="Transactions" />
