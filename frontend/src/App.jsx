@@ -1,7 +1,26 @@
-import OptimizerView from './components/optimizer/OptimizerView'
 import { useState, useEffect } from 'react'
 import { fetchLastUpdated } from './api/client'
+import OptimizerView from './components/optimizer/OptimizerView'
 import ScheduleView from './components/schedule/ScheduleView'
+
+// Placeholder components — we'll replace these one by one
+const ComingSoon = ({ name }) => (
+  <div className="flex items-center justify-center h-64">
+    <p className="text-gray-500 text-sm">{name} coming soon...</p>
+  </div>
+)
+
+const TABS = [
+  { id: 'optimizer',     label: 'Optimizer' },
+  { id: 'schedule',      label: 'Schedule' },
+  { id: 'rankings',      label: 'Rankings' },
+  { id: 'bets',          label: 'Bets' },
+  { id: 'ev-calc',       label: 'EV Calc' },
+  { id: 'contest',       label: 'Contest' },
+  { id: 'transactions',  label: 'Transactions' },
+  { id: 'analytics',     label: 'Analytics' },
+  { id: 'faq',           label: 'FAQ' },
+]
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('optimizer')
@@ -13,62 +32,73 @@ export default function App() {
       .catch(() => {})
   }, [])
 
+  const renderTab = () => {
+    switch (activeTab) {
+      case 'optimizer':    return <OptimizerView />
+      case 'schedule':     return <ScheduleView />
+      case 'rankings':     return <ComingSoon name="Rankings" />
+      case 'bets':         return <ComingSoon name="Bets" />
+      case 'ev-calc':      return <ComingSoon name="EV Calculator" />
+      case 'contest':      return <ComingSoon name="Contest Analytics" />
+      case 'transactions': return <ComingSoon name="Transactions" />
+      case 'analytics':    return <ComingSoon name="Analytics" />
+      case 'faq':          return <ComingSoon name="FAQ" />
+      default:             return <OptimizerView />
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-
-      {/* Top navigation bar */}
       <nav className="border-b border-gray-800 bg-gray-900 sticky top-0 z-10">
-        <div className="max-w-screen-2xl mx-auto px-6 flex items-center gap-8 h-14">
+        <div className="max-w-screen-2xl mx-auto px-6 flex items-center h-14">
 
-          <div className="flex items-center gap-2 mr-4">
+          {/* Logo */}
+          <div className="flex items-center gap-2 mr-6 flex-shrink-0">
             <span className="font-bold text-lg">🏈</span>
-            <span className="font-semibold text-white tracking-tight">
-              Generic Sports Fan Survivor
+            <span className="font-semibold text-white tracking-tight hidden sm:block">
+              GSF Survivor
             </span>
           </div>
 
-          {['optimizer', 'schedule', 'analytics'].map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`
-                text-sm font-medium capitalize h-14 border-b-2 transition-colors px-1
-                ${activeTab === tab
-                  ? 'border-green-500 text-white'
-                  : 'border-transparent text-gray-500 hover:text-white'}
-              `}
-            >
-              {tab}
-            </button>
-          ))}
-            {lastUpdated && (
-              <div className="ml-auto flex flex-col items-end text-xs text-gray-500">
+          {/* Tabs — scrollable on small screens */}
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide flex-1">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  text-sm font-medium h-14 border-b-2 transition-colors px-3 whitespace-nowrap flex-shrink-0
+                  ${activeTab === tab.id
+                    ? 'border-green-500 text-white'
+                    : 'border-transparent text-gray-500 hover:text-white'}
+                `}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Timestamp */}
+          {lastUpdated && (
+            <div className="ml-4 flex-shrink-0 flex flex-col items-end text-xs text-gray-500">
+              <span>
+                <span className="text-gray-600">Wk {lastUpdated.upcoming_week} · Sim </span>
+                {lastUpdated.sim_updated}
+              </span>
+              {lastUpdated.mp_updated && lastUpdated.mp_updated !== 'Unknown' && (
                 <span>
-                  <span className="text-gray-600">
-                    Week {lastUpdated.upcoming_week} · Simulations and Odds Data updated{' '}
-                  </span>
-                  {lastUpdated.sim_updated}
+                  <span className="text-gray-600">MP </span>
+                  {lastUpdated.mp_updated}
                 </span>
-                <span>
-                  <span className="text-gray-600">Massey-Peabody Rankings updated{' '}</span>
-                  {lastUpdated.mp_updated && lastUpdated.mp_updated !== 'Unknown'
-                    ? lastUpdated.mp_updated
-                    : 'Not yet uploaded this week'}
-                </span>
-              </div>
-            )}
+              )}
+            </div>
+          )}
         </div>
       </nav>
 
-      {/* Page content */}
       <main className="max-w-screen-2xl mx-auto px-6 py-6">
-        {activeTab === 'optimizer' && <OptimizerView />}
-        {activeTab === 'schedule' && <ScheduleView />}
-        {activeTab === 'analytics' && (
-          <div className="text-gray-500 text-sm">Analytics view coming soon...</div>
-        )}
+        {renderTab()}
       </main>
-
     </div>
   )
 }
