@@ -32,28 +32,13 @@ const COLUMNS = {
   { key: 'Generic Sports Fan Home Team Spread', label: 'Home GSF Spread', render: v => spreadCell(v) },
   { key: 'Massey-Peabody Away Team Spread', label: 'Away MP Spread', render: v => spreadCell(v) },
   { key: 'Massey-Peabody Home Team Spread', label: 'Home MP Spread', render: v => spreadCell(v) },
-  {
-    key: '_sim_spread_avg',
-    label: 'MC Spread Avg',
-    render: (_, r) => {
-      const mean = parseFloat(r['Sim_Spread_Mean'])
-      const median = parseFloat(r['Sim_Spread_Median'])
-      if (isNaN(mean) || isNaN(median)) return <span className="text-gray-600">—</span>
-      return spreadCell((mean + median) / 2)
-    }
-  },
-  { key: 'Total Line', label: 'Total Line', render: v => v != null ? <span className="font-mono text-xs text-gray-300">{Number(v).toFixed(1)}</span> : '—' },
-  {
-    key: '_sim_total_avg',
-    label: 'MC Total Avg',
-    render: (_, r) => {
-      const mean = parseFloat(r['Sim_Total_Mean'])
-      const median = parseFloat(r['Sim_Total_Median'])
-      if (isNaN(mean) || isNaN(median)) return <span className="text-gray-600">—</span>
-      const avg = (mean + median) / 2
-      return <span className="font-mono text-xs text-gray-300">{avg.toFixed(1)}</span>
-    }
-  },
+  { key: 'Sim_Spread_Mean', label: 'Home Sim Spread Mean', render: v => spreadCell(v) },
+  { key: 'Sim_Spread_Median', label: 'Home Sim Spread Median', render: v => spreadCell(v) },
+  { key: 'Sim_Spread_Mean', label: 'Away Sim Spread Mean', render: v => spreadCell(v) },
+  { key: 'Sim_Spread_Median', label: 'Away Sim Spread Median', render: v => spreadCell(v) },
+  { key: 'Sim_Spread_Variance_Label', label: 'Sim Spread Variance', render: v => spreadCell(v) },
+  { key: 'Sim_Total_Mean', label: 'Sim Total Mean', render: v => spreadCell(v) },
+  { key: 'Sim_Total_Median', label: 'Sim Total Median', render: v => spreadCell(v) },
 ],
   'Situational': [
     { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
@@ -213,6 +198,31 @@ function edgeCell(val) {
   if (v > 0) return <span className="text-green-400 font-mono text-xs">{formatted}</span>
   if (v < 0) return <span className="text-red-400 font-mono text-xs">{formatted}</span>
   return <span className="text-gray-400 font-mono text-xs">0</span>
+}
+
+function edgePctCell(val) {
+  const v = parseFloat(val)
+  if (isNaN(v)) return <span className="text-gray-600">—</span>
+  const formatted = (v > 0 ? '+' : '') + (v * 100).toFixed(1) + '%'
+  if (v > 0) return <span className="text-green-400 font-mono text-xs">{formatted}</span>
+  if (v < 0) return <span className="text-red-400 font-mono text-xs">{formatted}</span>
+  return <span className="text-gray-400 font-mono text-xs">0.0%</span>
+}
+
+function bayesianCell(val) {
+  if (val == null || val === '') return <span className="text-gray-600">—</span>
+  const v = String(val).trim().toLowerCase()
+  if (v === 'same') return (
+    <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-green-900/50 text-green-400">
+      Same
+    </span>
+  )
+  if (v === 'different') return (
+    <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-gray-800 text-gray-500">
+      Diff
+    </span>
+  )
+  return <span className="text-gray-600 text-xs">{val}</span>
 }
 
 function pickPctCell(val, teamKey, row, allRows) {
