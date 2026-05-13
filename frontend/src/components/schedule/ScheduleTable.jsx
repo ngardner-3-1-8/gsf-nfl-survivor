@@ -14,21 +14,47 @@ const COLUMNS = {
     { key: '_weather', label: '🌤', render: (_, r) => weatherEmoji(r) },
     { key: '_holiday', label: '🗓', render: (_, r) => holidayEmoji(r) },
   ],
-  'Odds & Win%': [
-    { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
-    { key: 'Away Team', label: 'Away Team' },
-    { key: 'Home Team', label: 'Home Team' },
-    { key: 'Consensus Away Win Pct', label: 'Away Consensus', render: v => winPctCell(v) },
-    { key: 'Consensus Home Win Pct', label: 'Home Consensus', render: v => winPctCell(v) },
-    { key: 'Sim_Away_Win_Pct', label: 'Away MC', render: v => winPctCell(v) },
-    { key: 'Sim_Home_Win_Pct', label: 'Home MC', render: v => winPctCell(v) },
-    { key: 'Away Team Sportsbook Fair Odds', label: 'Away SB Odds', render: v => winPctCell(v) },
-    { key: 'Home Team Sportsbook Fair Odds', label: 'Home SB Odds', render: v => winPctCell(v) },
-    { key: 'Away Team Massey-Peabody Fair Odds', label: 'Away MP Odds', render: v => winPctCell(v) },
-    { key: 'Home Team Massey-Peabody Fair Odds', label: 'Home MP Odds', render: v => winPctCell(v) },
-    { key: 'Away Team Sportsbook Spread', label: 'Away Spread', render: v => spreadCell(v) },
-    { key: 'Home Team Sportsbook Spread', label: 'Home Spread', render: v => spreadCell(v) },
-  ],
+'Odds & Win%': [
+  { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
+  { key: 'Away Team', label: 'Away Team' },
+  { key: 'Home Team', label: 'Home Team' },
+  { key: 'Consensus Away Win Pct', label: 'Away Consensus', render: v => winPctCell(v) },
+  { key: 'Consensus Home Win Pct', label: 'Home Consensus', render: v => winPctCell(v) },
+  { key: 'Sim_Away_Win_Pct', label: 'Away MC', render: v => winPctCell(v) },
+  { key: 'Sim_Home_Win_Pct', label: 'Home MC', render: v => winPctCell(v) },
+  { key: 'Away Team Sportsbook Fair Odds', label: 'Away SB Odds', render: v => winPctCell(v) },
+  { key: 'Home Team Sportsbook Fair Odds', label: 'Home SB Odds', render: v => winPctCell(v) },
+  { key: 'Away Team Massey-Peabody Fair Odds', label: 'Away MP Odds', render: v => winPctCell(v) },
+  { key: 'Home Team Massey-Peabody Fair Odds', label: 'Home MP Odds', render: v => winPctCell(v) },
+  { key: 'Away Team Sportsbook Spread', label: 'Away SB Spread', render: v => spreadCell(v) },
+  { key: 'Home Team Sportsbook Spread', label: 'Home SB Spread', render: v => spreadCell(v) },
+  { key: 'Generic Sports Fan Away Team Spread', label: 'Away GSF Spread', render: v => spreadCell(v) },
+  { key: 'Generic Sports Fan Home Team Spread', label: 'Home GSF Spread', render: v => spreadCell(v) },
+  { key: 'Massey-Peabody Away Team Spread', label: 'Away MP Spread', render: v => spreadCell(v) },
+  { key: 'Massey-Peabody Home Team Spread', label: 'Home MP Spread', render: v => spreadCell(v) },
+  {
+    key: '_sim_spread_avg',
+    label: 'MC Spread Avg',
+    render: (_, r) => {
+      const mean = parseFloat(r['Monte Carlo Away Team Spread'])
+      const median = parseFloat(r['Monte Carlo Home Team Spread'])
+      if (isNaN(mean) || isNaN(median)) return <span className="text-gray-600">—</span>
+      return spreadCell((mean + median) / 2)
+    }
+  },
+  { key: 'Total Line', label: 'Total Line', render: v => v != null ? <span className="font-mono text-xs text-gray-300">{Number(v).toFixed(1)}</span> : '—' },
+  {
+    key: '_sim_total_avg',
+    label: 'MC Total Avg',
+    render: (_, r) => {
+      const mean = parseFloat(r['Sim_Total_Mean'])
+      const median = parseFloat(r['Sim_Total_Median'])
+      if (isNaN(mean) || isNaN(median)) return <span className="text-gray-600">—</span>
+      const avg = (mean + median) / 2
+      return <span className="font-mono text-xs text-gray-300">{avg.toFixed(1)}</span>
+    }
+  },
+],
   'Situational': [
     { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
     { key: 'Away Team', label: 'Away Team' },
