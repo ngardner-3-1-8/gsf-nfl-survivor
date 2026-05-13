@@ -37,8 +37,8 @@ const COLUMNS = {
   { key: 'Sim_Spread_Mean', label: 'Away Sim Spread Mean', render: v => spreadCell(v) },
   { key: 'Sim_Spread_Median', label: 'Away Sim Spread Median', render: v => spreadCell(v) },
   { key: 'Sim_Spread_Variance_Label', label: 'Sim Spread Variance', render: v => varianceLabelCell(v) },
-  { key: 'Sim_Total_Mean', label: 'Sim Total Mean', render: v => spreadCell(v) },
-  { key: 'Sim_Total_Median', label: 'Sim Total Median', render: v => spreadCell(v) },
+  { key: 'Sim_Total_Mean', label: 'Sim Total Mean', render: v => totalCell(v) },
+  { key: 'Sim_Total_Median', label: 'Sim Total Median', render: v => totalCell(v) },
 ],
   'Situational': [
     { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
