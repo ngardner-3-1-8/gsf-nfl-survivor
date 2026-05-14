@@ -37,7 +37,7 @@ ALLOWED_ORIGINS = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o for o in ALLOWED_ORIGINS if o],
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -440,6 +440,77 @@ def get_recommended_bets():
         }))
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+import uuid
+from datetime import datetime as dt
+
+BETS_FILE = os.path.join(DATA_DIR, "bets.json")
+
+def load_bets() -> dict:
+    if not os.path.exists(BETS_FILE):
+        return {}
+    with open(BETS_FILE, "r") as f:
+        return json.load(f)
+
+def save_bets(bets: dict):
+    with open(BETS_FILE, "w") as f:
+        json.dump(bets, f, indent=2)
+
+@app.get("/api/bets/{username}")
+def get_bets(username: str):
+    try:
+        all_bets = load_bets()
+        user_bets = all_bets.get(username, [])
+        return JSONResponse(content=sanitize({"bets": user_bets}))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/bets/{username}")
+def add_bet(username: str, bet: dict):
+    try:
+        all_bets = load_bets()
+        if username not in all_bets:
+            all_bets[username] = []
+        new_bet = {
+            **bet,
+            "id": str(uuid.uuid4()),
+            "created_at": dt.utcnow().isoformat(),
+            "result": bet.get("result", "pending"),
+        }
+        all_bets[username].append(new_bet)
+        save_bets(all_bets)
+        return JSONResponse(content=sanitize({"bet": new_bet}))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/bets/{username}/{bet_id}")
+def update_bet(username: str, bet_id: str, updates: dict):
+    try:
+        all_bets = load_bets()
+        user_bets = all_bets.get(username, [])
+        for i, b in enumerate(user_bets):
+            if b["id"] == bet_id:
+                user_bets[i] = {**b, **updates}
+                all_bets[username] = user_bets
+                save_bets(all_bets)
+                return JSONResponse(content=sanitize({"bet": user_bets[i]}))
+        raise HTTPException(status_code=404, detail="Bet not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/bets/{username}/{bet_id}")
+def delete_bet(username: str, bet_id: str):
+    try:
+        all_bets = load_bets()
+        user_bets = all_bets.get(username, [])
+        all_bets[username] = [b for b in user_bets if b["id"] != bet_id]
+        save_bets(all_bets)
+        return {"deleted": bet_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
