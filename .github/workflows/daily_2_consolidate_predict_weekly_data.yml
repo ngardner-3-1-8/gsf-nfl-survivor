@@ -2,8 +2,10 @@ name: Daily 2 Consolidate and Predict Upcoming Weekly Data
 
 on:
   schedule:
-    # Runs at 12:00 UTC every day (8:00 AM ET during Daylight Savings, 7:00 AM Standard)
-    - cron: '30 2 * * *'
+    # Runs at 8:30 AM UTC Daily
+    #1:30 AM Mountain Standard Time
+    #2:30 AM Mountain Daylight Time
+    - cron: '30 8 * * *'
   # Allows you to run this workflow manually from the Actions tab for testing
   workflow_dispatch:
 
