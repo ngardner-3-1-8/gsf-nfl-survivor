@@ -4,7 +4,7 @@ on:
   schedule:
     # 13:00 UTC = 9:00 AM EST
     # Cron format: 'Minute Hour DayMonth Month DayWeek'
-    - cron: '0 8 1 5 *'
+    - cron: '0 8 15 5 *'
   workflow_dispatch: # Allows you to test it manually right now
 
 jobs:
