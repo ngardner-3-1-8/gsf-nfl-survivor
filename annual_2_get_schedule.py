@@ -8,7 +8,7 @@ def update_annual_schedule():
     today = datetime.now()
     current_cal_year = today.year 
     
-    if today.month < 5:
+    if today < datetime(current_cal_year, 5, 15, 0, 0):
         target_year = current_cal_year - 1
     else:
         target_year = current_cal_year
