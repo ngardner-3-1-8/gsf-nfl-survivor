@@ -4,6 +4,7 @@ import OptimizerView from './components/optimizer/OptimizerView'
 import ScheduleView from './components/schedule/ScheduleView'
 import RankingsView from './components/rankings/RankingsView'
 import RecommendedBetsView from './components/bets/RecommendedBetsView'
+import MyBetsView from './components/bets/MyBetsView'
 
 
 // Placeholder components — we'll replace these one by one
@@ -25,6 +26,8 @@ const TABS = [
   { id: 'faq',           label: 'FAQ' },
 ]
 
+const [betsSubTab, setBetsSubTab] = useState('recommended')
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('optimizer')
   const [lastUpdated, setLastUpdated] = useState(null)
@@ -40,7 +43,33 @@ export default function App() {
       case 'optimizer':    return <OptimizerView />
       case 'schedule':     return <ScheduleView />
       case 'rankings':     return <RankingsView />
-      case 'bets':         return <RecommendedBetsView />
+      case 'bets':
+        return (
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-1 border-b border-gray-800 -mb-4 pb-0">
+              {[
+                { id: 'recommended', label: 'Recommended Bets' },
+                { id: 'my-bets', label: 'My Bets' },
+                { id: 'history', label: 'History & Performance' },
+              ].map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setBetsSubTab(t.id)}
+                  className={`text-sm px-4 py-3 border-b-2 transition-colors ${
+                    betsSubTab === t.id
+                      ? 'border-green-500 text-white font-medium'
+                      : 'border-transparent text-gray-500 hover:text-white'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            {betsSubTab === 'recommended' && <RecommendedBetsView />}
+            {betsSubTab === 'my-bets' && <MyBetsView />}
+            {betsSubTab === 'history' && <div className="flex items-center justify-center h-64 text-gray-500 text-sm">History & Performance coming next...</div>}
+          </div>
+        )
       case 'ev-calc':      return <ComingSoon name="EV Calculator" />
       case 'contest':      return <ComingSoon name="Contest Analytics" />
       case 'transactions': return <ComingSoon name="Transactions" />
