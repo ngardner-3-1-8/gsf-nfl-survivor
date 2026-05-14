@@ -4,9 +4,11 @@ on:
   # Allows you to trigger the workflow manually from the GitHub Actions tab
   workflow_dispatch:
   
-  # Optional: Schedule this to run automatically (e.g., every Tuesday at 10:00 AM UTC)
+  # Runs at 12:30 PM UTC Daily
+  #5:30 AM Mountain Standard Time
+  #6:30 AM Mountain Daylight Time
   schedule:
-    - cron: '30 4 * * *'
+    - cron: '30 12 * * *'
 
 permissions:
   contents: write # Required to push the new CSVs back to the repo
