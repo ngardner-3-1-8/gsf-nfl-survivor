@@ -6,8 +6,6 @@ import RankingsView from './components/rankings/RankingsView'
 import RecommendedBetsView from './components/bets/RecommendedBetsView'
 import MyBetsView from './components/bets/MyBetsView'
 
-
-// Placeholder components — we'll replace these one by one
 const ComingSoon = ({ name }) => (
   <div className="flex items-center justify-center h-64">
     <p className="text-gray-500 text-sm">{name} coming soon...</p>
@@ -26,11 +24,10 @@ const TABS = [
   { id: 'faq',           label: 'FAQ' },
 ]
 
-const [betsSubTab, setBetsSubTab] = useState('recommended')
-
 export default function App() {
   const [activeTab, setActiveTab] = useState('optimizer')
   const [lastUpdated, setLastUpdated] = useState(null)
+  const [betsSubTab, setBetsSubTab] = useState('recommended')  // ← moved inside
 
   useEffect(() => {
     fetchLastUpdated()
@@ -49,8 +46,8 @@ export default function App() {
             <div className="flex gap-1 border-b border-gray-800 -mb-4 pb-0">
               {[
                 { id: 'recommended', label: 'Recommended Bets' },
-                { id: 'my-bets', label: 'My Bets' },
-                { id: 'history', label: 'History & Performance' },
+                { id: 'my-bets',     label: 'My Bets' },
+                { id: 'history',     label: 'History & Performance' },
               ].map(t => (
                 <button
                   key={t.id}
@@ -66,8 +63,12 @@ export default function App() {
               ))}
             </div>
             {betsSubTab === 'recommended' && <RecommendedBetsView />}
-            {betsSubTab === 'my-bets' && <MyBetsView />}
-            {betsSubTab === 'history' && <div className="flex items-center justify-center h-64 text-gray-500 text-sm">History & Performance coming next...</div>}
+            {betsSubTab === 'my-bets'     && <MyBetsView />}
+            {betsSubTab === 'history'     && (
+              <div className="flex items-center justify-center h-64 text-gray-500 text-sm">
+                History & Performance coming next...
+              </div>
+            )}
           </div>
         )
       case 'ev-calc':      return <ComingSoon name="EV Calculator" />
