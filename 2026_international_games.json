@@ -1,0 +1,121 @@
+{
+  "games": [
+    {
+      "game_id": "2026_01_LAR_SF",
+      "home_team": "San Francisco 49ers",
+      "away_team": "Los Angeles Rams",
+      "date": "2026-09-10",
+      "stadium": "Melbourne Cricket Ground",
+      "city": "Melbourne, Australia",
+      "timezone": "Australia/Melbourne",
+      "latitude": -37.8200,
+      "longitude": 144.9834,
+      "kickoff_et": "20:35",
+      "network": "TBD"
+    },
+    {
+      "game_id": "2026_03_BAL_DAL",
+      "home_team": "Dallas Cowboys",
+      "away_team": "Baltimore Ravens",
+      "date": "2026-09-27",
+      "stadium": "Maracanã Stadium",
+      "city": "Rio de Janeiro, Brazil",
+      "timezone": "America/Sao_Paulo",
+      "latitude": -22.9122,
+      "longitude": -43.2302,
+      "kickoff_et": "16:25",
+      "network": "CBS"
+    },
+    {
+      "game_id": "2026_04_IND_WAS",
+      "home_team": "Washington Commanders",
+      "away_team": "Indianapolis Colts",
+      "date": "2026-10-04",
+      "stadium": "Tottenham Hotspur Stadium",
+      "city": "London, UK",
+      "timezone": "Europe/London",
+      "latitude": 51.6042,
+      "longitude": -0.0665,
+      "kickoff_et": "09:30",
+      "network": "NFL Network"
+    },
+    {
+      "game_id": "2026_05_PHI_JAX",
+      "home_team": "Jacksonville Jaguars",
+      "away_team": "Philadelphia Eagles",
+      "date": "2026-10-11",
+      "stadium": "Tottenham Hotspur Stadium",
+      "city": "London, UK",
+      "timezone": "Europe/London",
+      "latitude": 51.6042,
+      "longitude": -0.0665,
+      "kickoff_et": "09:30",
+      "network": "NFL Network"
+    },
+    {
+      "game_id": "2026_06_HOU_JAX",
+      "home_team": "Jacksonville Jaguars",
+      "away_team": "Houston Texans",
+      "date": "2026-10-18",
+      "stadium": "Wembley Stadium",
+      "city": "London, UK",
+      "timezone": "Europe/London",
+      "latitude": 51.5560,
+      "longitude": -0.2795,
+      "kickoff_et": "09:30",
+      "network": "NFL Network"
+    },
+    {
+      "game_id": "2026_07_PIT_NO",
+      "home_team": "New Orleans Saints",
+      "away_team": "Pittsburgh Steelers",
+      "date": "2026-10-25",
+      "stadium": "Stade de France",
+      "city": "Paris, France",
+      "timezone": "Europe/Paris",
+      "latitude": 48.9244,
+      "longitude": 2.3601,
+      "kickoff_et": "09:30",
+      "network": "NFL Network"
+    },
+    {
+      "game_id": "2026_09_CIN_ATL",
+      "home_team": "Atlanta Falcons",
+      "away_team": "Cincinnati Bengals",
+      "date": "2026-11-08",
+      "stadium": "Bernabéu Stadium",
+      "city": "Madrid, Spain",
+      "timezone": "Europe/Madrid",
+      "latitude": 40.4531,
+      "longitude": -3.6883,
+      "kickoff_et": "09:30",
+      "network": "NFL Network"
+    },
+    {
+      "game_id": "2026_10_NE_DET",
+      "home_team": "Detroit Lions",
+      "away_team": "New England Patriots",
+      "date": "2026-11-15",
+      "stadium": "FC Bayern Munich Stadium",
+      "city": "Munich, Germany",
+      "timezone": "Europe/Berlin",
+      "latitude": 48.2188,
+      "longitude": 11.6248,
+      "kickoff_et": "09:30",
+      "network": "FOX"
+    },
+    {
+      "game_id": "2026_11_MIN_SF",
+      "home_team": "San Francisco 49ers",
+      "away_team": "Minnesota Vikings",
+      "date": "2026-11-22",
+      "stadium": "Estadio Banorte",
+      "city": "Mexico City, Mexico",
+      "timezone": "America/Mexico_City",
+      "latitude": 25.6693,
+      "longitude": -100.3100,
+      "kickoff_et": "20:20",
+      "network": "NBC"
+    }
+  ]
+}
