@@ -49,3 +49,37 @@ export async function fetchRecommendedBets() {
   if (!res.ok) throw new Error('Failed to fetch recommended bets')
   return res.json()
 }
+
+export async function getBets(username) {
+  const res = await fetch(`${API_URL}/api/bets/${encodeURIComponent(username)}`)
+  if (!res.ok) throw new Error('Failed to fetch bets')
+  return res.json()
+}
+
+export async function addBet(username, bet) {
+  const res = await fetch(`${API_URL}/api/bets/${encodeURIComponent(username)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(bet),
+  })
+  if (!res.ok) throw new Error('Failed to add bet')
+  return res.json()
+}
+
+export async function updateBet(username, betId, updates) {
+  const res = await fetch(`${API_URL}/api/bets/${encodeURIComponent(username)}/${betId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  })
+  if (!res.ok) throw new Error('Failed to update bet')
+  return res.json()
+}
+
+export async function deleteBet(username, betId) {
+  const res = await fetch(`${API_URL}/api/bets/${encodeURIComponent(username)}/${betId}`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) throw new Error('Failed to delete bet')
+  return res.json()
+}
