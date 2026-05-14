@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import nflreadpy as nfl
 from scipy.stats import percentileofscore
-from datetime import datetime
+from datetime import datetime, date
 import warnings
 
 
@@ -15,7 +15,7 @@ current_cal_year = today.year
 
 # 2. Initial Year Logic based on Month (User Rule)
 # If Jan-May (< 6), assume we are finishing the previous season.
-if today.month < 6:
+if today < datetime(current_cal_year, 5, 15, 0, 0):
     target_year = current_cal_year - 1
 
     # 3. Pre-Season Check (User Rule)
