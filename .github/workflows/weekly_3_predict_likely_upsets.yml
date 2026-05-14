@@ -2,9 +2,10 @@ name: Weekly 3 Predict Likely Upsets
 
 on:
   schedule:
-    # Runs at 13:45 UTC every Tuesday (15 mins after the Strengths script)
-    # (5:45 AM EDT / 4:45 AM EST)
-    - cron: '30 12 * * 2'
+    # Runs at 3:30 PM UTC Weekly on Tuesday
+    #9:30 AM Mountain Standard Time
+    #8:30 AM Mountain Daylight Time
+    - cron: '30 15 * * 2'
   workflow_dispatch: # Manual run button
 
 jobs:
