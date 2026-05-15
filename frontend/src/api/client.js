@@ -30,7 +30,7 @@ export async function fetchLastUpdated() {
 }
 
 export async function fetchSchedule(week = null) {
-  const url = week
+  const url = week != null
     ? `${API_URL}/api/schedule?week=${week}`
     : `${API_URL}/api/schedule`
   const res = await fetch(url)
