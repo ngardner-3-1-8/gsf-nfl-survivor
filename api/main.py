@@ -583,11 +583,11 @@ def get_contest_data(year: int):
         picks_df["Contestant"] = picks_df["EntryName"].apply(get_contestant)
         picks_df["Total_Wins"] = pd.to_numeric(picks_df["Total_Wins"], errors="coerce").fillna(0).astype(int)
 
-        # ── Survival curve ──
+        # ── Survival curve — cap at num_weeks, no week 21 ──
         survival_curve = []
-        for week in range(1, num_weeks + 2):
+        for week in range(0, num_weeks + 1):  # 0 = before season, 1 through num_weeks
             surviving = int((picks_df["Total_Wins"] >= week).sum())
-            eliminated = int((picks_df["Total_Wins"] == week - 1).sum()) if week > 1 else 0
+            eliminated = int((picks_df["Total_Wins"] == week - 1).sum()) if week > 0 else 0
             survival_curve.append({
                 "week": week,
                 "surviving": surviving,
@@ -595,19 +595,34 @@ def get_contest_data(year: int):
                 "eliminated": eliminated,
                 "pct_eliminated": round(eliminated / total_entries * 100, 2),
             })
+        # Remove week 0 from display but keep for reference — only send weeks 1+
+        survival_curve = [c for c in survival_curve if c["week"] >= 1]
 
         # ── Weekly pick popularity ──
         from collections import Counter
         weekly_picks = {}
         for col in week_cols:
             week_num = int(col.replace("Week_", ""))
-            picks_this_week = picks_df[col].dropna()
-            picks_this_week = picks_this_week[picks_this_week != ""]
+            
+            # Only include entries that survived TO this week (were alive to make a pick)
+            alive_this_week = picks_df[picks_df["Total_Wins"] >= week_num]
+            picks_this_week = alive_this_week[col].dropna()
+            picks_this_week = picks_this_week[picks_this_week.str.strip() != ""]
+            
+            from collections import Counter
             counts = Counter(normalize(t) for t in picks_this_week.tolist())
-            total_picks = sum(counts.values())
+            # Total is entries alive that week — not just those who picked
+            total_alive = len(alive_this_week)
+            
             weekly_picks[week_num] = [
-                {"team": t, "count": c, "pct": round(c / total_picks * 100, 2) if total_picks > 0 else 0}
+                {
+                    "team": t,
+                    "count": c,
+                    "pct": round(c / total_alive * 100, 2) if total_alive > 0 else 0,
+                    "total_alive": total_alive,
+                }
                 for t, c in counts.most_common(10)
+                if t and t != ""  # exclude empty strings
             ]
 
         # ── Per-entry analysis with remaining teams ──
@@ -757,10 +772,14 @@ def get_contest_data(year: int):
 
         # ── Season summary ──
         biggest_elim = max(survival_curve[1:], key=lambda x: x["eliminated"])
+        # ── Season summary — ALL contestants, not just survivors ──
+        # Parse all contestants from full picks_df (before any filtering)
+        all_contestants = picks_df["Contestant"].nunique()
+        
         summary = {
             "year": year,
             "total_entries": total_entries,
-            "total_contestants": len(contestant_stats),
+            "total_contestants": all_contestants,  # ← was len(contestant_stats) which only counted survivors
             "num_weeks": num_weeks,
             "final_survivors": int((picks_df["Total_Wins"] >= num_weeks).sum()),
             "biggest_elimination_week": biggest_elim["week"] - 1,
@@ -769,13 +788,33 @@ def get_contest_data(year: int):
             "upcoming_week": upcoming_week,
         }
 
+
+        # ── Full entry list (for the entries view) ──
+        all_entries = []
+        for _, row in picks_df.iterrows():
+            picks_by_week = {}
+            for col in week_cols:
+                wk = int(col.replace("Week_", ""))
+                val = str(row.get(col, "") or "").strip()
+                if val:
+                    picks_by_week[wk] = normalize(val)
+            all_entries.append({
+                "entry": str(row["EntryName"]),
+                "contestant": str(row["Contestant"]),
+                "total_wins": int(row["Total_Wins"]),
+                "picks": picks_by_week,
+            })
+        
+        # Add to return value
         return JSONResponse(content=sanitize({
             "summary": summary,
             "survival_curve": survival_curve,
             "weekly_picks": weekly_picks,
-            "entry_stats": entry_stats[:500],       # top 500 surviving entries by EV path
+            "entry_stats": entry_stats[:500],
             "contestant_stats": contestant_stats[:200],
+            "all_entries": all_entries,  # ← new
         }))
+
 
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
