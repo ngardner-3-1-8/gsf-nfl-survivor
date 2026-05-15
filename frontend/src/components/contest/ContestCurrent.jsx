@@ -86,7 +86,7 @@ export default function ContestCurrent({ years }) {
   const remainingWeeks = summary.num_weeks - effectiveWeek + 1
   const survivalOdds = calcSurvivalOdds(remainingWeeks, avgElimRate)
   const expectedValuePerEntry = survivors > 0
-    ? (prizePool / survivors) * survivalOdds
+    ? (prizePool / survivors)
     : 0
 
   // Filter entries/contestants as-of week
