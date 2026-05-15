@@ -523,12 +523,58 @@ def get_contest_data(year: int):
 
         picks_df = pd.read_csv(picks_path)
 
-        # Get week columns
+        # Load current sim data for team strength values
+        try:
+            sim_data = load_current_data(DATA_DIR)
+            sim_df = sim_data["sim_df"]
+            upcoming_week = sim_data["upcoming_week"]
+
+            # Build team strength lookup from sim data
+            # Key: team abbreviation → {win_pct, ev, pick_pct}
+            team_strength = {}
+            for _, row in sim_df[sim_df["Week_x"] >= upcoming_week].iterrows():
+                for side in [("Away Team", "Consensus Away Win Pct", "consensus_Away_EV", "Away Pick %"),
+                             ("Home Team", "Consensus Home Win Pct", "consensus_Home_EV", "Home Pick %")]:
+                    team_col, win_col, ev_col, pick_col = side
+                    team = str(row.get(team_col, ""))
+                    if not team:
+                        continue
+                    win = float(row.get(win_col, 0) or 0)
+                    ev = float(row.get(ev_col, 0) or 0)
+                    pick = float(row.get(pick_col, 0) or 0)
+                    week = int(row.get("Week_x", 0))
+                    if team not in team_strength:
+                        team_strength[team] = []
+                    team_strength[team].append({
+                        "week": week,
+                        "win_pct": win,
+                        "ev": ev,
+                        "pick_pct": pick,
+                    })
+        except Exception:
+            sim_df = None
+            upcoming_week = 1
+            team_strength = {}
+
+        # All 32 NFL teams
+        ALL_TEAMS = {
+            "ARI", "ATL", "BAL", "BUF", "CAR", "CHI", "CIN", "CLE",
+            "DAL", "DEN", "DET", "GB", "HOU", "IND", "JAX", "KC",
+            "LA", "LAC", "LV", "MIA", "MIN", "NE", "NO", "NYG",
+            "NYJ", "PHI", "PIT", "SEA", "SF", "TB", "TEN", "WAS",
+        }
+        # Handle common abbreviation variants
+        ABBR_MAP = {"JAC": "JAX", "LAR": "LA", "GNB": "GB", "KAN": "KC",
+                    "NOR": "NO", "SFO": "SF", "TAM": "TB", "LVR": "LV"}
+
+        def normalize(team):
+            t = str(team).strip().upper()
+            return ABBR_MAP.get(t, t)
+
         week_cols = [c for c in picks_df.columns if c.startswith("Week_")]
         num_weeks = len(week_cols)
         total_entries = len(picks_df)
 
-        # Parse contestant name (strip trailing -N entry number)
         import re
         def get_contestant(name):
             m = re.match(r'^(.+)-(\d+)$', str(name).strip())
@@ -541,76 +587,201 @@ def get_contest_data(year: int):
         survival_curve = []
         for week in range(1, num_weeks + 2):
             surviving = int((picks_df["Total_Wins"] >= week).sum())
-            eliminated_this_week = int((picks_df["Total_Wins"] == week - 1).sum()) if week > 1 else 0
+            eliminated = int((picks_df["Total_Wins"] == week - 1).sum()) if week > 1 else 0
             survival_curve.append({
                 "week": week,
                 "surviving": surviving,
                 "pct_remaining": round(surviving / total_entries * 100, 2),
-                "eliminated": eliminated_this_week,
-                "pct_eliminated": round(eliminated_this_week / total_entries * 100, 2),
+                "eliminated": eliminated,
+                "pct_eliminated": round(eliminated / total_entries * 100, 2),
             })
 
         # ── Weekly pick popularity ──
+        from collections import Counter
         weekly_picks = {}
         for col in week_cols:
             week_num = int(col.replace("Week_", ""))
             picks_this_week = picks_df[col].dropna()
             picks_this_week = picks_this_week[picks_this_week != ""]
-            from collections import Counter
-            counts = Counter(picks_this_week.tolist())
+            counts = Counter(normalize(t) for t in picks_this_week.tolist())
             total_picks = sum(counts.values())
             weekly_picks[week_num] = [
-                {
-                    "team": team,
-                    "count": count,
-                    "pct": round(count / total_picks * 100, 2) if total_picks > 0 else 0,
-                }
-                for team, count in counts.most_common(10)
+                {"team": t, "count": c, "pct": round(c / total_picks * 100, 2) if total_picks > 0 else 0}
+                for t, c in counts.most_common(10)
             ]
 
-        # ── Contestant summary ──
-        contestant_groups = picks_df.groupby("Contestant")
+        # ── Per-entry analysis with remaining teams ──
+        def score_remaining_teams(used_teams):
+            """
+            Given a set of already-used team abbreviations, compute:
+            - remaining_teams: list of teams not yet used
+            - best_ev_path: sum of top-N future EVs from remaining teams
+            - best_win_path: sum of top-N future win_pcts from remaining teams
+            - pool_strength: average win_pct of remaining teams across future weeks
+            """
+            remaining = ALL_TEAMS - used_teams
+            future_weeks_remaining = max(0, num_weeks - upcoming_week + 1)
+
+            best_ev = 0.0
+            best_win = 0.0
+            pool_wins = []
+
+            for team in remaining:
+                team_data = team_strength.get(team, [])
+                for week_data in team_data:
+                    if week_data["week"] >= upcoming_week:
+                        best_ev += week_data["ev"]
+                        pool_wins.append(week_data["win_pct"])
+
+            # Best EV = if this entry could optimally pick from remaining teams
+            # Sort remaining teams by EV for each future week and pick the best
+            future_ev_by_week = {}
+            future_win_by_week = {}
+            for team in remaining:
+                for wd in team_strength.get(team, []):
+                    w = wd["week"]
+                    if w >= upcoming_week:
+                        if w not in future_ev_by_week or wd["ev"] > future_ev_by_week[w]["ev"]:
+                            future_ev_by_week[w] = {"team": team, "ev": wd["ev"]}
+                        if w not in future_win_by_week or wd["win_pct"] > future_win_by_week[w]["win_pct"]:
+                            future_win_by_week[w] = {"team": team, "win_pct": wd["win_pct"]}
+
+            # Greedy optimal path — pick best available team each week
+            # (teams can't repeat, so we track used teams within the path)
+            ev_path_teams = set()
+            win_path_teams = set()
+            optimal_ev = 0.0
+            optimal_win = 0.0
+
+            for w in sorted(future_ev_by_week.keys()):
+                # Find best remaining team for EV this week
+                candidates = [
+                    (t, d) for t, d in [
+                        (td["team"], td)
+                        for w2, td in future_ev_by_week.items()
+                        if w2 == w
+                    ]
+                    if t not in ev_path_teams
+                ]
+                # Re-scan all remaining teams for this week
+                week_options = [
+                    (team, wd["ev"])
+                    for team in (remaining - ev_path_teams)
+                    for wd in team_strength.get(team, [])
+                    if wd["week"] == w
+                ]
+                if week_options:
+                    best_team, best_val = max(week_options, key=lambda x: x[1])
+                    optimal_ev += best_val
+                    ev_path_teams.add(best_team)
+
+            for w in sorted(future_win_by_week.keys()):
+                week_options = [
+                    (team, wd["win_pct"])
+                    for team in (remaining - win_path_teams)
+                    for wd in team_strength.get(team, [])
+                    if wd["week"] == w
+                ]
+                if week_options:
+                    best_team, best_val = max(week_options, key=lambda x: x[1])
+                    optimal_win += best_val
+                    win_path_teams.add(best_team)
+
+            avg_win = sum(pool_wins) / len(pool_wins) if pool_wins else 0
+
+            return {
+                "remaining_count": len(remaining),
+                "remaining_teams": sorted(remaining),
+                "optimal_ev_path": round(optimal_ev, 4),
+                "optimal_win_path": round(optimal_win * 100 / max(1, future_weeks_remaining), 2),
+                "pool_avg_win_pct": round(avg_win * 100, 2),
+            }
+
+        # Only compute for surviving entries (performance)
+        entry_stats = []
+        surviving_entries = picks_df[picks_df["Total_Wins"] >= upcoming_week - 1]
+
+        for _, row in surviving_entries.iterrows():
+            used = set()
+            for col in week_cols:
+                val = row.get(col, "")
+                if val and str(val).strip():
+                    used.add(normalize(str(val).strip()))
+
+            scores = score_remaining_teams(used) if team_strength else {
+                "remaining_count": len(ALL_TEAMS - used),
+                "remaining_teams": sorted(ALL_TEAMS - used),
+                "optimal_ev_path": 0,
+                "optimal_win_path": 0,
+                "pool_avg_win_pct": 0,
+            }
+
+            entry_stats.append({
+                "entry": str(row["EntryName"]),
+                "contestant": str(row["Contestant"]),
+                "total_wins": int(row["Total_Wins"]),
+                "teams_used": sorted(used),
+                **scores,
+            })
+
+        # Sort by optimal EV path descending
+        entry_stats.sort(key=lambda x: -x["optimal_ev_path"])
+
+        # ── Contestant summary with remaining team aggregates ──
+        from collections import defaultdict
+        contestant_map = defaultdict(list)
+        for e in entry_stats:
+            contestant_map[e["contestant"]].append(e)
+
         contestant_stats = []
-        for name, group in contestant_groups:
-            entries = len(group)
-            surviving = int((group["Total_Wins"] >= num_weeks).sum())
-            max_wins = int(group["Total_Wins"].max())
-            avg_wins = round(float(group["Total_Wins"].mean()), 1)
+        for name, entries in contestant_map.items():
+            surviving = [e for e in entries if e["total_wins"] >= upcoming_week - 1]
+            all_entries = picks_df[picks_df["Contestant"] == name]
             contestant_stats.append({
                 "contestant": name,
-                "entries": entries,
-                "surviving": surviving,
-                "max_wins": max_wins,
-                "avg_wins": avg_wins,
+                "entries": len(all_entries),
+                "surviving": len(surviving),
+                "max_wins": int(all_entries["Total_Wins"].max()),
+                "avg_wins": round(float(all_entries["Total_Wins"].mean()), 1),
+                # Best path across all surviving entries
+                "best_ev_path": round(max((e["optimal_ev_path"] for e in surviving), default=0), 4),
+                "best_win_path": round(max((e["optimal_win_path"] for e in surviving), default=0), 2),
+                "avg_remaining_teams": round(
+                    sum(e["remaining_count"] for e in surviving) / len(surviving), 1
+                ) if surviving else 0,
+                "avg_pool_strength": round(
+                    sum(e["pool_avg_win_pct"] for e in surviving) / len(surviving), 2
+                ) if surviving else 0,
             })
-        contestant_stats.sort(key=lambda x: (-x["surviving"], -x["max_wins"]))
+        contestant_stats.sort(key=lambda x: (-x["surviving"], -x["best_ev_path"]))
 
         # ── Season summary ──
-        biggest_elim_week = max(survival_curve[1:], key=lambda x: x["eliminated"])
-        median_survival = float(picks_df["Total_Wins"].median())
-        final_survivors = int((picks_df["Total_Wins"] >= num_weeks).sum())
-
+        biggest_elim = max(survival_curve[1:], key=lambda x: x["eliminated"])
         summary = {
             "year": year,
             "total_entries": total_entries,
             "total_contestants": len(contestant_stats),
             "num_weeks": num_weeks,
-            "final_survivors": final_survivors,
-            "biggest_elimination_week": biggest_elim_week["week"] - 1,
-            "biggest_elimination_pct": biggest_elim_week["pct_eliminated"],
-            "median_survival_week": round(median_survival, 1),
+            "final_survivors": int((picks_df["Total_Wins"] >= num_weeks).sum()),
+            "biggest_elimination_week": biggest_elim["week"] - 1,
+            "biggest_elimination_pct": biggest_elim["pct_eliminated"],
+            "median_survival_week": round(float(picks_df["Total_Wins"].median()), 1),
+            "upcoming_week": upcoming_week,
         }
 
         return JSONResponse(content=sanitize({
             "summary": summary,
             "survival_curve": survival_curve,
             "weekly_picks": weekly_picks,
-            "contestant_stats": contestant_stats[:200],  # top 200
+            "entry_stats": entry_stats[:500],       # top 500 surviving entries by EV path
+            "contestant_stats": contestant_stats[:200],
         }))
 
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
