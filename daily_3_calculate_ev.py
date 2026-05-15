@@ -164,23 +164,43 @@ def loop_through_ev(date_str):
             """
             EV(team) = P(team wins) / E[total survivors this week]
             E[survivors] = sum of (each team's pick% * their win probability)
+            
+            Teams with 0% availability (pick% == 0) are excluded from the
+            expected survivors calculation — they're not pickable so they
+            don't affect EV for the remaining eligible teams.
             """
             home_probs = week_df[home_prob_col].values
             away_probs = week_df[away_prob_col].values
             home_picks = week_df['Home Pick %'].values
             away_picks = week_df['Away Pick %'].values
-    
-            expected_survivors = np.sum(home_probs * home_picks) + np.sum(away_probs * away_picks)
-    
+        
+            # Only include teams with non-zero availability in the denominator
+            home_eligible = home_picks > 0
+            away_eligible = away_picks > 0
+        
+            expected_survivors = (
+                np.sum(home_probs[home_eligible] * home_picks[home_eligible]) +
+                np.sum(away_probs[away_eligible] * away_picks[away_eligible])
+            )
+        
             ev_results = {}
             for i, row in week_df.iterrows():
                 if expected_survivors > 0:
-                    ev_results[row['Home Team']] = row[home_prob_col] / expected_survivors
-                    ev_results[row['Away Team']] = row[away_prob_col] / expected_survivors
+                    # Home team — only assign EV if eligible
+                    if row['Home Pick %'] > 0:
+                        ev_results[row['Home Team']] = row[home_prob_col] / expected_survivors
+                    else:
+                        ev_results[row['Home Team']] = 0
+        
+                    # Away team — only assign EV if eligible
+                    if row['Away Pick %'] > 0:
+                        ev_results[row['Away Team']] = row[away_prob_col] / expected_survivors
+                    else:
+                        ev_results[row['Away Team']] = 0
                 else:
                     ev_results[row['Home Team']] = 0
                     ev_results[row['Away Team']] = 0
-    
+        
             return ev_results
     
         for scenario_name, scenario_config in probability_scenarios.items():
