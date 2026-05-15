@@ -156,7 +156,15 @@ export default function EVCalculatorView() {
   }, [selectedWeek])
 
   // Calculate EV live from current rows
-  const rowsWithEV = useMemo(() => calculateEV(rows), [rows])
+  const rowsWithEV = useMemo(() => {
+    const eligible = rows.filter(r => r.pick_pct > 0)
+    const withEV = calculateEV(eligible)
+    // Return all rows but set EV to null for ineligible teams
+    return rows.map(r => {
+      if (r.pick_pct <= 0) return { ...r, ev: null }
+      return withEV.find(e => e.id === r.id) || { ...r, ev: null }
+    })
+  }, [rows])
 
   // Sort
   const sorted = useMemo(() => {
@@ -291,14 +299,22 @@ export default function EVCalculatorView() {
               </thead>
               <tbody>
                 {sorted.map((row, i) => {
-                  const rank = [...rowsWithEV].sort((a, b) => b.ev - a.ev).findIndex(r => r.id === row.id) + 1
+                  const rank = row.ev === null ? null :
+                    [...rowsWithEV]
+                      .filter(r => r.ev !== null)
+                      .sort((a, b) => b.ev - a.ev)
+                      .findIndex(r => r.id === row.id) + 1
                   const winEdited = Math.abs(row.win_pct - row._orig_win) > 0.05
                   const pickEdited = Math.abs(row.pick_pct - row._orig_pick) > 0.05
 
                   return (
                     <tr
                       key={row.id}
-                      className="border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors"
+                      className={`border-b border-gray-800/50 transition-colors ${
+                        row.pick_pct <= 0
+                          ? 'opacity-40 bg-gray-900/20'
+                          : 'hover:bg-gray-800/20'
+                      }`}
                     >
                       {/* Game */}
                       <td className="px-4 py-2.5 text-xs text-gray-500 whitespace-nowrap">
@@ -358,19 +374,27 @@ export default function EVCalculatorView() {
 
                       {/* EV */}
                       <td className="px-4 py-2.5 text-right">
-                        <span className={`font-mono text-xs font-semibold ${evColor(row.ev)}`}>
-                          {row.ev.toFixed(4)}
-                        </span>
+                        {row.ev === null ? (
+                          <span className="text-xs text-gray-600 italic">N/A</span>
+                        ) : (
+                          <span className={`font-mono text-xs font-semibold ${evColor(row.ev)}`}>
+                            {row.ev.toFixed(4)}
+                          </span>
+                        )}
                       </td>
-
+                      
                       {/* EV Rank */}
                       <td className="px-4 py-2.5 text-right">
-                        <span className={`font-mono text-xs ${
-                          rank <= 3 ? 'text-green-400 font-semibold' :
-                          rank <= 6 ? 'text-yellow-400' : 'text-gray-500'
-                        }`}>
-                          #{rank}
-                        </span>
+                        {row.ev === null ? (
+                          <span className="text-xs text-gray-600">—</span>
+                        ) : (
+                          <span className={`font-mono text-xs ${
+                            rank <= 3 ? 'text-green-400 font-semibold' :
+                            rank <= 6 ? 'text-yellow-400' : 'text-gray-500'
+                          }`}>
+                            #{rank}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   )
