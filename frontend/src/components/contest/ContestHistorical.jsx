@@ -252,7 +252,12 @@ export default function ContestHistorical({ years }) {
             <tbody>
               {Object.entries(weeklyPicks).sort((a, b) => Number(a[0]) - Number(b[0])).map(([week, picks]) => (
                 <tr key={week} className="border-b border-gray-800/50 hover:bg-gray-800/20">
-                  <td className="px-3 py-2 text-gray-400 font-medium">Wk {week}</td>
+                  <td className="px-3 py-2 text-gray-400 font-medium">
+                    Wk {week}
+                    <span className="ml-1 text-gray-600 font-normal">
+                      ({picks[0]?.total_alive?.toLocaleString() || '?'} alive)
+                    </span>
+                  </td>
                   {picks.slice(0, 5).map((p, i) => (
                     <td key={i} className="px-3 py-2">
                       <span className={`font-semibold ${i === 0 ? 'text-white' : 'text-gray-400'}`}>
@@ -263,13 +268,11 @@ export default function ContestHistorical({ years }) {
                         p.pct >= 20 ? 'text-yellow-400' : 'text-gray-500'
                       }`}>
                         {p.pct.toFixed(1)}%
-      </span>
+                      </span>
                     </td>
                   ))}
-                  {picks.length < 5 && Array.from({ length: 5 - picks.length }).map((_, i) => (
-                    <td key={`empty-${i}`} className="px-3 py-2 text-gray-700">—</td>
-                  ))}
                 </tr>
+              ))}
               ))}
             </tbody>
           </table>
