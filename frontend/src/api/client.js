@@ -83,3 +83,9 @@ export async function deleteBet(username, betId) {
   if (!res.ok) throw new Error('Failed to delete bet')
   return res.json()
 }
+
+export async function fetchScheduleForWeek(week) {
+  const res = await fetch(`${API_URL}/api/schedule?week=${week}`)
+  if (!res.ok) throw new Error('Failed to fetch schedule')
+  return res.json()
+}
