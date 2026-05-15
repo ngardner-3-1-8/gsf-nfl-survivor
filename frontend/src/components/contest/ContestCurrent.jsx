@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { fetchContestData, fetchSchedule } from '../../api/client'
 
 function estimatePrize(totalEntries) {
-  return totalEntries * 1500 * 0.9
+  return totalEntries * 1000 * 1.0
 }
 
 function calcSurvivalOdds(remainingWeeks, avgEliminationRate) {
