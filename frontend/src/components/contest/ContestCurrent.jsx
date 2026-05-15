@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { fetchContestData, fetchSchedule } from '../../api/client'
 
 // Circa prize structure estimate
-// $1,500 entry × N entries — top survivors split
+// $1,000 entry × N entries — top survivors split
 function estimatePrize(totalEntries) {
   return totalEntries * 1000 * 1 // 100% of entry fees to prize pool
 }
@@ -143,10 +143,58 @@ export default function ContestCurrent({ years }) {
         </div>
       </div>
 
+      {/* Entry leaderboard — best remaining paths */}
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-3 flex-wrap">
+          <p className="text-white font-semibold text-sm">Best Remaining Paths — Entry Level</p>
+          <p className="text-gray-500 text-xs">Ranked by optimal EV path through remaining available teams</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-800">
+                {['#', 'Entry', 'Contestant', 'Wins', 'Teams Left', 'Pool Strength', 'Best EV Path', 'Best Win% Path', 'Remaining Teams'].map(h => (
+                  <th key={h} className="text-left px-3 py-2.5 text-xs font-medium text-gray-500 whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {(data.entry_stats || []).slice(0, 100).map((e, i) => (
+                <tr key={e.entry} className="border-b border-gray-800/50 hover:bg-gray-800/20">
+                  <td className="px-3 py-2.5 text-gray-500 text-xs font-mono">{i + 1}</td>
+                  <td className="px-3 py-2.5 text-white font-medium text-xs">{e.entry}</td>
+                  <td className="px-3 py-2.5 text-gray-400 text-xs">{e.contestant}</td>
+                  <td className="px-3 py-2.5 text-gray-300 text-xs font-mono">{e.total_wins}</td>
+                  <td className="px-3 py-2.5 text-xs font-mono">
+                    <span className={e.remaining_count >= 20 ? 'text-green-400' : e.remaining_count >= 10 ? 'text-yellow-400' : 'text-red-400'}>
+                      {e.remaining_count}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5 text-xs font-mono">
+                    <span className={e.pool_avg_win_pct >= 60 ? 'text-green-400' : e.pool_avg_win_pct >= 55 ? 'text-yellow-400' : 'text-gray-400'}>
+                      {e.pool_avg_win_pct?.toFixed(1)}%
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5 text-green-400 text-xs font-mono font-semibold">
+                    {e.optimal_ev_path?.toFixed(4)}
+                  </td>
+                  <td className="px-3 py-2.5 text-blue-400 text-xs font-mono">
+                    {e.optimal_win_path?.toFixed(1)}%
+                  </td>
+                  <td className="px-3 py-2.5 text-xs text-gray-500 max-w-xs truncate">
+                    {(e.remaining_teams || []).join(', ')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
       {/* Contestant leaderboard */}
       <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-3 flex-wrap">
-          <p className="text-white font-semibold text-sm">Contestant Leaderboard — {currentYear}</p>
+          <p className="text-white font-semibold text-sm">Contestant Leaderboard</p>
           <input
             type="text"
             value={searchTerm}
@@ -159,36 +207,36 @@ export default function ContestCurrent({ years }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-800">
-                {['#', 'Contestant', 'Entries', 'Surviving', 'Max Wins', 'Avg Wins', 'Survival %', 'Exp. Value'].map(h => (
-                  <th key={h} className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 whitespace-nowrap">{h}</th>
+                {['#', 'Contestant', 'Entries', 'Surviving', 'Max Wins', 'Avg Wins', 'Best EV Path', 'Best Win% Path', 'Avg Teams Left', 'Avg Pool Strength', 'Exp. Value'].map(h => (
+                  <th key={h} className="text-left px-3 py-2.5 text-xs font-medium text-gray-500 whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.slice(0, 100).map((c, i) => {
-                const survPct = (c.surviving / c.entries) * 100
                 const expValue = c.surviving * expectedValuePerEntry
                 return (
                   <tr key={c.contestant} className="border-b border-gray-800/50 hover:bg-gray-800/20">
-                    <td className="px-4 py-2.5 text-gray-500 text-xs font-mono">{i + 1}</td>
-                    <td className="px-4 py-2.5 text-white font-medium text-xs">{c.contestant}</td>
-                    <td className="px-4 py-2.5 text-gray-400 text-xs font-mono">{c.entries}</td>
-                    <td className="px-4 py-2.5 text-xs font-mono">
+                    <td className="px-3 py-2.5 text-gray-500 text-xs font-mono">{i + 1}</td>
+                    <td className="px-3 py-2.5 text-white font-medium text-xs">{c.contestant}</td>
+                    <td className="px-3 py-2.5 text-gray-400 text-xs font-mono">{c.entries}</td>
+                    <td className="px-3 py-2.5 text-xs font-mono">
                       <span className={c.surviving > 0 ? 'text-green-400 font-semibold' : 'text-gray-600'}>
                         {c.surviving}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-gray-300 text-xs font-mono">{c.max_wins}</td>
-                    <td className="px-4 py-2.5 text-gray-400 text-xs font-mono">{c.avg_wins}</td>
-                    <td className="px-4 py-2.5 text-xs font-mono">
-                      <span className={survPct >= 50 ? 'text-green-400' : survPct > 0 ? 'text-yellow-400' : 'text-gray-600'}>
-                        {survPct.toFixed(0)}%
+                    <td className="px-3 py-2.5 text-gray-300 text-xs font-mono">{c.max_wins}</td>
+                    <td className="px-3 py-2.5 text-gray-400 text-xs font-mono">{c.avg_wins}</td>
+                    <td className="px-3 py-2.5 text-green-400 text-xs font-mono">{c.best_ev_path?.toFixed(4)}</td>
+                    <td className="px-3 py-2.5 text-blue-400 text-xs font-mono">{c.best_win_path?.toFixed(1)}%</td>
+                    <td className="px-3 py-2.5 text-gray-400 text-xs font-mono">{c.avg_remaining_teams}</td>
+                    <td className="px-3 py-2.5 text-xs font-mono">
+                      <span className={c.avg_pool_strength >= 60 ? 'text-green-400' : c.avg_pool_strength >= 55 ? 'text-yellow-400' : 'text-gray-400'}>
+                        {c.avg_pool_strength?.toFixed(1)}%
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-xs font-mono">
-                      <span className={expValue > 0 ? 'text-purple-400' : 'text-gray-600'}>
-                        {expValue > 0 ? `$${expValue.toFixed(0)}` : '—'}
-                      </span>
+                    <td className="px-3 py-2.5 text-purple-400 text-xs font-mono">
+                      {expValue > 0 ? `$${expValue.toFixed(0)}` : '—'}
                     </td>
                   </tr>
                 )
@@ -197,8 +245,7 @@ export default function ContestCurrent({ years }) {
           </table>
         </div>
         <div className="px-4 py-2.5 border-t border-gray-800 text-xs text-gray-500">
-          Showing {Math.min(100, filtered.length)} of {filtered.length} contestants ·
-          Expected value based on geometric survival model using historical elimination rates
+          Showing {Math.min(100, filtered.length)} of {filtered.length} contestants
         </div>
       </div>
 
