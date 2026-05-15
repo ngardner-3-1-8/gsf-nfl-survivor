@@ -6,6 +6,8 @@ import RankingsView from './components/rankings/RankingsView'
 import RecommendedBetsView from './components/bets/RecommendedBetsView'
 import MyBetsView from './components/bets/MyBetsView'
 import EVCalculatorView from './components/evcalc/EVCalculatorView'
+import ContestView from './components/contest/ContestView'
+
 
 
 const ComingSoon = ({ name }) => (
@@ -74,7 +76,7 @@ export default function App() {
           </div>
         )
       case 'ev-calc': return <EVCalculatorView />
-      case 'contest':      return <ComingSoon name="Contest Analytics" />
+      case 'contest': return <ContestView />
       case 'transactions': return <ComingSoon name="Transactions" />
       case 'analytics':    return <ComingSoon name="Analytics" />
       case 'faq':          return <ComingSoon name="FAQ" />
