@@ -5,6 +5,8 @@ import ScheduleView from './components/schedule/ScheduleView'
 import RankingsView from './components/rankings/RankingsView'
 import RecommendedBetsView from './components/bets/RecommendedBetsView'
 import MyBetsView from './components/bets/MyBetsView'
+import EVCalculatorView from './components/evcalc/EVCalculatorView'
+
 
 const ComingSoon = ({ name }) => (
   <div className="flex items-center justify-center h-64">
@@ -71,7 +73,7 @@ export default function App() {
             )}
           </div>
         )
-      case 'ev-calc':      return <ComingSoon name="EV Calculator" />
+      case 'ev-calc': return <EVCalculatorView />
       case 'contest':      return <ComingSoon name="Contest Analytics" />
       case 'transactions': return <ComingSoon name="Transactions" />
       case 'analytics':    return <ComingSoon name="Analytics" />
