@@ -514,6 +514,124 @@ def delete_bet(username: str, bet_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/contest/{year}")
+def get_contest_data(year: int):
+    try:
+        picks_path = os.path.join(DATA_DIR, f"circa-pick-history/{year}_survivor_picks.csv")
+        if not os.path.exists(picks_path):
+            raise FileNotFoundError(f"No pick history for {year}")
+
+        picks_df = pd.read_csv(picks_path)
+
+        # Get week columns
+        week_cols = [c for c in picks_df.columns if c.startswith("Week_")]
+        num_weeks = len(week_cols)
+        total_entries = len(picks_df)
+
+        # Parse contestant name (strip trailing -N entry number)
+        import re
+        def get_contestant(name):
+            m = re.match(r'^(.+)-(\d+)$', str(name).strip())
+            return m.group(1).strip() if m else str(name).strip()
+
+        picks_df["Contestant"] = picks_df["EntryName"].apply(get_contestant)
+        picks_df["Total_Wins"] = pd.to_numeric(picks_df["Total_Wins"], errors="coerce").fillna(0).astype(int)
+
+        # ── Survival curve ──
+        survival_curve = []
+        for week in range(1, num_weeks + 2):
+            surviving = int((picks_df["Total_Wins"] >= week).sum())
+            eliminated_this_week = int((picks_df["Total_Wins"] == week - 1).sum()) if week > 1 else 0
+            survival_curve.append({
+                "week": week,
+                "surviving": surviving,
+                "pct_remaining": round(surviving / total_entries * 100, 2),
+                "eliminated": eliminated_this_week,
+                "pct_eliminated": round(eliminated_this_week / total_entries * 100, 2),
+            })
+
+        # ── Weekly pick popularity ──
+        weekly_picks = {}
+        for col in week_cols:
+            week_num = int(col.replace("Week_", ""))
+            picks_this_week = picks_df[col].dropna()
+            picks_this_week = picks_this_week[picks_this_week != ""]
+            from collections import Counter
+            counts = Counter(picks_this_week.tolist())
+            total_picks = sum(counts.values())
+            weekly_picks[week_num] = [
+                {
+                    "team": team,
+                    "count": count,
+                    "pct": round(count / total_picks * 100, 2) if total_picks > 0 else 0,
+                }
+                for team, count in counts.most_common(10)
+            ]
+
+        # ── Contestant summary ──
+        contestant_groups = picks_df.groupby("Contestant")
+        contestant_stats = []
+        for name, group in contestant_groups:
+            entries = len(group)
+            surviving = int((group["Total_Wins"] >= num_weeks).sum())
+            max_wins = int(group["Total_Wins"].max())
+            avg_wins = round(float(group["Total_Wins"].mean()), 1)
+            contestant_stats.append({
+                "contestant": name,
+                "entries": entries,
+                "surviving": surviving,
+                "max_wins": max_wins,
+                "avg_wins": avg_wins,
+            })
+        contestant_stats.sort(key=lambda x: (-x["surviving"], -x["max_wins"]))
+
+        # ── Season summary ──
+        biggest_elim_week = max(survival_curve[1:], key=lambda x: x["eliminated"])
+        median_survival = float(picks_df["Total_Wins"].median())
+        final_survivors = int((picks_df["Total_Wins"] >= num_weeks).sum())
+
+        summary = {
+            "year": year,
+            "total_entries": total_entries,
+            "total_contestants": len(contestant_stats),
+            "num_weeks": num_weeks,
+            "final_survivors": final_survivors,
+            "biggest_elimination_week": biggest_elim_week["week"] - 1,
+            "biggest_elimination_pct": biggest_elim_week["pct_eliminated"],
+            "median_survival_week": round(median_survival, 1),
+        }
+
+        return JSONResponse(content=sanitize({
+            "summary": summary,
+            "survival_curve": survival_curve,
+            "weekly_picks": weekly_picks,
+            "contestant_stats": contestant_stats[:200],  # top 200
+        }))
+
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/contest/years/available")
+def get_available_contest_years():
+    try:
+        import glob
+        pattern = os.path.join(DATA_DIR, "circa-pick-history/*_survivor_picks.csv")
+        files = glob.glob(pattern)
+        years = []
+        for f in sorted(files):
+            base = os.path.basename(f)
+            try:
+                year = int(base.split("_")[0])
+                years.append(year)
+            except ValueError:
+                pass
+        return {"years": sorted(years, reverse=True)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ---------------------------------------------------------------
 # Railway startup — reads PORT from environment (Railway sets this)
