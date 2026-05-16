@@ -7,7 +7,7 @@ from scipy.stats import percentileofscore
 from datetime import datetime, date
 import warnings
 
-date = "09/01/2024"
+date = "09/01/2023"
 # 1. Get current date
 today = datetime.now()
 
