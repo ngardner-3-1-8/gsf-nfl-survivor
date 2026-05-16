@@ -5,7 +5,7 @@ from datetime import datetime
 
 def update_annual_schedule():
     # 1. Determine the Year
-    date = "09/01/2022"
+    date = "09/01/2023"
     # 1. Get current date
     today = datetime.now()
     
