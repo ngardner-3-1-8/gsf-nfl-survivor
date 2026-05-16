@@ -7,9 +7,11 @@ from scipy.stats import percentileofscore
 from datetime import datetime, date
 import warnings
 
-
+date = "09/01/2024"
 # 1. Get current date
 today = datetime.now()
+
+today = pd.to_datetime(date)
 
 current_cal_year = today.year 
 
