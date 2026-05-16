@@ -5,7 +5,12 @@ from datetime import datetime
 
 def update_annual_schedule():
     # 1. Determine the Year
+    date = "09/01/2020"
+    # 1. Get current date
     today = datetime.now()
+    
+    today = pd.to_datetime(date)
+
     current_cal_year = today.year 
     
     if today < datetime(current_cal_year, 5, 15, 0, 0):
