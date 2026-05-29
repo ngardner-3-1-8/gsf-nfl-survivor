@@ -18,6 +18,36 @@ import nflreadpy as nfl
 from datetime import datetime, timedelta
 import calendar
 
+def cache_completed_week(target_year: int, completed_week: int):
+    """
+    After results come in for a completed week, extract that week's rows
+    from the current final_sim_results file and save them as a cached CSV.
+    
+    Cache path: nfl-power-ratings/historical_weekly_nfl_data_week_{week}_{year}.csv
+    """
+    sim_file = f"nfl-power-ratings/final_sim_results_with_variance_week_{completed_week}_{target_year}.csv"
+    cache_file = f"nfl-power-ratings/historical_weekly_nfl_data_week_{completed_week}_{target_year}.csv"
+
+    if not os.path.exists(sim_file):
+        print(f"⚠️  Cache: sim file not found for week {completed_week} — skipping")
+        return
+
+    if os.path.exists(cache_file):
+        print(f"✅ Cache: week {completed_week} {target_year} already cached — skipping")
+        return
+
+    df = pd.read_csv(sim_file)
+    week_col = "Week_x" if "Week_x" in df.columns else "Week"
+    week_df = df[df[week_col] == completed_week].copy()
+
+    if week_df.empty:
+        print(f"⚠️  Cache: no rows found for week {completed_week} in {sim_file}")
+        return
+
+    week_df.to_csv(cache_file, index=False)
+    print(f"✅ Cache: saved {len(week_df)} rows → {cache_file}")
+
+
 # 1. Get current date
 today = datetime.now()
 
@@ -2388,5 +2418,13 @@ if results_df is not None:
     # 5. Save the modified DataFrame to the new CSV
     df_hist_original = df_hist_original.drop(columns=['Week_Numeric'], errors='ignore')
     df_hist_original.to_csv(output_file, index=False)
+
+    schedule_df = pd.read_csv(f"nfl-schedules/schedule_{target_year}.csv")
+    schedule_df['Date'] = pd.to_datetime(schedule_df['Date'])
+    week_end_dates = schedule_df.groupby('Week')['Date'].max()
+    completed_weeks = week_end_dates[week_end_dates <= today]
+    if not completed_weeks.empty:
+        just_completed = int(completed_weeks.index.max())
+        cache_completed_week(target_year, just_completed)
     
     print(f"\nSuccessfully updated Availability for Week {W_next} games and saved to '{output_file}'.")
