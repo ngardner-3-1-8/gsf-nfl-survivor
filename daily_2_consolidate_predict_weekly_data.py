@@ -89,11 +89,11 @@ def loop_through_simulations(date_str):
             if today > black_friday:
                 starting_week += 0
                 upcoming_week += 1
-            if target_year == 2020
+            if target_year == 2020:
                 if today >= boxing_day:
                     starting_week += 0
                     upcoming_week += 0
-            else target_year == 2021
+            else target_year == 2021:
                 if today >= boxing_day:
                     starting_week += 0
                     upcoming_week += 1                   
