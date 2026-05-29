@@ -18,6 +18,230 @@ import nflreadpy as nfl
 from datetime import datetime, timedelta
 import calendar
 
+def build_final_week_data(target_year: int, completed_week: int):
+    """
+    Builds a historical record for the just-completed week by:
+    1. Loading the sim results file for that week
+    2. Replacing predicted pick% with ACTUAL pick% from the contest scraper
+    3. Replacing predicted sportsbook odds with ACTUAL closing odds from nflreadpy
+    4. Recalculating EV using the real data
+    5. Appending to the season-long historical file
+
+    Output files:
+      - nfl-power-ratings/Week_{completed_week}_{target_year}_Final_Data.csv  (this week only)
+      - nfl-power-ratings/Season_{target_year}_Historical_Data.csv            (full season append)
+    """
+    import numpy as np
+
+    sim_file = (
+        f"nfl-power-ratings/final_sim_results_with_variance_week_"
+        f"{completed_week}_{target_year}.csv"
+    )
+    historical_data_file = f"contest-historical-data/Circa_historical_data_{target_year}.csv"
+    weekly_output = (
+        f"nfl-power-ratings/Week_{completed_week}_{target_year}_Final_Data.csv"
+    )
+    season_output = f"nfl-power-ratings/Season_{target_year}_Historical_Data.csv"
+
+    # ── 1. Load sim results for this week ────────────────────────────────────
+    if not os.path.exists(sim_file):
+        print(f"⚠️  Final data: sim file not found for week {completed_week} — skipping")
+        return
+
+    week_col = "Week_x"
+    df = pd.read_csv(sim_file)
+    if week_col not in df.columns:
+        week_col = "Week"
+
+    week_df = df[df[week_col] == completed_week].copy()
+    if week_df.empty:
+        print(f"⚠️  Final data: no rows for week {completed_week} in {sim_file}")
+        return
+
+    print(f"\n📊 Building final data for Week {completed_week} {target_year}...")
+    print(f"   Loaded {len(week_df)} games from sim file")
+
+    # ── 2. Replace predicted pick% with ACTUAL pick% ─────────────────────────
+    if os.path.exists(historical_data_file):
+        hist_df = pd.read_csv(historical_data_file)
+
+        # Filter to the completed week and target year
+        hist_week = hist_df[
+            (hist_df["Year"] == target_year) &
+            (hist_df["Week"].astype(int) == completed_week)
+        ].copy()
+
+        if not hist_week.empty:
+            # Build lookup: team abbreviation → actual pick %
+            # historical data uses full team names — map back to abbreviations
+            # using the same team_dictionary from the top of this script
+            pick_pct_map = {}
+            for _, row in hist_week.iterrows():
+                team_abbr = row.get("Team", "")
+                pick_pct = row.get("Pick %", None)
+                if team_abbr and pd.notna(pick_pct):
+                    pick_pct_map[team_abbr] = float(pick_pct)
+
+            if pick_pct_map:
+                # Build reverse name map: full name → abbreviation
+                reverse_name_map = {v: k for k, v in team_dictionary.items()} \
+                    if 'team_dictionary' in dir() else {}
+
+                def get_actual_pick_pct(team_name):
+                    abbr = reverse_name_map.get(team_name, team_name)
+                    return pick_pct_map.get(abbr, None)
+
+                away_pcts = week_df["Away Team"].apply(get_actual_pick_pct)
+                home_pcts = week_df["Home Team"].apply(get_actual_pick_pct)
+
+                replaced_away = away_pcts.notna().sum()
+                replaced_home = home_pcts.notna().sum()
+
+                week_df.loc[away_pcts.notna(), "Away Pick %"] = away_pcts[away_pcts.notna()]
+                week_df.loc[home_pcts.notna(), "Home Pick %"] = home_pcts[home_pcts.notna()]
+
+                print(f"   ✅ Replaced pick%: {replaced_away} away, {replaced_home} home teams")
+            else:
+                print(f"   ⚠️  No pick% data found for week {completed_week} in historical file")
+        else:
+            print(f"   ⚠️  No historical rows for year {target_year} week {completed_week}")
+    else:
+        print(f"   ⚠️  Historical data file not found: {historical_data_file}")
+
+    # ── 3. Replace predicted sportsbook odds with ACTUAL closing odds ─────────
+    try:
+        schedule = nfl.load_schedules([target_year])
+        schedule = schedule.to_pandas() if hasattr(schedule, 'to_pandas') else schedule
+
+        # Filter to completed week
+        sched_week = schedule[schedule["week"] == completed_week].copy()
+
+        if not sched_week.empty:
+            # nflreadpy columns: spread_line, home_moneyline, away_moneyline
+            # Convert moneyline to fair odds (remove vig)
+            def ml_to_implied(ml):
+                ml = float(ml)
+                if ml > 0:
+                    return 100 / (ml + 100)
+                else:
+                    return abs(ml) / (abs(ml) + 100)
+
+            def fair_odds(away_ml, home_ml):
+                imp_away = ml_to_implied(away_ml)
+                imp_home = ml_to_implied(home_ml)
+                total = imp_away + imp_home
+                if total == 0:
+                    return 0.5, 0.5
+                return imp_away / total, imp_home / total
+
+            replaced_odds = 0
+            for _, sched_row in sched_week.iterrows():
+                away_abbr = str(sched_row.get("away_team", "")).upper()
+                home_abbr = str(sched_row.get("home_team", "")).upper()
+
+                away_ml = sched_row.get("away_moneyline")
+                home_ml = sched_row.get("home_moneyline")
+                spread = sched_row.get("spread_line")  # home spread
+
+                if pd.notna(away_ml) and pd.notna(home_ml):
+                    fair_away, fair_home = fair_odds(away_ml, home_ml)
+
+                    # Match rows in week_df by team name
+                    # Use reverse_name_map to convert abbreviations to full names
+                    away_full = team_dictionary.get(away_abbr, away_abbr) \
+                        if 'team_dictionary' in dir() else away_abbr
+                    home_full = team_dictionary.get(home_abbr, home_abbr) \
+                        if 'team_dictionary' in dir() else home_abbr
+
+                    game_mask = (
+                        (week_df["Away Team"] == away_full) &
+                        (week_df["Home Team"] == home_full)
+                    )
+
+                    if game_mask.any():
+                        week_df.loc[game_mask, "Away Team Sportsbook Fair Odds"] = round(fair_away, 4)
+                        week_df.loc[game_mask, "Home Team Sportsbook Fair Odds"] = round(fair_home, 4)
+
+                        if pd.notna(spread):
+                            week_df.loc[game_mask, "Home Team Sportsbook Spread"] = float(spread)
+                            week_df.loc[game_mask, "Away Team Sportsbook Spread"] = -float(spread)
+
+                        replaced_odds += 1
+
+            print(f"   ✅ Replaced sportsbook odds: {replaced_odds} games")
+        else:
+            print(f"   ⚠️  No nflreadpy schedule data for week {completed_week}")
+
+    except Exception as e:
+        print(f"   ⚠️  Could not load closing odds from nflreadpy: {e}")
+
+    # ── 4. Recalculate REAL EV using actual pick% and actual sportsbook odds ──
+    # EV(team) = P(win) / expected_survivors
+    # expected_survivors = sum(pick% × win_prob) across all teams that week
+    try:
+        away_probs = pd.to_numeric(
+            week_df["Away Team Sportsbook Fair Odds"], errors="coerce"
+        ).fillna(0)
+        home_probs = pd.to_numeric(
+            week_df["Home Team Sportsbook Fair Odds"], errors="coerce"
+        ).fillna(0)
+        away_picks = pd.to_numeric(
+            week_df["Away Pick %"], errors="coerce"
+        ).fillna(0)
+        home_picks = pd.to_numeric(
+            week_df["Home Pick %"], errors="coerce"
+        ).fillna(0)
+
+        expected_survivors = (
+            (away_probs * away_picks).sum() +
+            (home_probs * home_picks).sum()
+        )
+
+        if expected_survivors > 0:
+            week_df["sportsbook_Away_EV_Actual"] = (
+                away_probs / expected_survivors
+            ).round(4)
+            week_df["sportsbook_Home_EV_Actual"] = (
+                home_probs / expected_survivors
+            ).round(4)
+            print(f"   ✅ Recalculated real EV (expected survivors: {expected_survivors:.4f})")
+        else:
+            week_df["sportsbook_Away_EV_Actual"] = 0.0
+            week_df["sportsbook_Home_EV_Actual"] = 0.0
+            print(f"   ⚠️  Expected survivors = 0, EV set to 0")
+
+    except Exception as e:
+        print(f"   ⚠️  EV recalculation failed: {e}")
+        week_df["sportsbook_Away_EV_Actual"] = None
+        week_df["sportsbook_Home_EV_Actual"] = None
+
+    # ── 5. Add metadata columns ───────────────────────────────────────────────
+    week_df["Data_Type"] = "Final"
+    week_df["Week_Final"] = completed_week
+    week_df["Year_Final"] = target_year
+
+    # ── 6. Save this week's final data ────────────────────────────────────────
+    week_df.to_csv(weekly_output, index=False)
+    print(f"   ✅ Saved weekly final data → {weekly_output}")
+
+    # ── 7. Append to season-long historical file ──────────────────────────────
+    if os.path.exists(season_output):
+        existing = pd.read_csv(season_output)
+
+        # Remove any existing rows for this week (idempotent — safe to re-run)
+        existing = existing[existing["Week_Final"] != completed_week]
+
+        season_df = pd.concat([existing, week_df], ignore_index=True)
+        season_df = season_df.sort_values(
+            week_col if week_col in season_df.columns else "Week_Final"
+        ).reset_index(drop=True)
+        print(f"   📎 Appending to existing season file ({len(existing)} existing rows)")
+    else:
+        season_df = week_df.copy()
+        print(f"   📄 Creating new season file")
+
+    season_df.to_csv(season_output, index=False)
+    print(f"   ✅ Saved season historical data → {season_output} ({len(season_df)} total rows)")
 
 # 1. Get current date
 today = datetime.now()
@@ -2389,5 +2613,11 @@ if results_df is not None:
     # 5. Save the modified DataFrame to the new CSV
     df_hist_original = df_hist_original.drop(columns=['Week_Numeric'], errors='ignore')
     df_hist_original.to_csv(output_file, index=False)
+
+    if not completed_weeks.empty:
+        just_completed = int(completed_weeks.index.max())
+    
+        # Build final historical record for the completed week
+        build_final_week_data(_target_year_for_cache, just_completed)
     
     print(f"\nSuccessfully updated Availability for Week {W_next} games and saved to '{output_file}'.")
