@@ -18,7 +18,7 @@ import nflreadpy as nfl
 from datetime import datetime, timedelta
 import calendar
 
-def loop_through_weeks(date_str):
+def loop_through_historical_final_data(date_str):
 
     def build_final_week_data(target_year: int, completed_week: int):
         """
@@ -2687,4 +2687,4 @@ if __name__ == "__main__":
     ]
 
     for date in week_starting_dates:
-        loop_through_simulations(date)
+        loop_through_historical_final_data(date)
