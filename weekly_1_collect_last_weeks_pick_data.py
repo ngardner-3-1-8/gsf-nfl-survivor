@@ -2614,6 +2614,22 @@ if results_df is not None:
     df_hist_original = df_hist_original.drop(columns=['Week_Numeric'], errors='ignore')
     df_hist_original.to_csv(output_file, index=False)
 
+    # Determine target year and completed week for historical data collection
+    _cache_today = datetime.now()
+    _target_year_for_cache = (
+        _cache_today.year - 1 if _cache_today.month < 6
+        else _cache_today.year
+    )
+
+    _schedule_df = pd.read_csv(f"nfl-schedules/schedule_{_target_year_for_cache}.csv")
+    _schedule_df['Date'] = pd.to_datetime(_schedule_df['Date'])
+    _week_end_dates = _schedule_df.groupby('Week')['Date'].max()
+    completed_weeks = _week_end_dates[_week_end_dates <= _cache_today]
+
+    if not completed_weeks.empty:
+        just_completed = int(completed_weeks.index.max())
+        build_final_week_data(_target_year_for_cache, just_completed)
+
     if not completed_weeks.empty:
         just_completed = int(completed_weeks.index.max())
     
