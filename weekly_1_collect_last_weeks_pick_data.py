@@ -2617,7 +2617,7 @@ def loop_through_historical_final_data(date_str):
         df_hist_original.to_csv(output_file, index=False)
     
         # Determine target year and completed week for historical data collection
-        _cache_today = datetime.now()
+        _cache_today = pd.to_datetime(date_str)
         _target_year_for_cache = (
             _cache_today.year - 1 if _cache_today.month < 6
             else _cache_today.year
