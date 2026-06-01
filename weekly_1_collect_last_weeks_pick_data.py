@@ -2392,17 +2392,26 @@ def loop_through_historical_final_data(date_str):
         
         print(f"\nSuccessfully updated Availability for Week {W_next} games and saved to '{output_file}'.")
 
-    def calculate_ev(df, config: dict, use_cache=False):
-        start_w = upcoming_week
-    
-        # 1. Enforce team abbreviation standardization directly on main df
+def calculate_ev(df, config: dict, use_cache=False):
+        """
+        Calculates EV for all probability models (sportsbook, mp, gsf, sim, consensus)
+        for the upcoming week only. Writes EV columns back to the main sim results CSV.
+
+        Uses starting_week (= upcoming_week in this script's terminology) as the
+        starting point — prior weeks already have EV from previous runs.
+
+        Zero-availability teams (pick% == 0) are excluded from the expected survivors
+        denominator so they don't dilute EV for eligible teams.
+        """
+        start_w = starting_week  # upcoming_week in this script
+
+        # Enforce team abbreviation standardization
         replace_dict = {'JAC': 'JAX', 'LAR': 'LA'}
         df['Away Team'] = df['Away Team'].replace(replace_dict)
         df['Home Team'] = df['Home Team'].replace(replace_dict)
-    
-        # Find ending week bounds based on the full file
+
         end_w = int(df['Week_x'].max()) + 1
-    
+
         probability_scenarios = {
             "sportsbook": {
                 "away_col": "Away Team Sportsbook Fair Odds",
@@ -2430,117 +2439,386 @@ def loop_through_historical_final_data(date_str):
                 "prefix": "consensus"
             }
         }
-    
+
         def calculate_all_scenarios(week_df, away_prob_col, home_prob_col):
             """
             EV(team) = P(team wins) / E[total survivors this week]
             E[survivors] = sum of (each team's pick% * their win probability)
-            
+
             Teams with 0% availability (pick% == 0) are excluded from the
-            expected survivors calculation — they're not pickable so they
-            don't affect EV for the remaining eligible teams.
+            expected survivors calculation.
             """
             home_probs = week_df[home_prob_col].values
             away_probs = week_df[away_prob_col].values
             home_picks = week_df['Home Pick %'].values
             away_picks = week_df['Away Pick %'].values
-        
-            # Only include teams with non-zero availability in the denominator
+
             home_eligible = home_picks > 0
             away_eligible = away_picks > 0
-        
+
             expected_survivors = (
                 np.sum(home_probs[home_eligible] * home_picks[home_eligible]) +
                 np.sum(away_probs[away_eligible] * away_picks[away_eligible])
             )
-        
+
             ev_results = {}
             for i, row in week_df.iterrows():
                 if expected_survivors > 0:
-                    # Home team — only assign EV if eligible
-                    if row['Home Pick %'] > 0:
-                        ev_results[row['Home Team']] = row[home_prob_col] / expected_survivors
-                    else:
-                        ev_results[row['Home Team']] = 0
-        
-                    # Away team — only assign EV if eligible
-                    if row['Away Pick %'] > 0:
-                        ev_results[row['Away Team']] = row[away_prob_col] / expected_survivors
-                    else:
-                        ev_results[row['Away Team']] = 0
+                    ev_results[row['Home Team']] = (
+                        row[home_prob_col] / expected_survivors
+                        if row['Home Pick %'] > 0 else 0
+                    )
+                    ev_results[row['Away Team']] = (
+                        row[away_prob_col] / expected_survivors
+                        if row['Away Pick %'] > 0 else 0
+                    )
                 else:
                     ev_results[row['Home Team']] = 0
                     ev_results[row['Away Team']] = 0
-        
+
             return ev_results
-    
+
         for scenario_name, scenario_config in probability_scenarios.items():
             away_prob_col = scenario_config["away_col"]
             home_prob_col = scenario_config["home_col"]
             prefix = scenario_config["prefix"]
-            
-            # Create dynamically named columns for the scenario on the main DataFrame
+
             home_ev_col = f"{prefix}_Home_EV"
             away_ev_col = f"{prefix}_Away_EV"
-            
-            # Initialize with default value for past weeks or empty rows
-            df[home_ev_col] = 0.0
-            df[away_ev_col] = 0.0
-    
+
+            # Initialize columns — prior weeks keep their existing values
+            if home_ev_col not in df.columns:
+                df[home_ev_col] = 0.0
+            if away_ev_col not in df.columns:
+                df[away_ev_col] = 0.0
+
             for week in tqdm(range(start_w, end_w), desc=f"Processing {prefix.upper()} EV", leave=False):
-                # Filter rows for the current week being processed
                 week_df = df[df['Week_x'] == week].copy()
-    
+
                 if week_df.empty:
                     continue
-    
+
+                # Skip if required probability columns don't exist for this scenario
+                if away_prob_col not in week_df.columns or home_prob_col not in week_df.columns:
+                    print(f"   ⚠️  Skipping {prefix} EV for week {week} — columns not found")
+                    continue
+
                 ev_results = calculate_all_scenarios(
                     week_df,
                     away_prob_col=away_prob_col,
                     home_prob_col=home_prob_col
                 )
-    
-                # Write results back to the MAIN df
+
                 for team in week_df['Home Team'].unique():
                     df.loc[
                         (df['Week_x'] == week) & (df['Home Team'] == team),
                         home_ev_col
                     ] = ev_results.get(team, 0)
-    
+
                 for team in week_df['Away Team'].unique():
                     df.loc[
                         (df['Week_x'] == week) & (df['Away Team'] == team),
                         away_ev_col
                     ] = ev_results.get(team, 0)
-    
+
+        # Save updated EV columns back to the main sim results file
+        main_file_path = (
+            f"nfl-power-ratings/final_sim_results_with_variance_week_"
+            f"{starting_week}_{target_year}.csv"
+        )
+        df.to_csv(main_file_path, index=False)
+        print(f"\n✅ EV columns saved to: {main_file_path}")
+
     calculate_ev(df, config={})
 
-    def create_actual_historical_data()
-        actual_data = pd.read_csv(f'nfl-power-ratings/final_sim_results_with_variance_week_{last_played_week}_{target_year}.csv')
-        actual_data = actual_data['Week'] == last_played_week
-        actual_data['Actual Home Team Win %'] = pull from nfl_read-py
-        actual_data['Estimated Away Team Win %'] = pull from nfl_read-py
-        
-        #Update the Odds to use the actual odds from nfl_read_py
 
-        #calculate the actuial pick percentages from the 
-        actual_data['Home Actual Pick %'] = 
-        actual_data['Away Actual Pick %'] = 
+    def create_actual_historical_data():
+        """
+        Builds a historical record for the just-completed week using:
+          - Actual closing sportsbook odds and game scores from nflreadpy
+          - Actual pick percentages from the Circa historical data CSV
+          - Actual EV recalculated using the above real data
 
-        actual_data['Actual Home Team EV'] = 
-        actual_data['Actual Away Team EV'] = 
+        Handles holiday weeks (Thanksgiving, Christmas) correctly by grouping
+        EV calculation by Circa Week rather than numeric Week_x, ensuring
+        holiday games are never pooled with regular week games that share
+        the same Week_x number.
 
-        actual_data['Away Team Points'] = 
-        actual_data['Home Team Points'] = 
+        Output files:
+          nfl-power-ratings/Week_{last_played_week}_{target_year}_Final_Data.csv
+              — this week's games only
+          nfl-power-ratings/Season_{target_year}_Final_Data.csv
+              — full season append (idempotent — safe to re-run)
+        """
 
-        previous_week_actual_data = pd.read_csv(f'Week_{last_played_week - 1}_{target_year}_Final Data.csv')
+        # ── 1. Load sim results and filter to completed week ──────────────────
+        sim_file = (
+            f"nfl-power-ratings/final_sim_results_with_variance_week_"
+            f"{last_played_week}_{target_year}.csv"
+        )
 
-        if last_played_week > 1:
-            up_to_date_actual_data = append actual_data to previous_week_actual_data
+        if not os.path.exists(sim_file):
+            print(f"⚠️  create_actual_historical_data: sim file not found: {sim_file}")
+            return
+
+        sim_df = pd.read_csv(sim_file)
+        week_col = "Week_x" if "Week_x" in sim_df.columns else "Week"
+
+        actual_data = sim_df[sim_df[week_col] == last_played_week].copy()
+
+        if actual_data.empty:
+            print(f"⚠️  No rows found for week {last_played_week} in {sim_file}")
+            return
+
+        print(f"\n📊 Building actual historical data for Week {last_played_week} {target_year}...")
+        print(f"   Loaded {len(actual_data)} games")
+
+        # ── 2. Pull actual closing odds and scores from nflreadpy ─────────────
+        try:
+            schedule = nfl.load_schedules([target_year])
+            schedule = schedule.to_pandas() if hasattr(schedule, 'to_pandas') else schedule
+
+            sched_week = schedule[schedule["week"] == last_played_week].copy()
+
+            if sched_week.empty:
+                print(f"   ⚠️  No nflreadpy data found for week {last_played_week}")
+            else:
+                def ml_to_implied(ml):
+                    ml = float(ml)
+                    return 100 / (ml + 100) if ml > 0 else abs(ml) / (abs(ml) + 100)
+
+                def remove_vig(away_ml, home_ml):
+                    imp_away = ml_to_implied(away_ml)
+                    imp_home = ml_to_implied(home_ml)
+                    total = imp_away + imp_home
+                    if total == 0:
+                        return 0.5, 0.5
+                    return round(imp_away / total, 4), round(imp_home / total, 4)
+
+                replaced_odds = 0
+                for _, sched_row in sched_week.iterrows():
+                    away_abbr = str(sched_row.get("away_team", "")).upper()
+                    home_abbr = str(sched_row.get("home_team", "")).upper()
+
+                    # Convert abbreviations to full team names
+                    away_full = team_dictionary.get(away_abbr, away_abbr)
+                    home_full = team_dictionary.get(home_abbr, home_abbr)
+
+                    game_mask = (
+                        (actual_data["Away Team"] == away_full) &
+                        (actual_data["Home Team"] == home_full)
+                    )
+
+                    if not game_mask.any():
+                        continue
+
+                    # Actual closing moneylines → fair odds (vig removed)
+                    away_ml = sched_row.get("away_moneyline")
+                    home_ml = sched_row.get("home_moneyline")
+                    spread   = sched_row.get("spread_line")  # home team spread
+
+                    if pd.notna(away_ml) and pd.notna(home_ml):
+                        fair_away, fair_home = remove_vig(away_ml, home_ml)
+                        actual_data.loc[game_mask, "Away Team Sportsbook Fair Odds"] = fair_away
+                        actual_data.loc[game_mask, "Home Team Sportsbook Fair Odds"] = fair_home
+                        actual_data.loc[game_mask, "Away Team Sportsbook Moneyline"] = float(away_ml)
+                        actual_data.loc[game_mask, "Home Team Sportsbook Moneyline"] = float(home_ml)
+
+                    if pd.notna(spread):
+                        actual_data.loc[game_mask, "Home Team Sportsbook Spread"] = float(spread)
+                        actual_data.loc[game_mask, "Away Team Sportsbook Spread"] = -float(spread)
+
+                    # Actual scores
+                    home_score = sched_row.get("home_score")
+                    away_score = sched_row.get("away_score")
+                    if pd.notna(home_score):
+                        actual_data.loc[game_mask, "Home Team Points"] = int(home_score)
+                    if pd.notna(away_score):
+                        actual_data.loc[game_mask, "Away Team Points"] = int(away_score)
+
+                    # Actual win result (1 = won, 0 = lost, 0.5 = tie)
+                    if pd.notna(home_score) and pd.notna(away_score):
+                        if int(home_score) > int(away_score):
+                            actual_data.loc[game_mask, "Actual Home Team Win %"] = 1.0
+                            actual_data.loc[game_mask, "Actual Away Team Win %"] = 0.0
+                        elif int(away_score) > int(home_score):
+                            actual_data.loc[game_mask, "Actual Home Team Win %"] = 0.0
+                            actual_data.loc[game_mask, "Actual Away Team Win %"] = 1.0
+                        else:
+                            actual_data.loc[game_mask, "Actual Home Team Win %"] = 0.5
+                            actual_data.loc[game_mask, "Actual Away Team Win %"] = 0.5
+
+                    replaced_odds += 1
+
+                print(f"   ✅ Updated odds/scores for {replaced_odds} games from nflreadpy")
+
+        except Exception as e:
+            print(f"   ⚠️  nflreadpy pull failed: {e}")
+
+        # ── 3. Replace predicted pick% with actual pick% from Circa data ──────
+        hist_file = f"contest-historical-data/Circa_historical_data_{current_year}.csv"
+
+        if os.path.exists(hist_file):
+            hist_df = pd.read_csv(hist_file)
+            hist_week = hist_df[
+                (hist_df["Year"] == target_year) &
+                (hist_df["Week"].astype(int) == last_played_week)
+            ].copy()
+
+            if not hist_week.empty:
+                # Build lookup: team abbreviation → actual pick %
+                pick_pct_map = {}
+                for _, row in hist_week.iterrows():
+                    team_abbr = str(row.get("Team", "")).strip()
+                    pick_pct  = row.get("Pick %")
+                    if team_abbr and pd.notna(pick_pct):
+                        pick_pct_map[team_abbr] = float(pick_pct)
+
+                if pick_pct_map:
+                    # Convert full team names → abbreviations for lookup
+                    reverse_name_map = {v: k for k, v in team_dictionary.items()}
+
+                    def get_pick(team_full_name):
+                        abbr = reverse_name_map.get(team_full_name, team_full_name)
+                        return pick_pct_map.get(abbr, None)
+
+                    away_pcts = actual_data["Away Team"].apply(get_pick)
+                    home_pcts = actual_data["Home Team"].apply(get_pick)
+
+                    actual_data.loc[away_pcts.notna(), "Away Actual Pick %"] = \
+                        away_pcts[away_pcts.notna()]
+                    actual_data.loc[home_pcts.notna(), "Home Actual Pick %"] = \
+                        home_pcts[home_pcts.notna()]
+
+                    print(
+                        f"   ✅ Replaced pick%: "
+                        f"{away_pcts.notna().sum()} away, "
+                        f"{home_pcts.notna().sum()} home teams"
+                    )
+                else:
+                    print(f"   ⚠️  No pick% data found for week {last_played_week}")
+            else:
+                print(f"   ⚠️  No historical rows for week {last_played_week} in {hist_file}")
         else:
-            up_to_date_actual_data = actual data
+            print(f"   ⚠️  Historical data file not found: {hist_file}")
 
-        up_to_date_actual_data.to_csv = f'Week_{last_played_week}_{target_year}_Final Data.csv'
+        # ── 4. Calculate actual EV using real pick% and real sportsbook odds ───
+        # Group by Circa Week to keep holiday games (Thanksgiving, Christmas)
+        # separate from regular week games that share the same numeric Week_x.
+        # This prevents Thanksgiving games from being pooled with Week 12 games, etc.
+        try:
+            circa_col = "Circa Week" if "Circa Week" in actual_data.columns else None
+
+            if circa_col:
+                circa_groups = actual_data[circa_col].unique()
+            else:
+                # Fall back to a single group if Circa Week column doesn't exist
+                circa_groups = [last_played_week]
+                circa_col = week_col
+
+            # Initialize EV columns
+            actual_data["Actual Away Team EV"] = 0.0
+            actual_data["Actual Home Team EV"] = 0.0
+
+            for circa_week in circa_groups:
+                group_mask = actual_data[circa_col] == circa_week
+                group = actual_data[group_mask].copy()
+
+                if group.empty:
+                    continue
+
+                away_probs = pd.to_numeric(
+                    group["Away Team Sportsbook Fair Odds"], errors="coerce"
+                ).fillna(0)
+                home_probs = pd.to_numeric(
+                    group["Home Team Sportsbook Fair Odds"], errors="coerce"
+                ).fillna(0)
+
+                # Use actual pick% where available, fall back to predicted pick%
+                away_picks = pd.to_numeric(
+                    group["Away Actual Pick %"]
+                    if "Away Actual Pick %" in group.columns
+                    else group.get("Away Pick %", pd.Series(0, index=group.index)),
+                    errors="coerce"
+                ).fillna(0)
+                home_picks = pd.to_numeric(
+                    group["Home Actual Pick %"]
+                    if "Home Actual Pick %" in group.columns
+                    else group.get("Home Pick %", pd.Series(0, index=group.index)),
+                    errors="coerce"
+                ).fillna(0)
+
+                # Only eligible teams (pick% > 0) contribute to expected survivors
+                away_eligible = away_picks > 0
+                home_eligible = home_picks > 0
+
+                expected_survivors = (
+                    (away_probs[away_eligible] * away_picks[away_eligible]).sum() +
+                    (home_probs[home_eligible] * home_picks[home_eligible]).sum()
+                )
+
+                if expected_survivors > 0:
+                    actual_data.loc[group_mask, "Actual Away Team EV"] = (
+                        (away_probs / expected_survivors)
+                        .where(away_eligible, 0)
+                        .round(4)
+                        .values
+                    )
+                    actual_data.loc[group_mask, "Actual Home Team EV"] = (
+                        (home_probs / expected_survivors)
+                        .where(home_eligible, 0)
+                        .round(4)
+                        .values
+                    )
+                    print(
+                        f"   ✅ {circa_week}: EV calculated "
+                        f"(expected survivors: {expected_survivors:.4f})"
+                    )
+                else:
+                    print(f"   ⚠️  {circa_week}: expected survivors = 0 — EV set to 0")
+
+        except Exception as e:
+            print(f"   ⚠️  EV calculation failed: {e}")
+            actual_data["Actual Away Team EV"] = None
+            actual_data["Actual Home Team EV"] = None
+
+        # ── 5. Add metadata columns ────────────────────────────────────────────
+        actual_data["Data_Type"]   = "Final"
+        actual_data["Week_Final"]  = last_played_week
+        actual_data["Year_Final"]  = target_year
+
+        # ── 6. Save this week's standalone file ────────────────────────────────
+        weekly_output = (
+            f"nfl-power-ratings/final_data/{target_year}_final_data/Week_{last_played_week}_{target_year}_Final_Data.csv"
+        )
+        actual_data.to_csv(weekly_output, index=False)
+        print(f"   ✅ Saved weekly file → {weekly_output}")
+
+        # ── 7. Append to the season-long Final Data file (idempotent) ──────────
+        season_file = f"nfl-power-ratings/final_data/{target_year}_final_data/Season_{target_year}_Through_Week_{last_played_week}_Final_Data.csv"
+
+        if last_played_week > 1 and os.path.exists(season_file):
+            existing = pd.read_csv(season_file)
+            # Remove any existing rows for this week so re-runs are safe
+            existing = existing[existing["Week_Final"] != last_played_week]
+            season_df = pd.concat([existing, actual_data], ignore_index=True)
+            sort_col = week_col if week_col in season_df.columns else "Week_Final"
+            season_df = season_df.sort_values(sort_col).reset_index(drop=True)
+            print(f"   📎 Appended to existing season file ({len(existing)} prior rows)")
+        else:
+            season_df = actual_data.copy()
+            print(
+                f"   📄 {'Week 1 — creating' if last_played_week == 1 else 'Creating'} "
+                f"new season file"
+            )
+
+        season_df.to_csv(season_file, index=False)
+        print(
+            f"   ✅ Saved season file → {season_file} "
+            f"({len(season_df)} total rows)"
+        )
+
+    create_actual_historical_data()
 
 if __name__ == "__main__":
     formatted_date = datetime.now().strftime("%m/%d/%Y")
