@@ -2392,6 +2392,155 @@ def loop_through_historical_final_data(date_str):
         
         print(f"\nSuccessfully updated Availability for Week {W_next} games and saved to '{output_file}'.")
 
+    def calculate_ev(df, config: dict, use_cache=False):
+        start_w = upcoming_week
+    
+        # 1. Enforce team abbreviation standardization directly on main df
+        replace_dict = {'JAC': 'JAX', 'LAR': 'LA'}
+        df['Away Team'] = df['Away Team'].replace(replace_dict)
+        df['Home Team'] = df['Home Team'].replace(replace_dict)
+    
+        # Find ending week bounds based on the full file
+        end_w = int(df['Week_x'].max()) + 1
+    
+        probability_scenarios = {
+            "sportsbook": {
+                "away_col": "Away Team Sportsbook Fair Odds",
+                "home_col": "Home Team Sportsbook Fair Odds",
+                "prefix": "sportsbook"
+            },
+            "mp": {
+                "away_col": "Away Team Massey-Peabody Fair Odds",
+                "home_col": "Home Team Massey-Peabody Fair Odds",
+                "prefix": "mp"
+            },
+            "gsf": {
+                "away_col": "Away Team Generic Sports Fan Fair Odds",
+                "home_col": "Home Team Generic Sports Fan Fair Odds",
+                "prefix": "gsf"
+            },
+            "sim": {
+                "away_col": "Sim_Away_Win_Pct",
+                "home_col": "Sim_Home_Win_Pct",
+                "prefix": "sim"
+            },
+            "consensus": {
+                "away_col": "Consensus Away Win Pct",
+                "home_col": "Consensus Home Win Pct",
+                "prefix": "consensus"
+            }
+        }
+    
+        def calculate_all_scenarios(week_df, away_prob_col, home_prob_col):
+            """
+            EV(team) = P(team wins) / E[total survivors this week]
+            E[survivors] = sum of (each team's pick% * their win probability)
+            
+            Teams with 0% availability (pick% == 0) are excluded from the
+            expected survivors calculation — they're not pickable so they
+            don't affect EV for the remaining eligible teams.
+            """
+            home_probs = week_df[home_prob_col].values
+            away_probs = week_df[away_prob_col].values
+            home_picks = week_df['Home Pick %'].values
+            away_picks = week_df['Away Pick %'].values
+        
+            # Only include teams with non-zero availability in the denominator
+            home_eligible = home_picks > 0
+            away_eligible = away_picks > 0
+        
+            expected_survivors = (
+                np.sum(home_probs[home_eligible] * home_picks[home_eligible]) +
+                np.sum(away_probs[away_eligible] * away_picks[away_eligible])
+            )
+        
+            ev_results = {}
+            for i, row in week_df.iterrows():
+                if expected_survivors > 0:
+                    # Home team — only assign EV if eligible
+                    if row['Home Pick %'] > 0:
+                        ev_results[row['Home Team']] = row[home_prob_col] / expected_survivors
+                    else:
+                        ev_results[row['Home Team']] = 0
+        
+                    # Away team — only assign EV if eligible
+                    if row['Away Pick %'] > 0:
+                        ev_results[row['Away Team']] = row[away_prob_col] / expected_survivors
+                    else:
+                        ev_results[row['Away Team']] = 0
+                else:
+                    ev_results[row['Home Team']] = 0
+                    ev_results[row['Away Team']] = 0
+        
+            return ev_results
+    
+        for scenario_name, scenario_config in probability_scenarios.items():
+            away_prob_col = scenario_config["away_col"]
+            home_prob_col = scenario_config["home_col"]
+            prefix = scenario_config["prefix"]
+            
+            # Create dynamically named columns for the scenario on the main DataFrame
+            home_ev_col = f"{prefix}_Home_EV"
+            away_ev_col = f"{prefix}_Away_EV"
+            
+            # Initialize with default value for past weeks or empty rows
+            df[home_ev_col] = 0.0
+            df[away_ev_col] = 0.0
+    
+            for week in tqdm(range(start_w, end_w), desc=f"Processing {prefix.upper()} EV", leave=False):
+                # Filter rows for the current week being processed
+                week_df = df[df['Week_x'] == week].copy()
+    
+                if week_df.empty:
+                    continue
+    
+                ev_results = calculate_all_scenarios(
+                    week_df,
+                    away_prob_col=away_prob_col,
+                    home_prob_col=home_prob_col
+                )
+    
+                # Write results back to the MAIN df
+                for team in week_df['Home Team'].unique():
+                    df.loc[
+                        (df['Week_x'] == week) & (df['Home Team'] == team),
+                        home_ev_col
+                    ] = ev_results.get(team, 0)
+    
+                for team in week_df['Away Team'].unique():
+                    df.loc[
+                        (df['Week_x'] == week) & (df['Away Team'] == team),
+                        away_ev_col
+                    ] = ev_results.get(team, 0)
+    
+    calculate_ev(df, config={})
+
+    def create_actual_historical_data()
+        actual_data = pd.read_csv(f'nfl-power-ratings/final_sim_results_with_variance_week_{last_played_week}_{target_year}.csv')
+        actual_data = actual_data['Week'] == last_played_week
+        actual_data['Actual Home Team Win %'] = pull from nfl_read-py
+        actual_data['Estimated Away Team Win %'] = pull from nfl_read-py
+        
+        #Update the Odds to use the actual odds from nfl_read_py
+
+        #calculate the actuial pick percentages from the 
+        actual_data['Home Actual Pick %'] = 
+        actual_data['Away Actual Pick %'] = 
+
+        actual_data['Actual Home Team EV'] = 
+        actual_data['Actual Away Team EV'] = 
+
+        actual_data['Away Team Points'] = 
+        actual_data['Home Team Points'] = 
+
+        previous_week_actual_data = pd.read_csv(f'Week_{last_played_week - 1}_{target_year}_Final Data.csv')
+
+        if last_played_week > 1:
+            up_to_date_actual_data = append actual_data to previous_week_actual_data
+        else:
+            up_to_date_actual_data = actual data
+
+        up_to_date_actual_data.to_csv = f'Week_{last_played_week}_{target_year}_Final Data.csv'
 
 if __name__ == "__main__":
     formatted_date = datetime.now().strftime("%m/%d/%Y")
