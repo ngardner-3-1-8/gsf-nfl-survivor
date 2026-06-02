@@ -2540,7 +2540,7 @@ def loop_through_historical_final_data(date_str):
         df.to_csv(main_file_path, index=False)
         print(f"\n✅ EV columns saved to: {main_file_path}")
 
-    calculate_ev2(starting_week, target_year)
+    calculate_ev2(starting_week, target_year)
 
 
     def create_actual_historical_data(last_played_week, starting_week, target_year, current_year):
