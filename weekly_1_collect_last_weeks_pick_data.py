@@ -2403,6 +2403,17 @@ def loop_through_historical_final_data(date_str):
         Zero-availability teams (pick% == 0) are excluded from the expected survivors
         denominator so they don't dilute EV for eligible teams.
         """
+
+    sim_file = (
+        f"nfl-power-ratings/final_sim_results_with_variance_week_"
+        f"{starting_week}_{target_year}.csv"
+    )
+    if not os.path.exists(sim_file):
+        print(f"⚠️  calculate_ev: sim file not found: {sim_file}")
+        return
+    
+    df = pd.read_csv(sim_file)
+    print(f"   📊 Loaded sim results: {len(df)} rows from {sim_file}")
         start_w = starting_week  # upcoming_week in this script
 
         # Enforce team abbreviation standardization
