@@ -34,16 +34,16 @@ def loop_through_historical_final_data(date_str):
         try:
             # Load the schedule for the target year
             schedule = nfl.load_schedules([target_year])
-            
+            print("schedule Loaded successfully")
             schedule = schedule.to_pandas() # Convert here!
-            
+            print("schedule converted successfully")
             # Now all the standard Pandas filtering works:
             reg_season_games = schedule[schedule['game_type'] == 'REG']
-            
+            print("reg season games filtered successfully")
             if not reg_season_games.empty:
                 # Find the very first game date of the season
                 first_game_date = pd.to_datetime(reg_season_games['gameday'].min())
-                
+                print(f"first game date: {first_game_date}")
                 # Check if today is BEFORE the first game
                 if pd.to_datetime(today) < first_game_date:
                     print(f"Today ({today.date()}) is before the first game ({first_game_date.date()}). dropping year by 1.")
@@ -61,13 +61,14 @@ def loop_through_historical_final_data(date_str):
                 # (which usually scrapes the *upcoming* week) should be the last played week + 1.
                 last_played_week = int(games_played['week'].max())
                 starting_week = last_played_week + 1
-                
+                print("last_played_week")
                 # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
                 if starting_week > 19: 
                     starting_week = 19 
             else:
                 # If we fell back a year but that season is fully over, or if no games played yet
-                starting_week = 1 
+                starting_week = 1
+                last_played_week = 0
         
         except Exception as e:
             print(f"⚠️ Error in dynamic detection: {e}. Falling back to defaults.")
@@ -82,20 +83,20 @@ def loop_through_historical_final_data(date_str):
         try:
             # Load the schedule for the target year
             schedule = nfl.load_schedules([target_year])
-            
+            print("schedule Loaded successfully")
             schedule = schedule.to_pandas() # Convert here!
-            
+            print("schedule converted successfully")
             # Now all the standard Pandas filtering works:
             reg_season_games = schedule[schedule['game_type'] == 'REG']
-            
+            print("reg season games filtered successfully")
             if not reg_season_games.empty:
                 # Find the very first game date of the season
                 first_game_date = pd.to_datetime(reg_season_games['gameday'].min())
-                
+                print(f"first game date: {first_game_date}")                
                 # Check if today is BEFORE the first game
                 if pd.to_datetime(today) < first_game_date:
                     print(f"Today ({today.date()}) is before the first game ({first_game_date.date()}). dropping year by 1.")
-                    target_year -= 1
+                    target_year -= 0
                     # Reload schedule for the adjusted year so we can calculate the week correctly below
                     schedule = nfl.load_schedules([target_year])
             
@@ -117,6 +118,10 @@ def loop_through_historical_final_data(date_str):
             else:
                 # If we fell back a year but that season is fully over, or if no games played yet
                 starting_week = 1 
+                last_played_week = 0
+
+            print(starting_week)
+            print(last_played_week)
         
         except Exception as e:
             print(f"⚠️ Error in dynamic detection: {e}. Falling back to defaults.")
