@@ -2392,7 +2392,7 @@ def loop_through_historical_final_data(date_str):
         
         print(f"\nSuccessfully updated Availability for Week {W_next} games and saved to '{output_file}'.")
 
-    def calculate_ev2(df, config: dict, use_cache=False):
+    def calculate_ev2(starting_week, target_year, config: dict = {}):
         """
         Calculates EV for all probability models (sportsbook, mp, gsf, sim, consensus)
         for the upcoming week only. Writes EV columns back to the main sim results CSV.
@@ -2540,10 +2540,10 @@ def loop_through_historical_final_data(date_str):
         df.to_csv(main_file_path, index=False)
         print(f"\n✅ EV columns saved to: {main_file_path}")
 
-    calculate_ev2(df, config={})
+    calculate_ev2(starting_week, target_year)
 
 
-    def create_actual_historical_data():
+    def create_actual_historical_data(last_played_week, starting_week, target_year, current_year):
         """
         Builds a historical record for the just-completed week using:
           - Actual closing sportsbook odds and game scores from nflreadpy
@@ -2565,7 +2565,7 @@ def loop_through_historical_final_data(date_str):
         # ── 1. Load sim results and filter to completed week ──────────────────
         sim_file = (
             f"nfl-power-ratings/final_sim_results_with_variance_week_"
-            f"{last_played_week}_{target_year}.csv"
+            f"{starting_week}_{target_year}.csv"
         )
 
         if not os.path.exists(sim_file):
@@ -2829,7 +2829,8 @@ def loop_through_historical_final_data(date_str):
             f"({len(season_df)} total rows)"
         )
 
-    create_actual_historical_data()
+    create_actual_historical_data(last_played_week, starting_week, target_year, current_year)
+
 
 if __name__ == "__main__":
     formatted_date = datetime.now().strftime("%m/%d/%Y")
