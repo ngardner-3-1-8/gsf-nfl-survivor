@@ -2815,7 +2815,7 @@ def loop_through_historical_final_data(date_str):
         # ── 7. Append to the season-long Final Data file (idempotent) ──────────
         season_file = f"nfl-power-ratings/final_data/{target_year}_final_data/Season_{target_year}_Through_Week_{last_played_week}_Final_Data.csv"
 
-        if last_played_week > 1 and os.path.exists(season_file):
+        if last_played_week >= 1 and os.path.exists(season_file):
             existing = pd.read_csv(season_file)
             # Remove any existing rows for this week so re-runs are safe
             existing = existing[existing["Week_Final"] != last_played_week]
