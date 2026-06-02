@@ -32,13 +32,12 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # Stage the files from all output folders
-          git add contest-historical-data/*.csv
-          git add circa-pick-history/*.csv
-          git add nfl-power-ratings/final_data/**/*.csv
+          # Stage files — use || true so missing paths don't fail the step
+          git add contest-historical-data/*.csv || true
+          git add circa-pick-history/*.csv || true
+          git add nfl-power-ratings/final_data/ || true
           
           # Commit only if there are changes
           git commit -m "Auto-update: Week $(date +'%U') Data" || echo "No changes to commit"
           
-          # Push back to the repo
           git push
