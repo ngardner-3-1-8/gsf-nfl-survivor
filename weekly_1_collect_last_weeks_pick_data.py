@@ -96,7 +96,7 @@ def loop_through_historical_final_data(date_str):
                 # Check if today is BEFORE the first game
                 if pd.to_datetime(today) < first_game_date:
                     print(f"Today ({today.date()}) is before the first game ({first_game_date.date()}). dropping year by 1.")
-                    target_year -= 0
+                    target_year -= 1
                     # Reload schedule for the adjusted year so we can calculate the week correctly below
                     schedule = nfl.load_schedules([target_year])
             
@@ -113,8 +113,9 @@ def loop_through_historical_final_data(date_str):
                 starting_week = last_played_week + 1
                 
                 # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
-                if starting_week > 19: 
-                    starting_week = 19 
+                if starting_week > 18: 
+                    starting_week = 18
+                    last_played_week = 17
             else:
                 # If we fell back a year but that season is fully over, or if no games played yet
                 starting_week = 1 
@@ -127,7 +128,8 @@ def loop_through_historical_final_data(date_str):
             print(f"⚠️ Error in dynamic detection: {e}. Falling back to defaults.")
             # Fallback defaults to prevent crash
             target_year = 2025
-            starting_week = 19
+            starting_week = 18
+            last_played_week = 17
     # 5. Final Assignment to your variables
     current_year = target_year
     starting_year = target_year
@@ -2407,7 +2409,7 @@ def loop_through_historical_final_data(date_str):
 
         Zero-availability teams (pick% == 0) are excluded from the expected survivors
         denominator so they don't dilute EV for eligible teams.
-        """
+        """        
 
         sim_file = (
             f"nfl-power-ratings/final_sim_results_with_variance_week_"
@@ -2840,7 +2842,8 @@ def loop_through_historical_final_data(date_str):
 if __name__ == "__main__":
     formatted_date = datetime.now().strftime("%m/%d/%Y")
     week_starting_dates = [
-        "09/03/2025"#, "09/10/2025", "09/17/2025", "09/24/2025", 
+#        "09/03/2025", 
+        "09/10/2025"#, "09/17/2025", "09/24/2025", 
 #        "10/01/2025", "10/08/2025", "10/15/2025", "10/22/2025", 
 #        "10/29/2025", "11/05/2025", "11/12/2025", "11/19/2025", 
 #        "11/26/2025", "11/29/2025", "12/03/2025", "12/10/2025", 
