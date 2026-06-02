@@ -2392,7 +2392,7 @@ def loop_through_historical_final_data(date_str):
         
         print(f"\nSuccessfully updated Availability for Week {W_next} games and saved to '{output_file}'.")
 
-    def calculate_ev(df, config: dict, use_cache=False):
+    def calculate_ev2(df, config: dict, use_cache=False):
         """
         Calculates EV for all probability models (sportsbook, mp, gsf, sim, consensus)
         for the upcoming week only. Writes EV columns back to the main sim results CSV.
@@ -2529,7 +2529,7 @@ def loop_through_historical_final_data(date_str):
         df.to_csv(main_file_path, index=False)
         print(f"\n✅ EV columns saved to: {main_file_path}")
 
-    calculate_ev(df, config={})
+    calculate_ev2(df, config={})
 
 
     def create_actual_historical_data():
