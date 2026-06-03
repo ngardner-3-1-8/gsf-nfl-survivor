@@ -2582,6 +2582,11 @@ def loop_through_historical_final_data(date_str):
         sim_df = pd.read_csv(sim_file)
         week_col = "Week_x" if "Week_x" in sim_df.columns else "Week"
 
+        # Debug — remove after confirming
+        print(f"   📋 Sim file columns: {list(sim_df.columns[:10])}")
+        print(f"   📋 Unique weeks in file: {sorted(sim_df[week_col].unique().tolist())}")
+        print(f"   📋 Looking for week: {last_played_week}")
+
         actual_data = sim_df[sim_df[week_col] == last_played_week].copy()
 
         if actual_data.empty:
