@@ -1462,7 +1462,7 @@ def loop_through_historical_final_data(date_str):
             # Simple exponential backoff for retries
             for attempt in range(3):
                 try:
-                    print(f"-> Scraping page {page}/{MAX_PAGES}: {url}")
+                    #print(f"-> Scraping page {page}/{MAX_PAGES}: {url}")
                     
                     # Use a specific user-agent to look like a regular browser
                     headers = {
@@ -1521,7 +1521,7 @@ def loop_through_historical_final_data(date_str):
                                 
                         all_entries_data.append(entry_data)
                     
-                    print(f"   -> Successfully scraped {len(rows)} entries from page {page}.")
+                    #print(f"   -> Successfully scraped {len(rows)} entries from page {page}.")
                     
                     # Success, break retry loop
                     break 
