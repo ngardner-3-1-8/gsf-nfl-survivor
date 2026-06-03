@@ -1603,7 +1603,7 @@ def loop_through_historical_final_data(date_str):
     
     
     # Assuming the pick data CSVs are named like '2025_survivor_picks.csv'
-    pick_data_base_path = "Circa Pick History/CSVs_Output/" 
+    pick_data_base_path = "circa-pick-history/"
     
     ####output_file = f"contest-historical-data/Circa_historical_data.csv"
     output_file = f"contest-historical-data/Circa_historical_data_{current_year}.csv"
