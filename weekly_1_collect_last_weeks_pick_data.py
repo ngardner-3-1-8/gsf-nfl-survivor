@@ -636,20 +636,18 @@ def loop_through_historical_final_data(date_str):
     
     
     
-    print("\n⚙️ Starting Section 4: Feature Engineering (Ranks and Relative Stats)...")
+    print("\n⚙️ Starting Feature Engineering (Ranks and Relative Stats)...")
     
     # Define group keys for weekly calculations
     group_keys = ['Year', 'Week']
     
     # 1. Calculate Weekly Win % Stats
     # Using .transform() to broadcast the group-level stats to every row in that group
-    print("  Calculating weekly Win % statistics (mean, max, min, std)...")
     home_df['Week_Mean_WinPct'] = home_df.groupby(group_keys)['Win %'].transform('mean')
     home_df['Week_Max_WinPct'] = home_df.groupby(group_keys)['Win %'].transform('max')
     home_df['Week_Min_WinPct'] = home_df.groupby(group_keys)['Win %'].transform('min')
     home_df['Week_Std_WinPct'] = home_df.groupby(group_keys)['Win %'].transform('std')
     
-    print("  Calculating weekly Future Value statistics (mean, max, min, std)...")
     home_df['Week_Mean_FV'] = home_df.groupby(group_keys)['Future Value (Stars)'].transform('mean')
     home_df['Week_Max_FV'] = home_df.groupby(group_keys)['Future Value (Stars)'].transform('max')
     home_df['Week_Min_FV'] = home_df.groupby(group_keys)['Future Value (Stars)'].transform('min')
@@ -662,30 +660,26 @@ def loop_through_historical_final_data(date_str):
     home_df['Week_Std_FV'] = home_df['Week_Std_FV'].fillna(0)
     
     # 2. Calculate Team-Specific Relative Stats
-    print("  Calculating team-relative Win % stats...")
     home_df['Team_WinPct_RelativeToWeekMean'] = home_df['Win %'] - home_df['Week_Mean_WinPct']
     
     # 2. Calculate Team-Specific Relative Stats
-    print("  Calculating team-relative Future Value stats...")
+
     home_df['Team_FV_RelativeToWeekMean'] = home_df['Future Value (Stars)'] - home_df['Week_Mean_FV']
     
     # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
     home_df['Team_WinPct_RelativeToTopTeam'] = home_df['Win %'] / home_df['Week_Max_WinPct']
-    home_df['Team_WinPct_RelativeToTopTeam'] = home_df['Team_WinPct_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)
-    
+    home_df['Team_WinPct_RelativeToTopTeam'] = home_df['Team_WinPct_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)    
     # Handle potential division by zero if Max_Win is 0 (unlikely, but safe)
     home_df['Team_FV_RelativeToTopTeam'] = home_df['Future Value (Stars)'] / home_df['Week_Max_FV']
     home_df['Team_FV_RelativeToTopTeam'] = home_df['Team_FV_RelativeToTopTeam'].fillna(0).replace([np.inf, -np.inf], 0)                                                                                                  
     
     # 3. Calculate Ranks (Win % and Star Rating)
     # .rank(ascending=False) means the highest value gets rank 1 (e.g., "best")
-    print("  Calculating Win % and Star Rating ranks...")
     home_df['Win % Rank'] = home_df.groupby(group_keys)['Win %'].rank(ascending=False, method='min')
     home_df['Star Rating Rank'] = home_df.groupby(group_keys)['Future Value (Stars)'].rank(ascending=False, method='min')
     
     # 4. Calculate Rank Density
     # First, get the number of teams (games) in each week
-    print("  Calculating Rank Density...")
     home_df['Num_Teams_This_Week'] = home_df.groupby(group_keys)['Team'].transform('count')
     
     # This normalizes the rank based on the number of available teams that week
@@ -693,7 +687,6 @@ def loop_through_historical_final_data(date_str):
     
     home_df['FV_Rank_Density'] = home_df['Star Rating Rank'] / home_df['Num_Teams_This_Week']
     
-    print("✅ Feature engineering complete.")
     
     home_df['Is_Top_In_Week'] = (home_df['Win %'] == home_df['Week_Max_WinPct']).astype(int)
     
@@ -723,7 +716,6 @@ def loop_through_historical_final_data(date_str):
         
         return pd.Series([top_sum, high_win, mid_win, low_win])
     
-    print("⚙️ Calculating Future Scarcity stats for all historical rows (this may take a moment)...")
     
     # Apply the logic to every row
     future_stats_cols = [
@@ -738,16 +730,11 @@ def loop_through_historical_final_data(date_str):
     # 3. Add current week relative strength
     home_df['WinPct_Diff_From_Top'] = home_df['Win %'] - home_df.groupby(['Year', 'Week'])['Win %'].transform('max')
     
-    
-    
-    print("\n⚙️ Starting Section 5: Feature Engineering (Ranks and Relative Stats)...")
-    
     # Define group keys for weekly calculations
     group_keys = ['Year', 'Week']
     
     # 1. Calculate Weekly Win % Stats
     # Using .transform() to broadcast the group-level stats to every row in that group
-    print("  Calculating weekly Win % statistics (mean, max, min, std)...")
     home_df['Week_Mean_80'] = home_df.groupby(group_keys)['Future_Weeks_Over_80'].transform('mean')
     home_df['Week_Max_80'] = home_df.groupby(group_keys)['Future_Weeks_Over_80'].transform('max')
     home_df['Week_Min_80'] = home_df.groupby(group_keys)['Future_Weeks_Over_80'].transform('min')
@@ -757,7 +744,6 @@ def loop_through_historical_final_data(date_str):
     home_df['Week_Std_80'] = home_df['Week_Std_80'].fillna(0)
     
     # 2. Calculate Team-Specific Relative Stats
-    print("  Calculating team-relative Win % stats...")
     home_df['Team_80_RelativeToWeekMean'] = home_df['Future_Weeks_Over_80'] - home_df['Week_Mean_80']
     
     # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
@@ -776,7 +762,6 @@ def loop_through_historical_final_data(date_str):
     
     # 1. Calculate Weekly Win % Stats
     # Using .transform() to broadcast the group-level stats to every row in that group
-    print("  Calculating weekly Win % statistics (mean, max, min, std)...")
     home_df['Week_Mean_70_80'] = home_df.groupby(group_keys)['Future_Weeks_70_80'].transform('mean')
     home_df['Week_Max_70_80'] = home_df.groupby(group_keys)['Future_Weeks_70_80'].transform('max')
     home_df['Week_Min_70_80'] = home_df.groupby(group_keys)['Future_Weeks_70_80'].transform('min')
@@ -806,7 +791,6 @@ def loop_through_historical_final_data(date_str):
     
     # 1. Calculate Weekly Win % Stats
     # Using .transform() to broadcast the group-level stats to every row in that group
-    print("  Calculating weekly Win % statistics (mean, max, min, std)...")
     home_df['Week_Mean_60_70'] = home_df.groupby(group_keys)['Future_Weeks_60_70'].transform('mean')
     home_df['Week_Max_60_70'] = home_df.groupby(group_keys)['Future_Weeks_60_70'].transform('max')
     home_df['Week_Min_60_70'] = home_df.groupby(group_keys)['Future_Weeks_60_70'].transform('min')
@@ -816,7 +800,6 @@ def loop_through_historical_final_data(date_str):
     home_df['Week_Std_60_70'] = home_df['Week_Std_60_70'].fillna(0)
     
     # 2. Calculate Team-Specific Relative Stats
-    print("  Calculating team-relative Win % stats...")
     home_df['Team_60_70_RelativeToWeekMean'] = home_df['Future_Weeks_60_70'] - home_df['Week_Mean_60_70']
     
     # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
@@ -837,7 +820,6 @@ def loop_through_historical_final_data(date_str):
     
     # 1. Calculate Weekly Win % Stats
     # Using .transform() to broadcast the group-level stats to every row in that group
-    print("  Calculating weekly Win % statistics (mean, max, min, std)...")
     home_df['Week_Mean_Top_Team'] = home_df.groupby(group_keys)['Future_Weeks_Top_Team'].transform('mean')
     home_df['Week_Max_Top_Team'] = home_df.groupby(group_keys)['Future_Weeks_Top_Team'].transform('max')
     home_df['Week_Min_Top_Team'] = home_df.groupby(group_keys)['Future_Weeks_Top_Team'].transform('min')
@@ -847,7 +829,6 @@ def loop_through_historical_final_data(date_str):
     home_df['Week_Std_Top_Team'] = home_df['Week_Std_Top_Team'].fillna(0)
     
     # 2. Calculate Team-Specific Relative Stats
-    print("  Calculating team-relative Win % stats...")
     home_df['Team_Top_Team_RelativeToWeekMean'] = home_df['Future_Weeks_Top_Team'] - home_df['Week_Mean_Top_Team']
     
     # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
@@ -868,7 +849,6 @@ def loop_through_historical_final_data(date_str):
     
     # 1. Calculate Weekly Win % Stats
     # Using .transform() to broadcast the group-level stats to every row in that group
-    print("  Calculating weekly Win % statistics (mean, max, min, std)...")
     home_df['Week_Mean_Availability'] = home_df.groupby(group_keys)['Availability'].transform('mean')
     home_df['Week_Max_Availability'] = home_df.groupby(group_keys)['Availability'].transform('max')
     home_df['Week_Min_Availability'] = home_df.groupby(group_keys)['Availability'].transform('min')
@@ -878,7 +858,6 @@ def loop_through_historical_final_data(date_str):
     home_df['Week_Std_Availability'] = home_df['Week_Std_Availability'].fillna(0)
     
     # 2. Calculate Team-Specific Relative Stats
-    print("  Calculating team-relative Win % stats...")
     home_df['Team_Availability_RelativeToWeekMean'] = home_df['Availability'] - home_df['Week_Mean_Availability']
     
     # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
@@ -890,11 +869,6 @@ def loop_through_historical_final_data(date_str):
     
     # This normalizes the rank based on the number of available teams that week
     home_df['Availability_Rank_Density'] = home_df['Availability_Rank'] / home_df['Num_Teams_This_Week']
-    
-    print("✅ Feature engineering complete.")
-    
-    
-    
     
     home_df.to_csv("contest-historical-data/DK_historical_data.csv", index=False)
     
@@ -1105,8 +1079,6 @@ def loop_through_historical_final_data(date_str):
                             (df['Week'] < holiday_week)
             df.loc[condition_pre, 'Pre Christmas'] = 1
     
-    print("\n⚙️ Starting Section 4: Feature Engineering (Ranks and Relative Stats)...")
-    
     # 1. Create lookup maps for the Win % on the actual holiday weeks
     # This isolates the team's strength specifically on the day of the holiday
     xmas_map = df[df['christmas_week'] == 1].set_index(['Year', 'Team'])['Win %']
@@ -1148,11 +1120,9 @@ def loop_through_historical_final_data(date_str):
     df['Week_Std_FV'] = df['Week_Std_FV'].fillna(0)
     
     # 2. Calculate Team-Specific Relative Stats
-    print("  Calculating team-relative Win % stats...")
     df['Team_WinPct_RelativeToWeekMean'] = df['Win %'] - df['Week_Mean_WinPct']
     
     # 2. Calculate Team-Specific Relative Stats
-    print("  Calculating team-relative Future Value stats...")
     df['Team_FV_RelativeToWeekMean'] = df['Future Value (Stars)'] - df['Week_Mean_FV']
     
     # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
@@ -1165,22 +1135,18 @@ def loop_through_historical_final_data(date_str):
     
     # 3. Calculate Ranks (Win % and Star Rating)
     # .rank(ascending=False) means the highest value gets rank 1 (e.g., "best")
-    print("  Calculating Win % and Star Rating ranks...")
     df['Win % Rank'] = df.groupby(group_keys)['Win %'].rank(ascending=False, method='min')
     df['Star Rating Rank'] = df.groupby(group_keys)['Future Value (Stars)'].rank(ascending=False, method='min')
     
     # 4. Calculate Rank Density
     # First, get the number of teams (games) in each week
-    print("  Calculating Rank Density...")
     df['Num_Teams_This_Week'] = df.groupby(group_keys)['Team'].transform('count')
     
     # This normalizes the rank based on the number of available teams that week
     df['Rank_Density'] = df['Win % Rank'] / df['Num_Teams_This_Week']
     
     df['FV_Rank_Density'] = df['Star Rating Rank'] / df['Num_Teams_This_Week']
-    
-    print("✅ Feature engineering complete.")
-    
+     
     # ------------------------------------------------------------------------------
     # NEW SECTION: Future Value & Holiday Features
     # ------------------------------------------------------------------------------
@@ -1215,8 +1181,6 @@ def loop_through_historical_final_data(date_str):
         
         return pd.Series([top_sum, high_win, mid_win, low_win])
     
-    print("⚙️ Calculating Future Scarcity stats for all historical rows (this may take a moment)...")
-    
     # Apply the logic to every row
     future_stats_cols = [
         'Future_Weeks_Top_Team', 
@@ -1231,14 +1195,11 @@ def loop_through_historical_final_data(date_str):
     df['WinPct_Diff_From_Top'] = df['Win %'] - df.groupby(['Year', 'Week'])['Win %'].transform('max')
     
     
-    print("\n⚙️ Starting Section 5: Feature Engineering (Ranks and Relative Stats)...")
-    
     # Define group keys for weekly calculations
     group_keys = ['Year', 'Week']
     
     # 1. Calculate Weekly Win % Stats
     # Using .transform() to broadcast the group-level stats to every row in that group
-    print("  Calculating weekly Win % statistics (mean, max, min, std)...")
     df['Week_Mean_80'] = df.groupby(group_keys)['Future_Weeks_Over_80'].transform('mean')
     df['Week_Max_80'] = df.groupby(group_keys)['Future_Weeks_Over_80'].transform('max')
     df['Week_Min_80'] = df.groupby(group_keys)['Future_Weeks_Over_80'].transform('min')
@@ -1248,7 +1209,6 @@ def loop_through_historical_final_data(date_str):
     df['Week_Std_80'] = df['Week_Std_80'].fillna(0)
     
     # 2. Calculate Team-Specific Relative Stats
-    print("  Calculating team-relative Win % stats...")
     df['Team_80_RelativeToWeekMean'] = df['Future_Weeks_Over_80'] - df['Week_Mean_80']
     
     # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
@@ -1267,7 +1227,6 @@ def loop_through_historical_final_data(date_str):
     
     # 1. Calculate Weekly Win % Stats
     # Using .transform() to broadcast the group-level stats to every row in that group
-    print("  Calculating weekly Win % statistics (mean, max, min, std)...")
     df['Week_Mean_70_80'] = df.groupby(group_keys)['Future_Weeks_70_80'].transform('mean')
     df['Week_Max_70_80'] = df.groupby(group_keys)['Future_Weeks_70_80'].transform('max')
     df['Week_Min_70_80'] = df.groupby(group_keys)['Future_Weeks_70_80'].transform('min')
@@ -1277,7 +1236,6 @@ def loop_through_historical_final_data(date_str):
     df['Week_Std_70_80'] = df['Week_Std_70_80'].fillna(0)
     
     # 2. Calculate Team-Specific Relative Stats
-    print("  Calculating team-relative Win % stats...")
     df['Team_70_80_RelativeToWeekMean'] = df['Future_Weeks_70_80'] - df['Week_Mean_70_80']
     
     # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
@@ -1289,9 +1247,6 @@ def loop_through_historical_final_data(date_str):
     
     # This normalizes the rank based on the number of available teams that week
     df['70_80_Rank_Density'] = df['70_80_Rank'] / df['Num_Teams_This_Week']
-    
-    print("✅ Feature engineering complete.")
-    
     
     # Define group keys for weekly calculations
     group_keys = ['Year', 'Week']
@@ -1308,7 +1263,6 @@ def loop_through_historical_final_data(date_str):
     df['Week_Std_60_70'] = df['Week_Std_60_70'].fillna(0)
     
     # 2. Calculate Team-Specific Relative Stats
-    print("  Calculating team-relative Win % stats...")
     df['Team_60_70_RelativeToWeekMean'] = df['Future_Weeks_60_70'] - df['Week_Mean_60_70']
     
     # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
@@ -1321,7 +1275,6 @@ def loop_through_historical_final_data(date_str):
     # This normalizes the rank based on the number of available teams that week
     df['60_70_Rank_Density'] = df['60_70_Rank'] / df['Num_Teams_This_Week']
     
-    print("✅ Feature engineering complete.")
     
     
     # Define group keys for weekly calculations
@@ -1329,7 +1282,6 @@ def loop_through_historical_final_data(date_str):
     
     # 1. Calculate Weekly Win % Stats
     # Using .transform() to broadcast the group-level stats to every row in that group
-    print("  Calculating weekly Win % statistics (mean, max, min, std)...")
     df['Week_Mean_Top_Team'] = df.groupby(group_keys)['Future_Weeks_Top_Team'].transform('mean')
     df['Week_Max_Top_Team'] = df.groupby(group_keys)['Future_Weeks_Top_Team'].transform('max')
     df['Week_Min_Top_Team'] = df.groupby(group_keys)['Future_Weeks_Top_Team'].transform('min')
@@ -1339,7 +1291,6 @@ def loop_through_historical_final_data(date_str):
     df['Week_Std_Top_Team'] = df['Week_Std_Top_Team'].fillna(0)
     
     # 2. Calculate Team-Specific Relative Stats
-    print("  Calculating team-relative Win % stats...")
     df['Team_Top_Team_RelativeToWeekMean'] = df['Future_Weeks_Top_Team'] - df['Week_Mean_Top_Team']
     
     # Handle potential division by zero if Max_WinPct is 0 (unlikely, but safe)
