@@ -901,7 +901,7 @@ def loop_through_historical_final_data(date_str):
     # ... (The final date manipulation logic remains the same)
     pre_circa_dates = {2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019}
     is_not_in_pre_circa = ~home_df['Year'].isin(pre_circa_dates)
-    df = home_df[is_not_in_pre_circa]
+    df = home_df[is_not_in_pre_circa].copy()
     
     # Final date manipulation (e.g., correcting Thanksgiving/Christmas week numbers)
     # NOTE: The df.loc assignments must be run *after* the Calendar Date is populated.
