@@ -2572,7 +2572,7 @@ def loop_through_historical_final_data(date_str):
         # ── 1. Load sim results and filter to completed week ──────────────────
         sim_file = (
             f"nfl-power-ratings/final_sim_results_with_variance_week_"
-            f"{starting_week}_{target_year}.csv"
+            f"{last_played_week}_{target_year}.csv"
         )
 
         if not os.path.exists(sim_file):
