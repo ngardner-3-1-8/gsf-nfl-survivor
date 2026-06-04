@@ -2797,151 +2797,185 @@ def loop_through_historical_final_data(date_str):
             actual_data["Actual Home Team EV"] = None
 
 
-        # ── 5b. Calculate Win/Loss and Winnings for each bet type ─────────────────
+        # ── 5b. Calculate Win/Loss and P/L for each bet type ─────────────────────
         try:
             DEFAULT_UNIT_RISK = 110.0
             DEFAULT_UNIT_WIN  = 100.0
-        
+
+            # ── Helper functions ───────────────────────────────────────────────
+
             def spread_result(bet_team, home_team, home_pts, away_pts,
                               home_spread, away_spread):
                 """True=cover, False=no cover, None=push or no data."""
                 if pd.isna(home_pts) or pd.isna(away_pts):
                     return None
-                home_pts, away_pts = float(home_pts), float(away_pts)
+                home_pts = float(home_pts)
+                away_pts = float(away_pts)
                 if bet_team == home_team:
                     margin = (home_pts - away_pts) + float(home_spread)
                 else:
                     margin = (away_pts - home_pts) + float(away_spread)
-                if margin > 0:   return True
-                if margin < 0:   return False
+                if margin > 0:  return True
+                if margin < 0:  return False
                 return None  # push
-        
+
             def ml_result(bet_team, home_team, home_pts, away_pts):
                 """True=win, False=loss, None=tie or no data."""
                 if pd.isna(home_pts) or pd.isna(away_pts):
                     return None
-                home_pts, away_pts = float(home_pts), float(away_pts)
+                home_pts = float(home_pts)
+                away_pts = float(away_pts)
                 if home_pts == away_pts:
-                    return None
-                return (home_pts > away_pts) if bet_team == home_team else (away_pts > home_pts)
-        
+                    return None  # tie
+                return (home_pts > away_pts) if bet_team == home_team \
+                    else (away_pts > home_pts)
+
             def total_result(direction, total_pts, total_line):
                 """True=cover, False=no cover, None=push or no data."""
-                if pd.isna(total_pts) or pd.isna(total_line):
+                if total_pts is None or pd.isna(total_line):
                     return None
-                total_pts, total_line = float(total_pts), float(total_line)
                 d = str(direction).strip().lower()
-                if total_pts == total_line:
+                if d in ("no bet", "", "nan"):
                     return None
+                total_pts  = float(total_pts)
+                total_line = float(total_line)
+                if total_pts == total_line:
+                    return None  # push
                 if d == "over":  return total_pts > total_line
                 if d == "under": return total_pts < total_line
                 return None
-        
+
             def ml_profit(wager, moneyline, won):
-                if won is None: return 0.0
+                """Profit/loss from a moneyline bet."""
+                if won is None:
+                    return 0.0
                 ml = float(moneyline)
                 if won:
                     return wager * (100 / abs(ml)) if ml < 0 else wager * (ml / 100)
                 return -abs(wager)
-        
+
             def spread_total_profit(unit_risk, unit_win, won):
-                if won is None: return 0.0
+                """Profit/loss from a spread or total bet."""
+                if won is None:
+                    return 0.0
                 return float(unit_win) if won else -abs(float(unit_risk))
-        
+
             def result_label(won, has_scores):
+                """Human-readable result string."""
                 if not has_scores: return "Pending"
                 if won is None:    return "Push"
                 return "Win" if won else "Loss"
-        
-            # ── Bet type definitions ───────────────────────────────────────────────
-            # Each entry: label, type, bet_col, spread cols or ML col, wager cols
+
+            def get_val(row, key, default=DEFAULT_UNIT_RISK):
+                """
+                If key is a column name, return that row's value.
+                If key is already a number, return it directly.
+                Falls back to default on missing/null.
+                """
+                if isinstance(key, str) and key in row.index:
+                    v = row.get(key)
+                    return float(v) if pd.notna(v) else default
+                return key if isinstance(key, (int, float)) else default
+
+            # ── Bet configurations ─────────────────────────────────────────────
+            # All spread and total bets are evaluated against the SPORTSBOOK line.
+            # Model projections (Monte Carlo Total, Consensus spreads, etc.) are
+            # only used for edge calculation — never for win/loss evaluation.
+            # All moneyline profit calculations use the closing sportsbook moneyline.
+
             bet_configs = [
-                # ── Spread bets ───────────────────────────────────────────────────
+
+                # ── Spread bets ──────────────────────────────────────────────
                 {
-                    "label":      "GSF Spread",
-                    "type":       "spread",
-                    "bet_col":    "GSF Spread Bet",
-                    "home_spread":"Home Team Sportsbook Spread",
-                    "away_spread":"Away Team Sportsbook Spread",
-                    "unit_risk":  DEFAULT_UNIT_RISK,
-                    "unit_win":   DEFAULT_UNIT_WIN,
+                    "label":       "GSF Spread",
+                    "type":        "spread",
+                    "bet_col":     "GSF Spread Bet",
+                    "home_spread": "Home Team Sportsbook Spread",
+                    "away_spread": "Away Team Sportsbook Spread",
+                    "unit_risk":   DEFAULT_UNIT_RISK,
+                    "unit_win":    DEFAULT_UNIT_WIN,
                 },
                 {
-                    "label":      "MP Spread",
-                    "type":       "spread",
-                    "bet_col":    "Massey-Peabody Spread Bet",
-                    "home_spread":"Home Team Sportsbook Spread",
-                    "away_spread":"Away Team Sportsbook Spread",
-                    "unit_risk":  DEFAULT_UNIT_RISK,
-                    "unit_win":   DEFAULT_UNIT_WIN,
+                    "label":       "MP Spread",
+                    "type":        "spread",
+                    "bet_col":     "Massey-Peabody Spread Bet",
+                    "home_spread": "Home Team Sportsbook Spread",
+                    "away_spread": "Away Team Sportsbook Spread",
+                    "unit_risk":   DEFAULT_UNIT_RISK,
+                    "unit_win":    DEFAULT_UNIT_WIN,
                 },
                 {
-                    "label":      "Sim Spread",
-                    "type":       "spread",
-                    "bet_col":    "Monte Carlo Spread Bet",
-                    "home_spread":"Monte Carlo Home Team Spread",
-                    "away_spread":"Monte Carlo Away Team Spread",
-                    "unit_risk":  "MC Spread Unit Wager",
-                    "unit_win":   "MC Spread Unit to Win",
+                    "label":       "Sim Spread",
+                    "type":        "spread",
+                    "bet_col":     "Monte Carlo Spread Bet",
+                    "home_spread": "Home Team Sportsbook Spread",
+                    "away_spread": "Away Team Sportsbook Spread",
+                    "unit_risk":   "MC Spread Unit Wager",
+                    "unit_win":    "MC Spread Unit to Win",
                 },
                 {
-                    "label":      "Sim Spread (Kelly)",
-                    "type":       "spread",
-                    "bet_col":    "Monte Carlo Spread Bet",
-                    "home_spread":"Monte Carlo Home Team Spread",
-                    "away_spread":"Monte Carlo Away Team Spread",
-                    "unit_risk":  "MC Spread Kelly Wager",
-                    "unit_win":   "MC Spread Kelly To Win",
+                    "label":       "Sim Spread (Kelly)",
+                    "type":        "spread",
+                    "bet_col":     "Monte Carlo Spread Bet",
+                    "home_spread": "Home Team Sportsbook Spread",
+                    "away_spread": "Away Team Sportsbook Spread",
+                    "unit_risk":   "MC Spread Kelly Wager",
+                    "unit_win":    "MC Spread Kelly To Win",
                 },
                 {
-                    "label":      "Consensus Spread",
-                    "type":       "spread",
-                    "bet_col":    "Consensus Spread Bet",
-                    "home_spread":"Consensus Home Team Spread",
-                    "away_spread":"Consensus Away Team Spread",
-                    "unit_risk":  DEFAULT_UNIT_RISK,
-                    "unit_win":   DEFAULT_UNIT_WIN,
+                    "label":       "Consensus Spread",
+                    "type":        "spread",
+                    "bet_col":     "Consensus Spread Bet",
+                    "home_spread": "Home Team Sportsbook Spread",
+                    "away_spread": "Away Team Sportsbook Spread",
+                    "unit_risk":   DEFAULT_UNIT_RISK,
+                    "unit_win":    DEFAULT_UNIT_WIN,
                 },
-                # ── Moneyline bets ────────────────────────────────────────────────
+
+                # ── Moneyline bets ───────────────────────────────────────────
+                # All use closing sportsbook moneyline for profit calculation.
                 {
-                    "label":   "GSF Moneyline",
-                    "type":    "moneyline",
-                    "bet_col": "GSF Moneyline Bet",
+                    "label":     "GSF Moneyline",
+                    "type":      "moneyline",
+                    "bet_col":   "GSF Moneyline Bet",
                     "unit_risk": DEFAULT_UNIT_RISK,
                 },
                 {
-                    "label":   "MP Moneyline",
-                    "type":    "moneyline",
-                    "bet_col": "Massey-Peabody Moneyline Bet",
+                    "label":     "MP Moneyline",
+                    "type":      "moneyline",
+                    "bet_col":   "Massey-Peabody Moneyline Bet",
                     "unit_risk": DEFAULT_UNIT_RISK,
                 },
                 {
-                    "label":   "Sim Moneyline",
-                    "type":    "moneyline",
-                    "bet_col": "Monte Carlo Moneyline Bet",
+                    "label":     "Sim Moneyline",
+                    "type":      "moneyline",
+                    "bet_col":   "Monte Carlo Moneyline Bet",
                     "unit_risk": "MC ML Unit Wager",
                     "unit_win":  "MC ML Unit to Win",
                 },
                 {
-                    "label":   "Sim Moneyline (Kelly)",
-                    "type":    "moneyline",
-                    "bet_col": "Monte Carlo Moneyline Bet",
+                    "label":     "Sim Moneyline (Kelly)",
+                    "type":      "moneyline",
+                    "bet_col":   "Monte Carlo Moneyline Bet",
                     "unit_risk": "MC ML Kelly Wager",
                     "unit_win":  "MC ML Kelly To Win",
                 },
                 {
-                    "label":   "Consensus Moneyline",
-                    "type":    "moneyline",
-                    "bet_col": "Consensus Moneyline Bet",
+                    "label":     "Consensus Moneyline",
+                    "type":      "moneyline",
+                    "bet_col":   "Consensus Moneyline Bet",
                     "unit_risk": DEFAULT_UNIT_RISK,
                 },
-                # ── Total bets ────────────────────────────────────────────────────
+
+                # ── Total bets ───────────────────────────────────────────────
+                # Evaluated against Total Line (sportsbook O/U line).
+                # Direction comes from Monte Carlo Total Bet ("Over"/"Under"/"No Bet").
                 {
                     "label":         "Sim Total",
                     "type":          "total",
                     "bet_col":       "Monte Carlo Total Bet",
-                    "direction_col": "MC Bet Direction",
-                    "total_line":    "Monte Carlo Total",
+                    "direction_col": "Monte Carlo Total Bet",
+                    "total_line":    "Total Line",
                     "unit_risk":     "MC Total Unit Wager",
                     "unit_win":      "MC Total Unit to Win",
                 },
@@ -2949,83 +2983,95 @@ def loop_through_historical_final_data(date_str):
                     "label":         "Sim Total (Kelly)",
                     "type":          "total",
                     "bet_col":       "Monte Carlo Total Bet",
-                    "direction_col": "MC Bet Direction",
-                    "total_line":    "Monte Carlo Total",
+                    "direction_col": "Monte Carlo Total Bet",
+                    "total_line":    "Total Line",
                     "unit_risk":     "MC Total Kelly Wager",
                     "unit_win":      "MC Total Kelly To Win",
                 },
             ]
-        
-            def get_val(row, key, default=DEFAULT_UNIT_RISK):
-                """Get value from row if key is a column name, else return the key as-is."""
-                if isinstance(key, str) and key in row.index:
-                    v = row.get(key)
-                    return float(v) if pd.notna(v) else default
-                return key if isinstance(key, (int, float)) else default
-        
+
+            # ── Per-row evaluation ─────────────────────────────────────────────
             for config in bet_configs:
                 label    = config["label"]
                 bet_col  = config["bet_col"]
                 bet_type = config["type"]
                 wl_col   = f"{label} Win/Loss"
                 pnl_col  = f"{label} P/L"
-        
-                actual_data[wl_col] = "Pending"
+
+                actual_data[wl_col]  = "Pending"
                 actual_data[pnl_col] = 0.0
-        
+
                 if bet_col not in actual_data.columns:
                     print(f"   ⚠️  {label}: column '{bet_col}' not found — skipping")
                     continue
-        
+
                 for idx, row in actual_data.iterrows():
                     bet_team  = row.get(bet_col)
                     home_team = row.get("Home Team")
                     home_pts  = row.get("Home Team Points")
                     away_pts  = row.get("Away Team Points")
                     has_scores = pd.notna(home_pts) and pd.notna(away_pts)
-        
-                    if pd.isna(bet_team) or str(bet_team).strip() == "":
+
+                    # No bet recommended for this game
+                    if pd.isna(bet_team) or str(bet_team).strip().lower() in ("", "nan", "no bet"):
                         actual_data.loc[idx, wl_col]  = "No Bet"
                         actual_data.loc[idx, pnl_col] = 0.0
                         continue
-        
+
                     if bet_type == "spread":
                         home_s = row.get(config["home_spread"], 0)
                         away_s = row.get(config["away_spread"], 0)
-                        won    = spread_result(bet_team, home_team, home_pts, away_pts, home_s, away_s)
+                        won    = spread_result(
+                            bet_team, home_team, home_pts, away_pts,
+                            home_s, away_s
+                        )
                         unit_risk = get_val(row, config["unit_risk"])
-                        unit_win  = get_val(row, config.get("unit_win", DEFAULT_UNIT_WIN), DEFAULT_UNIT_WIN)
+                        unit_win  = get_val(row, config.get("unit_win", DEFAULT_UNIT_WIN),
+                                           DEFAULT_UNIT_WIN)
                         profit = spread_total_profit(unit_risk, unit_win, won)
-        
+
                     elif bet_type == "moneyline":
                         won = ml_result(bet_team, home_team, home_pts, away_pts)
-                        # Use closing sportsbook moneyline for the bet team
                         ml_col = ("Home Team Sportsbook Moneyline"
                                   if bet_team == home_team
                                   else "Away Team Sportsbook Moneyline")
-                        ml = row.get(ml_col)
+                        ml        = row.get(ml_col)
                         unit_risk = get_val(row, config["unit_risk"])
-                        profit = ml_profit(unit_risk, ml, won) if pd.notna(ml) else 0.0
-        
+                        profit    = ml_profit(unit_risk, ml, won) \
+                            if pd.notna(ml) else 0.0
+
                     elif bet_type == "total":
-                        direction  = row.get(config["direction_col"], "")
+                        direction = row.get(config["direction_col"], "")
+
+                        # No bet for this game
+                        if str(direction).strip().lower() in ("no bet", "", "nan"):
+                            actual_data.loc[idx, wl_col]  = "No Bet"
+                            actual_data.loc[idx, pnl_col] = 0.0
+                            continue
+
                         total_line = row.get(config["total_line"])
                         total_pts  = (
-                            (float(home_pts) + float(away_pts)) if has_scores else None
+                            float(home_pts) + float(away_pts)
+                            if has_scores and pd.notna(home_pts) and pd.notna(away_pts)
+                            else None
                         )
-                        won = total_result(direction, total_pts, total_line)
+                        won       = total_result(direction, total_pts, total_line)
                         unit_risk = get_val(row, config["unit_risk"])
-                        unit_win  = get_val(row, config.get("unit_win", DEFAULT_UNIT_WIN), DEFAULT_UNIT_WIN)
-                        profit = spread_total_profit(unit_risk, unit_win, won)
-        
+                        unit_win  = get_val(row, config.get("unit_win", DEFAULT_UNIT_WIN),
+                                           DEFAULT_UNIT_WIN)
+                        profit    = spread_total_profit(unit_risk, unit_win, won)
+
                     else:
-                        won, profit = None, 0.0
-        
+                        won    = None
+                        profit = 0.0
+
                     actual_data.loc[idx, wl_col]  = result_label(won, has_scores)
                     actual_data.loc[idx, pnl_col] = round(profit, 2)
-        
-            # ── Summary printout ───────────────────────────────────────────────────
+
+            # ── Summary printout ───────────────────────────────────────────────
             print(f"\n   📊 Betting Results — Week {last_played_week} {target_year}")
+            print(f"   {'Model':<28} {'Record':<28} P/L")
+            print(f"   {'-'*28} {'-'*28} {'-'*12}")
             for config in bet_configs:
                 label   = config["label"]
                 wl_col  = f"{label} Win/Loss"
@@ -3038,17 +3084,16 @@ def loop_through_historical_final_data(date_str):
                 pending = (actual_data[wl_col] == "Pending").sum()
                 no_bet  = (actual_data[wl_col] == "No Bet").sum()
                 total_pl = actual_data[pnl_col].sum()
-                status  = f"{wins}W-{losses}L"
-                if pushes:  status += f"-{pushes}P"
-                if pending: status += f" ({pending} pending)"
-                if no_bet:  status += f" ({no_bet} no bet)"
-                print(f"      {label:<25} {status:<30} P/L: ${total_pl:+.2f}")
-        
+                record  = f"{wins}W-{losses}L"
+                if pushes:  record += f"-{pushes}P"
+                if pending: record += f" ({pending} pending)"
+                if no_bet:  record += f" ({no_bet} no bet)"
+                print(f"   {label:<28} {record:<28} ${total_pl:+.2f}")
+
         except Exception as e:
             print(f"   ⚠️  Win/Loss calculation failed: {e}")
             import traceback
             traceback.print_exc()
-
         # ── 5. Add metadata columns ────────────────────────────────────────────
         actual_data["Data_Type"]   = "Final"
         actual_data["Week_Final"]  = last_played_week
