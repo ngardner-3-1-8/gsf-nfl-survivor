@@ -2520,6 +2520,38 @@ def loop_through_historical_final_data(date_str):
               — full season append (idempotent — safe to re-run)
         """
 
+
+        # Full name lookup — nflreadpy abbreviation → sim file full team name
+        ABBR_TO_FULL = {
+            "ARI": "Arizona Cardinals",    "ATL": "Atlanta Falcons",
+            "BAL": "Baltimore Ravens",     "BUF": "Buffalo Bills",
+            "CAR": "Carolina Panthers",    "CHI": "Chicago Bears",
+            "CIN": "Cincinnati Bengals",   "CLE": "Cleveland Browns",
+            "DAL": "Dallas Cowboys",       "DEN": "Denver Broncos",
+            "DET": "Detroit Lions",        "GB":  "Green Bay Packers",
+            "HOU": "Houston Texans",       "IND": "Indianapolis Colts",
+            "JAX": "Jacksonville Jaguars", "JAC": "Jacksonville Jaguars",
+            "KC":  "Kansas City Chiefs",   "LA":  "Los Angeles Rams",
+            "LAC": "Los Angeles Chargers", "LAR": "Los Angeles Rams",
+            "LV":  "Las Vegas Raiders",    "LVR": "Las Vegas Raiders",
+            "MIA": "Miami Dolphins",       "MIN": "Minnesota Vikings",
+            "NE":  "New England Patriots", "NO":  "New Orleans Saints",
+            "NOR": "New Orleans Saints",   "NYG": "New York Giants",
+            "NYJ": "New York Jets",        "PHI": "Philadelphia Eagles",
+            "PIT": "Pittsburgh Steelers",  "SEA": "Seattle Seahawks",
+            "SF":  "San Francisco 49ers",  "SFO": "San Francisco 49ers",
+            "TB":  "Tampa Bay Buccaneers", "TAM": "Tampa Bay Buccaneers",
+            "TEN": "Tennessee Titans",     "WAS": "Washington Commanders",
+            "WSH": "Washington Commanders","GNB": "Green Bay Packers",
+            "KAN": "Kansas City Chiefs",
+        }
+        
+        # Reverse: full name → abbreviation (for pick% lookup)
+        FULL_TO_ABBR = {v: k for k, v in ABBR_TO_FULL.items()
+                        if k in {"ARI","ATL","BAL","BUF","CAR","CHI","CIN","CLE",
+                                 "DAL","DEN","DET","GB","HOU","IND","JAX","KC",
+                                 "LA","LAC","LV","MIA","MIN","NE","NO","NYG",
+                                 "NYJ","PHI","PIT","SEA","SF","TB","TEN","WAS"}}
         # ── 1. Load sim results and filter to completed week ──────────────────
         sim_file = (
             f"nfl-power-ratings/final_sim_results_with_variance_week_"
@@ -2575,8 +2607,8 @@ def loop_through_historical_final_data(date_str):
                     home_abbr = str(sched_row.get("home_team", "")).upper()
 
                     # Convert abbreviations to full team names
-                    away_full = team_dictionary.get(away_abbr, away_abbr)
-                    home_full = team_dictionary.get(home_abbr, home_abbr)
+                    away_full = ABBR_TO_FULL.get(away_abbr, away_abbr)
+                    home_full = ABBR_TO_FULL.get(home_abbr, home_abbr)
 
                     game_mask = (
                         (actual_data["Away Team"] == away_full) &
@@ -2625,6 +2657,17 @@ def loop_through_historical_final_data(date_str):
                     replaced_odds += 1
 
                 print(f"   ✅ Updated odds/scores for {replaced_odds} games from nflreadpy")
+                # Debug — show unmatched games if any
+                if replaced_odds < len(sched_week):
+                    for _, r in sched_week.iterrows():
+                        away = ABBR_TO_FULL.get(str(r.get('away_team', '')).upper(), '?')
+                        home = ABBR_TO_FULL.get(str(r.get('home_team', '')).upper(), '?')
+                        game_mask = (
+                            (actual_data["Away Team"] == away) &
+                            (actual_data["Home Team"] == home)
+                        )
+                        if not game_mask.any():
+                            print(f"   ❌ No match: {away} @ {home} (raw: {r.get('away_team')} @ {r.get('home_team')})")
 
         except Exception as e:
             print(f"   ⚠️  nflreadpy pull failed: {e}")
@@ -2649,13 +2692,10 @@ def loop_through_historical_final_data(date_str):
                         pick_pct_map[team_abbr] = float(pick_pct)
 
                 if pick_pct_map:
-                    # Convert full team names → abbreviations for lookup
-                    reverse_name_map = {v: k for k, v in team_dictionary.items()}
-
                     def get_pick(team_full_name):
-                        abbr = reverse_name_map.get(team_full_name, team_full_name)
+                        abbr = FULL_TO_ABBR.get(team_full_name, team_full_name)
                         return pick_pct_map.get(abbr, None)
-
+                
                     away_pcts = actual_data["Away Team"].apply(get_pick)
                     home_pcts = actual_data["Home Team"].apply(get_pick)
 
