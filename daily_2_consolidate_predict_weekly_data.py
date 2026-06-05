@@ -1757,6 +1757,7 @@ def loop_through_simulations(date_str):
         df = schedule_df_with_odds_df
 
         print("CHECKING ODDS ISSUES")
+        print(df)
         print(df['total_line'].head(32))
             
     
