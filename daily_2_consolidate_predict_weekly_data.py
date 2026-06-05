@@ -1243,6 +1243,9 @@ def loop_through_simulations(date_str):
                 # 2. Load Schedule and Team Data
                 df_schedule = nfl.load_schedules([season])
                 df_teams = nfl.load_teams()
+
+                df_schedule = df_schedule.to_pandas()
+                df_teams = df_teams.to_pandas()
                 
                 # Create a mapping from Abbreviation (KC) to Full Name (Kansas City Chiefs)
                 # to match The Odds API format
