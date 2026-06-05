@@ -1757,8 +1757,7 @@ def loop_through_simulations(date_str):
         df = schedule_df_with_odds_df
 
         print("CHECKING ODDS ISSUES")
-        print(df)
-        print(df['Total'].head(32))
+        print(df['Total Line'].head(32))
             
     
         df["Away Team Fair Odds"] = (
