@@ -1528,44 +1528,61 @@ def loop_through_simulations(date_str):
             # Attempt to update CSV data with scraped odds from DraftKings
             # This block only executes if live_api_odds_df is not empty
             if not live_api_odds_df.empty:
+                matched = 0
+                unmatched = 0
+            
                 for index, row in csv_df.iterrows():
+                    game_label = f"{row['Away Team']} @ {row['Home Team']}"
+            
                     matching_row = live_api_odds_df[
                         (live_api_odds_df['Away Team'] == row['Away Team']) &
                         (live_api_odds_df['Home Team'] == row['Home Team'])
                     ]
             
                     if matching_row.empty:
+                        unmatched += 1
+                        print(f"   ⚠️  No odds match found for: {game_label}")
                         continue
             
+                    matched += 1
                     m = matching_row.iloc[0]
             
-                    # Away Moneyline — only apply if valid American odds range
+                    # Away Moneyline
                     away_ml = m.get('Away Odds')
                     if pd.notna(away_ml) and away_ml != 0:
                         csv_df.loc[index, 'Away Team Sportsbook Moneyline'] = away_ml
+                    else:
+                        print(f"   ⚠️  {game_label}: Away moneyline missing or zero (got {away_ml})")
             
-                    # Home Moneyline — only apply if valid American odds range
+                    # Home Moneyline
                     home_ml = m.get('Home Odds')
                     if pd.notna(home_ml) and home_ml != 0:
                         csv_df.loc[index, 'Home Team Sportsbook Moneyline'] = home_ml
+                    else:
+                        print(f"   ⚠️  {game_label}: Home moneyline missing or zero (got {home_ml})")
             
-                    # Away Spread — only apply if non-null and reasonable range (-60 to +60)
+                    # Away Spread
                     away_spread = m.get('Away Spread')
                     if pd.notna(away_spread) and abs(away_spread) <= 60:
                         csv_df.loc[index, 'Away Team Sportsbook Spread'] = away_spread
+                    else:
+                        print(f"   ⚠️  {game_label}: Away spread invalid or out of range (got {away_spread})")
             
-                    # Home Spread — only apply if non-null and reasonable range (-60 to +60)
+                    # Home Spread
                     home_spread = m.get('Home Spread')
                     if pd.notna(home_spread) and abs(home_spread) <= 60:
                         csv_df.loc[index, 'Home Team Sportsbook Spread'] = home_spread
+                    else:
+                        print(f"   ⚠️  {game_label}: Home spread invalid or out of range (got {home_spread})")
             
-                    # Total Line — only apply if positive and reasonable NFL range (20 to 80)
+                    # Total Line
                     total = m.get('Total')
                     if pd.notna(total) and 20 <= float(total) <= 80:
                         csv_df.loc[index, 'Total Line'] = total
-                    
-                    # Favorite/Underdog — derive from spread, not moneyline
-                    # Spread is the correct signal; moneyline -110 is standard juice for both sides
+                    else:
+                        print(f"   ⚠️  {game_label}: Total line missing or out of range (got {total})")
+            
+                    # Favorite/Underdog — derive from spread, fall back to moneyline
                     if pd.notna(home_spread):
                         if home_spread < 0:
                             csv_df.loc[index, 'Sportsbook Favorite'] = csv_df.loc[index, 'Home Team']
@@ -1574,18 +1591,35 @@ def loop_through_simulations(date_str):
                             csv_df.loc[index, 'Sportsbook Favorite'] = csv_df.loc[index, 'Away Team']
                             csv_df.loc[index, 'Sportsbook Underdog'] = csv_df.loc[index, 'Home Team']
                         else:
-                            # Pick 'em — no spread advantage
+                            csv_df.loc[index, 'Sportsbook Favorite'] = 'Pick Em'
+                            csv_df.loc[index, 'Sportsbook Underdog'] = 'Pick Em'
+                            print(f"   📋 {game_label}: Pick Em — no spread advantage")
+                    elif pd.notna(home_ml) and pd.notna(away_ml):
+                        print(f"   📋 {game_label}: No spread — using moneyline for favorite/underdog")
+                        if home_ml < away_ml:
+                            csv_df.loc[index, 'Sportsbook Favorite'] = csv_df.loc[index, 'Home Team']
+                            csv_df.loc[index, 'Sportsbook Underdog'] = csv_df.loc[index, 'Away Team']
+                        elif away_ml < home_ml:
+                            csv_df.loc[index, 'Sportsbook Favorite'] = csv_df.loc[index, 'Away Team']
+                            csv_df.loc[index, 'Sportsbook Underdog'] = csv_df.loc[index, 'Home Team']
+                        else:
                             csv_df.loc[index, 'Sportsbook Favorite'] = 'Pick Em'
                             csv_df.loc[index, 'Sportsbook Underdog'] = 'Pick Em'
                     else:
-                        # No spread available — fall back to moneyline
-                        if pd.notna(home_ml) and pd.notna(away_ml):
-                            if home_ml < away_ml:  # more negative = bigger favorite
-                                csv_df.loc[index, 'Sportsbook Favorite'] = csv_df.loc[index, 'Home Team']
-                                csv_df.loc[index, 'Sportsbook Underdog'] = csv_df.loc[index, 'Away Team']
-                            elif away_ml < home_ml:
-                                csv_df.loc[index, 'Sportsbook Favorite'] = csv_df.loc[index, 'Away Team']
-                                csv_df.loc[index, 'Sportsbook Underdog'] = csv_df.loc[index, 'Home Team']
+                        print(f"   ⚠️  {game_label}: Could not determine favorite — no spread or moneyline available")
+            
+                # Summary
+                print(f"\n   📊 Odds matching summary:")
+                print(f"      ✅ Matched:   {matched} games")
+                print(f"      ❌ Unmatched: {unmatched} games")
+                total_with_ml  = csv_df['Home Team Sportsbook Moneyline'].notna().sum()
+                total_with_spd = csv_df['Home Team Sportsbook Spread'].notna().sum()
+                total_with_tot = csv_df['Total Line'].notna().sum()
+                print(f"      💰 Games with moneyline: {total_with_ml}")
+                print(f"      📏 Games with spread:    {total_with_spd}")
+                print(f"      🎯 Games with total:     {total_with_tot}")
+            else:
+                print(f"   ⚠️  live_api_odds_df is empty — no odds applied to main DataFrame")
         
     
     
@@ -1723,7 +1757,7 @@ def loop_through_simulations(date_str):
         df = schedule_df_with_odds_df
 
         print("CHECKING ODDS ISSUES")
-        print(df['total_line')
+        print(df['total_line'].head(32))
             
     
         df["Away Team Fair Odds"] = (
