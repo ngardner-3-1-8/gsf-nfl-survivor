@@ -1413,7 +1413,8 @@ def loop_through_historical_final_data(date_str):
         
         
         FIRST_PICK_CELL_INDEX = 2
-        LAST_PICK_CELL_INDEX = FIRST_PICK_CELL_INDEX + NUM_WEEKS_TO_KEEP # The index up to (but not including) which we scrape
+########        LAST_PICK_CELL_INDEX = FIRST_PICK_CELL_INDEX + NUM_WEEKS_TO_KEEP # The index up to (but not including) which we scrape
+        LAST_PICK_CELL_INDEX = FIRST_PICK_CELL_INDEX + len(ALL_20_WEEK_HEADERS) # The index up to (but not including) which we scrape
     
         all_entries_data = []
         
