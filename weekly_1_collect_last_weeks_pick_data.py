@@ -1523,7 +1523,7 @@ def loop_through_historical_final_data(date_str):
         weeks_to_check = WEEKS_TO_KEEP 
     
         for entry in all_entries_data:
-            for week_header in weeks_to_check:
+            for week_header in ALL_20_WEEK_HEADERS:
                 # If the pick is empty (set as "" in the scraping loop), fill with "ELIMINATED"
                 if entry.get(week_header) == "":
                     entry[week_header] = "ELIMINATED"
