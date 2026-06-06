@@ -1408,7 +1408,9 @@ def loop_through_historical_final_data(date_str):
         # The actual headers to use for the CSV output (Entry_Name, Total_Wins, and weeks up to starting_week - 1)
         WEEKS_TO_KEEP = ALL_20_WEEK_HEADERS########[:NUM_WEEKS_TO_KEEP] 
         FIXED_HEADERS = ["EntryName", "Total_Wins"]
-        COLUMN_HEADERS = FIXED_HEADERS + WEEKS_TO_KEEP
+########        COLUMN_HEADERS = FIXED_HEADERS + WEEKS_TO_KEEP
+        COLUMN_HEADERS = FIXED_HEADERS + ALL_20_WEEK_HEADERS
+        
         
         FIRST_PICK_CELL_INDEX = 2
         LAST_PICK_CELL_INDEX = FIRST_PICK_CELL_INDEX + NUM_WEEKS_TO_KEEP # The index up to (but not including) which we scrape
