@@ -1522,7 +1522,8 @@ def loop_through_historical_final_data(date_str):
         print(f"Applying 'ELIMINATED' status for empty picks in Week_1 through Week_{NUM_WEEKS_TO_KEEP}...")
         
         # Check only the weeks we are keeping
-        weeks_to_check = WEEKS_TO_KEEP 
+########        weeks_to_check = WEEKS_TO_KEEP 
+        weeks_to_check = ALL_20_WEEK_HEADERS
     
         for entry in all_entries_data:
             for week_header in ALL_20_WEEK_HEADERS:
