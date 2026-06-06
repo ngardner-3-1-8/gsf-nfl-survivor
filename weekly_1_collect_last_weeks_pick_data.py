@@ -137,9 +137,20 @@ def loop_through_historical_final_data(date_str):
     current_year_plus_1 = current_year + 1
     
     print(f"✅ Final Configuration -> Year: {current_year} | Starting Week: {starting_week}")
-    
-    MAX_PAGES = 187 # Based on user input, scrape pages 1 through 187
-    # The season parameter used in the URL
+    if target_year == 2026:
+        MAX_PAGES = 225    
+    elif target_year == 2025:
+        MAX_PAGES = 187
+    elif target_year == 2024:
+        MAX_PAGES = 142
+    elif target_year == 2023:
+        MAX_PAGES = 92
+    elif target_year == 2022:
+        MAX_PAGES = 61
+    elif target_year == 2021:
+        MAX_PAGES = 40
+    elif target_year == 2020:
+        MAX_PAGES = 13
     
     circa_2020_entries = 1373
     circa_2021_entries = 4071
@@ -147,6 +158,7 @@ def loop_through_historical_final_data(date_str):
     circa_2023_entries = 9234
     circa_2024_entries = 14221
     circa_2025_entries = 18718
+    circa_2026_entries = 22500
     # ==============================================================================
     # SECTION 1: SURVIVORGRID.COM SCRAPING (UNCHANGED - nflreadpy CANNOT DO THIS)
     # ==============================================================================
@@ -1394,7 +1406,7 @@ def loop_through_historical_final_data(date_str):
         ]
     
         # The actual headers to use for the CSV output (Entry_Name, Total_Wins, and weeks up to starting_week - 1)
-        WEEKS_TO_KEEP = ALL_20_WEEK_HEADERS[:NUM_WEEKS_TO_KEEP] 
+        WEEKS_TO_KEEP = ALL_20_WEEK_HEADERS########[:NUM_WEEKS_TO_KEEP] 
         FIXED_HEADERS = ["EntryName", "Total_Wins"]
         COLUMN_HEADERS = FIXED_HEADERS + WEEKS_TO_KEEP
         
@@ -1567,7 +1579,8 @@ def loop_through_historical_final_data(date_str):
         map_ = {
             2020: circa_2020_entries, 2021: circa_2021_entries,
             2022: circa_2022_entries, 2023: circa_2023_entries,
-            2024: circa_2024_entries, 2025: circa_2025_entries
+            2024: circa_2024_entries, 2025: circa_2025_entries,
+            2026: circa_2026_entries
         }
         return map_.get(year, 0)
     
