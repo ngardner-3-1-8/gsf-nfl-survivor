@@ -1550,7 +1550,7 @@ def loop_through_historical_final_data(date_str):
         if 'getAuth' in globals(): # A check for the canvas environment
             print("Note: Running as a standalone Python script, not using Firebase initialization.")
         
-        scrape_circa_survivor_picks()
+########        scrape_circa_survivor_picks()
     
     # --- User Provided Data ---
     team_dictionary = {
