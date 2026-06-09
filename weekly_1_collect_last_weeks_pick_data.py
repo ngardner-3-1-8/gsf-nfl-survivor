@@ -184,7 +184,7 @@ def loop_through_historical_final_data(date_str):
     
     # 3. Apply Adjustments
     # Use separate 'if' statements if you want them to be additive (+2 total)
-    if target_year == 2020
+    if target_year == 2020:
         if today >= two_days_after_thanksgiving:
             print(f"Detected: Date is after {current_year} Thanksgiving. +1 to NUM_WEEKS_TO_KEEP.")
             NUM_WEEKS_TO_KEEP += 1
