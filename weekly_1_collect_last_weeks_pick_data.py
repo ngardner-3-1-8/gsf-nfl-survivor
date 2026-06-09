@@ -50,11 +50,11 @@ def loop_through_historical_final_data(date_str):
                     # Reload schedule for the adjusted year so we can calculate the week correctly below
                     schedule = nfl.load_schedules([target_year])
                     reg_season_games = schedule[schedule['game_type'] == 'REG']
-                        print("reg season games filtered successfully")
-                        if not reg_season_games.empty:
-                            # Find the very first game date of the season
-                            first_game_date = pd.to_datetime(reg_season_games['gameday'].min())
-                            print(f"first game date: {first_game_date}")
+                    print("reg season games filtered successfully")
+                    if not reg_season_games.empty:
+                        # Find the very first game date of the season
+                        first_game_date = pd.to_datetime(reg_season_games['gameday'].min())
+                        print(f"first game date: {first_game_date}")
 
             # 1. Get the latest date for each week
             week_end_dates = schedule_df.groupby('Week')['Date'].max()
