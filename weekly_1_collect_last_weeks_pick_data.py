@@ -184,13 +184,23 @@ def loop_through_historical_final_data(date_str):
     
     # 3. Apply Adjustments
     # Use separate 'if' statements if you want them to be additive (+2 total)
-    if today >= two_days_after_thanksgiving:
-        print(f"Detected: Date is after {current_year} Thanksgiving. +1 to NUM_WEEKS_TO_KEEP.")
-        NUM_WEEKS_TO_KEEP += 1
-    
-    if today >= christmas_season_cutoff:
-        print(f"Detected: Date is after {current_year} Christmas. +1 to NUM_WEEKS_TO_KEEP.")
-        NUM_WEEKS_TO_KEEP += 1
+    if target_year == 2020
+        if today >= two_days_after_thanksgiving:
+            print(f"Detected: Date is after {current_year} Thanksgiving. +1 to NUM_WEEKS_TO_KEEP.")
+            NUM_WEEKS_TO_KEEP += 1
+            starting_week += 1
+            last_played_week += 1
+    else:
+        if today >= two_days_after_thanksgiving:
+            print(f"Detected: Date is after {current_year} Thanksgiving. +1 to NUM_WEEKS_TO_KEEP.")
+            NUM_WEEKS_TO_KEEP += 1
+            starting_week += 1
+            last_played_week += 1
+        if today >= christmas_season_cutoff:
+            print(f"Detected: Date is after {current_year} Christmas. +1 to NUM_WEEKS_TO_KEEP.")
+            NUM_WEEKS_TO_KEEP += 1
+            starting_week += 1
+            last_played_week += 1
     
     print(f"Final NUM_WEEKS_TO_KEEP: {NUM_WEEKS_TO_KEEP}")
     
@@ -3171,9 +3181,9 @@ if __name__ == "__main__":
 #        "12/10/2025", 
 #        "12/17/2025", 
 #        "12/24/2025", 
-        "12/26/2025", 
-        "12/31/2025",
-        "01/06/2026",
+#        "12/26/2025", 
+#        "12/31/2025",
+#        "01/06/2026",
         
 #        "09/04/2024", 
 #        "09/11/2024", 
@@ -3189,7 +3199,7 @@ if __name__ == "__main__":
 #        "11/20/2024", 
 #        "11/27/2024", 
 #        "11/30/2024", 
-#        "12/04/2024", 
+        "12/04/2024", 
 #        "12/11/2024", 
 #        "12/18/2024", 
 #        "12/24/2024", 
