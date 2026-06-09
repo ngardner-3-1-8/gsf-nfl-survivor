@@ -49,10 +49,28 @@ def loop_through_historical_final_data(date_str):
                     print(f"Today ({today.date()}) is before the first game ({first_game_date.date()}). dropping year by 1.")
                     # Reload schedule for the adjusted year so we can calculate the week correctly below
                     schedule = nfl.load_schedules([target_year])
+                    reg_season_games = schedule[schedule['game_type'] == 'REG']
+                        print("reg season games filtered successfully")
+                        if not reg_season_games.empty:
+                            # Find the very first game date of the season
+                            first_game_date = pd.to_datetime(reg_season_games['gameday'].min())
+                            print(f"first game date: {first_game_date}")
+
+            # 1. Get the latest date for each week
+            week_end_dates = schedule_df.groupby('Week')['Date'].max()
             
+            # 2. Filter for weeks where the end date is today or in the past
+            nfl_completed_weeks = week_end_dates[week_end_dates <= today]
+            
+            # 3. Safely get the last played week number, defaulting to 0 if the season hasn't started
+            if not nfl_completed_weeks.empty:
+                nfl_last_played_week = nfl_completed_weeks.idxmax()
+            else:
+                nfl_last_played_week = 0  # Or None, depending on how you want to handle it
+                
             # 4. Calculate the Current Week
             # We find the latest game that has happened to determine "current" week
-            games_played = schedule[
+            games_played = reg_season_games[
                 pd.to_datetime(schedule['gameday']) <= pd.to_datetime(today)
             ]
             
@@ -2611,7 +2629,7 @@ def loop_through_historical_final_data(date_str):
             schedule = nfl.load_schedules([target_year])
             schedule = schedule.to_pandas() if hasattr(schedule, 'to_pandas') else schedule
 
-            sched_week = schedule[schedule["week"] == last_played_week].copy()
+            sched_week = schedule[schedule["week"] == nfl_last_played_week].copy()
 
             if sched_week.empty:
                 print(f"   ⚠️  No nflreadpy data found for week {last_played_week}")
