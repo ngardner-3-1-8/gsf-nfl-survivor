@@ -1422,7 +1422,7 @@ def loop_through_historical_final_data(date_str):
     #df2['Calendar Date'] = pd.to_datetime(df2['Calendar Date'], format='%Y-%m-%d %H:%M:%S')
     #df2['Calendar Date_String'] = df2['Calendar Date'].dt.strftime('%m/%d/%Y')
     
-    df.to_csv(f"contest-historical-data/Circa_historical_data_{current_year}.csv", index=False)
+    df.to_csv(f"contest-historical-data/Circa_historical_data_{target_year}.csv", index=False)
     
     df = pd.concat([df2, df], ignore_index=True)
     
@@ -1434,9 +1434,7 @@ def loop_through_historical_final_data(date_str):
     
     df = df.drop_duplicates()
     
-    df.to_csv("contest-historical-data/Circa_historical_data.csv", index=False)
-    df.to_csv(f"contest-historical-data/Circa_historical_data.csv", index=False)
-    
+    df.to_csv("contest-historical-data/Circa_historical_data.csv", index=False)    
     
     def scrape_circa_survivor_picks():
         """
@@ -1625,7 +1623,7 @@ def loop_through_historical_final_data(date_str):
     }
     
     # --- File Names ---
-    historical_data_file = f"contest-historical-data/Circa_historical_data_{current_year}.csv"
+    historical_data_file = f"contest-historical-data/Circa_historical_data_{target_year}.csv"
     ####historical_data_file = "contest-historical-data/Circa_historical_data.csv"
     
     
@@ -1633,7 +1631,7 @@ def loop_through_historical_final_data(date_str):
     pick_data_base_path = "circa-pick-history/"
     
     ####output_file = f"contest-historical-data/Circa_historical_data.csv"
-    output_file = f"contest-historical-data/Circa_historical_data_{current_year}.csv"
+    output_file = f"contest-historical-data/Circa_historical_data_{target_year}.csv"
     
     # --- Correction: Use the exact string the scraper uses for eliminated entries ---
     ELIMINATED_MARKER = "ELIMINATED"
@@ -1888,7 +1886,7 @@ def loop_through_historical_final_data(date_str):
     if __name__ == '__main__':
         update_historical_data()
     
-    df = pd.read_csv(f'contest-historical-data/Circa_historical_data_{current_year}.csv')
+    df = pd.read_csv(f'contest-historical-data/Circa_historical_data_{target_year}.csv')
     # Define group keys for weekly calculations
     group_keys = ['Year', 'Week']
     
@@ -1919,7 +1917,7 @@ def loop_through_historical_final_data(date_str):
     
     print("✅ Feature engineering complete.")
     
-    df.to_csv(f'contest-historical-data/Circa_historical_data_{current_year}.csv', index = False)
+    df.to_csv(f'contest-historical-data/Circa_historical_data_{target_year}.csv', index = False)
     
     def process_game_data(input_path):
         """
@@ -2160,7 +2158,7 @@ def loop_through_historical_final_data(date_str):
     
         print("EV calculations complete for all seasons.")
     
-        csv_df = pd.read_csv(f'contest-historical-data/Circa_historical_data_{current_year}.csv')
+        csv_df = pd.read_csv(f'contest-historical-data/Circa_historical_data_{target_year}.csv')
         csv_df = csv_df[csv_df['Year'] == current_year]
     ####    csv_df = pd.read_csv(f'contest-historical-data/Circa_historical_data.csv')
         merge_cols = ['Team', 'Opponent', 'Week', 'Year']
@@ -2189,7 +2187,7 @@ def loop_through_historical_final_data(date_str):
         csv_df['EV'] = merged_2['EV_from_df2'].combine_first(csv_df['EV'])
     
         # Save to a CSV
-        output_filename = f"contest-historical-data/Circa_historical_data_{current_year}.csv"
+        output_filename = f"contest-historical-data/Circa_historical_data_{target_year}.csv"
     ####    output_filename = f"contest-historical-data/Circa_historical_data.csv"
         csv_df.to_csv(output_filename, index=False)
         print(f"Updated data saved to {output_filename}")
@@ -2197,7 +2195,7 @@ def loop_through_historical_final_data(date_str):
         return df
     
     
-    initial_input_filename = f"contest-historical-data/Circa_historical_data_{current_year}.csv"
+    initial_input_filename = f"contest-historical-data/Circa_historical_data_{target_year}.csv"
     ####initial_input_filename = f"contest-historical-data/Circa_historical_data.csv"
     
     historical_df = process_game_data(initial_input_filename)
@@ -2223,7 +2221,7 @@ def loop_through_historical_final_data(date_str):
         print(updated_df[updated_df['Opponent EV'].notna()][['Year', 'Week', 'Opponent', 'Opponent EV']].head())
     
     df_historical = pd.read_csv("contest-historical-data/Circa_historical_data.csv")
-    df_current_year = pd.read_csv(f"contest-historical-data/Circa_historical_data_{current_year}.csv")
+    df_current_year = pd.read_csv(f"contest-historical-data/Circa_historical_data_{target_year}.csv")
     
     df_filtered = df_historical[df_historical['Year'] != current_year].copy()
     
@@ -2753,7 +2751,7 @@ def loop_through_historical_final_data(date_str):
             print(f"   ⚠️  nflreadpy pull failed: {e}")
 
         # ── 3. Replace predicted pick% with actual pick% from Circa data ──────
-        hist_file = f"contest-historical-data/Circa_historical_data_{current_year}.csv"
+        hist_file = f"contest-historical-data/Circa_historical_data_{target_year}.csv"
 
         if os.path.exists(hist_file):
             hist_df = pd.read_csv(hist_file)
