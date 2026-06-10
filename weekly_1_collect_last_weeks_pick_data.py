@@ -232,17 +232,20 @@ def loop_through_historical_final_data(date_str):
             NUM_WEEKS_TO_KEEP += 1
             starting_week += 1
             last_played_week += 1
+            nfl_last_played_week += 1
     else:
         if today >= two_days_after_thanksgiving:
             print(f"Detected: Date is after {current_year} Thanksgiving. +1 to NUM_WEEKS_TO_KEEP.")
             NUM_WEEKS_TO_KEEP += 1
             starting_week += 1
             last_played_week += 1
+            nfl_last_played_week += 1
         if today >= christmas_season_cutoff:
             print(f"Detected: Date is after {current_year} Christmas. +1 to NUM_WEEKS_TO_KEEP.")
             NUM_WEEKS_TO_KEEP += 1
             starting_week += 1
             last_played_week += 1
+            nfl_last_played_week += 1
     
     print(f"Final NUM_WEEKS_TO_KEEP: {NUM_WEEKS_TO_KEEP}")
     
