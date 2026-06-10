@@ -55,20 +55,6 @@ def loop_through_historical_final_data(date_str):
                         # Find the very first game date of the season
                         first_game_date = pd.to_datetime(reg_season_games['gameday'].min())
                         print(f"first game date: {first_game_date}")
-
-            # 1. Get the latest date for each week
-            week_end_dates = schedule_df.groupby('Week')['Date'].max()
-            
-            # 2. Filter for weeks where the end date is today or in the past
-            nfl_completed_weeks = week_end_dates[week_end_dates <= today]
-            
-            # 3. Safely get the last played week number, defaulting to 0 if the season hasn't started
-            if not nfl_completed_weeks.empty:
-                nfl_last_played_week = nfl_completed_weeks.idxmax()
-            else:
-                nfl_last_played_week = 0  # Or None, depending on how you want to handle it
-
-            print(f"NFL Last Played Week: {nfl_last_played_week}")
                 
             # 4. Calculate the Current Week
             # We find the latest game that has happened to determine "current" week
@@ -119,6 +105,20 @@ def loop_through_historical_final_data(date_str):
                     target_year -= 1
                     # Reload schedule for the adjusted year so we can calculate the week correctly below
                     schedule = nfl.load_schedules([target_year])
+
+            # 1. Get the latest date for each week
+            week_end_dates = schedule_df.groupby('Week')['Date'].max()
+            
+            # 2. Filter for weeks where the end date is today or in the past
+            nfl_completed_weeks = week_end_dates[week_end_dates <= today]
+            
+            # 3. Safely get the last played week number, defaulting to 0 if the season hasn't started
+            if not nfl_completed_weeks.empty:
+                nfl_last_played_week = nfl_completed_weeks.idxmax()
+            else:
+                nfl_last_played_week = 0  # Or None, depending on how you want to handle it
+
+            print(f"NFL Last Played Week: {nfl_last_played_week}")
             
             # 4. Calculate the Current Week
             # We find the latest game that has happened to determine "current" week
