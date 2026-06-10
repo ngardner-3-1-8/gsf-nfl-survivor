@@ -67,6 +67,8 @@ def loop_through_historical_final_data(date_str):
                 nfl_last_played_week = nfl_completed_weeks.idxmax()
             else:
                 nfl_last_played_week = 0  # Or None, depending on how you want to handle it
+
+            print(f"NFL Last Played Week: {nfl_last_played_week}")
                 
             # 4. Calculate the Current Week
             # We find the latest game that has happened to determine "current" week
