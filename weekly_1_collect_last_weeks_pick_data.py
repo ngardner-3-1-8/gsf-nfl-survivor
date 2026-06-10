@@ -2651,6 +2651,9 @@ def loop_through_historical_final_data(date_str):
         print(f"\n📊 Building actual historical data for Week {last_played_week} {target_year}...")
         print(f"   Loaded {len(actual_data)} games")
 
+        print(f"Last Played Circa Week: {last_played_week}")
+        print(f"Last Played NFL Week: {nfl_last_played_week}")
+
         # ── 2. Pull actual closing odds and scores from nflreadpy ─────────────
         try:
             schedule = nfl.load_schedules([target_year])
