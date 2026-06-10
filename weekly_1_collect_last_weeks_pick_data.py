@@ -113,7 +113,7 @@ def loop_through_historical_final_data(date_str):
                         print(f"first game date: {first_game_date}")
 
             # 1. Get the latest date for each week
-            week_end_dates = schedule_df.groupby('Week')['Date'].max()
+            week_end_dates = reg_season_games.groupby('Week')['Date'].max()
             
             # 2. Filter for weeks where the end date is today or in the past
             nfl_completed_weeks = week_end_dates[week_end_dates <= today]
@@ -128,7 +128,7 @@ def loop_through_historical_final_data(date_str):
             
             # 4. Calculate the Current Week
             # We find the latest game that has happened to determine "current" week
-            games_played = schedule[
+            games_played = reg_season_games[
                 pd.to_datetime(schedule['gameday']) <= pd.to_datetime(today)
             ]
             
