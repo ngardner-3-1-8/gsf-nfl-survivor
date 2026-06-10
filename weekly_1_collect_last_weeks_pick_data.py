@@ -2546,7 +2546,7 @@ def loop_through_historical_final_data(date_str):
     calculate_ev2(starting_week, target_year)
 
 
-    def create_actual_historical_data(last_played_week, starting_week, target_year, current_year):
+    def create_actual_historical_data(last_played_week, nfl_last_played_week, starting_week, target_year, current_year):
         """
         Builds a historical record for the just-completed week using:
           - Actual closing sportsbook odds and game scores from nflreadpy
@@ -3175,7 +3175,7 @@ def loop_through_historical_final_data(date_str):
             f"({len(season_df)} total rows)"
         )
 
-    create_actual_historical_data(last_played_week, starting_week, target_year, current_year)
+    create_actual_historical_data(last_played_week, nfl_last_played_week, starting_week, target_year, current_year)
 
 
 if __name__ == "__main__":
