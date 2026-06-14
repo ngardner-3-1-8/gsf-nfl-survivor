@@ -4658,7 +4658,8 @@ def loop_through_simulations(date_str):
         
         # Combine masks to create our valid training pool
         valid_history_mask = past_years_mask | current_year_past_weeks_mask
-        df_historical = df[valid_history_mask].copy()
+####        df_historical = df[valid_history_mask].copy()
+        df_historical = df
         
         if df_historical.empty:
             print(f"⚠️ Warning: No historical training data available prior to {target_year} Week {upcoming_week}.")
