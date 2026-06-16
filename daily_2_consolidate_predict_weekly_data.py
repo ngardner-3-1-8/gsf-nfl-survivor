@@ -93,10 +93,17 @@ def loop_through_simulations(date_str):
                 if today >= boxing_day:
                     starting_week += 0
                     upcoming_week += 0
-            elif target_year >= 2021:
+            elif target_year in [2022, 2023]:
+                if today >= (boxing_day - timedelta(days=2)):
+                    upcoming_week += 1
+            elif target_year in [2021, 2024,2025,2026]:
                 if today >= boxing_day:
                     starting_week += 0
-                    upcoming_week += 1                   
+                    upcoming_week += 1
+            elif target_year >= 2027:
+                if today >= boxing_day:
+                    starting_week += 0
+                    upcoming_week += 1
             # Bound check: Cap at 19 (or your season max)
             if starting_week > 18: 
                 starting_week = 18
@@ -5769,7 +5776,7 @@ if __name__ == "__main__":
 #        "11/20/2024", 
 #        "11/27/2024", 
 #        "11/30/2024", 
-#       "12/04/2024", 
+#        "12/04/2024", 
 #        "12/11/2024", 
 #        "12/18/2024", 
 #        "12/24/2024", 
@@ -5788,8 +5795,8 @@ if __name__ == "__main__":
 #        "11/08/2023", 
 #        "11/15/2023", 
 #        "11/22/2023", 
+        "11/25/2023", 
 #        "11/29/2023", 
-#        "12/02/2023", 
 #        "12/06/2023", 
 #        "12/13/2023", 
 #        "12/20/2023", 
@@ -5852,11 +5859,11 @@ if __name__ == "__main__":
 #        "11/18/2020", 
 #        "11/25/2020",
 #        "11/28/2020", 
-        "12/02/2020", 
-        "12/09/2020", 
-        "12/16/2020", 
-        "12/23/2020", 
-        "12/30/2020"
+#        "12/02/2020", 
+#        "12/09/2020", 
+#        "12/16/2020", 
+#        "12/23/2020", 
+#        "12/30/2020"
         
 #        formatted_date
     ]
