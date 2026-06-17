@@ -256,6 +256,7 @@ def loop_through_simulations(date_str):
     if os.path.exists(ratings_file):
         print(f"Loading ratings from {ratings_file}")
         ratings_df = pd.read_csv(ratings_file)
+        print("Ratings file loaded successfully.")
         
         # 3. Create a helper function to get the rating safely
         def get_mp_team_rating(team_abbr):
@@ -265,8 +266,9 @@ def loop_through_simulations(date_str):
                 # Change 'team' to 'off_team' if that is the name of your team column
                 rating = ratings_df.loc[ratings_df['Team'] == team_abbr, 'MP_Rating'].values[0]
                 return float(rating)
+                print("Massey-Peabody Ratings properly found")
             except (IndexError, KeyError):
-                print(f"Warning: Could not find rating for {team_abbr}. Defaulting to 0.")
+                print(f"Warning: Could not find Massey-Peabody rating for {team_abbr}. Defaulting to 0.")
                 return 0.0
     	    # 3. Create a helper function to get the rating safely
         def get_gsf_team_rating(team_abbr):
@@ -276,8 +278,9 @@ def loop_through_simulations(date_str):
                 # Change 'team' to 'off_team' if that is the name of your team column
                 rating = ratings_df.loc[ratings_df['Team'] == team_abbr, 'Power Rating'].values[0]
                 return float(rating)
+                print("GSF Ratings properly found")
             except (IndexError, KeyError):
-                print(f"Warning: Could not find rating for {team_abbr}. Defaulting to 0.")
+                print(f"Warning: Could not find GSF rating for {team_abbr}. Defaulting to 0.")
                 return 0.0
     
         # 4. Build your dictionary dynamically
@@ -351,6 +354,8 @@ def loop_through_simulations(date_str):
             'Tennessee Titans' : get_gsf_team_rating("TEN"),
             'Washington Commanders' : get_gsf_team_rating("WAS")
         }
+        print("GSF CURRENT RANKS:")
+        print(gsf_current_ranks)
     else:
         print(f"Error: {ratings_file} not found. Hardcoded fallback or empty dict required.")
         team_ratings_dict = {}
