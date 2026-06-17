@@ -81,18 +81,30 @@ def loop_through_ev(date_str):
         completed_weeks = week_end_dates[week_end_dates <= today]
         if not completed_weeks.empty:
             # The "standard_nfl_week" is now the last FULLY completed week
-            standard_nfl_week = int(completed_weeks.index.max())            
+            standard_nfl_week = int(completed_weeks.index.max())           
             # 3. Your starting point for simulations is the next week (the one in progress or upcoming)
             starting_week = standard_nfl_week + 1
             upcoming_week = starting_week
             # --- ADJUST FOR CIRCA SPECIAL WEEKS ---
             # Using your existing logic for Thanksgiving/Christmas shifts
-            if today >= black_friday:
+            if today > black_friday:
                 starting_week += 0
                 upcoming_week += 1
-            if today >= boxing_day:
-                starting_week += 0
-                upcoming_week += 1
+            if target_year == 2020:
+                if today >= boxing_day:
+                    starting_week += 0
+                    upcoming_week += 0
+            elif target_year in [2022, 2023]:
+                if today >= (boxing_day - timedelta(days=2)):
+                    upcoming_week += 1
+            elif target_year in [2021, 2024,2025,2026]:
+                if today >= boxing_day:
+                    starting_week += 0
+                    upcoming_week += 1
+            elif target_year >= 2027:
+                if today >= boxing_day:
+                    starting_week += 0
+                    upcoming_week += 1
             # Bound check: Cap at 19 (or your season max)
             if starting_week > 18: 
                 starting_week = 18
