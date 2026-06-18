@@ -93,8 +93,11 @@ def loop_through_simulations(date_str):
                 if today >= boxing_day:
                     starting_week += 0
                     upcoming_week += 0
-            elif target_year in [2022, 2023]:
+            elif target_year == 2022:
                 if today >= (boxing_day - timedelta(days=2)):
+                    upcoming_week += 1
+            elif target_year == 2023:
+                if today >= (boxing_day - timedelta(days=1)):
                     upcoming_week += 1
             elif target_year in [2021, 2024,2025,2026]:
                 if today >= boxing_day:
