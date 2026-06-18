@@ -76,11 +76,17 @@ def loop_through_simulations(date_str):
         # 1. Find the final game date for every week in the season
         # This creates a Series where index = Week, value = Latest Game Date for that week
         week_end_dates = schedule_df.groupby('Week')['Date'].max()
+        print("WEEK END DATES")
+        print(week_end_dates)
         # 2. Filter for weeks where the LAST game of that week has already occurred
         completed_weeks = week_end_dates[week_end_dates <= today]
+        print("COMPLETED WEEKS")
+        print(completed_weeks)
         if not completed_weeks.empty:
             # The "standard_nfl_week" is now the last FULLY completed week
-            standard_nfl_week = int(completed_weeks.index.max())           
+            standard_nfl_week = int(completed_weeks.index.max())
+            print("LAST FULLY COMPLETED NFL WEEK")
+            print(standard_nfl_week)
             # 3. Your starting point for simulations is the next week (the one in progress or upcoming)
             starting_week = standard_nfl_week + 1
             upcoming_week = starting_week
