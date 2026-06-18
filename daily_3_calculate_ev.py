@@ -266,129 +266,129 @@ def loop_through_ev(date_str):
 if __name__ == "__main__":
     formatted_date = datetime.now().strftime("%m/%d/%Y")
     week_starting_dates = [
-#        "09/03/2025", 
-#        "09/10/2025", 
-#        "09/17/2025",
-#        "09/24/2025", 
-#        "10/01/2025",
-#        "10/08/2025", 
-#        "10/15/2025", 
-#        "10/22/2025", 
-#        "10/29/2025", 
-#        "11/05/2025", 
-#        "11/12/2025", 
-#        "11/19/2025", 
-#        "11/26/2025", 
-#        "11/29/2025", 
-#        "12/03/2025", 
-#        "12/10/2025", 
-#        "12/17/2025", 
-#        "12/24/2025", 
-#        "12/26/2025", 
-#        "12/31/2025",
+        "09/03/2025", #Leading up to Week 1
+#        "09/10/2025", #Leading up to Week 2
+#        "09/17/2025", #Leading up to Week 3
+#        "09/24/2025", #Leading up to Week 4
+#        "10/01/2025", #Leading up to Week 5
+#        "10/08/2025", #Leading up to Week 6
+#        "10/15/2025", #Leading up to Week 7
+#        "10/22/2025", #Leading up to Week 8
+#        "10/29/2025", #Leading up to Week 9
+#        "11/05/2025", #Leading up to Week 10
+#        "11/12/2025", #Leading up to Week 11
+#        "11/19/2025", #Leading up to Week 12
+#        "11/26/2025", #Leading up to Week 13
+#        "11/29/2025", #Leading up to Week 14
+#        "12/03/2025", #Leading up to Week 15
+#        "12/10/2025", #Leading up to Week 16
+#        "12/17/2025", #Leading up to Week 17
+#        "12/24/2025", #Leading up to Week 18
+#        "12/26/2025", #Leading up to Week 19
+#        "12/31/2025", #Leading up to Week 20
         
-#        "09/04/2024", 
-#        "09/11/2024", 
-#        "09/18/2024", 
-#        "09/25/2024", 
-#        "10/02/2024", 
-#        "10/09/2024", 
-#        "10/16/2024", 
-#        "10/23/2024", 
-#        "10/30/2024", 
-#        "11/06/2024", 
-#        "11/13/2024", 
-#        "11/20/2024", 
-#        "11/27/2024", 
-#        "11/30/2024", 
-#        "12/04/2024", 
-#        "12/11/2024", 
-#        "12/18/2024", 
-#        "12/24/2024", 
-#        "12/27/2024", 
-#        "01/01/2025",
+#        "09/04/2024", #Leading up to Week 1
+#        "09/11/2024", #Leading up to Week 2
+#        "09/18/2024", #Leading up to Week 3
+#        "09/25/2024", #Leading up to Week 4
+#        "10/02/2024", #Leading up to Week 5
+#        "10/09/2024", #Leading up to Week 6
+#        "10/16/2024", #Leading up to Week 7
+#        "10/23/2024", #Leading up to Week 8
+#        "10/30/2024", #Leading up to Week 9
+#        "11/06/2024", #Leading up to Week 10
+#        "11/13/2024", #Leading up to Week 11
+#        "11/20/2024", #Leading up to Week 12
+#        "11/27/2024", #Leading up to Week 13
+#        "11/30/2024", #Leading up to Week 14
+#        "12/04/2024", #Leading up to Week 15
+#        "12/11/2024", #Leading up to Week 16
+#        "12/18/2024", #Leading up to Week 17
+#        "12/24/2024", #Leading up to Week 18
+#        "12/27/2024", #Leading up to Week 19
+#        "01/01/2025", #Leading up to Week 20
         
-#        "09/06/2023", 
-#        "09/13/2023", 
-#        "09/20/2023", 
-#        "09/27/2023", 
-#        "10/04/2023", 
-#        "10/11/2023", 
-#        "10/18/2023", 
-#        "10/25/2023", 
-#        "11/01/2023", 
-#        "11/08/2023", 
-#        "11/15/2023", 
-#        "11/22/2023", 
-        "11/25/2023", 
-#        "12/02/2023", 
-#        "12/06/2023", 
-#        "12/13/2023", 
-#        "12/20/2023",
-        "12/25/2023", 
-#        "12/27/2023", 
-#        "01/03/2024",
+#        "09/06/2023", #Leading up to Week 1
+#        "09/13/2023", #Leading up to Week 2
+#        "09/20/2023", #Leading up to Week 3
+#        "09/27/2023", #Leading up to Week 4
+#        "10/04/2023", #Leading up to Week 5
+#        "10/11/2023", #Leading up to Week 6
+#        "10/18/2023", #Leading up to Week 7
+#        "10/25/2023", #Leading up to Week 8
+#        "11/01/2023", #Leading up to Week 9
+#        "11/08/2023", #Leading up to Week 10
+#        "11/15/2023", #Leading up to Week 11
+#        "11/22/2023", #Leading up to Week 12
+#        "11/25/2023", #Leading up to Week 13
+#        "11/29/2023", #Leading up to Week 14
+#        "12/06/2023", #Leading up to Week 15
+#        "12/13/2023", #Leading up to Week 16
+#        "12/20/2023", #Leading up to Week 17
+        "12/25/2023",  #Leading up to Week 18
+#        "12/27/2023", #Leading up to Week 19
+#        "01/03/2024", #Leading up to Week 20
         
-#        "09/07/2022", 
-#        "09/14/2022", 
-#        "09/21/2022", 
-#        "09/28/2022", 
-#        "10/05/2022", 
-#        "10/12/2022", 
-#        "10/19/2022", 
-#        "10/26/2022", 
-#        "11/02/2022", 
-#        "11/09/2022", 
-#        "11/16/2022", 
-#        "11/23/2022", 
-#        "11/26/2022", 
-#        "11/30/2022", 
-#        "12/07/2022", 
-#        "12/14/2022", 
-#        "12/21/2022", 
-        "12/25/2022", 
-        "12/28/2022",
-#        "01/04/2023",
+#        "09/07/2022", #Leading up to Week 1
+#        "09/14/2022", #Leading up to Week 2
+#        "09/21/2022", #Leading up to Week 3
+#        "09/28/2022", #Leading up to Week 4
+#        "10/05/2022", #Leading up to Week 5
+#        "10/12/2022", #Leading up to Week 6
+#        "10/19/2022", #Leading up to Week 7
+#        "10/26/2022", #Leading up to Week 8
+#        "11/02/2022", #Leading up to Week 9
+#        "11/09/2022", #Leading up to Week 10
+#        "11/16/2022", #Leading up to Week 11
+#        "11/23/2022", #Leading up to Week 12
+#        "11/26/2022", #Leading up to Week 13
+#        "11/30/2022", #Leading up to Week 14
+#        "12/07/2022", #Leading up to Week 15
+#        "12/14/2022", #Leading up to Week 16
+#        "12/21/2022", #Leading up to Week 17
+#        "12/25/2022", #Leading up to Week 18
+#        "12/28/2022", #Leading up to Week 19
+#        "01/04/2023", #Leading up to Week 20
         
-#        "09/08/2021", 
-#        "09/15/2021", 
-#        "09/22/2021", 
-#        "09/29/2021", 
-#        "10/06/2021", 
-#        "10/13/2021", 
-#        "10/20/2021", 
-#        "10/27/2021", 
-#        "11/03/2021", 
-#        "11/10/2021", 
-#        "11/17/2021", 
-#        "11/24/2021", 
-#        "11/27/2021", 
-#        "12/01/2021", 
-#        "12/08/2021", 
-#        "12/15/2021", 
-#        "12/22/2021", 
-        "12/26/2021", 
-        "12/29/2021", 
-#        "01/05/2022",
+#        "09/08/2021", #Leading up to Week 1
+#        "09/15/2021", #Leading up to Week 2
+#        "09/22/2021", #Leading up to Week 3
+#        "09/29/2021", #Leading up to Week 4
+#        "10/06/2021", #Leading up to Week 5
+#        "10/13/2021", #Leading up to Week 6
+#        "10/20/2021", #Leading up to Week 7
+#        "10/27/2021", #Leading up to Week 8
+#        "11/03/2021", #Leading up to Week 9
+#        "11/10/2021", #Leading up to Week 10
+#        "11/17/2021", #Leading up to Week 11
+#        "11/24/2021", #Leading up to Week 12
+#        "11/27/2021", #Leading up to Week 13
+#        "12/01/2021", #Leading up to Week 14
+#        "12/08/2021", #Leading up to Week 15
+#        "12/15/2021", #Leading up to Week 16
+#        "12/22/2021", #Leading up to Week 17
+#        "12/26/2021", #Leading up to Week 18
+#        "12/29/2021", #Leading up to Week 19
+#        "01/05/2022", #Leading up to Week 20
         
-#        "09/09/2020", 
-#        "09/16/2020", 
-#        "09/23/2020", 
-#        "09/30/2020", 
-#        "10/07/2020", 
-#        "10/14/2020", 
-#        "10/21/2020", 
-#        "10/28/2020", 
-#        "11/04/2020", 
-#        "11/11/2020", 
-#        "11/18/2020", 
-#        "11/25/2020",
-#        "11/28/2020", 
-#        "12/02/2020", 
-#        "12/09/2020", 
-#        "12/16/2020", 
-#        "12/23/2020", 
-#        "12/30/2020"
+#        "09/09/2020", #Leading up to Week 1
+#        "09/16/2020", #Leading up to Week 2
+#        "09/23/2020", #Leading up to Week 3
+#        "09/30/2020", #Leading up to Week 4
+#        "10/07/2020", #Leading up to Week 5
+#        "10/14/2020", #Leading up to Week 6
+#        "10/21/2020", #Leading up to Week 7
+#        "10/28/2020", #Leading up to Week 8
+#        "11/04/2020", #Leading up to Week 9
+#        "11/11/2020", #Leading up to Week 10
+#        "11/18/2020", #Leading up to Week 11
+#        "11/25/2020", #Leading up to Week 12
+#        "11/28/2020", #Leading up to Week 13
+#        "12/02/2020", #Leading up to Week 14
+#        "12/09/2020", #Leading up to Week 15
+#        "12/16/2020", #Leading up to Week 16
+#        "12/23/2020", #Leading up to Week 17
+#        "12/30/2020", #Leading up to Week 18
         
 #        formatted_date
     ]
