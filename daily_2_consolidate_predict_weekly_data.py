@@ -4489,7 +4489,7 @@ def loop_through_simulations(date_str):
             def calculate_bet_metrics(row):
                 # 🛑 GATE: Skip future weeks
                 if row['Week_x'] != upcoming_week:
-                    return pd.Series([np.nan] * 7)
+                    return pd.Series([np.nan] * 13)
 
                 # --- 1. DYNAMIC UNIT BET SIZE (Based on Sportsbook Odds) ---
                 # Default to risking 1 unit, then adjust if it's a favorite
