@@ -2462,6 +2462,8 @@ def loop_through_simulations(date_str):
     
     collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data(schedule_df)
     collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data_df[collect_schedule_travel_ranking_data_df['Week'] >= upcoming_week]
+    print("FILTER INFO")
+    print(collect_schedule_travel_ranking_data_df)
 
     def calculate_team_availability(picks_data_path, upcoming_week):
         """
@@ -4627,6 +4629,7 @@ def loop_through_simulations(date_str):
     
             
             print("\nSimulation Complete!")
+            print(final_combined_df)
             # Ensure directory exists or remove prefix if not needed
 #            final_combined_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv", index=False)
 #            print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv'")
