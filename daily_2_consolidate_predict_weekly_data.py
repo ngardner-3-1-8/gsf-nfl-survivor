@@ -4794,7 +4794,7 @@ def loop_through_simulations(date_str):
         print("CURRENT WEEK ENTRIES")
         print(current_week_entries)
         if current_week_entries >= 0:
-            nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'] = current_week_entries
+            nfl_schedule_df.loc[nfl_schedule_df['Week'] == upcoming_week, 'Total Remaining Entries at Start of Week'] = current_week_entries
         else:
             # Handle the -1 (auto-estimate) case based on contest
     #        if selected_contest == 'Circa':
@@ -4820,14 +4820,14 @@ def loop_through_simulations(date_str):
     #                default_entries = 20000
     #        else: # DraftKings
     #             default_entries = 20000 # Example
-            nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'] = default_entries
+            nfl_schedule_df.loc[nfl_schedule_df['Week'] == upcoming_week, 'Total Remaining Entries at Start of Week'] = default_entries
         # --- End POOL SIZE LOGIC ---
     
         # Ensure 'Total Remaining Entries at Start of Week' has been correctly initialized
         # If the entry size is not set, the simulation will break.
-        if nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'].empty:
+        if nfl_schedule_df.loc[nfl_schedule_df['Week'] == upcoming_week, 'Total Remaining Entries at Start of Week'].empty:
              print(f"Error: 'Total Remaining Entries' not set for starting week {starting_week}. Assuming {default_entries}.")
-             nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'] = default_entries
+             nfl_schedule_df.loc[nfl_schedule_df['Week'] == upcoming_week, 'Total Remaining Entries at Start of Week'] = default_entries
         
         max_week = nfl_schedule_df['Week'].max() # Get max week from the data itself
         
