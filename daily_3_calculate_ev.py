@@ -78,7 +78,7 @@ def loop_through_ev(date_str):
         # This creates a Series where index = Week, value = Latest Game Date for that week
         week_end_dates = schedule_df.groupby('Week')['Date'].max()
         # 2. Filter for weeks where the LAST game of that week has already occurred
-        completed_weeks = week_end_dates[week_end_dates <= today]
+        completed_weeks = week_end_dates[week_end_dates < today]
         if not completed_weeks.empty:
             # The "standard_nfl_week" is now the last FULLY completed week
             standard_nfl_week = int(completed_weeks.index.max())           
