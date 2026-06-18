@@ -2461,9 +2461,10 @@ def loop_through_simulations(date_str):
         
     
     collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data(schedule_df)
-    collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data_df[collect_schedule_travel_ranking_data_df['Week'] >= upcoming_week]
     print("FILTER INFO")
     print(collect_schedule_travel_ranking_data_df)
+    collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data_df[collect_schedule_travel_ranking_data_df['Week'] >= upcoming_week]
+
 
     def calculate_team_availability(picks_data_path, upcoming_week):
         """
