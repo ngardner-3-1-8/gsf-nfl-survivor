@@ -97,7 +97,7 @@ def loop_through_simulations(date_str):
                 if today >= (boxing_day - timedelta(days=2)):
                     upcoming_week += 1
             elif target_year == 2023:
-                if today >= (boxing_day - timedelta(days=1)):
+                if today >= christmas_day:
                     upcoming_week += 1
             elif target_year in [2021, 2024,2025,2026]:
                 if today >= boxing_day:
@@ -5809,8 +5809,8 @@ if __name__ == "__main__":
 #        "11/29/2023", #Leading up to Week 14
 #        "12/06/2023", #Leading up to Week 15
 #        "12/13/2023", #Leading up to Week 16
-        "12/20/2023", #Leading up to Week 17
-#        "12/25/2023",  #Leading up to Week 18
+#        "12/20/2023", #Leading up to Week 17
+        "12/25/2023",  #Leading up to Week 18
 #        "12/27/2023", #Leading up to Week 19
 #        "01/03/2024", #Leading up to Week 20
         
