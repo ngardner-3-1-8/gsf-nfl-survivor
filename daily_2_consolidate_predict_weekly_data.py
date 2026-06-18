@@ -79,7 +79,7 @@ def loop_through_simulations(date_str):
         print("WEEK END DATES")
         print(week_end_dates)
         # 2. Filter for weeks where the LAST game of that week has already occurred
-        completed_weeks = week_end_dates[week_end_dates <= today]
+        completed_weeks = week_end_dates[week_end_dates < today]
         print("COMPLETED WEEKS")
         print(completed_weeks)
         if not completed_weeks.empty:
