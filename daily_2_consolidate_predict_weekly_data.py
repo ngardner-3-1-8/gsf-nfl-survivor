@@ -780,13 +780,36 @@ def loop_through_simulations(date_str):
         df['Circa Week'] = df['Week'].astype(str)
         df['Date'] = pd.to_datetime(df['Date'], format='%b %d, %Y')
         # Adjust January games to 2025 in the DataFrame
-        df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
-        df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 1
+        if target_year == 2020:
+            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 0
+        elif target_year == 2021:
+            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 1
+        elif target_year == 2022:
+            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date - timedelta(days=2)), 'Week'] += 1
+        elif target_year == 2023:
+            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date - timedelta(days=1)), 'Week'] += 1
+        elif target_year == 2024:
+            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 1
+        elif target_year == 2025:
+            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 1
+        elif target_year == 2026:
+            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 1
+        else:
+            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 1
 
         df.loc[df['Date'] == pd.to_datetime(thanksgiving_date), 'Circa Week'] = 'Thanksgiving'
         df.loc[df['Date'] == pd.to_datetime(black_friday), 'Circa Week'] = 'Thanksgiving'
-        df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
-        df.loc[df['Date'] == pd.to_datetime(boxing_day), 'Circa Week'] = 'Christmas'
+        if target_year != 2020:
+            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
+            df.loc[df['Date'] == pd.to_datetime(boxing_day), 'Circa Week'] = 'Christmas'
     
     
         # Convert 'Week' back to string format if needed
@@ -2463,7 +2486,7 @@ def loop_through_simulations(date_str):
     collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data(schedule_df)
     print("FILTER INFO")
     print(collect_schedule_travel_ranking_data_df)
-    collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data_df[collect_schedule_travel_ranking_data_df['Week_x'] >= upcoming_week]
+    collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data_df[collect_schedule_travel_ranking_data_df['Week'] >= upcoming_week]
     print("FILTER INFO 2!!!")
     print(collect_schedule_travel_ranking_data_df)
 
