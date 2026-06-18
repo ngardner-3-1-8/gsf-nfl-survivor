@@ -4793,6 +4793,8 @@ def loop_through_simulations(date_str):
             ).fillna(-1).astype(int)
         print("CURRENT WEEK ENTRIES")
         print(current_week_entries)
+        print("NFL SCHEDULE DF - WEEK")
+        print(nfl_schedule_df)
         if current_week_entries >= 0:
             nfl_schedule_df.loc[nfl_schedule_df['Week'] == upcoming_week, 'Total Remaining Entries at Start of Week'] = current_week_entries
         else:
