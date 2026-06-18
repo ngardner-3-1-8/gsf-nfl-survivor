@@ -4791,7 +4791,8 @@ def loop_through_simulations(date_str):
                 nfl_schedule_df['Week'], 
                 errors='coerce'
             ).fillna(-1).astype(int)
-    
+        print("CURRENT WEEK ENTRIES")
+        print(current_week_entries)
         if current_week_entries >= 0:
             nfl_schedule_df.loc[nfl_schedule_df['Week'] == starting_week, 'Total Remaining Entries at Start of Week'] = current_week_entries
         else:
