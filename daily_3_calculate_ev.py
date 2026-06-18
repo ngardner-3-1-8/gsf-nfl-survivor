@@ -266,7 +266,7 @@ def loop_through_ev(date_str):
 if __name__ == "__main__":
     formatted_date = datetime.now().strftime("%m/%d/%Y")
     week_starting_dates = [
-        "09/03/2025", #Leading up to Week 1
+#        "09/03/2025", #Leading up to Week 1
 #        "09/10/2025", #Leading up to Week 2
 #        "09/17/2025", #Leading up to Week 3
 #        "09/24/2025", #Leading up to Week 4
@@ -278,11 +278,11 @@ if __name__ == "__main__":
 #        "11/05/2025", #Leading up to Week 10
 #        "11/12/2025", #Leading up to Week 11
 #        "11/19/2025", #Leading up to Week 12
-#        "11/26/2025", #Leading up to Week 13
-#        "11/29/2025", #Leading up to Week 14
-#        "12/03/2025", #Leading up to Week 15
-#        "12/10/2025", #Leading up to Week 16
-#        "12/17/2025", #Leading up to Week 17
+        "11/26/2025", #Leading up to Week 13
+        "11/29/2025", #Leading up to Week 14
+        "12/03/2025", #Leading up to Week 15
+        "12/10/2025", #Leading up to Week 16
+        "12/17/2025", #Leading up to Week 17
 #        "12/24/2025", #Leading up to Week 18
 #        "12/26/2025", #Leading up to Week 19
 #        "12/31/2025", #Leading up to Week 20
@@ -325,7 +325,7 @@ if __name__ == "__main__":
 #        "12/06/2023", #Leading up to Week 15
 #        "12/13/2023", #Leading up to Week 16
 #        "12/20/2023", #Leading up to Week 17
-        "12/25/2023",  #Leading up to Week 18
+#        "12/25/2023",  #Leading up to Week 18
 #        "12/27/2023", #Leading up to Week 19
 #        "01/03/2024", #Leading up to Week 20
         
