@@ -3227,14 +3227,14 @@ if __name__ == "__main__":
 #        "11/12/2025",  #Following Week 10
 #        "11/19/2025",  #Following Week 11
 #        "11/26/2025",  #Following Week 12
-        "11/29/2025",  #Following Week 13
-        "12/03/2025",  #Following Week 14
-        "12/10/2025",  #Following Week 15
-        "12/17/2025",  #Following Week 16
-        "12/24/2025",  #Following Week 17
-#        "12/26/2025",  #Following Week 18
-#        "12/31/2025", #Following Week 19
-#        "01/07/2026", #Following Week 20
+#        "11/29/2025",  #Following Week 13
+#        "12/03/2025",  #Following Week 14
+#        "12/10/2025",  #Following Week 15
+#        "12/17/2025",  #Following Week 16
+#        "12/24/2025",  #Following Week 17
+        "12/26/2025",  #Following Week 18
+        "12/31/2025", #Following Week 19
+        "01/07/2026", #Following Week 20
         
 
 #        "09/11/2024",  #Following Week 1
