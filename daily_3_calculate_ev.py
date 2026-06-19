@@ -340,7 +340,7 @@ if __name__ == "__main__":
 #        "11/02/2022", #Leading up to Week 9
 #        "11/09/2022", #Leading up to Week 10
 #        "11/16/2022", #Leading up to Week 11
-#        "11/23/2022", #Leading up to Week 12
+        "11/23/2022", #Leading up to Week 12
         "11/26/2022", #Leading up to Week 13
         "11/30/2022", #Leading up to Week 14
         "12/07/2022", #Leading up to Week 15
