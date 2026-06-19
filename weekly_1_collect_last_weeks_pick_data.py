@@ -3254,9 +3254,9 @@ if __name__ == "__main__":
 #        "12/11/2024",  #Following Week 15
 #        "12/18/2024",  #Following Week 16
 #        "12/24/2024",  #Following Week 17
-        "12/27/2024",  #Following Week 18
-        "01/01/2025", #Following Week 19
-        "01/08/2025", #Following Week 20
+#        "12/27/2024",  #Following Week 18
+#        "01/01/2025", #Following Week 19
+#        "01/08/2025", #Following Week 20
         
 
 #        "09/13/2023",  #Following Week 1
@@ -3271,14 +3271,14 @@ if __name__ == "__main__":
 #        "11/15/2023",  #Following Week 10
 #        "11/22/2023",  #Following Week 11
 #        "11/25/2023",  #Following Week 12
-        "12/02/2023",  #Following Week 13
-        "12/06/2023",  #Following Week 14
-        "12/13/2023",  #Following Week 15
-        "12/20/2023",  #Following Week 16
-        "12/25/2023",  #Following Week 17
-        "12/27/2023",  #Following Week 18
-        "01/03/2024",  #Following Week 19
-        "01/10/2024",  #Following Week 20
+#        "12/02/2023",  #Following Week 13
+#        "12/06/2023",  #Following Week 14
+#        "12/13/2023",  #Following Week 15
+#        "12/20/2023",  #Following Week 16
+#        "12/25/2023",  #Following Week 17
+#        "12/27/2023",  #Following Week 18
+#        "01/03/2024",  #Following Week 19
+#        "01/10/2024",  #Following Week 20
         
 
 #        "09/14/2022",  #Following Week 1
@@ -3292,15 +3292,15 @@ if __name__ == "__main__":
 #        "11/09/2022",  #Following Week 9
 #        "11/16/2022",  #Following Week 10
 #        "11/23/2022",  #Following Week 11
-#        "11/26/2022",  #Following Week 12
-#        "11/30/2022",  #Following Week 13
-#        "12/07/2022",  #Following Week 14
-#        "12/14/2022",  #Following Week 15
-#        "12/21/2022",  #Following Week 16
-#        "12/25/2022",  #Following Week 17
-#        "12/28/2022", #Following Week 18
-#        "01/04/2023", #Following Week 19
-#        "01/11/2023", #Following Week 20
+        "11/26/2022",  #Following Week 12
+        "11/30/2022",  #Following Week 13
+        "12/07/2022",  #Following Week 14
+        "12/14/2022",  #Following Week 15
+        "12/21/2022",  #Following Week 16
+        "12/25/2022",  #Following Week 17
+        "12/28/2022", #Following Week 18
+        "01/04/2023", #Following Week 19
+        "01/11/2023", #Following Week 20
         
 
 #        "09/15/2021",  #Following Week 1
