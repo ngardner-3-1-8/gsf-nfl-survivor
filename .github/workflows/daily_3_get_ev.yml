@@ -8,7 +8,7 @@ on:
   #5:30 AM Mountain Standard Time
   #6:30 AM Mountain Daylight Time
   schedule:
-    - cron: '30 12 * * *'
+    - cron: '30 18 * * *' # Change this back to 12
 
 permissions:
   contents: write # Required to push the new CSVs back to the repo
