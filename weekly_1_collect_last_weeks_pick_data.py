@@ -3292,15 +3292,15 @@ if __name__ == "__main__":
 #        "11/09/2022",  #Following Week 9
 #        "11/16/2022",  #Following Week 10
 #        "11/23/2022",  #Following Week 11
-        "11/26/2022",  #Following Week 12
-        "11/30/2022",  #Following Week 13
-        "12/07/2022",  #Following Week 14
-        "12/14/2022",  #Following Week 15
-        "12/21/2022",  #Following Week 16
-        "12/25/2022",  #Following Week 17
-        "12/28/2022", #Following Week 18
-        "01/04/2023", #Following Week 19
-        "01/11/2023", #Following Week 20
+#        "11/26/2022",  #Following Week 12
+#        "11/30/2022",  #Following Week 13
+#        "12/07/2022",  #Following Week 14
+#        "12/14/2022",  #Following Week 15
+#        "12/21/2022",  #Following Week 16
+#        "12/25/2022",  #Following Week 17
+#        "12/28/2022", #Following Week 18
+#        "01/04/2023", #Following Week 19
+#        "01/11/2023", #Following Week 20
         
 
 #        "09/15/2021",  #Following Week 1
@@ -3315,14 +3315,14 @@ if __name__ == "__main__":
 #        "11/17/2021",  #Following Week 10
 #        "11/24/2021",  #Following Week 11
 #        "11/27/2021",  #Following Week 12
-#        "12/01/2021",  #Following Week 13
-#        "12/08/2021",  #Following Week 14
-#        "12/15/2021",  #Following Week 15
-#        "12/22/2021",  #Following Week 16
-#        "12/26/2021",  #Following Week 17
-#        "12/29/2021",  #Following Week 18
-#        "01/05/2022",  #Following Week 19
-#        "01/12/2022",  #Following Week 20
+        "12/01/2021",  #Following Week 13
+        "12/08/2021",  #Following Week 14
+        "12/15/2021",  #Following Week 15
+        "12/22/2021",  #Following Week 16
+        "12/26/2021",  #Following Week 17
+        "12/29/2021",  #Following Week 18
+        "01/05/2022",  #Following Week 19
+        "01/12/2022",  #Following Week 20
         
 
 #        "09/16/2020",  #Following Week 1
