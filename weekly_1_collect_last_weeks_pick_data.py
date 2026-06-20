@@ -3315,14 +3315,14 @@ if __name__ == "__main__":
 #        "11/17/2021",  #Following Week 10
 #        "11/24/2021",  #Following Week 11
 #        "11/27/2021",  #Following Week 12
-        "12/01/2021",  #Following Week 13
-        "12/08/2021",  #Following Week 14
-        "12/15/2021",  #Following Week 15
-        "12/22/2021",  #Following Week 16
-        "12/26/2021",  #Following Week 17
-        "12/29/2021",  #Following Week 18
-        "01/05/2022",  #Following Week 19
-        "01/12/2022",  #Following Week 20
+#        "12/01/2021",  #Following Week 13
+#        "12/08/2021",  #Following Week 14
+#        "12/15/2021",  #Following Week 15
+#        "12/22/2021",  #Following Week 16
+#        "12/26/2021",  #Following Week 17
+#        "12/29/2021",  #Following Week 18
+#        "01/05/2022",  #Following Week 19
+#        "01/12/2022",  #Following Week 20
         
 
 #        "09/16/2020",  #Following Week 1
@@ -3337,12 +3337,12 @@ if __name__ == "__main__":
 #        "11/18/2020",  #Following Week 10
 #        "11/25/2020",  #Following Week 11
 #        "11/28/2020",  #Following Week 12
-#        "12/02/2020",  #Following Week 13
-#        "12/09/2020",  #Following Week 14
-#        "12/16/2020",  #Following Week 15
-#        "12/23/2020",  #Following Week 16
-#        "12/30/2020"   #Following Week 17
-#        "01/06/2021",  #Following Week 18
+        "12/02/2020",  #Following Week 13
+        "12/09/2020",  #Following Week 14
+        "12/16/2020",  #Following Week 15
+        "12/23/2020",  #Following Week 16
+        "12/30/2020"   #Following Week 17
+        "01/06/2021",  #Following Week 18
         
 #        formatted_date
     ]
