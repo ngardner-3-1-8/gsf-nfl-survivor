@@ -3341,7 +3341,7 @@ if __name__ == "__main__":
         "12/09/2020",  #Following Week 14
         "12/16/2020",  #Following Week 15
         "12/23/2020",  #Following Week 16
-        "12/30/2020"   #Following Week 17
+        "12/30/2020",   #Following Week 17
         "01/06/2021",  #Following Week 18
         
 #        formatted_date
