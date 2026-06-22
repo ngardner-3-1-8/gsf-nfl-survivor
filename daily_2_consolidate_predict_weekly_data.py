@@ -78,6 +78,7 @@ def loop_through_simulations(date_str):
     else:
         # 1. Find the final game date for every week in the season
         # This creates a Series where index = Week, value = Latest Game Date for that week
+        target_year_load = target_year
         week_end_dates = schedule_df.groupby('Week')['Date'].max()
         print("WEEK END DATES")
         print(week_end_dates)
@@ -2603,7 +2604,7 @@ def loop_through_simulations(date_str):
     # --- CONFIGURATION ---
     SIMULATIONS = 5000
     HISTORY_DAYS = 840
-    CURRENT_SEASON = target_year
+    CURRENT_SEASON = target_year_load
     DECAY_RATE = 0.00475
     GARBAGE_MIN = 0.05
     GARBAGE_MAX = 0.95
