@@ -5,23 +5,6 @@ import { runOptimizer, fetchWeeks, fetchPickPercentages } from '../../api/client
 import { useAvailableYears } from '../../hooks/useAvailableYears'
 import YearSelector from '../ui/YearSelector'
 
-// Inside the component, replace the existing year-unaware fetch:
-const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
-
-// Add year to all fetchSchedule and fetchWeeks calls:
-useEffect(() => {
-  if (!selectedYear) return
-  fetchWeeks(selectedYear).then(...)
-}, [selectedYear])
-
-useEffect(() => {
-  if (!selectedWeek || !selectedYear) return
-  fetchSchedule(selectedWeek.week, selectedYear).then(...)
-}, [selectedWeek, selectedYear])
-
-// Add the YearSelector to the header bar JSX:
-<YearSelector years={years} selectedYear={selectedYear} onChange={setSelectedYear} />
-
 export default function OptimizerView() {
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -29,13 +12,15 @@ export default function OptimizerView() {
   const [upcomingWeek, setUpcomingWeek] = useState(1)
   const [allPickPcts, setAllPickPcts] = useState({})
   const [weekOptions, setWeekOptions] = useState([])
-  
 
+  const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
+
+  // Reload weeks when year changes
   useEffect(() => {
-    fetchWeeks()
+    if (!selectedYear) return
+    fetchWeeks(selectedYear)
       .then(data => {
         setUpcomingWeek(data.upcoming_week || 1)
-        // Handle both old format (array of ints) and new format (array of objects)
         const weeks = data.weeks || []
         const options = weeks.map(w =>
           typeof w === 'object' ? w : { week: w, label: `Week ${w}` }
@@ -43,7 +28,11 @@ export default function OptimizerView() {
         setWeekOptions(options)
       })
       .catch(() => {})
+  }, [selectedYear])
 
+  // Pick percentages — only relevant for current year
+  useEffect(() => {
+    if (isHistorical) return
     fetchPickPercentages()
       .then(data => {
         const lookup = {}
@@ -54,7 +43,7 @@ export default function OptimizerView() {
         setAllPickPcts(lookup)
       })
       .catch(() => {})
-  }, [])
+  }, [isHistorical])
 
   const handleSubmit = async (constraints) => {
     setLoading(true)
@@ -71,24 +60,41 @@ export default function OptimizerView() {
   }
 
   return (
-    <div className="grid grid-cols-[340px_1fr] gap-6 items-start">
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 sticky top-6">
-        <h2 className="text-base font-semibold text-white mb-4">Constraints</h2>
-        <ConstraintsPanel
-          onSubmit={handleSubmit}
-          loading={loading}
-          upcomingWeek={upcomingWeek}
-          weekOptions={weekOptions}
+    <div className="flex flex-col gap-4">
+
+      {/* Year selector */}
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-4 flex-wrap">
+        <YearSelector
+          years={years}
+          selectedYear={selectedYear}
+          onChange={setSelectedYear}
         />
+        {isHistorical && (
+          <span className="text-xs text-amber-400 ml-2">
+            ⚠️ Historical mode — optimizer runs against {selectedYear} actual data
+          </span>
+        )}
       </div>
-      <div className="min-h-[400px]">
-        <h2 className="text-base font-semibold text-white mb-4">Results</h2>
-        <ResultsPanel
-          results={results}
-          loading={loading}
-          error={error}
-          allPickPcts={allPickPcts}
-        />
+
+      <div className="grid grid-cols-[340px_1fr] gap-6 items-start">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 sticky top-6">
+          <h2 className="text-base font-semibold text-white mb-4">Constraints</h2>
+          <ConstraintsPanel
+            onSubmit={handleSubmit}
+            loading={loading}
+            upcomingWeek={upcomingWeek}
+            weekOptions={weekOptions}
+          />
+        </div>
+        <div className="min-h-[400px]">
+          <h2 className="text-base font-semibold text-white mb-4">Results</h2>
+          <ResultsPanel
+            results={results}
+            loading={loading}
+            error={error}
+            allPickPcts={allPickPcts}
+          />
+        </div>
       </div>
     </div>
   )
