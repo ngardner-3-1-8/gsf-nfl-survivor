@@ -3,23 +3,6 @@ import { fetchRankings } from '../../api/client'
 import { useAvailableYears } from '../../hooks/useAvailableYears'
 import YearSelector from '../ui/YearSelector'
 
-// Inside the component, replace the existing year-unaware fetch:
-const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
-
-// Add year to all fetchSchedule and fetchWeeks calls:
-useEffect(() => {
-  if (!selectedYear) return
-  fetchWeeks(selectedYear).then(...)
-}, [selectedYear])
-
-useEffect(() => {
-  if (!selectedWeek || !selectedYear) return
-  fetchSchedule(selectedWeek.week, selectedYear).then(...)
-}, [selectedWeek, selectedYear])
-
-// Add the YearSelector to the header bar JSX:
-<YearSelector years={years} selectedYear={selectedYear} onChange={setSelectedYear} />
-
 const TEAM_FULL_NAMES = {
   ARI: 'Arizona Cardinals', ATL: 'Atlanta Falcons', BAL: 'Baltimore Ravens',
   BUF: 'Buffalo Bills', CAR: 'Carolina Panthers', CHI: 'Chicago Bears',
@@ -62,7 +45,7 @@ function rankChangeCell(current, last) {
   const l = parseInt(last)
   if (isNaN(c)) return <span className="text-gray-600">—</span>
   if (isNaN(l) || c === l) return <span className="font-mono text-xs text-gray-400">{c}</span>
-  const diff = l - c // positive = moved up
+  const diff = l - c
   return (
     <span className="font-mono text-xs">
       <span className="text-white">{c}</span>
@@ -84,35 +67,26 @@ export default function RankingsView() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [sortKey, setSortKey] = useState('Rank')
+  const [sortKey, setSortKey] = useState('GSF Rank')
   const [sortDir, setSortDir] = useState('asc')
   const [search, setSearch] = useState('')
 
+  const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
+
+  // Reload rankings when year changes
   useEffect(() => {
-    fetchRankings()
+    if (!selectedYear) return
+    setLoading(true)
+    setError(null)
+    fetchRankings(selectedYear)
       .then(d => setData(d))
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
-  }, [])
-
-  if (loading) return (
-    <div className="flex items-center justify-center h-64 gap-3">
-      <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
-      <span className="text-gray-400 text-sm">Loading rankings...</span>
-    </div>
-  )
-
-  if (error) return (
-    <div className="bg-red-950/50 border border-red-800 rounded-xl p-4">
-      <p className="text-red-400 text-sm font-medium">Error loading rankings</p>
-      <p className="text-red-300 text-sm mt-1">{error}</p>
-    </div>
-  )
+  }, [selectedYear])
 
   const rankings = data?.rankings || []
   const hasPreseason = data?.has_preseason
 
-  // Filter by search
   const filtered = rankings.filter(r => {
     const q = search.trim().toLowerCase()
     if (!q) return true
@@ -122,7 +96,6 @@ export default function RankingsView() {
     return abbr.includes(q) || full.includes(q) || qb.includes(q)
   })
 
-  // Sort
   const sorted = [...filtered].sort((a, b) => {
     const av = a[sortKey] ?? ''
     const bv = b[sortKey] ?? ''
@@ -151,8 +124,45 @@ export default function RankingsView() {
     </th>
   )
 
+  const yearSelectorBar = (
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-4 flex-wrap">
+      <YearSelector
+        years={years}
+        selectedYear={selectedYear}
+        onChange={setSelectedYear}
+      />
+      {isHistorical && (
+        <span className="text-xs text-amber-400">
+          📋 {selectedYear} final season rankings
+        </span>
+      )}
+    </div>
+  )
+
+  if (loading) return (
+    <div className="flex flex-col gap-4">
+      {yearSelectorBar}
+      <div className="flex items-center justify-center h-64 gap-3">
+        <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+        <span className="text-gray-400 text-sm">Loading rankings...</span>
+      </div>
+    </div>
+  )
+
+  if (error) return (
+    <div className="flex flex-col gap-4">
+      {yearSelectorBar}
+      <div className="bg-red-950/50 border border-red-800 rounded-xl p-4">
+        <p className="text-red-400 text-sm font-medium">Error loading rankings</p>
+        <p className="text-red-300 text-sm mt-1">{error}</p>
+      </div>
+    </div>
+  )
+
   return (
     <div className="flex flex-col gap-4">
+
+      {yearSelectorBar}
 
       {/* Header bar */}
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-center gap-4 flex-wrap">
@@ -162,8 +172,8 @@ export default function RankingsView() {
           </p>
           <p className="text-gray-500 text-xs mt-0.5">
             {hasPreseason
-              ? 'Arrows show change from preseason Week 1 ratings'
-              : 'Rank change shows week-over-week movement'}
+              ? 'Sorted by GSF Rank · Arrows show change from preseason Week 1 ratings'
+              : 'Sorted by GSF Rank · Rank change shows week-over-week movement'}
           </p>
         </div>
         <div className="ml-auto">
@@ -183,10 +193,11 @@ export default function RankingsView() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-800">
-                <SortTh col="Rank" label="Rank" />
+                <SortTh col="GSF Rank" label="GSF Rank" />
+                <SortTh col="Rank" label="MP Rank" />
                 <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 whitespace-nowrap">Team</th>
-                <SortTh col="Power Rating" label="Power Rating" />
-                {hasPreseason && <SortTh col="Preseason Power Rating" label="Preseason PR" />}
+                <SortTh col="GSF Power Rating" label="GSF Power Rating" />
+                {hasPreseason && <SortTh col="Preseason GSF Power Rating" label="Preseason GSF PR" />}
                 <SortTh col="MP_Rating" label="MP Rating" />
                 {hasPreseason && <SortTh col="Preseason MP Rating" label="Preseason MP" />}
                 <SortTh col="Rank_Last" label="Last Wk Rank" />
@@ -201,79 +212,83 @@ export default function RankingsView() {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((row, i) => {
-                const rankChange = parseInt(row['Rank_Last']) - parseInt(row['Rank'])
-                return (
-                  <tr
-                    key={i}
-                    className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors"
-                  >
-                    {/* Rank */}
-                    <td className="px-4 py-2.5">
-                      <span className="font-mono text-xs font-medium text-white">
-                        {row['Rank'] ?? '—'}
+              {sorted.map((row, i) => (
+                <tr
+                  key={i}
+                  className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors"
+                >
+                  {/* GSF Rank */}
+                  <td className="px-4 py-2.5">
+                    <span className="font-mono text-xs font-medium text-white">
+                      {row['GSF Rank'] ?? '—'}
+                    </span>
+                  </td>
+
+                  {/* MP Rank */}
+                  <td className="px-4 py-2.5">
+                    <span className="font-mono text-xs font-medium text-white">
+                      {row['Rank'] ?? '—'}
+                    </span>
+                  </td>
+
+                  {/* Team */}
+                  <td className="px-4 py-2.5">
+                    <div className="flex flex-col">
+                      <span className="text-white font-semibold text-xs">{row['Team']}</span>
+                      <span className="text-gray-500 text-xs">
+                        {TEAM_FULL_NAMES[row['Team']] || ''}
                       </span>
-                    </td>
+                    </div>
+                  </td>
 
-                    {/* Team */}
-                    <td className="px-4 py-2.5">
-                      <div className="flex flex-col">
-                        <span className="text-white font-semibold text-xs">{row['Team']}</span>
-                        <span className="text-gray-500 text-xs">
-                          {TEAM_FULL_NAMES[row['Team']] || ''}
-                        </span>
-                      </div>
+                  {/* GSF Power Rating */}
+                  <td className="px-4 py-2.5">
+                    {ratingCell(row['GSF Power Rating'], hasPreseason ? row['Preseason GSF Power Rating'] : null)}
+                  </td>
+                  {hasPreseason && (
+                    <td className="px-4 py-2.5 text-xs text-gray-500 font-mono">
+                      {parseFloat(row['Preseason GSF Power Rating'])?.toFixed(2) ?? '—'}
                     </td>
+                  )}
 
-                    {/* Power Rating with preseason comparison */}
-                    <td className="px-4 py-2.5">
-                      {ratingCell(row['Power Rating'], hasPreseason ? row['Preseason Power Rating'] : null)}
+                  {/* MP Rating */}
+                  <td className="px-4 py-2.5">
+                    {ratingCell(row['MP_Rating'], hasPreseason ? row['Preseason MP Rating'] : null)}
+                  </td>
+                  {hasPreseason && (
+                    <td className="px-4 py-2.5 text-xs text-gray-500 font-mono">
+                      {parseFloat(row['Preseason MP Rating'])?.toFixed(2) ?? '—'}
                     </td>
-                    {hasPreseason && (
-                      <td className="px-4 py-2.5 text-xs text-gray-500 font-mono">
-                        {parseFloat(row['Preseason Power Rating'])?.toFixed(2) ?? '—'}
-                      </td>
-                    )}
+                  )}
 
-                    {/* MP Rating */}
-                    <td className="px-4 py-2.5">
-                      {ratingCell(row['MP_Rating'], hasPreseason ? row['Preseason MP Rating'] : null)}
-                    </td>
-                    {hasPreseason && (
-                      <td className="px-4 py-2.5 text-xs text-gray-500 font-mono">
-                        {parseFloat(row['Preseason MP Rating'])?.toFixed(2) ?? '—'}
-                      </td>
-                    )}
+                  {/* Last week rank + change */}
+                  <td className="px-4 py-2.5 text-xs text-gray-400 font-mono">
+                    {row['Rank_Last'] ?? '—'}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    {rankChangeCell(row['Rank'], row['Rank_Last'])}
+                  </td>
 
-                    {/* Last week rank + change */}
-                    <td className="px-4 py-2.5 text-xs text-gray-400 font-mono">
-                      {row['Rank_Last'] ?? '—'}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      {rankChangeCell(row['Rank'], row['Rank_Last'])}
-                    </td>
+                  {/* QB */}
+                  <td className="px-4 py-2.5 text-xs text-gray-300">
+                    {row['QB used'] || row['Projected QB'] || '—'}
+                  </td>
 
-                    {/* QB */}
-                    <td className="px-4 py-2.5 text-xs text-gray-300">
-                      {row['QB used'] || row['Projected QB'] || '—'}
-                    </td>
-
-                    {/* EPA columns */}
-                    <td className="px-4 py-2.5">{epaCell(row['Offensive EPA/Game'])}</td>
-                    <td className="px-4 py-2.5">{epaCell(row['Defensive EPA/Game'])}</td>
-                    <td className="px-4 py-2.5">{epaCell(row['Special Teams EPA/Game'])}</td>
-                    <td className="px-4 py-2.5 text-xs text-gray-400 font-mono">
-                      {parseFloat(row['EPA Rating'])?.toFixed(2) ?? '—'}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-gray-400 font-mono">
-                      {parseFloat(row['SR Rating (Pts)'])?.toFixed(2) ?? '—'}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-gray-400 font-mono">
-                      {parseFloat(row['Strength of Schedule'])?.toFixed(3) ?? '—'}
-                    </td>
-                  </tr>
-                )
-              })}
+                  {/* EPA columns */}
+                  <td className="px-4 py-2.5">{epaCell(row['Offensive EPA/Game'])}</td>
+                  <td className="px-4 py-2.5">{epaCell(row['Defensive EPA/Game'])}</td>
+                  <td className="px-4 py-2.5">{epaCell(row['Special Teams EPA/Game'])}</td>
+                  <td className="px-4 py-2.5 text-xs text-gray-400 font-mono">
+                    {parseFloat(row['EPA Rating'])?.toFixed(2) ?? '—'}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-gray-400 font-mono">
+                    {parseFloat(row['SR Rating (Pts)'])?.toFixed(2) ?? '—'}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-gray-400 font-mono">
+                    {parseFloat(row['Strength of Schedule'])?.toFixed(3) ?? '—'}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
