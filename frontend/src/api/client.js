@@ -1,8 +1,11 @@
 const raw = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const API_URL = raw.startsWith('http') ? raw : `https://${raw}`
 
-export async function fetchWeeks() {
-  const res = await fetch(`${API_URL}/api/weeks`)
+export async function fetchWeeks(year = null) {
+  const url = year != null
+    ? `${API_URL}/api/weeks?year=${year}`
+    : `${API_URL}/api/weeks`
+  const res = await fetch(url)
   if (!res.ok) throw new Error('Failed to fetch weeks')
   return res.json()
 }
@@ -29,23 +32,31 @@ export async function fetchLastUpdated() {
   return res.json()
 }
 
-export async function fetchSchedule(week = null) {
-  const url = week != null
-    ? `${API_URL}/api/schedule?week=${week}`
-    : `${API_URL}/api/schedule`
+export async function fetchSchedule(week = null, year = null) {
+  const params = new URLSearchParams()
+  if (week != null) params.set('week', week)
+  if (year != null) params.set('year', year)
+  const query = params.toString()
+  const url = `${API_URL}/api/schedule${query ? '?' + query : ''}`
   const res = await fetch(url)
   if (!res.ok) throw new Error('Failed to fetch schedule')
   return res.json()
 }
 
-export async function fetchRankings() {
-  const res = await fetch(`${API_URL}/api/rankings`)
+export async function fetchRankings(year = null) {
+  const url = year != null
+    ? `${API_URL}/api/rankings?year=${year}`
+    : `${API_URL}/api/rankings`
+  const res = await fetch(url)
   if (!res.ok) throw new Error('Failed to fetch rankings')
   return res.json()
 }
 
-export async function fetchRecommendedBets() {
-  const res = await fetch(`${API_URL}/api/recommended-bets`)
+export async function fetchRecommendedBets(year = null) {
+  const url = year != null
+    ? `${API_URL}/api/recommended-bets?year=${year}`
+    : `${API_URL}/api/recommended-bets`
+  const res = await fetch(url)
   if (!res.ok) throw new Error('Failed to fetch recommended bets')
   return res.json()
 }
@@ -98,6 +109,21 @@ export async function fetchContestYears() {
 
 export async function fetchContestData(year) {
   const res = await fetch(`${API_URL}/api/contest/${year}`)
+  if (!res.ok) throw new Error(`Failed to fetch contest data for ${year}`)
+  return res.json()
+}
+
+export async function fetchAvailableYears() {
+  const res = await fetch(`${API_URL}/api/available-years`)
+  if (!res.ok) throw new Error('Failed to fetch available years')
+  return res.json()
+}
+
+export async function fetchContestData(year, asOfWeek = null) {
+  const url = asOfWeek != null
+    ? `${API_URL}/api/contest/${year}?as_of_week=${asOfWeek}`
+    : `${API_URL}/api/contest/${year}`
+  const res = await fetch(url)
   if (!res.ok) throw new Error(`Failed to fetch contest data for ${year}`)
   return res.json()
 }
