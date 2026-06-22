@@ -4124,7 +4124,7 @@ def loop_through_simulations(date_str):
         sim = AdvancedNFLSimulator()
         sim.load_data()
 
-        years_to_load = [target_year, target_year - 1, target_year - 2, target_year - 3]
+        years_to_load = [target_year_load, target_year_load - 1, target_year_load - 2, target_year_load - 3]
         qb_rating_map, replacement_epa = get_qb_ratings_fast(years_to_load, target_year, upcoming_week)
         
         simulation_results = []
