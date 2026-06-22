@@ -992,6 +992,22 @@ def get_available_years():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/debug-paths")
+def debug_paths():
+    import os
+    base = DATA_DIR
+    try:
+        nfl_sched_files = os.listdir(os.path.join(base, "nfl-schedules"))
+    except:
+        nfl_sched_files = "DIRECTORY MISSING"
+    return {
+        "cwd": os.getcwd(),
+        "DATA_DIR": base,
+        "nfl_schedules_contents": nfl_sched_files,
+        "schedule_2026_exists": os.path.exists(os.path.join(base, "nfl-schedules/schedule_2026.csv")),
+        "schedule_2025_exists": os.path.exists(os.path.join(base, "nfl-schedules/schedule_2025.csv")),
+    }
+
 
 # ---------------------------------------------------------------
 # Railway startup — reads PORT from environment (Railway sets this)
