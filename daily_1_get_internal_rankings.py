@@ -105,6 +105,10 @@ def loop_through_rankings(date):
             if not reg_season_games.empty:
                 # Find the very first game date of the season
                 first_game_date = pd.to_datetime(reg_season_games['gameday'].min())
+                if pd.to_datetime(today) < first_game_date:
+                    print(f"Today ({today.date()}) is before the first game ({first_game_date.date()}). dropping years to load by 1.")
+                    # Reload schedule for the adjusted year so we can calculate the week correctly below
+                    target_year_load = target_year - 1
             
             # 4. Calculate the Current Week
             # We find the latest game that has happened to determine "current" week
@@ -170,7 +174,7 @@ def loop_through_rankings(date):
     SR_TO_POINTS_COEFF = 0.765 
     
     # TYPICAL STARTERS MAP (Primary 2025 Starters)
-    from starting_qb_injuries_2025 import TYPICAL_STARTERS, MANUAL_CURRENT_STARTERS
+    from starting_qb_injuries_2026 import TYPICAL_STARTERS, MANUAL_CURRENT_STARTERS
     
     def load_pbp_data(years):
         print(f"Loading PBP data for {years}...")
@@ -270,7 +274,7 @@ def loop_through_rankings(date):
         # 1. Setup
         current_date = today
         start_date = current_date - timedelta(days=DAYS_WINDOW)
-        years_to_load = [target_year, target_year - 1, target_year - 2, target_year - 3]
+        years_to_load = [target_year_load, target_year_load - 1, target_year_load - 2, target_year_load - 3]
         
         # 2. Load
         pbp = load_pbp_data(years_to_load)
