@@ -5906,14 +5906,14 @@ if __name__ == "__main__":
 #        "11/11/2020", #Leading up to Week 10
 #        "11/18/2020", #Leading up to Week 11
 #        "11/25/2020", #Leading up to Week 12
-        "11/28/2020", #Leading up to Week 13
-        "12/02/2020", #Leading up to Week 14
-        "12/09/2020", #Leading up to Week 15
-        "12/16/2020", #Leading up to Week 16
-        "12/23/2020", #Leading up to Week 17
-        "12/30/2020", #Leading up to Week 18
+#        "11/28/2020", #Leading up to Week 13
+#        "12/02/2020", #Leading up to Week 14
+#        "12/09/2020", #Leading up to Week 15
+#        "12/16/2020", #Leading up to Week 16
+#        "12/23/2020", #Leading up to Week 17
+#        "12/30/2020", #Leading up to Week 18
         
-#        formatted_date
+        formatted_date
     ]
 
     for date in week_starting_dates:
