@@ -72,6 +72,9 @@ def loop_through_simulations(date_str):
     if today <= first_game_date:
         starting_week = 1
         upcoming_week = starting_week
+        print(f"Today ({today.date()}) is before the first game ({first_game_date.date()}). dropping years to load by 1.")
+        # Reload schedule for the adjusted year so we can calculate the week correctly below
+        target_year_load = target_year - 1
     else:
         # 1. Find the final game date for every week in the season
         # This creates a Series where index = Week, value = Latest Game Date for that week
