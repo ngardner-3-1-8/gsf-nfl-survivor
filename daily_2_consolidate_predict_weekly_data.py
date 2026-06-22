@@ -2075,6 +2075,14 @@ def loop_through_simulations(date_str):
         
         # Convert the list of dictionaries to a DataFrame
         public_pick_df = pd.DataFrame(all_data)
+
+        if public_pick_df.empty:
+            print("No public pick rows scraped (likely pre-Week 1). "
+                  "Proceeding with an empty public pick dataset.")
+            public_pick_df = pd.DataFrame(
+                columns=['EV', 'Win %', 'Pick %', 'Team', 'Opponent',
+                         'Future Value (Stars)', 'Year', 'Week']
+        )
         
         # Cleanup the scraped data
         public_pick_df['Team'] = public_pick_df['Team'].str.replace(r'\s\(L\)', '', regex=True)
