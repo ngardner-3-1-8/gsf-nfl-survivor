@@ -107,12 +107,6 @@ export async function fetchContestYears() {
   return res.json()
 }
 
-export async function fetchContestData(year) {
-  const res = await fetch(`${API_URL}/api/contest/${year}`)
-  if (!res.ok) throw new Error(`Failed to fetch contest data for ${year}`)
-  return res.json()
-}
-
 export async function fetchAvailableYears() {
   const res = await fetch(`${API_URL}/api/available-years`)
   if (!res.ok) throw new Error('Failed to fetch available years')
