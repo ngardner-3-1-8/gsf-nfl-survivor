@@ -246,6 +246,59 @@ export default function RecommendedBetsView() {
         </div>
       )}
 
+      {isHistorical && data?.season_summary && (
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-800">
+            <p className="text-white font-semibold text-sm">
+              Season Backtest Results — {data.target_year}
+            </p>
+            <p className="text-gray-500 text-xs mt-0.5">
+              Actual Win/Loss and P/L across all {data.target_year} bets
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-800">
+                  {['Model', 'Record', 'Win%', 'Total P/L', 'Per Bet Avg'].map(h => (
+                    <th key={h} className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(data.season_summary).map(([key, s]) => {
+                  const total = s.wins + s.losses + s.pushes
+                  const winPct = total > 0 ? ((s.wins / (total - s.pushes)) * 100).toFixed(1) : '—'
+                  const perBet = total > 0 ? (s.total_pl / total).toFixed(2) : '—'
+                  return (
+                    <tr key={key} className="border-b border-gray-800/50 hover:bg-gray-800/20">
+                      <td className="px-4 py-2.5 text-white text-xs font-medium">{key.replace(/([A-Z])/g, ' $1')}</td>
+                      <td className="px-4 py-2.5 text-xs font-mono text-gray-300">
+                        {s.wins}W-{s.losses}L{s.pushes > 0 ? `-${s.pushes}P` : ''}
+                        {s.no_bets > 0 && <span className="text-gray-600 ml-1">({s.no_bets} NB)</span>}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs font-mono">
+                        <span className={parseFloat(winPct) >= 55 ? 'text-green-400' : parseFloat(winPct) >= 50 ? 'text-yellow-400' : 'text-red-400'}>
+                          {winPct}%
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs font-mono">
+                        <span className={s.total_pl >= 0 ? 'text-green-400' : 'text-red-400'}>
+                          {s.total_pl >= 0 ? '+' : ''}${Math.abs(s.total_pl).toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs font-mono text-gray-400">
+                        ${perBet}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Methodology note */}
       <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 text-xs text-gray-500">
         <p className="font-medium text-gray-400 mb-1">Recommendation methodology</p>
