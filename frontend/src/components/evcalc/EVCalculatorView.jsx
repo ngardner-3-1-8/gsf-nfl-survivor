@@ -3,26 +3,7 @@ import { fetchWeeks, fetchSchedule } from '../../api/client'
 import { useAvailableYears } from '../../hooks/useAvailableYears'
 import YearSelector from '../ui/YearSelector'
 
-// Inside the component, replace the existing year-unaware fetch:
-const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
-
-// Add year to all fetchSchedule and fetchWeeks calls:
-useEffect(() => {
-  if (!selectedYear) return
-  fetchWeeks(selectedYear).then(...)
-}, [selectedYear])
-
-useEffect(() => {
-  if (!selectedWeek || !selectedYear) return
-  fetchSchedule(selectedWeek.week, selectedYear).then(...)
-}, [selectedWeek, selectedYear])
-
-// Add the YearSelector to the header bar JSX:
-<YearSelector years={years} selectedYear={selectedYear} onChange={setSelectedYear} />
-
 // ── EV Formula ────────────────────────────────────────────────
-// EV(team) = win_pct / expected_survivors
-// expected_survivors = sum of (pick_pct × win_pct) for all teams this week
 function calculateEV(rows) {
   const expectedSurvivors = rows.reduce((sum, r) => {
     return sum + (r.pick_pct / 100) * (r.win_pct / 100)
@@ -66,7 +47,10 @@ function EditableCell({ value, onChange, suffix = '', min = 0, max = 100, step =
         max={max}
         onChange={e => setLocalVal(e.target.value)}
         onBlur={commit}
-        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setEditing(false); setLocalVal(Number(value).toFixed(1)) } }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') commit()
+          if (e.key === 'Escape') { setEditing(false); setLocalVal(Number(value).toFixed(1)) }
+        }}
         className="w-20 bg-gray-800 border border-green-600 text-white text-xs rounded px-2 py-1 font-mono focus:outline-none"
       />
     )
@@ -83,7 +67,6 @@ function EditableCell({ value, onChange, suffix = '', min = 0, max = 100, step =
   )
 }
 
-// ── EV color ─────────────────────────────────────────────────
 function evColor(ev) {
   if (ev >= 0.12) return 'text-green-400'
   if (ev >= 0.08) return 'text-yellow-400'
@@ -108,34 +91,50 @@ export default function EVCalculatorView() {
   const [sortKey, setSortKey] = useState('ev')
   const [sortDir, setSortDir] = useState('desc')
 
-  // Load week options on mount
+  const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
+
+  // Reload week options when year changes
   useEffect(() => {
-    fetchWeeks()
+    if (!selectedYear) return
+    setSelectedWeek(null)
+    setRows([])
+    fetchWeeks(selectedYear)
       .then(data => {
         const options = data.weeks || []
         setWeekOptions(options)
         if (options.length > 0) {
-          setSelectedWeek(options.find(w => w.week === data.upcoming_week) || options[0])
+          setSelectedWeek(
+            options.find(w => w.week === data.upcoming_week) || options[0]
+          )
         }
       })
       .catch(() => {})
-  }, [])
+  }, [selectedYear])
 
-  // Load games when week changes
+  // Load games when week or year changes
   useEffect(() => {
-    if (!selectedWeek) return
+    if (!selectedWeek || !selectedYear) return
     setLoading(true)
     setHasEdits(false)
-    fetchSchedule(selectedWeek.week)
+    fetchSchedule(selectedWeek.week, selectedYear)
       .then(data => {
         const games = data.games || []
-        // Build one row per team per game
         const built = []
         games.forEach(game => {
           const awayPick = parseFloat(game['Away Pick %']) || 0
           const homePick = parseFloat(game['Home Pick %']) || 0
-          const awayWin = parseFloat(game['Consensus Away Win Pct']) * 100 || 50
-          const homeWin = parseFloat(game['Consensus Home Win Pct']) * 100 || 50
+
+          // Historical mode: use actual sportsbook fair odds for win%
+          // Live mode: use consensus win%
+          const awayWinRaw = isHistorical
+            ? parseFloat(game['Away Team Sportsbook Fair Odds'])
+            : parseFloat(game['Consensus Away Win Pct'])
+          const homeWinRaw = isHistorical
+            ? parseFloat(game['Home Team Sportsbook Fair Odds'])
+            : parseFloat(game['Consensus Home Win Pct'])
+
+          const awayWin = (!isNaN(awayWinRaw) ? awayWinRaw * 100 : 50)
+          const homeWin = (!isNaN(homeWinRaw) ? homeWinRaw * 100 : 50)
 
           built.push({
             id: `${game['Away Team']}_${game['Week_x']}`,
@@ -144,12 +143,10 @@ export default function EVCalculatorView() {
             home_or_away: 'Away',
             game_label: `${game['Away Team']} @ ${game['Home Team']}`,
             circa_week: game['Circa Week'] || `Week ${game['Week_x']}`,
-            pick_pct: awayPick * 100,    // store as 0-100
-            win_pct: awayWin,            // store as 0-100
-            // original values for reset
+            pick_pct: awayPick * 100,
+            win_pct: awayWin,
             _orig_pick: awayPick * 100,
             _orig_win: awayWin,
-            // flags
             is_thanksgiving: !!(game['Away Team Thanksgiving Favorite'] || game['Away Team Thanksgiving Underdog']),
             is_christmas: !!(game['Away Team Christmas Favorite'] || game['Away Team Christmas Underdog']),
           })
@@ -172,20 +169,18 @@ export default function EVCalculatorView() {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
-  }, [selectedWeek])
+  }, [selectedWeek, selectedYear])
 
-  // Calculate EV live from current rows
+  // Calculate EV live — zero availability teams excluded from denominator
   const rowsWithEV = useMemo(() => {
     const eligible = rows.filter(r => r.pick_pct > 0)
     const withEV = calculateEV(eligible)
-    // Return all rows but set EV to null for ineligible teams
     return rows.map(r => {
       if (r.pick_pct <= 0) return { ...r, ev: null }
       return withEV.find(e => e.id === r.id) || { ...r, ev: null }
     })
   }, [rows])
 
-  // Sort
   const sorted = useMemo(() => {
     return [...rowsWithEV].sort((a, b) => {
       const av = a[sortKey] ?? 0
@@ -209,10 +204,11 @@ export default function EVCalculatorView() {
     setHasEdits(false)
   }
 
-  // Summary stats
   const totalPickPct = rows.reduce((s, r) => s + r.pick_pct, 0)
   const expectedSurvivors = rows.reduce((s, r) => s + (r.pick_pct / 100) * (r.win_pct / 100), 0)
-  const topEV = rowsWithEV.length > 0 ? Math.max(...rowsWithEV.map(r => r.ev)) : 0
+  const topEV = rowsWithEV.filter(r => r.ev !== null).length > 0
+    ? Math.max(...rowsWithEV.filter(r => r.ev !== null).map(r => r.ev))
+    : 0
 
   const SortTh = ({ col, label, right = false }) => (
     <th
@@ -229,12 +225,28 @@ export default function EVCalculatorView() {
   return (
     <div className="flex flex-col gap-4">
 
+      {/* Year selector */}
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-4 flex-wrap">
+        <YearSelector
+          years={years}
+          selectedYear={selectedYear}
+          onChange={setSelectedYear}
+        />
+        {isHistorical && (
+          <span className="text-xs text-amber-400">
+            📋 {selectedYear} — using actual sportsbook odds and pick percentages
+          </span>
+        )}
+      </div>
+
       {/* Header */}
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-center gap-4 flex-wrap">
         <div>
           <p className="text-white font-semibold text-sm">EV Calculator</p>
           <p className="text-gray-500 text-xs mt-0.5">
-            Edit pick% or win% for any team — EV recalculates instantly
+            {isHistorical
+              ? 'Pre-populated with actual pick% and sportsbook odds — still editable'
+              : 'Edit pick% or win% for any team — EV recalculates instantly'}
           </p>
         </div>
 
@@ -273,7 +285,6 @@ export default function EVCalculatorView() {
           </div>
         </div>
 
-        {/* Reset button */}
         {hasEdits && (
           <button
             onClick={resetAll}
@@ -310,14 +321,14 @@ export default function EVCalculatorView() {
                   <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 whitespace-nowrap">Game</th>
                   <SortTh col="team" label="Team" />
                   <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">H/A</th>
-                  <SortTh col="win_pct" label="Win % ✏️" right />
-                  <SortTh col="pick_pct" label="Pick % ✏️" right />
+                  <SortTh col="win_pct" label={isHistorical ? 'SB Win % ✏️' : 'Win % ✏️'} right />
+                  <SortTh col="pick_pct" label={isHistorical ? 'Actual Pick % ✏️' : 'Pick % ✏️'} right />
                   <SortTh col="ev" label="EV" right />
                   <th className="text-right px-4 py-2.5 text-xs font-medium text-gray-500">EV Rank</th>
                 </tr>
               </thead>
               <tbody>
-                {sorted.map((row, i) => {
+                {sorted.map((row) => {
                   const rank = row.ev === null ? null :
                     [...rowsWithEV]
                       .filter(r => r.ev !== null)
@@ -335,7 +346,6 @@ export default function EVCalculatorView() {
                           : 'hover:bg-gray-800/20'
                       }`}
                     >
-                      {/* Game */}
                       <td className="px-4 py-2.5 text-xs text-gray-500 whitespace-nowrap">
                         {row.game_label}
                         {(row.is_thanksgiving || row.is_christmas) && (
@@ -343,12 +353,10 @@ export default function EVCalculatorView() {
                         )}
                       </td>
 
-                      {/* Team */}
                       <td className="px-4 py-2.5">
                         <span className="text-white font-semibold text-xs">{row.team}</span>
                       </td>
 
-                      {/* H/A */}
                       <td className="px-4 py-2.5">
                         <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
                           row.home_or_away === 'Home'
@@ -359,7 +367,6 @@ export default function EVCalculatorView() {
                         </span>
                       </td>
 
-                      {/* Win % — editable */}
                       <td className="px-4 py-2.5 text-right">
                         <div className="flex items-center justify-end gap-1">
                           {winEdited && <span className="text-yellow-500 text-xs">*</span>}
@@ -376,7 +383,6 @@ export default function EVCalculatorView() {
                         </div>
                       </td>
 
-                      {/* Pick % — editable */}
                       <td className="px-4 py-2.5 text-right">
                         <div className="flex items-center justify-end gap-1">
                           {pickEdited && <span className="text-yellow-500 text-xs">*</span>}
@@ -391,7 +397,6 @@ export default function EVCalculatorView() {
                         </div>
                       </td>
 
-                      {/* EV */}
                       <td className="px-4 py-2.5 text-right">
                         {row.ev === null ? (
                           <span className="text-xs text-gray-600 italic">N/A</span>
@@ -401,8 +406,7 @@ export default function EVCalculatorView() {
                           </span>
                         )}
                       </td>
-                      
-                      {/* EV Rank */}
+
                       <td className="px-4 py-2.5 text-right">
                         {row.ev === null ? (
                           <span className="text-xs text-gray-600">—</span>
@@ -422,7 +426,6 @@ export default function EVCalculatorView() {
             </table>
           </div>
 
-          {/* Footer — pick% sum warning */}
           <div className="px-4 py-2.5 border-t border-gray-800 flex items-center gap-4 text-xs flex-wrap">
             {Math.abs(totalPickPct - 100) > 2 ? (
               <span className="text-yellow-400">
@@ -446,7 +449,9 @@ export default function EVCalculatorView() {
         <p>
           EV(team) = Win%(team) ÷ Expected Survivors · · ·
           Expected Survivors = Σ (Pick% × Win%) for all teams this week · · ·
-          A higher EV means better value relative to how many contest entries will be eliminated if that team loses.
+          {isHistorical
+            ? ' Historical mode uses actual sportsbook fair odds for win% and actual contest pick percentages.'
+            : ' A higher EV means better value relative to how many contest entries will be eliminated if that team loses.'}
         </p>
       </div>
     </div>
