@@ -28,6 +28,12 @@ const TABS = [
   { id: 'faq',           label: 'FAQ' },
 ]
 
+export async function fetchAvailableYears() {
+  const res = await fetch(`${API_URL}/api/available-years`)
+  if (!res.ok) throw new Error('Failed to fetch available years')
+  return res.json()
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('optimizer')
   const [lastUpdated, setLastUpdated] = useState(null)
