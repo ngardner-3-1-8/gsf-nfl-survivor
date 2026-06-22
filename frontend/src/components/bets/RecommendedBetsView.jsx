@@ -1,5 +1,24 @@
 import { useState, useEffect } from 'react'
 import { fetchRecommendedBets } from '../../api/client'
+import { useAvailableYears } from '../../hooks/useAvailableYears'
+import YearSelector from '../ui/YearSelector'
+
+// Inside the component, replace the existing year-unaware fetch:
+const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
+
+// Add year to all fetchSchedule and fetchWeeks calls:
+useEffect(() => {
+  if (!selectedYear) return
+  fetchWeeks(selectedYear).then(...)
+}, [selectedYear])
+
+useEffect(() => {
+  if (!selectedWeek || !selectedYear) return
+  fetchSchedule(selectedWeek.week, selectedYear).then(...)
+}, [selectedWeek, selectedYear])
+
+// Add the YearSelector to the header bar JSX:
+<YearSelector years={years} selectedYear={selectedYear} onChange={setSelectedYear} />
 
 const TIER_CONFIG = {
   S: { label: 'S', bg: 'bg-green-900/60', text: 'text-green-300', border: 'border-green-700', desc: 'Highest confidence' },
