@@ -3,23 +3,6 @@ import { fetchRecommendedBets } from '../../api/client'
 import { useAvailableYears } from '../../hooks/useAvailableYears'
 import YearSelector from '../ui/YearSelector'
 
-// Inside the component, replace the existing year-unaware fetch:
-const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
-
-// Add year to all fetchSchedule and fetchWeeks calls:
-useEffect(() => {
-  if (!selectedYear) return
-  fetchWeeks(selectedYear).then(...)
-}, [selectedYear])
-
-useEffect(() => {
-  if (!selectedWeek || !selectedYear) return
-  fetchSchedule(selectedWeek.week, selectedYear).then(...)
-}, [selectedWeek, selectedYear])
-
-// Add the YearSelector to the header bar JSX:
-<YearSelector years={years} selectedYear={selectedYear} onChange={setSelectedYear} />
-
 const TIER_CONFIG = {
   S: { label: 'S', bg: 'bg-green-900/60', text: 'text-green-300', border: 'border-green-700', desc: 'Highest confidence' },
   A: { label: 'A', bg: 'bg-blue-900/60', text: 'text-blue-300', border: 'border-blue-700', desc: 'Strong signal' },
@@ -72,26 +55,18 @@ export default function RecommendedBetsView() {
   const [filterTier, setFilterTier] = useState('all')
   const [filterType, setFilterType] = useState('all')
 
+  const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
+
+  // Reload bets when year changes
   useEffect(() => {
-    fetchRecommendedBets()
+    if (!selectedYear) return
+    setLoading(true)
+    setError(null)
+    fetchRecommendedBets(selectedYear)
       .then(d => setData(d))
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
-  }, [])
-
-  if (loading) return (
-    <div className="flex items-center justify-center h-64 gap-3">
-      <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
-      <span className="text-gray-400 text-sm">Loading recommendations...</span>
-    </div>
-  )
-
-  if (error) return (
-    <div className="bg-red-950/50 border border-red-800 rounded-xl p-4">
-      <p className="text-red-400 text-sm font-medium">Error</p>
-      <p className="text-red-300 text-sm mt-1">{error}</p>
-    </div>
-  )
+  }, [selectedYear])
 
   const bets = data?.bets || []
   const counts = data?.counts || {}
@@ -102,17 +77,58 @@ export default function RecommendedBetsView() {
     return true
   })
 
+  const yearSelectorBar = (
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-4 flex-wrap">
+      <YearSelector
+        years={years}
+        selectedYear={selectedYear}
+        onChange={setSelectedYear}
+      />
+      {isHistorical && (
+        <span className="text-xs text-amber-400">
+          📋 {selectedYear} season — showing backtest results
+        </span>
+      )}
+    </div>
+  )
+
+  if (loading) return (
+    <div className="flex flex-col gap-4">
+      {yearSelectorBar}
+      <div className="flex items-center justify-center h-64 gap-3">
+        <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+        <span className="text-gray-400 text-sm">Loading recommendations...</span>
+      </div>
+    </div>
+  )
+
+  if (error) return (
+    <div className="flex flex-col gap-4">
+      {yearSelectorBar}
+      <div className="bg-red-950/50 border border-red-800 rounded-xl p-4">
+        <p className="text-red-400 text-sm font-medium">Error</p>
+        <p className="text-red-300 text-sm mt-1">{error}</p>
+      </div>
+    </div>
+  )
+
   return (
     <div className="flex flex-col gap-4">
+
+      {/* Year selector */}
+      {yearSelectorBar}
 
       {/* Summary bar */}
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-center gap-4 flex-wrap">
         <div>
           <p className="text-white font-semibold text-sm">
-            Recommended Bets — Week {data?.upcoming_week} {data?.target_year}
+            {isHistorical ? 'Backtest' : 'Recommended'} Bets — {data?.target_year}
+            {!isHistorical && ` Week ${data?.upcoming_week}`}
           </p>
           <p className="text-gray-500 text-xs mt-0.5">
-            Based on historical edge profitability analysis
+            {isHistorical
+              ? `Full ${data?.target_year} season — what the model recommended with actual results`
+              : 'Based on historical edge profitability analysis'}
           </p>
         </div>
 
@@ -160,10 +176,76 @@ export default function RecommendedBetsView() {
         </div>
       </div>
 
+      {/* Season backtest summary — historical mode only */}
+      {isHistorical && data?.season_summary && (
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-800">
+            <p className="text-white font-semibold text-sm">
+              Season Backtest Results — {data.target_year}
+            </p>
+            <p className="text-gray-500 text-xs mt-0.5">
+              Actual Win/Loss and P/L across all {data.target_year} bets
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-800">
+                  {['Model', 'Record', 'Win%', 'Total P/L', 'Per Bet Avg'].map(h => (
+                    <th key={h} className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(data.season_summary).map(([key, s]) => {
+                  const settled = s.wins + s.losses + s.pushes
+                  const winPct = (settled - s.pushes) > 0
+                    ? ((s.wins / (settled - s.pushes)) * 100).toFixed(1)
+                    : '—'
+                  const perBet = settled > 0
+                    ? (s.total_pl / settled).toFixed(2)
+                    : '—'
+                  return (
+                    <tr key={key} className="border-b border-gray-800/50 hover:bg-gray-800/20">
+                      <td className="px-4 py-2.5 text-white text-xs font-medium">
+                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs font-mono text-gray-300">
+                        {s.wins}W-{s.losses}L{s.pushes > 0 ? `-${s.pushes}P` : ''}
+                        {s.no_bets > 0 && (
+                          <span className="text-gray-600 ml-1">({s.no_bets} NB)</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs font-mono">
+                        <span className={
+                          parseFloat(winPct) >= 55 ? 'text-green-400' :
+                          parseFloat(winPct) >= 50 ? 'text-yellow-400' :
+                          'text-red-400'
+                        }>
+                          {winPct}{winPct !== '—' ? '%' : ''}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs font-mono">
+                        <span className={s.total_pl >= 0 ? 'text-green-400' : 'text-red-400'}>
+                          {s.total_pl >= 0 ? '+' : ''}${Math.abs(s.total_pl).toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs font-mono text-gray-400">
+                        {perBet !== '—' ? `$${perBet}` : '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Bet cards */}
       {filtered.length === 0 ? (
         <div className="bg-gray-900 border border-gray-800 rounded-2xl flex items-center justify-center h-40">
-          <p className="text-gray-500 text-sm">No bets match your filters this week</p>
+          <p className="text-gray-500 text-sm">No bets match your filters</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3">
@@ -201,7 +283,7 @@ export default function RecommendedBetsView() {
                   </div>
                 </div>
 
-                {/* Right — pick + edge */}
+                {/* Right — pick + edge + historical result */}
                 <div className="text-right">
                   <p className="text-white font-bold text-base">{bet.pick}</p>
                   {bet.direction && (
@@ -212,12 +294,27 @@ export default function RecommendedBetsView() {
                       +{bet.edge}{bet.edge_unit || ' pts'}
                     </span>
                   </p>
+                  {/* Historical W/L result inline */}
+                  {isHistorical && bet.win_loss && (
+                    <p className={`text-xs font-semibold mt-1 ${
+                      bet.win_loss === 'Win'  ? 'text-green-400' :
+                      bet.win_loss === 'Loss' ? 'text-red-400'   :
+                      bet.win_loss === 'Push' ? 'text-yellow-400': 'text-gray-500'
+                    }`}>
+                      {bet.win_loss}
+                      {bet.pnl != null && (
+                        <span className="ml-1 font-normal">
+                          ({bet.pnl >= 0 ? '+' : ''}${Number(bet.pnl).toFixed(2)})
+                        </span>
+                      )}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <WagerInfo bet={bet} />
 
-              {/* Historical context bar */}
+              {/* Context bar */}
               <div className="mt-2 pt-2 border-t border-gray-800 flex items-center gap-4 text-xs text-gray-600 flex-wrap">
                 {bet.model === 'Monte Carlo' && bet.bet_type === 'Spread' && (
                   <>
@@ -243,59 +340,6 @@ export default function RecommendedBetsView() {
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {isHistorical && data?.season_summary && (
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-800">
-            <p className="text-white font-semibold text-sm">
-              Season Backtest Results — {data.target_year}
-            </p>
-            <p className="text-gray-500 text-xs mt-0.5">
-              Actual Win/Loss and P/L across all {data.target_year} bets
-            </p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-800">
-                  {['Model', 'Record', 'Win%', 'Total P/L', 'Per Bet Avg'].map(h => (
-                    <th key={h} className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(data.season_summary).map(([key, s]) => {
-                  const total = s.wins + s.losses + s.pushes
-                  const winPct = total > 0 ? ((s.wins / (total - s.pushes)) * 100).toFixed(1) : '—'
-                  const perBet = total > 0 ? (s.total_pl / total).toFixed(2) : '—'
-                  return (
-                    <tr key={key} className="border-b border-gray-800/50 hover:bg-gray-800/20">
-                      <td className="px-4 py-2.5 text-white text-xs font-medium">{key.replace(/([A-Z])/g, ' $1')}</td>
-                      <td className="px-4 py-2.5 text-xs font-mono text-gray-300">
-                        {s.wins}W-{s.losses}L{s.pushes > 0 ? `-${s.pushes}P` : ''}
-                        {s.no_bets > 0 && <span className="text-gray-600 ml-1">({s.no_bets} NB)</span>}
-                      </td>
-                      <td className="px-4 py-2.5 text-xs font-mono">
-                        <span className={parseFloat(winPct) >= 55 ? 'text-green-400' : parseFloat(winPct) >= 50 ? 'text-yellow-400' : 'text-red-400'}>
-                          {winPct}%
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-xs font-mono">
-                        <span className={s.total_pl >= 0 ? 'text-green-400' : 'text-red-400'}>
-                          {s.total_pl >= 0 ? '+' : ''}${Math.abs(s.total_pl).toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-xs font-mono text-gray-400">
-                        ${perBet}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
 
