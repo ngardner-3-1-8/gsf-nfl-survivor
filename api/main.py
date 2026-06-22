@@ -55,6 +55,39 @@ def clean_df(df: pd.DataFrame) -> pd.DataFrame:
         df[col] = df[col].where(pd.notnull(df[col]), None)
     return df
 
+def load_historical_data(data_dir: str, year: int):
+    """
+    Loads the most recent Season_*_Final_Data.csv for a given historical year.
+    Returns the DataFrame and metadata.
+    """
+    final_data_dir = os.path.join(
+        data_dir, f"nfl-power-ratings/final-data/{year}_final_data"
+    )
+    if not os.path.exists(final_data_dir):
+        raise FileNotFoundError(f"No final data directory for {year}")
+
+    # Find the file with the highest week number
+    files = glob.glob(os.path.join(final_data_dir, f"Season_{year}_Through_Week_*_Final_Data.csv"))
+    if not files:
+        raise FileNotFoundError(f"No final data files found for {year}")
+
+    def extract_week(path):
+        try:
+            name = os.path.basename(path)
+            return int(name.split("_Week_")[1].split("_Final")[0])
+        except (IndexError, ValueError):
+            return 0
+
+    latest_file = max(files, key=extract_week)
+    latest_week = extract_week(latest_file)
+
+    df = pd.read_csv(latest_file)
+    df = df.replace([np.inf, -np.inf], np.nan)
+    for col in df.columns:
+        df[col] = df[col].where(pd.notnull(df[col]), None)
+
+    return df, latest_week, latest_file
+
 
 @app.get("/")
 def root():
@@ -958,40 +991,6 @@ def get_available_years():
         }))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-def load_historical_data(data_dir: str, year: int):
-    """
-    Loads the most recent Season_*_Final_Data.csv for a given historical year.
-    Returns the DataFrame and metadata.
-    """
-    final_data_dir = os.path.join(
-        data_dir, f"nfl-power-ratings/final-data/{year}_final_data"
-    )
-    if not os.path.exists(final_data_dir):
-        raise FileNotFoundError(f"No final data directory for {year}")
-
-    # Find the file with the highest week number
-    files = glob.glob(os.path.join(final_data_dir, f"Season_{year}_Through_Week_*_Final_Data.csv"))
-    if not files:
-        raise FileNotFoundError(f"No final data files found for {year}")
-
-    def extract_week(path):
-        try:
-            name = os.path.basename(path)
-            return int(name.split("_Week_")[1].split("_Final")[0])
-        except (IndexError, ValueError):
-            return 0
-
-    latest_file = max(files, key=extract_week)
-    latest_week = extract_week(latest_file)
-
-    df = pd.read_csv(latest_file)
-    df = df.replace([np.inf, -np.inf], np.nan)
-    for col in df.columns:
-        df[col] = df[col].where(pd.notnull(df[col]), None)
-
-    return df, latest_week, latest_file
 
 
 # ---------------------------------------------------------------
