@@ -10,6 +10,7 @@ from api.data_loader import load_current_data
 from api.optimizer import run_optimizer
 import math
 from fastapi.responses import JSONResponse
+import glob
 
 def sanitize(obj):
     """Recursively replace nan/inf with None for JSON serialization."""
@@ -61,19 +62,48 @@ def root():
 
 
 @app.get("/api/schedule")
-def get_schedule(week: int = Query(None)):
+def get_schedule(week: int = Query(None), year: int = Query(None)):
     try:
         data = load_current_data(DATA_DIR)
+        current_year = data["target_year"]
+
+        if year and year != current_year:
+            df, latest_week, source_file = load_historical_data(DATA_DIR, year)
+            week_col = "Week_x" if "Week_x" in df.columns else "Week"
+            if week is not None:
+                df = df[df[week_col] == week]
+            # Build week options from the data
+            circa_col = "Circa Week" if "Circa Week" in df.columns else None
+            weeks_df = df[[week_col] + ([circa_col] if circa_col else [])].drop_duplicates()
+            week_options = []
+            for _, r in weeks_df.iterrows():
+                w = int(r[week_col])
+                label = str(r[circa_col]) if circa_col and pd.notna(r.get(circa_col)) else f"Week {w}"
+                week_options.append({"week": w, "label": label})
+
+            result = {
+                "upcoming_week": latest_week,
+                "target_year": year,
+                "source_file": source_file,
+                "weeks": sorted(df[week_col].dropna().unique().tolist()),
+                "total_games": len(df),
+                "games": df.to_dict(orient="records"),
+                "is_historical": True,
+            }
+            return JSONResponse(content=sanitize(result))
+
+        # Existing live logic unchanged
         df = clean_df(data["sim_df"])
         if week is not None:
             df = df[df["Week_x"] == week]
         result = {
             "upcoming_week": data["upcoming_week"],
-            "target_year": data["target_year"],
+            "target_year": current_year,
             "source_file": data["sim_file"],
             "weeks": sorted(df["Week_x"].dropna().unique().tolist()),
             "total_games": len(df),
             "games": df.to_dict(orient="records"),
+            "is_historical": False,
         }
         return JSONResponse(content=sanitize(result))
     except FileNotFoundError as e:
@@ -159,29 +189,44 @@ def get_pick_percentages():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/weeks")
-def get_available_weeks():
+def get_available_weeks(year: int = Query(None)):
     try:
         data = load_current_data(DATA_DIR)
+        current_year = data["target_year"]
+
+        if year and year != current_year:
+            df, latest_week, _ = load_historical_data(DATA_DIR, year)
+            week_col = "Week_x" if "Week_x" in df.columns else "Week"
+            circa_col = "Circa Week" if "Circa Week" in df.columns else None
+            weeks_df = df[[week_col] + ([circa_col] if circa_col else [])].drop_duplicates()
+            week_options = []
+            for _, row in weeks_df.iterrows():
+                w = int(row[week_col])
+                label = str(row[circa_col]) if circa_col and pd.notna(row.get(circa_col)) else f"Week {w}"
+                week_options.append({"week": w, "label": label})
+            return {
+                "upcoming_week": latest_week,
+                "target_year": year,
+                "weeks": sorted(week_options, key=lambda x: x["week"]),
+                "is_historical": True,
+            }
+
+        # Existing live logic
         df = data["sim_df"]
-
         upcoming = data["upcoming_week"]
-
         week_col = "Week_x" if "Week_x" in df.columns else "Week"
         circa_col = "Circa Week" if "Circa Week" in df.columns else None
-
         weeks_df = df[[week_col] + ([circa_col] if circa_col else [])].drop_duplicates()
-####        weeks_df = weeks_df[weeks_df[week_col] >= upcoming].sort_values(week_col)
-
         week_options = []
         for _, row in weeks_df.iterrows():
             w = int(row[week_col])
             label = str(row[circa_col]) if circa_col and pd.notna(row.get(circa_col)) else f"Week {w}"
             week_options.append({"week": w, "label": label})
-
         return {
             "upcoming_week": upcoming,
-            "target_year": data["target_year"],
+            "target_year": current_year,
             "weeks": week_options,
+            "is_historical": False,
         }
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -205,69 +250,76 @@ def optimize(request: OptimizeRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/rankings")
-def get_rankings():
+def get_rankings(year: int = Query(None)):
     try:
         data = load_current_data(DATA_DIR)
-        upcoming_week = data["upcoming_week"]
-        target_year = data["target_year"]
+        current_year = data["target_year"]
+        target = year if year else current_year
+        upcoming_week = data["upcoming_week"] if target == current_year else None
+
         ratings_dir = os.path.join(DATA_DIR, "nfl-power-ratings")
 
-        # Load current week file
-        current_file = os.path.join(
-            ratings_dir,
-            f"nfl_power_ratings_blended_week_{upcoming_week}_{target_year}.csv"
-        )
-        if not os.path.exists(current_file):
-            # Fall back to closest available
-            import glob
-            files = glob.glob(os.path.join(ratings_dir, f"nfl_power_ratings_blended_week_*_{target_year}.csv"))
+        if target != current_year:
+            # For historical years use the latest available rankings file
+            files = glob.glob(os.path.join(
+                ratings_dir, f"nfl_power_ratings_blended_week_*_{target}.csv"
+            ))
             if not files:
-                raise FileNotFoundError(f"No rankings file found for {target_year}")
+                raise FileNotFoundError(f"No rankings file found for {target}")
             def extract_week(p):
                 try:
-                    return int(os.path.basename(p).split("_week_")[1].split(f"_{target_year}")[0])
+                    return int(os.path.basename(p).split("_week_")[1].split(f"_{target}")[0])
                 except:
                     return 0
-            files_with_weeks = [(extract_week(f), f) for f in files]
-            valid = [(w, f) for w, f in files_with_weeks if w <= upcoming_week]
-            current_file = max(valid if valid else files_with_weeks, key=lambda x: x[0])[1]
+            current_file = max(files, key=extract_week)
+            upcoming_week = extract_week(current_file)
+        else:
+            current_file = os.path.join(
+                ratings_dir,
+                f"nfl_power_ratings_blended_week_{upcoming_week}_{target}.csv"
+            )
+            if not os.path.exists(current_file):
+                import glob as g
+                files = g.glob(os.path.join(ratings_dir, f"nfl_power_ratings_blended_week_*_{target}.csv"))
+                if not files:
+                    raise FileNotFoundError(f"No rankings file found for {target}")
+                current_file = max(files, key=lambda p: int(os.path.basename(p).split("_week_")[1].split(f"_{target}")[0]))
 
         df = pd.read_csv(current_file)
+        df = df.rename(columns={"Power Rating": "GSF Power Rating"})
+        if "GSF Power Rating" in df.columns:
+            df["GSF Rank"] = df["GSF Power Rating"].rank(ascending=False, method="min").astype("Int64")
         df = clean_df(df)
 
-        # Try to load Week 1 preseason file for comparison
-        preseason_file = os.path.join(
-            ratings_dir,
-            f"nfl_power_ratings_blended_week_1_{target_year}.csv"
-        )
+        preseason_file = os.path.join(ratings_dir, f"nfl_power_ratings_blended_week_1_{target}.csv")
         preseason_data = {}
         if os.path.exists(preseason_file) and current_file != preseason_file:
             pre_df = pd.read_csv(preseason_file)
+            pre_df = pre_df.rename(columns={"Power Rating": "GSF Power Rating"})
             for _, row in pre_df.iterrows():
                 team = str(row.get("Team", ""))
                 preseason_data[team] = {
-                    "Preseason Power Rating": row.get("Power Rating"),
-                    "Preseason MP Rating":    row.get("MP_Rating"),
-                    "Preseason Rank":         row.get("Rank"),
+                    "Preseason GSF Power Rating": row.get("GSF Power Rating"),
+                    "Preseason MP Rating": row.get("MP_Rating"),
+                    "Preseason Rank": row.get("Rank"),
                 }
 
-        # Merge preseason data in
         records = []
         for _, row in df.iterrows():
             rec = row.to_dict()
             team = str(rec.get("Team", ""))
-            if team in preseason_data:
-                rec.update(preseason_data[team])
-            else:
-                rec["Preseason Power Rating"] = None
-                rec["Preseason MP Rating"] = None
-                rec["Preseason Rank"] = None
+            rec.update(preseason_data.get(team, {
+                "Preseason GSF Power Rating": None,
+                "Preseason MP Rating": None,
+                "Preseason Rank": None,
+            }))
             records.append(rec)
 
         return JSONResponse(content=sanitize({
             "upcoming_week": upcoming_week,
-            "target_year": target_year,
+            "target_year": target,
             "has_preseason": bool(preseason_data),
+            "is_historical": target != current_year,
             "rankings": records,
         }))
     except FileNotFoundError as e:
@@ -276,45 +328,47 @@ def get_rankings():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/recommended-bets")
-def get_recommended_bets():
+def get_recommended_bets(year: int = Query(None)):
     try:
         data = load_current_data(DATA_DIR)
-        df = data["sim_df"]
+        current_year = data["target_year"]
+        is_historical = year and year != current_year
+
+        if is_historical:
+            df, latest_week, _ = load_historical_data(DATA_DIR, year)
+            upcoming_week = latest_week
+        else:
+            df = data["sim_df"]
+            upcoming_week = data["upcoming_week"]
+            year = current_year
+
         df = df.replace([np.inf, -np.inf], np.nan)
 
-        def tier(bet_type, edge_val, gsf_edge=None, mc_edge=None):
-            """Assign S/A/B tier based on historical profitability."""
+        # Tier function unchanged
+        def tier(bet_type, edge_val):
             e = float(edge_val) if edge_val is not None and not pd.isna(edge_val) else None
-            if e is None:
-                return None
-
+            if e is None: return None
             if bet_type == "mc_spread":
                 if e >= 4.0: return "S"
                 if 1.0 <= e < 2.0: return "A"
                 if e >= 0 and not (2.0 <= e < 3.0): return "B"
-                return None  # skip 2-3 band
-
+                return None
             if bet_type == "mc_ml":
                 if e >= 0.20: return "S"
                 if e >= 0.15: return "S"
                 if e >= 0.10: return "A"
                 if e >= 0.05: return "B"
                 return None
-
             if bet_type == "mc_total":
                 if e >= 5.0: return "S"
                 if e >= 3.0: return "A"
                 if 1.0 <= e < 2.0: return "B"
-                return None  # skip 2-3 band
-
+                return None
             if bet_type == "gsf_spread":
                 if 2.0 <= e < 3.0: return "A"
-                return None  # all other GSF spread tiers lose money
-
+                return None
             if bet_type == "combined_spread":
-                # MC and GSF agree — strong signal
                 if e >= 0: return "A"
-
             return None
 
         bets = []
@@ -325,113 +379,139 @@ def get_recommended_bets():
                 "week": row.get("Week_x") or row.get("Week"),
                 "circa_week": row.get("Circa Week"),
                 "date": str(row.get("Date_x", "")),
-                "game_time": str(row.get("Time", "")),
             }
 
-            # ── MC Spread ──
-            mc_spread_bet = row.get("Monte Carlo Spread Bet")
+            # Helper to add a bet with optional historical W/L data
+            def make_bet(base, bet_label):
+                if is_historical:
+                    base["win_loss"] = row.get(f"{bet_label} Win/Loss")
+                    base["pnl"]      = row.get(f"{bet_label} P/L")
+                return base
+
+            # MC Spread
+            mc_spread_bet  = row.get("Monte Carlo Spread Bet")
             mc_spread_edge = row.get("Monte Carlo Spread Edge")
             if mc_spread_bet and not pd.isna(mc_spread_bet) and str(mc_spread_bet).strip():
                 t = tier("mc_spread", mc_spread_edge)
                 if t:
-                    bets.append({
+                    bets.append(make_bet({
                         **game,
-                        "bet_type": "Spread",
-                        "model": "Monte Carlo",
+                        "bet_type": "Spread", "model": "Monte Carlo",
                         "pick": str(mc_spread_bet),
                         "edge": round(float(mc_spread_edge), 2) if not pd.isna(mc_spread_edge) else None,
                         "tier": t,
-                        "unit_wager": row.get("MC Spread Unit Wager"),
+                        "unit_wager":  row.get("MC Spread Unit Wager"),
                         "unit_to_win": row.get("MC Spread Unit to Win"),
                         "kelly_wager": row.get("MC Spread Kelly Wager"),
-                        "kelly_to_win": row.get("MC Spread Kelly To Win"),
-                    })
+                        "kelly_to_win":row.get("MC Spread Kelly To Win"),
+                    }, "Sim Spread"))
 
-            # ── MC Moneyline ──
-            mc_ml_bet = row.get("Monte Carlo Moneyline Bet")
+            # MC Moneyline
+            mc_ml_bet  = row.get("Monte Carlo Moneyline Bet")
             mc_ml_edge = row.get("Monte Carlo Moneyline Edge")
             if mc_ml_bet and not pd.isna(mc_ml_bet) and str(mc_ml_bet).strip():
                 t = tier("mc_ml", mc_ml_edge)
                 if t:
-                    bets.append({
+                    bets.append(make_bet({
                         **game,
-                        "bet_type": "Moneyline",
-                        "model": "Monte Carlo",
+                        "bet_type": "Moneyline", "model": "Monte Carlo",
                         "pick": str(mc_ml_bet),
                         "edge": round(float(mc_ml_edge) * 100, 1) if not pd.isna(mc_ml_edge) else None,
-                        "edge_unit": "%",
-                        "tier": t,
-                        "unit_wager": row.get("MC ML Unit Wager"),
+                        "edge_unit": "%", "tier": t,
+                        "unit_wager":  row.get("MC ML Unit Wager"),
                         "unit_to_win": row.get("MC ML Unit to Win"),
                         "kelly_wager": row.get("MC ML Kelly Wager"),
-                        "kelly_to_win": row.get("MC ML Kelly To Win"),
-                    })
+                        "kelly_to_win":row.get("MC ML Kelly To Win"),
+                    }, "Sim Moneyline"))
 
-            # ── MC Total ──
-            mc_total_bet = row.get("Monte Carlo Total Bet")
+            # MC Total
+            mc_total_bet  = row.get("Monte Carlo Total Bet")
             mc_total_edge = row.get("Monte Carlo Total Edge")
             if mc_total_bet and not pd.isna(mc_total_bet) and str(mc_total_bet).strip():
                 t = tier("mc_total", mc_total_edge)
                 if t:
-                    bets.append({
+                    bets.append(make_bet({
                         **game,
-                        "bet_type": "Total",
-                        "model": "Monte Carlo",
+                        "bet_type": "Total", "model": "Monte Carlo",
                         "pick": str(mc_total_bet),
                         "edge": round(float(mc_total_edge), 2) if not pd.isna(mc_total_edge) else None,
                         "tier": t,
-                        "unit_wager": row.get("MC Total Unit Wager"),
+                        "unit_wager":  row.get("MC Total Unit Wager"),
                         "unit_to_win": row.get("MC Total Unit to Win"),
                         "kelly_wager": row.get("MC Total Kelly Wager"),
-                        "kelly_to_win": row.get("MC Total Kelly To Win"),
-                        "direction": row.get("MC Bet Direction"),
-                    })
+                        "kelly_to_win":row.get("MC Total Kelly To Win"),
+                        "direction":   row.get("MC Bet Direction"),
+                    }, "Sim Total"))
 
-            # ── GSF Spread (2.0-3.0 only) ──
-            gsf_spread_bet = row.get("GSF Spread Bet")
+            # GSF Spread
+            gsf_spread_bet  = row.get("GSF Spread Bet")
             gsf_spread_edge = row.get("GSF Spread Edge")
             if gsf_spread_bet and not pd.isna(gsf_spread_bet) and str(gsf_spread_bet).strip():
                 t = tier("gsf_spread", gsf_spread_edge)
                 if t:
-                    bets.append({
+                    bets.append(make_bet({
                         **game,
-                        "bet_type": "Spread",
-                        "model": "GSF",
+                        "bet_type": "Spread", "model": "GSF",
                         "pick": str(gsf_spread_bet),
                         "edge": round(float(gsf_spread_edge), 2) if not pd.isna(gsf_spread_edge) else None,
                         "tier": t,
-                        "unit_wager": None,
-                        "kelly_wager": None,
-                    })
+                    }, "GSF Spread"))
 
-            # ── Combined Spread (MC + GSF agree) ──
-            con_spread_bet = row.get("Consensus Spread Bet")
+            # Combined Spread
+            con_spread_bet  = row.get("Consensus Spread Bet")
             con_spread_edge = row.get("Consensus Spread Edge")
             if (con_spread_bet and not pd.isna(con_spread_bet) and str(con_spread_bet).strip()
                     and mc_spread_bet and gsf_spread_bet
                     and str(mc_spread_bet).strip() == str(gsf_spread_bet).strip()):
                 t = tier("combined_spread", con_spread_edge)
                 if t:
-                    bets.append({
+                    bets.append(make_bet({
                         **game,
-                        "bet_type": "Spread",
-                        "model": "Combined (MC+GSF)",
+                        "bet_type": "Spread", "model": "Combined (MC+GSF)",
                         "pick": str(con_spread_bet),
                         "edge": round(float(con_spread_edge), 2) if not pd.isna(con_spread_edge) else None,
-                        "tier": t,
-                        "unit_wager": None,
-                        "kelly_wager": None,
-                        "note": "MC and GSF agree",
-                    })
+                        "tier": t, "note": "MC and GSF agree",
+                    }, "Consensus Spread"))
 
-        # Sort: S first, then A, then B; within tier sort by edge descending
         tier_order = {"S": 0, "A": 1, "B": 2}
         bets.sort(key=lambda b: (tier_order.get(b["tier"], 9), -(b["edge"] or 0)))
 
+        # Season summary P/L when historical
+        season_summary = None
+        if is_historical:
+            bet_labels = [
+                ("GSF Spread", "GSF Spread"),
+                ("MP Spread", "MP Spread"),
+                ("Sim Spread", "Sim Spread"),
+                ("Sim Spread Kelly", "Sim Spread (Kelly)"),
+                ("Sim Moneyline", "Sim Moneyline"),
+                ("Sim Moneyline Kelly", "Sim Moneyline (Kelly)"),
+                ("GSF Moneyline", "GSF Moneyline"),
+                ("MP Moneyline", "MP Moneyline"),
+                ("Consensus Spread", "Consensus Spread"),
+                ("Consensus Moneyline", "Consensus Moneyline"),
+                ("Sim Total", "Sim Total"),
+                ("Sim Total Kelly", "Sim Total (Kelly)"),
+            ]
+            season_summary = {}
+            for key, col_label in bet_labels:
+                wl_col  = f"{col_label} Win/Loss"
+                pnl_col = f"{col_label} P/L"
+                if wl_col in df.columns:
+                    season_summary[key] = {
+                        "wins":    int((df[wl_col] == "Win").sum()),
+                        "losses":  int((df[wl_col] == "Loss").sum()),
+                        "pushes":  int((df[wl_col] == "Push").sum()),
+                        "no_bets": int((df[wl_col] == "No Bet").sum()),
+                        "total_pl": round(float(df[pnl_col].sum()), 2) if pnl_col in df.columns else 0,
+                    }
+
         return JSONResponse(content=sanitize({
-            "upcoming_week": data["upcoming_week"],
-            "target_year": data["target_year"],
+            "upcoming_week": upcoming_week,
+            "target_year": year,
+            "is_historical": is_historical,
             "bets": bets,
+            "season_summary": season_summary,
             "counts": {
                 "S": sum(1 for b in bets if b["tier"] == "S"),
                 "A": sum(1 for b in bets if b["tier"] == "A"),
@@ -841,6 +921,77 @@ def get_available_contest_years():
         return {"years": sorted(years, reverse=True)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/available-years")
+def get_available_years():
+    """Returns all years that have historical final data available, plus the current year."""
+    try:
+        data = load_current_data(DATA_DIR)
+        current_year = data["target_year"]
+
+        # Find all years with final data
+        pattern = os.path.join(DATA_DIR, "nfl-power-ratings/final-data/*_final_data")
+        dirs = glob.glob(pattern)
+        historical_years = []
+        for d in sorted(dirs):
+            try:
+                year = int(os.path.basename(d).split("_")[0])
+                # Verify at least one final data file exists
+                files = glob.glob(os.path.join(d, "Season_*_Final_Data.csv"))
+                if files:
+                    historical_years.append(year)
+            except ValueError:
+                pass
+
+        all_years = sorted(set(historical_years + [current_year]), reverse=True)
+
+        return JSONResponse(content=sanitize({
+            "current_year": current_year,
+            "years": [
+                {
+                    "year": y,
+                    "is_current": y == current_year,
+                    "label": f"{y} (Live)" if y == current_year else str(y),
+                }
+                for y in all_years
+            ]
+        }))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def load_historical_data(data_dir: str, year: int):
+    """
+    Loads the most recent Season_*_Final_Data.csv for a given historical year.
+    Returns the DataFrame and metadata.
+    """
+    final_data_dir = os.path.join(
+        data_dir, f"nfl-power-ratings/final-data/{year}_final_data"
+    )
+    if not os.path.exists(final_data_dir):
+        raise FileNotFoundError(f"No final data directory for {year}")
+
+    # Find the file with the highest week number
+    files = glob.glob(os.path.join(final_data_dir, f"Season_{year}_Through_Week_*_Final_Data.csv"))
+    if not files:
+        raise FileNotFoundError(f"No final data files found for {year}")
+
+    def extract_week(path):
+        try:
+            name = os.path.basename(path)
+            return int(name.split("_Week_")[1].split("_Final")[0])
+        except (IndexError, ValueError):
+            return 0
+
+    latest_file = max(files, key=extract_week)
+    latest_week = extract_week(latest_file)
+
+    df = pd.read_csv(latest_file)
+    df = df.replace([np.inf, -np.inf], np.nan)
+    for col in df.columns:
+        df[col] = df[col].where(pd.notnull(df[col]), None)
+
+    return df, latest_week, latest_file
 
 
 # ---------------------------------------------------------------
