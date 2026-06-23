@@ -147,8 +147,10 @@ def loop_through_simulations(date_str):
     circa_2024_entries = 14221
     circa_2025_entries = 18718
     circa_2026_entries = 24000
+
+    circa_entries = f"circa_{target_year}_entries"
     
-    circa_total_entries = 18718
+    circa_total_entries = circa_entries
     splash_big_splash_total_entries = 16337
     splash_4_for_4_total_entries = 10000
     splash_for_the_fans_total_entries = 8382
@@ -2619,7 +2621,9 @@ def loop_through_simulations(date_str):
         'LAR': 'LA', 'STL': 'LA', 'SD': 'LAC', 'OAK': 'LV'
     }
 
-    from starting_qb_injuries_2025 import TYPICAL_STARTERS, MANUAL_CURRENT_STARTERS
+    starting_qb_injuries = f"starting_qb_injuries_{target_year}"
+
+    from starting_qb_injuries import TYPICAL_STARTERS, MANUAL_CURRENT_STARTERS
 
     def get_qb_ratings_fast(years, target_year, current_upcoming_week):
         print(f"Loading Player Stats for {years}...")
@@ -5391,6 +5395,47 @@ def loop_through_simulations(date_str):
             # We explicitly set the "official" Pick % to the -feature model to drive U_prev_week
             baseline_col = 'Predicted_Pick_Pct'
             
+
+            # ==============================================================================
+            # LEAK FIX: ensure every surviving entry is assigned a pick
+            # ==============================================================================
+            # The water-filling loop above caps each team's pick share at its Availability,
+            # but when the popular teams hit their caps it can leave probability mass
+            # unplaced (the running sum of Predicted_Pick_Pct ends up < target_pick_sum).
+            # Survivors/Eliminations below are computed as (Pick% * odds * S_w), so any
+            # unplaced mass is silently dropped: those entries count as neither survivors
+            # nor eliminations and disappear from the pool. That deflates the field every
+            # week (4% early, 40%+ late) and drives it to 0 prematurely.
+            #
+            # Fix: re-home the residual mass onto teams that still have availability
+            # headroom (Availability - Pick%), proportional to that headroom, so no team
+            # is pushed past its cap. In the normal case this places all of it in a single
+            # pass and the pick percentages sum back to target_pick_sum, making the
+            # accounting balance (survivors + eliminations == pool).
+            placed_sum = pick_predictions_df[baseline_col].sum()
+            residual = target_pick_sum - placed_sum
+            for _redistribute_pass in range(50):
+                if residual <= 1e-9:
+                    break
+                headroom = (pick_predictions_df['Availability'] - pick_predictions_df[baseline_col]).clip(lower=0.0)
+                total_headroom = headroom.sum()
+                if total_headroom <= 1e-12:
+                    # The slate is saturated: no team has spare availability, so the
+                    # remaining entries genuinely have no legal pick left this week.
+                    break
+                add = (headroom / total_headroom) * min(residual, total_headroom)
+                pick_predictions_df[baseline_col] = pick_predictions_df[baseline_col] + add
+                placed_sum = pick_predictions_df[baseline_col].sum()
+                residual = target_pick_sum - placed_sum
+
+            # Fallback: if the slate was saturated and residual mass could not be placed
+            # within the availability caps, renormalize so the survivor math still balances
+            # (no leaked entries) rather than silently dropping them. This only triggers in
+            # genuinely degenerate late-season weeks where total availability < pool.
+            final_sum = pick_predictions_df[baseline_col].sum()
+            if final_sum > 0 and abs(final_sum - target_pick_sum) > 1e-9:
+                pick_predictions_df[baseline_col] = pick_predictions_df[baseline_col] * (target_pick_sum / final_sum)
+
             for _, row in pick_predictions_df.iterrows():
                 team = row['Team']
                 # If for some reason the 30-feature model failed, fallback to 0 to prevent crashes
@@ -5483,6 +5528,8 @@ def loop_through_simulations(date_str):
             nfl_schedule_df['Expected Eliminated Entry Percent From Game'] = nfl_schedule_df['Home Expected Elimination Percent'] + nfl_schedule_df['Away Expected Elimination Percent']
             nfl_schedule_df['Expected Away Team Picks'] = nfl_schedule_df['Away Pick %'] * nfl_schedule_df['Total Remaining Entries at Start of Week']
             nfl_schedule_df['Expected Home Team Picks'] = nfl_schedule_df['Home Pick %'] * nfl_schedule_df['Total Remaining Entries at Start of Week']
+    
+        ####################################################################################################
     
         ####################################################################################################
         
