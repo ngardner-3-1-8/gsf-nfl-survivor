@@ -1853,116 +1853,6 @@ def loop_through_simulations(date_str):
             team_dict[away_team][week] = {"Opponent": home_team, "Home/Away": "Away", "Win Odds": away_odds}
             team_dict[home_team][week] = {"Opponent": away_team, "Home/Away": "Home", "Win Odds": home_odds}
     
-        # Calculate cumulative win percentage for each team
-        for team, games in team_dict.items():
-            for week, details in games.items():
-                opponent = details["Opponent"]
-                home_away = details["Home/Away"]
-                win_odds = details["Win Odds"]
-    
-                # Get the remaining weeks for the team
-                remaining_weeks = [w for w in games.keys() if int(w) > int(week)]
-    
-                #print(remaining_weeks)
-    
-                # Calculate cumulative win percentage
-                if remaining_weeks:
-                    cumulative_win_odds = sum(team_dict[team][w]["Win Odds"] for w in remaining_weeks)
-                    cumulative_win_percentage = cumulative_win_odds/len(remaining_weeks)
-                else:
-                    cumulative_win_percentage = 0  # Set to 0 for week 18
-    
-                # Add the cumulative win percentage to the dictionary
-                team_dict[team][week]["Cumulative Win Percentage"] = cumulative_win_percentage
-    
-    
-        # Initialize empty lists for cumulative win percentages
-        away_cumulative_win_percentages = []
-        home_cumulative_win_percentages = []
-    
-        # Iterate through each row in the DataFrame
-        for _, row in df.iterrows():
-            week = row["Week"]
-            away_team = row["Away Team"]
-            home_team = row["Home Team"]
-    
-            # Get cumulative win percentages from your dictionary
-            away_cumulative_win_percentage = team_dict.get(away_team, {}).get(week, {}).get("Cumulative Win Percentage", 0)
-            home_cumulative_win_percentage = team_dict.get(home_team, {}).get(week, {}).get("Cumulative Win Percentage", 0)
-    
-            # Append to the lists
-            away_cumulative_win_percentages.append(away_cumulative_win_percentage)
-            home_cumulative_win_percentages.append(home_cumulative_win_percentage)
-    
-        # Add new columns to the DataFrame
-        df["Away Team Cumulative Win Percentage"] = away_cumulative_win_percentages
-        df["Home Team Cumulative Win Percentage"] = home_cumulative_win_percentages
-    
-    
-        # Get unique week values
-        unique_weeks = df["Week"].unique()
-    
-        # Calculate the maximum cumulative win percentage for each week
-        max_cumulative_win_percentage = {}
-        for week in unique_weeks:
-            week_df = df[df["Week"] == week]
-            # Calculate the maximum, using `0` as default if week_df is empty
-            if week_df.empty:
-                max_val = 0
-            else:
-                max_val = max(week_df["Away Team Cumulative Win Percentage"].max(),
-                             week_df["Home Team Cumulative Win Percentage"].max())
-    
-            # Check if the calculated max_val is NaN and replace with 1 if so
-            if pd.isna(max_val):
-                max_cumulative_win_percentage[week] = 1
-            else:
-                max_cumulative_win_percentage[week] = max_val
-    
-        # Calculate the minimum cumulative win percentage for each week
-        min_cumulative_win_percentage = {}
-        for week in unique_weeks:
-            week_df = df[df["Week"] == week]
-            # Calculate the maximum, using `0` as default if week_df is empty
-            if week_df.empty:
-                min_val = 0
-            else:
-                min_val = min(week_df["Away Team Cumulative Win Percentage"].min(),
-                             week_df["Home Team Cumulative Win Percentage"].min())
-    
-            # Check if the calculated max_val is NaN and replace with 1 if so
-            if pd.isna(min_val):
-                min_cumulative_win_percentage[week] = 0
-            else:
-                min_cumulative_win_percentage[week] = min_val
-        
-        # Calculate the range of cumulative win percentages for each week
-        range_cumulative_win_percentage = {}
-        for week in unique_weeks:
-            range_cumulative_win_percentage[week] = max_cumulative_win_percentage[week] - min_cumulative_win_percentage[week]
-            if range_cumulative_win_percentage[week] == 0:
-                range_cumulative_win_percentage[week]=1
-            if pd.isna(range_cumulative_win_percentage[week]):
-                range_cumulative_win_percentage[week] = 1
-                
-        # Define a function to calculate the star rating
-        def calculate_star_rating(cumulative_win_percentage, week):
-            # Normalize the cumulative win percentage to a scale of 0 to 1
-            if pd.isna(cumulative_win_percentage):
-                cumulative_win_percentage = 0.0  # Return 0 for NaN inputs
-                print("Cumulative Win % is error")
-            if pd.isna(min_cumulative_win_percentage[week]):
-                min_cumulative_win_percentage[week] = 0.0
-                print("Minimum Cumulative Win % is error")
-            if pd.isna(range_cumulative_win_percentage[week]):
-                range_cumulative_win_percentage[week] = 1.0
-                print("Range Cumulative Win % is error")
-            try:
-                normalized_percentage = (cumulative_win_percentage - min_cumulative_win_percentage[week]) / range_cumulative_win_percentage[week]
-                # Assign stars linearly based on the normalized percentage
-                return round(10 * normalized_percentage) / 2
-            except ZeroDivisionError:
-                return 0.0
     
         # Apply the function to create the new columns for each week
     
@@ -4687,6 +4577,121 @@ def loop_through_simulations(date_str):
             # Fall back to the Monte Carlo simulated win pct wherever a Fair Odds line is missing.
             final_combined_df["Away Team Fair Odds"] = final_combined_df["Away Team Fair Odds"].fillna(final_combined_df["Sim_Away_Win_Pct"])
             final_combined_df["Home Team Fair Odds"] = final_combined_df["Home Team Fair Odds"].fillna(final_combined_df["Sim_Home_Win_Pct"])
+
+            df=final_combined_df
+
+                    # Calculate cumulative win percentage for each team
+            for team, games in team_dict.items():
+                for week, details in games.items():
+                    opponent = details["Opponent"]
+                    home_away = details["Home/Away"]
+                    win_odds = details["Win Odds"]
+        
+                    # Get the remaining weeks for the team
+                    remaining_weeks = [w for w in games.keys() if int(w) > int(week)]
+        
+                    #print(remaining_weeks)
+        
+                    # Calculate cumulative win percentage
+                    if remaining_weeks:
+                        cumulative_win_odds = sum(team_dict[team][w]["Win Odds"] for w in remaining_weeks)
+                        cumulative_win_percentage = cumulative_win_odds/len(remaining_weeks)
+                    else:
+                        cumulative_win_percentage = 0  # Set to 0 for week 18
+        
+                    # Add the cumulative win percentage to the dictionary
+                    team_dict[team][week]["Cumulative Win Percentage"] = cumulative_win_percentage
+        
+        
+            # Initialize empty lists for cumulative win percentages
+            away_cumulative_win_percentages = []
+            home_cumulative_win_percentages = []
+        
+            # Iterate through each row in the DataFrame
+            for _, row in df.iterrows():
+                week = row["Week"]
+                away_team = row["Away Team"]
+                home_team = row["Home Team"]
+        
+                # Get cumulative win percentages from your dictionary
+                away_cumulative_win_percentage = team_dict.get(away_team, {}).get(week, {}).get("Cumulative Win Percentage", 0)
+                home_cumulative_win_percentage = team_dict.get(home_team, {}).get(week, {}).get("Cumulative Win Percentage", 0)
+        
+                # Append to the lists
+                away_cumulative_win_percentages.append(away_cumulative_win_percentage)
+                home_cumulative_win_percentages.append(home_cumulative_win_percentage)
+        
+            # Add new columns to the DataFrame
+            df["Away Team Cumulative Win Percentage"] = away_cumulative_win_percentages
+            df["Home Team Cumulative Win Percentage"] = home_cumulative_win_percentages
+        
+        
+            # Get unique week values
+            unique_weeks = df["Week"].unique()
+        
+            # Calculate the maximum cumulative win percentage for each week
+            max_cumulative_win_percentage = {}
+            for week in unique_weeks:
+                week_df = df[df["Week"] == week]
+                # Calculate the maximum, using `0` as default if week_df is empty
+                if week_df.empty:
+                    max_val = 0
+                else:
+                    max_val = max(week_df["Away Team Cumulative Win Percentage"].max(),
+                                 week_df["Home Team Cumulative Win Percentage"].max())
+        
+                # Check if the calculated max_val is NaN and replace with 1 if so
+                if pd.isna(max_val):
+                    max_cumulative_win_percentage[week] = 1
+                else:
+                    max_cumulative_win_percentage[week] = max_val
+        
+            # Calculate the minimum cumulative win percentage for each week
+            min_cumulative_win_percentage = {}
+            for week in unique_weeks:
+                week_df = df[df["Week"] == week]
+                # Calculate the maximum, using `0` as default if week_df is empty
+                if week_df.empty:
+                    min_val = 0
+                else:
+                    min_val = min(week_df["Away Team Cumulative Win Percentage"].min(),
+                                 week_df["Home Team Cumulative Win Percentage"].min())
+        
+                # Check if the calculated max_val is NaN and replace with 1 if so
+                if pd.isna(min_val):
+                    min_cumulative_win_percentage[week] = 0
+                else:
+                    min_cumulative_win_percentage[week] = min_val
+            
+            # Calculate the range of cumulative win percentages for each week
+            range_cumulative_win_percentage = {}
+            for week in unique_weeks:
+                range_cumulative_win_percentage[week] = max_cumulative_win_percentage[week] - min_cumulative_win_percentage[week]
+                if range_cumulative_win_percentage[week] == 0:
+                    range_cumulative_win_percentage[week]=1
+                if pd.isna(range_cumulative_win_percentage[week]):
+                    range_cumulative_win_percentage[week] = 1
+                    
+            # Define a function to calculate the star rating
+            def calculate_star_rating(cumulative_win_percentage, week):
+                # Normalize the cumulative win percentage to a scale of 0 to 1
+                if pd.isna(cumulative_win_percentage):
+                    cumulative_win_percentage = 0.0  # Return 0 for NaN inputs
+                    print("Cumulative Win % is error")
+                if pd.isna(min_cumulative_win_percentage[week]):
+                    min_cumulative_win_percentage[week] = 0.0
+                    print("Minimum Cumulative Win % is error")
+                if pd.isna(range_cumulative_win_percentage[week]):
+                    range_cumulative_win_percentage[week] = 1.0
+                    print("Range Cumulative Win % is error")
+                try:
+                    normalized_percentage = (cumulative_win_percentage - min_cumulative_win_percentage[week]) / range_cumulative_win_percentage[week]
+                    # Assign stars linearly based on the normalized percentage
+                    return round(10 * normalized_percentage) / 2
+                except ZeroDivisionError:
+                    return 0.0
+
+            final_combined_df = df
     
             
             print("\nSimulation Complete!")
