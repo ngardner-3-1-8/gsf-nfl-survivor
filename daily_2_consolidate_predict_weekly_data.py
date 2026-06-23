@@ -36,6 +36,7 @@ from sklearn.feature_selection import RFE
 from scipy.stats import percentileofscore
 import warnings
 import calendar
+import importlib
     
 def loop_through_simulations(date_str):   
     # 1. Get current date
@@ -140,17 +141,26 @@ def loop_through_simulations(date_str):
     NUM_WEEKS_TO_KEEP = starting_week - 1
     current_year_plus_1 = current_year + 1 #current_year + 1
     
-    circa_2020_entries = 1373
-    circa_2021_entries = 4071
-    circa_2022_entries = 6106
-    circa_2023_entries = 9234
-    circa_2024_entries = 14221
-    circa_2025_entries = 18718
-    circa_2026_entries = 24000
-
-    circa_entries = f"circa_{target_year}_entries"
+    # Store your entries in a dictionary mapped by year
+    circa_entries = {
+        2020: 1373,
+        2021: 4071,
+        2022: 6106,
+        2023: 9234,
+        2024: 14221,
+        2025: 18718,
+        2026: 24000
+    }
+    circa_2020_entries = circa_entries[2020]
+    circa_2021_entries = circa_entries[2021]
+    circa_2022_entries = circa_entries[2022]
+    circa_2023_entries = circa_entries[2023]
+    circa_2024_entries = circa_entries[2024]
+    circa_2025_entries = circa_entries[2025]
+    circa_2026_entries = circa_entries[2026]
     
-    circa_total_entries = circa_entries
+    # Look up the value using the target_year as the key
+    circa_total_entries = circa_entries[target_year]
     splash_big_splash_total_entries = 16337
     splash_4_for_4_total_entries = 10000
     splash_for_the_fans_total_entries = 8382
@@ -2621,9 +2631,14 @@ def loop_through_simulations(date_str):
         'LAR': 'LA', 'STL': 'LA', 'SD': 'LAC', 'OAK': 'LV'
     }
 
-    starting_qb_injuries = f"starting_qb_injuries_{target_year}"
-
-    from starting_qb_injuries import TYPICAL_STARTERS, MANUAL_CURRENT_STARTERS
+    module_name = f"starting_qb_injuries_{target_year}"
+    
+    # 1. Dynamically import the module
+    qb_module = importlib.import_module(module_name)
+    
+    # 2. Extract the variables you need from that module
+    TYPICAL_STARTERS = qb_module.TYPICAL_STARTERS
+    MANUAL_CURRENT_STARTERS = qb_module.MANUAL_CURRENT_STARTERS
 
     def get_qb_ratings_fast(years, target_year, current_upcoming_week):
         print(f"Loading Player Stats for {years}...")
