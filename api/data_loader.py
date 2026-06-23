@@ -99,64 +99,30 @@ def get_simulation_file(data_dir: str, upcoming_week: int, target_year: int) -> 
     return max(matches_with_weeks, key=lambda x: x[0])[1]
 
 
-def get_ev_file(data_dir: str, model: str, upcoming_week: int, target_year: int) -> str:
-    """
-    Returns the path to the correct EV CSV for the given model,
-    upcoming week, and year. Same fallback logic as get_simulation_file.
-    """
-    ev_dir = os.path.join(data_dir, "circa-survivor-ev")
-
-    exact = os.path.join(
-        ev_dir,
-        f"{model}_team_ev_week_{upcoming_week}_{target_year}.csv"
-    )
-    if os.path.exists(exact):
-        return exact
-
-    pattern = os.path.join(ev_dir, f"{model}_team_ev_week_*_{target_year}.csv")
-    matches = glob.glob(pattern)
-    if not matches:
-        raise FileNotFoundError(
-            f"No EV data found for model '{model}' in {ev_dir}"
-        )
-
-    def extract_week(path):
-        base = os.path.basename(path)
-        try:
-            return int(base.split("_week_")[1].split(f"_{target_year}")[0])
-        except (IndexError, ValueError):
-            return 0
-
-    matches_with_weeks = [(extract_week(p), p) for p in matches]
-    valid = [(w, p) for w, p in matches_with_weeks if w <= upcoming_week]
-    if valid:
-        return max(valid, key=lambda x: x[0])[1]
-
-    return max(matches_with_weeks, key=lambda x: x[0])[1]
-
-
-def load_current_data(data_dir: str, model: str = "consensus"):
-    """
-    Convenience function that derives today's week and year,
-    finds the right files, and returns everything the API needs.
-    Returns a dict with keys: upcoming_week, target_year,
-    sim_df, ev_df, sim_file, ev_file
-    """
+def load_current_data(data_dir: str, model: str = "consensus") -> dict:
     today = datetime.now()
     target_year = get_target_year(today)
     upcoming_week = get_upcoming_week(today, target_year, data_dir)
-
     sim_file = get_simulation_file(data_dir, upcoming_week, target_year)
-    ev_file = get_ev_file(data_dir, model, upcoming_week, target_year)
 
     sim_df = pd.read_csv(sim_file)
-    ev_df = pd.read_csv(ev_file)
+
+    # EV columns are embedded in the sim file (written by daily_3_calculate_ev.py)
+    # No separate EV file needed anymore
+    # Filter to the model requested for the ev_df view
+    ev_home_col = f"{model}_Home_EV"
+    ev_away_col = f"{model}_Away_EV"
+
+    if ev_home_col in sim_df.columns:
+        ev_df = sim_df.copy()
+    else:
+        ev_df = pd.DataFrame()
 
     return {
         "upcoming_week": upcoming_week,
         "target_year": target_year,
+        "sim_file": sim_file,
+        "ev_file": sim_file,  # same file
         "sim_df": sim_df,
         "ev_df": ev_df,
-        "sim_file": os.path.basename(sim_file),
-        "ev_file": os.path.basename(ev_file),
     }
