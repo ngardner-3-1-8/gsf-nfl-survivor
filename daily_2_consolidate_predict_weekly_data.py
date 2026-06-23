@@ -5482,7 +5482,17 @@ def loop_through_simulations(date_str):
             # Calculate Total Survivors from this week
             week_df_rows = nfl_schedule_df[current_week_mask]
             total_survivors_this_week = week_df_rows['Expected Home Team Survivors'].sum() + week_df_rows['Expected Away Team Survivors'].sum()
-            
+
+            # --- LEAK-FIX VERIFICATION (safe to remove once confirmed) ---
+            # If the leak fix is live, picks sum to 1.0 and (survivors + eliminations)
+            # reconciles to the pool. A reconcile ratio < 1.0 means entries are leaking
+            # and the patched code is NOT the version actually running.
+            _tot_elim = week_df_rows['Expected Home Team Eliminations'].sum() + week_df_rows['Expected Away Team Eliminations'].sum()
+            _pick_sum = (week_df_rows['Home Pick %'].fillna(0) + week_df_rows['Away Pick %'].fillna(0)).sum()
+            _reconcile = (total_survivors_this_week + _tot_elim) / S_w if S_w else float('nan')
+            print(f"[LEAK-FIX CHECK] Week {current_week}: pick% sum={_pick_sum:.4f} "
+                  f"(want 1.0) | (surv+elim)/pool={_reconcile:.4f} (want 1.0)")
+
             print(f"Total Entries Surviving Week {current_week}: {total_survivors_this_week:,.0f}")
             
             # --- E. UPDATE U_prev_week FOR *NEXT* WEEK'S ITERATION ---
