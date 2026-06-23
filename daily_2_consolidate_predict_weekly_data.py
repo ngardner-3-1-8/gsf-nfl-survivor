@@ -4683,6 +4683,10 @@ def loop_through_simulations(date_str):
             final_combined_df[cols_to_round] = final_combined_df[cols_to_round].round(4)
             # ============================================================
             # ============================================================
+
+            # Fall back to the Monte Carlo simulated win pct wherever a Fair Odds line is missing.
+            final_combined_df["Away Team Fair Odds"] = final_combined_df["Away Team Fair Odds"].fillna(final_combined_df["Sim_Away_Win_Pct"])
+            final_combined_df["Home Team Fair Odds"] = final_combined_df["Home Team Fair Odds"].fillna(final_combined_df["Sim_Home_Win_Pct"])
     
             
             print("\nSimulation Complete!")
@@ -4690,6 +4694,8 @@ def loop_through_simulations(date_str):
             # Ensure directory exists or remove prefix if not needed
 #            final_combined_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv", index=False)
 #            print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv'")
+
+
 
     # --- Main Function ---
     def get_predicted_pick_percentages(schedule_df):
