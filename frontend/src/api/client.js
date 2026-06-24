@@ -121,3 +121,12 @@ export async function fetchContestData(year, asOfWeek = null) {
   if (!res.ok) throw new Error(`Failed to fetch contest data for ${year}`)
   return res.json()
 }
+
+export async function fetchBettingHistory(year = null) {
+  const url = year != null
+    ? `${API_URL}/api/betting-history?year=${year}`
+    : `${API_URL}/api/betting-history`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Failed to fetch betting history')
+  return res.json()
+}
