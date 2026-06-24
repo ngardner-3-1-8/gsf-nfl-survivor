@@ -1,4 +1,4 @@
-name: one-time-run
+name: One Time Push
 
 on:
   schedule:
