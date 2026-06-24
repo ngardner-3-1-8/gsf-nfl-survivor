@@ -4,7 +4,14 @@ import { useState } from 'react'
 const COLUMNS = {
   'Overview': [
     { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
-    { key: 'Date_x', label: 'Date', render: v => v ? new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—' },
+    { key: 'Date_x', label: 'Date', render: v => {
+      if (!v) return '—'
+      // Parse as local date by replacing hyphens to avoid UTC shift
+      const [year, month, day] = v.split('T')[0].split('-')
+      const d = new Date(Number(year), Number(month) - 1, Number(day))
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      }
+    },
     { key: '_day', label: 'Day', render: (_, r) => dayLabel(r) },
     { key: 'Away Team', label: 'Away Team' },
     { key: 'Away QB', label: 'Away QB', render: v => v || '—' },
@@ -129,16 +136,21 @@ const COLUMNS = {
 
 function dayLabel(row) {
   try {
-    const date = new Date(row['Date_x'])
-    const day = date.toLocaleDateString('en-US', { weekday: 'long' })
+    const raw = row['Date_x'] || row['Date'] || ''
+    if (!raw) return '—'
+    // Split the date string directly instead of using Date constructor
+    // to avoid UTC-to-local timezone shift
+    const [year, month, day] = raw.split('T')[0].split('-').map(Number)
+    const date = new Date(year, month - 1, day)  // local time, no UTC shift
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' })
     const time = String(row['Time'] || '')
     const isTNF = String(row['Thursday Night Game'] || '').toLowerCase() === 'true'
-    const isMNF = day === 'Monday' && time >= '19:00'
-    const isSNF = day === 'Sunday' && time >= '19:00'
+    const isMNF = dayName === 'Monday' && time >= '19:00'
+    const isSNF = dayName === 'Sunday' && time >= '19:00'
     if (isTNF) return 'Thu 🌙'
     if (isMNF) return 'Mon 🌙'
     if (isSNF) return 'Sun 🌙'
-    return day.slice(0, 3)
+    return dayName.slice(0, 3)
   } catch { return '—' }
 }
 
