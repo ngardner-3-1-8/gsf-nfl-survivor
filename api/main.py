@@ -62,7 +62,7 @@ def load_historical_data(data_dir: str, year: int):
     Returns the DataFrame and metadata.
     """
     final_data_dir = os.path.join(
-        data_dir, f"nfl-power-ratings/final-data/{year}_final_data"
+        data_dir, f"nfl-power-ratings/final_data/{year}_final_data"
     )
     if not os.path.exists(final_data_dir):
         raise FileNotFoundError(f"No final data directory for {year}")
@@ -964,7 +964,7 @@ def get_available_years():
         current_year = data["target_year"]
 
         # Find all years with final data
-        pattern = os.path.join(DATA_DIR, "nfl-power-ratings/final-data/*_final_data")
+        pattern = os.path.join(DATA_DIR, "nfl-power-ratings/final_data/*_final_data")
         dirs = glob.glob(pattern)
         historical_years = []
         for d in sorted(dirs):
