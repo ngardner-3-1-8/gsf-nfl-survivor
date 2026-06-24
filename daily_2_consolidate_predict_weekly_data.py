@@ -3917,6 +3917,15 @@ def loop_through_simulations(date_str):
 
 
     def add_pick_predictions(df):
+        # The upstream merge that built this frame collided on 'Week' (both the
+        # schedule and the Monte Carlo results carried a 'Week' column), so the week
+        # arrives here as 'Week_x'. The pipeline rebuilds 'Week' from 'Week_x' later
+        # (see the 'nfl_schedule_df["Week"] = nfl_schedule_df["Week_x"]' step), but
+        # this function now runs *before* that, so reconcile it here. Without this,
+        # row["Week"] below raises KeyError: 'Week'.
+        if "Week" not in df.columns and "Week_x" in df.columns:
+            df["Week"] = df["Week_x"]
+
         # Build the per-team schedule dictionary FIRST. The cumulative win % loop
         # below reads team_dict, so it must be populated before that runs. In the
         # rearranged code the builder had ended up *after* this consumer, leaving
