@@ -3916,8 +3916,34 @@ def loop_through_simulations(date_str):
             df=final_combined_df
 
 
-    def add_pick_predictions(df)
-              # Calculate cumulative win percentage for each team
+    def add_pick_predictions(df):
+        # Build the per-team schedule dictionary FIRST. The cumulative win % loop
+        # below reads team_dict, so it must be populated before that runs. In the
+        # rearranged code the builder had ended up *after* this consumer, leaving
+        # team_dict undefined and crashing the function on its very first line.
+        #
+        # Recompute Expected Win Advantage from Fair Odds here so it reflects any
+        # odds that were backfilled (e.g. the Sim_Win_Pct fallback) after the
+        # original Expected Win Advantage was first computed upstream -- otherwise
+        # those games keep a stale NaN and poison the cumulative/star ratings.
+        df["Away Team Expected Win Advantage"] = round(df["Away Team Fair Odds"] - 0.5, 4)
+        df["Home Team Expected Win Advantage"] = round(df["Home Team Fair Odds"] - 0.5, 4)
+
+        team_dict = {}
+        for _, row in df.iterrows():
+            week = row["Week"]
+            away_team = row["Away Team"]
+            home_team = row["Home Team"]
+            away_odds = row["Away Team Expected Win Advantage"]
+            home_odds = row["Home Team Expected Win Advantage"]
+            if away_team not in team_dict:
+                team_dict[away_team] = {}
+            if home_team not in team_dict:
+                team_dict[home_team] = {}
+            team_dict[away_team][week] = {"Opponent": home_team, "Home/Away": "Away", "Win Odds": away_odds}
+            team_dict[home_team][week] = {"Opponent": away_team, "Home/Away": "Home", "Win Odds": home_odds}
+
+        # Calculate cumulative win percentage for each team
         for team, games in team_dict.items():
             for week, details in games.items():
                 opponent = details["Opponent"]
@@ -4030,25 +4056,9 @@ def loop_through_simulations(date_str):
 
 
 
-        # Iterate through each row in the DataFrame
-        for _, row in df.iterrows():
-            week = row["Week"]
-            away_team = row["Away Team"]
-            home_team = row["Home Team"]    
-            away_odds = row["Away Team Expected Win Advantage"]
-            home_odds = row["Home Team Expected Win Advantage"]
-    
-            # Create a nested dictionary for each team if not already present
-            if away_team not in team_dict:
-                team_dict[away_team] = {}
-            if home_team not in team_dict:
-                team_dict[home_team] = {}
-    
-            # Populate the nested dictionary with game details and odds
-            team_dict[away_team][week] = {"Opponent": home_team, "Home/Away": "Away", "Win Odds": away_odds}
-            team_dict[home_team][week] = {"Opponent": away_team, "Home/Away": "Home", "Win Odds": home_odds}
-    
-    
+
+
+
         # Apply the function to create the new columns for each week
     
         # 1. Define Favorite/Underdog for the WHOLE DataFrame
