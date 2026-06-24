@@ -3184,28 +3184,39 @@ def loop_through_historical_final_data(date_str):
         actual_data.to_csv(weekly_output, index=False)
         print(f"   ✅ Saved weekly file → {weekly_output}")
 
-        # ── 7. Append to the season-long Final Data file (idempotent) ──────────
-        season_file = f"nfl-power-ratings/final_data/{target_year}_final_data/Season_{target_year}_Through_Week_{last_played_week}_Final_Data.csv"
+# ── 7. Append to the season-long Final Data file (idempotent) ──────────
+        season_dir = f"nfl-power-ratings/final_data/{target_year}_final_data"
+        season_file = f"{season_dir}/Season_{target_year}_Through_Week_{last_played_week}_Final_Data.csv"
 
-        if last_played_week >= 1 and os.path.exists(season_file):
-            existing = pd.read_csv(season_file)
+        # Look for the most recent prior season file to build on top of
+        prior_season_df = None
+        if last_played_week > 1:
+            # Search backwards for the most recent existing season file
+            for prev_week in range(last_played_week - 1, 0, -1):
+                candidate = f"{season_dir}/Season_{target_year}_Through_Week_{prev_week}_Final_Data.csv"
+                if os.path.exists(candidate):
+                    prior_season_df = pd.read_csv(candidate)
+                    print(f"   📂 Found prior season file: Week {prev_week} ({len(prior_season_df)} rows)")
+                    break
+
+        if prior_season_df is not None:
             # Remove any existing rows for this week so re-runs are safe
-            existing = existing[existing["Week_Final"] != last_played_week]
-            season_df = pd.concat([existing, actual_data], ignore_index=True)
+            prior_season_df = prior_season_df[prior_season_df["Week_Final"] != last_played_week]
+            season_df = pd.concat([prior_season_df, actual_data], ignore_index=True)
             sort_col = week_col if week_col in season_df.columns else "Week_Final"
             season_df = season_df.sort_values(sort_col).reset_index(drop=True)
-            print(f"   📎 Appended to existing season file ({len(existing)} prior rows)")
+            print(f"   📎 Appended week {last_played_week} to season ({len(prior_season_df)} prior rows + {len(actual_data)} new)")
         else:
             season_df = actual_data.copy()
             print(
-                f"   📄 {'Week 1 — creating' if last_played_week == 1 else 'Creating'} "
+                f"   📄 {'Week 1 — creating' if last_played_week == 1 else 'No prior file found — creating'} "
                 f"new season file"
             )
 
         season_df.to_csv(season_file, index=False)
         print(
             f"   ✅ Saved season file → {season_file} "
-            f"({len(season_df)} total rows)"
+            f"({len(season_df)} total rows, weeks: {sorted(season_df['Week_Final'].unique().tolist())})"
         )
 
     create_actual_historical_data(last_played_week, nfl_last_played_week, starting_week, target_year, current_year)
