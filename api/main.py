@@ -992,6 +992,196 @@ def get_available_years():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/betting-history")
+def get_betting_history(year: int = Query(None)):
+    """
+    Aggregates betting performance from historical final data files.
+    Returns per-year breakdowns by bet type and by tier, with both
+    flat-unit and Kelly P/L. If year is provided, returns just that year;
+    otherwise returns all available years plus a combined total.
+    """
+    try:
+        # Determine which years to load
+        pattern = os.path.join(DATA_DIR, "nfl-power-ratings/final_data/*_final_data")
+        dirs = glob.glob(pattern)
+        available_years = []
+        for d in sorted(dirs):
+            try:
+                y = int(os.path.basename(d).split("_")[0])
+                files = glob.glob(os.path.join(d, "Season_*_Through_Week_*_Final_Data.csv"))
+                if files:
+                    available_years.append(y)
+            except ValueError:
+                pass
+
+        if year:
+            years_to_load = [year] if year in available_years else []
+        else:
+            years_to_load = available_years
+
+        if not years_to_load:
+            raise FileNotFoundError("No betting history data found")
+
+        # Bet type definitions: label -> (edge column, model, bet category)
+        # Edge column used for tier classification
+        bet_definitions = [
+            # Spreads
+            {"label": "GSF Spread",            "edge_col": "GSF Spread Edge",            "category": "Spread",    "tier_type": "gsf_spread"},
+            {"label": "MP Spread",             "edge_col": "Massey-Peabody Spread Edge", "category": "Spread",    "tier_type": "generic_spread"},
+            {"label": "Sim Spread",            "edge_col": "Monte Carlo Spread Edge",    "category": "Spread",    "tier_type": "mc_spread"},
+            {"label": "Sim Spread (Kelly)",    "edge_col": "Monte Carlo Spread Edge",    "category": "Spread",    "tier_type": "mc_spread"},
+            {"label": "Consensus Spread",      "edge_col": "Consensus Spread Edge",      "category": "Spread",    "tier_type": "generic_spread"},
+            # Moneylines
+            {"label": "GSF Moneyline",         "edge_col": "GSF Moneyline Edge",         "category": "Moneyline", "tier_type": "generic_ml"},
+            {"label": "MP Moneyline",          "edge_col": "Massey-Peabody Moneyline Edge","category": "Moneyline","tier_type": "generic_ml"},
+            {"label": "Sim Moneyline",         "edge_col": "Monte Carlo Moneyline Edge", "category": "Moneyline", "tier_type": "mc_ml"},
+            {"label": "Sim Moneyline (Kelly)", "edge_col": "Monte Carlo Moneyline Edge", "category": "Moneyline", "tier_type": "mc_ml"},
+            {"label": "Consensus Moneyline",   "edge_col": "Consensus Moneyline Edge",   "category": "Moneyline", "tier_type": "generic_ml"},
+            # Totals
+            {"label": "Sim Total",             "edge_col": "Monte Carlo Total Edge",     "category": "Total",     "tier_type": "mc_total"},
+            {"label": "Sim Total (Kelly)",     "edge_col": "Monte Carlo Total Edge",     "category": "Total",     "tier_type": "mc_total"},
+        ]
+
+        def classify_tier(tier_type, edge_val):
+            """Classify a bet into S/A/B using same thresholds as recommended bets."""
+            if edge_val is None or pd.isna(edge_val):
+                return None
+            e = float(edge_val)
+            if tier_type == "mc_spread":
+                if e >= 4.0: return "S"
+                if 1.0 <= e < 2.0: return "A"
+                if e >= 0 and not (2.0 <= e < 3.0): return "B"
+                return None
+            if tier_type == "mc_ml":
+                if e >= 0.15: return "S"
+                if e >= 0.10: return "A"
+                if e >= 0.05: return "B"
+                return None
+            if tier_type == "mc_total":
+                if e >= 5.0: return "S"
+                if e >= 3.0: return "A"
+                if 1.0 <= e < 2.0: return "B"
+                return None
+            if tier_type == "gsf_spread":
+                if 2.0 <= e < 3.0: return "A"
+                return None
+            if tier_type in ("generic_spread", "generic_ml"):
+                if e >= 4.0: return "S"
+                if e >= 2.0: return "A"
+                if e >= 0: return "B"
+                return None
+            return None
+
+        def load_year_data(y):
+            ydir = os.path.join(DATA_DIR, f"nfl-power-ratings/final_data/{y}_final_data")
+            files = glob.glob(os.path.join(ydir, "Season_*_Through_Week_*_Final_Data.csv"))
+            if not files:
+                return None
+            def wk(p):
+                try:
+                    return int(os.path.basename(p).split("_Week_")[1].split("_Final")[0])
+                except:
+                    return 0
+            latest = max(files, key=wk)
+            return pd.read_csv(latest)
+
+        def summarize(df):
+            """Build by-bet-type and by-tier summaries for one dataframe."""
+            by_bet_type = {}
+            by_tier = {"S": {}, "A": {}, "B": {}}
+            # Per category aggregates (Spread/Moneyline/Total)
+            by_category = {}
+
+            for bet in bet_definitions:
+                label = bet["label"]
+                wl_col = f"{label} Win/Loss"
+                pnl_col = f"{label} P/L"
+                edge_col = bet["edge_col"]
+
+                if wl_col not in df.columns:
+                    continue
+
+                is_kelly = "(Kelly)" in label
+
+                # Overall record for this bet type
+                wins = int((df[wl_col] == "Win").sum())
+                losses = int((df[wl_col] == "Loss").sum())
+                pushes = int((df[wl_col] == "Push").sum())
+                no_bets = int((df[wl_col] == "No Bet").sum())
+                total_pl = float(df[pnl_col].sum()) if pnl_col in df.columns else 0.0
+                settled = wins + losses
+
+                by_bet_type[label] = {
+                    "category": bet["category"],
+                    "is_kelly": is_kelly,
+                    "wins": wins,
+                    "losses": losses,
+                    "pushes": pushes,
+                    "no_bets": no_bets,
+                    "win_pct": round(wins / settled * 100, 1) if settled > 0 else None,
+                    "total_pl": round(total_pl, 2),
+                    "roi": round(total_pl / (settled * 100) * 100, 1) if settled > 0 else None,
+                }
+
+                # Tier breakdown for this bet type
+                if edge_col in df.columns:
+                    for _, row in df.iterrows():
+                        wl = row.get(wl_col)
+                        if wl not in ("Win", "Loss", "Push"):
+                            continue
+                        tier = classify_tier(bet["tier_type"], row.get(edge_col))
+                        if tier is None:
+                            continue
+                        pnl = float(row.get(pnl_col, 0) or 0)
+
+                        if label not in by_tier[tier]:
+                            by_tier[tier][label] = {
+                                "category": bet["category"],
+                                "is_kelly": is_kelly,
+                                "wins": 0, "losses": 0, "pushes": 0, "total_pl": 0.0,
+                            }
+                        cell = by_tier[tier][label]
+                        if wl == "Win": cell["wins"] += 1
+                        elif wl == "Loss": cell["losses"] += 1
+                        elif wl == "Push": cell["pushes"] += 1
+                        cell["total_pl"] += pnl
+
+            # Finalize tier cells with computed pct/roi
+            for tier in ("S", "A", "B"):
+                for label, cell in by_tier[tier].items():
+                    settled = cell["wins"] + cell["losses"]
+                    cell["win_pct"] = round(cell["wins"] / settled * 100, 1) if settled > 0 else None
+                    cell["roi"] = round(cell["total_pl"] / (settled * 100) * 100, 1) if settled > 0 else None
+                    cell["total_pl"] = round(cell["total_pl"], 2)
+
+            return {"by_bet_type": by_bet_type, "by_tier": by_tier}
+
+        # Build per-year summaries
+        year_summaries = {}
+        combined_df = pd.DataFrame()
+        for y in years_to_load:
+            ydf = load_year_data(y)
+            if ydf is None:
+                continue
+            year_summaries[str(y)] = summarize(ydf)
+            combined_df = pd.concat([combined_df, ydf], ignore_index=True)
+
+        # Combined total across all years
+        total_summary = summarize(combined_df) if not combined_df.empty else None
+
+        return JSONResponse(content=sanitize({
+            "available_years": sorted(years_to_load, reverse=True),
+            "by_year": year_summaries,
+            "total": total_summary,
+        }))
+
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/debug-paths")
 def debug_paths():
     import os
