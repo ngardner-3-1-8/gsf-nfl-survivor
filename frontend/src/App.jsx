@@ -5,6 +5,7 @@ import ScheduleView from './components/schedule/ScheduleView'
 import RankingsView from './components/rankings/RankingsView'
 import RecommendedBetsView from './components/bets/RecommendedBetsView'
 import MyBetsView from './components/bets/MyBetsView'
+import BetHistoryView from './components/bets/BetHistoryView' 
 import EVCalculatorView from './components/evcalc/EVCalculatorView'
 import ContestView from './components/contest/ContestView'
 
@@ -27,12 +28,6 @@ const TABS = [
   { id: 'analytics',     label: 'Analytics' },
   { id: 'faq',           label: 'FAQ' },
 ]
-
-export async function fetchAvailableYears() {
-  const res = await fetch(`${API_URL}/api/available-years`)
-  if (!res.ok) throw new Error('Failed to fetch available years')
-  return res.json()
-}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('optimizer')
@@ -74,11 +69,7 @@ export default function App() {
             </div>
             {betsSubTab === 'recommended' && <RecommendedBetsView />}
             {betsSubTab === 'my-bets'     && <MyBetsView />}
-            {betsSubTab === 'history'     && (
-              <div className="flex items-center justify-center h-64 text-gray-500 text-sm">
-                History & Performance coming next...
-              </div>
-            )}
+            {betsSubTab === 'history'     && <BetHistoryView />}
           </div>
         )
       case 'ev-calc': return <EVCalculatorView />
