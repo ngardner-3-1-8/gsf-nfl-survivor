@@ -1,0 +1,43 @@
+name: one-time-run
+
+on:
+  schedule:
+  # Runs at 13:30 AM UTC Daily
+  #7:30 AM Mountain Standard Time
+  #6:30 AM Mountain Daylight Time
+    - cron: '30 13 * * 2'
+  workflow_dispatch: # Allows you to trigger it manually for testing
+
+jobs:
+  collect-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Script
+        run: one-time-run.py
+        
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Stage files — use || true so missing paths don't fail the step
+          git add contest-historical-data/*.csv || true
+          git add circa-pick-history/*.csv || true
+          git add nfl-power-ratings/final_data/ || true
+          
+          # Commit only if there are changes
+          git commit -m "Auto-update: Week $(date +'%U') Data" || echo "No changes to commit"
+          
+          git push
