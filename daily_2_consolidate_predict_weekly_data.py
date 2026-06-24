@@ -1839,7 +1839,7 @@ def loop_through_simulations(date_str):
     
     
     # --- CONFIGURATION ---
-    SIMULATIONS = 50
+    SIMULATIONS = 5000
     HISTORY_DAYS = 840
     CURRENT_SEASON = target_year_load
     DECAY_RATE = 0.00475
@@ -5593,7 +5593,7 @@ def loop_through_simulations(date_str):
     
         ####################################################################################################
         
-        def run_monte_carlo_simulation(nfl_schedule_df, num_trials=10):
+        def run_monte_carlo_simulation(nfl_schedule_df, num_trials=1000):
             """
             Runs a Monte Carlo simulation to estimate the distribution of survivor
             pool outcomes, based on the 'Expected Value' pick percentages.
