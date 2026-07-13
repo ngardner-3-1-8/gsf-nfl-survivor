@@ -130,3 +130,15 @@ export async function fetchBettingHistory(year = null) {
   if (!res.ok) throw new Error('Failed to fetch betting history')
   return res.json()
 }
+
+export async function fetchTransactionYears() {
+  const res = await fetch(`${API_URL}/api/transactions/years/available`)
+  if (!res.ok) throw new Error('Failed to fetch transaction years')
+  return res.json()
+}
+ 
+export async function fetchTransactions(year) {
+  const res = await fetch(`${API_URL}/api/transactions/${year}`)
+  if (!res.ok) throw new Error(`Failed to fetch transactions for ${year}`)
+  return res.json()
+}
