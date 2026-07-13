@@ -1183,6 +1183,59 @@ def get_betting_history(year: int = Query(None)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/transactions/years/available")
+def get_transaction_years():
+    """Returns years that have transaction data available."""
+    try:
+        pattern = os.path.join(DATA_DIR, "nfl-transactions/*_team_deltas.csv")
+        files = glob.glob(pattern)
+        years = []
+        for f in files:
+            try:
+                y = int(os.path.basename(f).split("_")[0])
+                years.append(y)
+            except ValueError:
+                pass
+        return {"years": sorted(years, reverse=True)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/transactions/{year}")
+def get_transactions(year: int):
+    """
+    Returns the team leaderboard (net point deltas) and the full transaction
+    log for a given year.
+    """
+    try:
+        deltas_file = os.path.join(DATA_DIR, f"nfl-transactions/{year}_team_deltas.csv")
+        tx_file = os.path.join(DATA_DIR, f"nfl-transactions/{year}_transactions.csv")
+
+        if not os.path.exists(deltas_file):
+            raise FileNotFoundError(f"No transaction data for {year}")
+
+        deltas_df = pd.read_csv(deltas_file)
+        deltas_df = clean_df(deltas_df)
+
+        transactions = []
+        if os.path.exists(tx_file):
+            tx_df = pd.read_csv(tx_file)
+            tx_df = clean_df(tx_df)
+            transactions = tx_df.to_dict(orient="records")
+
+        return JSONResponse(content=sanitize({
+            "year": year,
+            "leaderboard": deltas_df.to_dict(orient="records"),
+            "transactions": transactions,
+            "transaction_count": len(transactions),
+        }))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/debug-paths")
 def debug_paths():
     import os
