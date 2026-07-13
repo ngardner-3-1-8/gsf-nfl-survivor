@@ -1,0 +1,43 @@
+name: Weekly 2 Collect Transactions
+on:
+  schedule:
+    # Runs at 14:00 UTC every Tuesday (after weekly_1 at 13:30)
+    - cron: '0 14 * * 2'
+  workflow_dispatch: # manual trigger for testing
+jobs:
+  collect-transactions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Transactions Scraper
+        run: python weekly_2_collect_transactions.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          # Stage transaction outputs — || true so missing paths don't fail
+          git add nfl-transactions/*.csv || true
+
+          # Don't commit the debug HTML dump
+          git rm --cached nfl-transactions/spotrac_debug_*.html 2>/dev/null || true
+
+          git commit -m "Auto-update: Transactions $(date +'%Y-%m-%d')" || echo "No changes to commit"
+          git push
