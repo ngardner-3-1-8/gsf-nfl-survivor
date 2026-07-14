@@ -1,0 +1,29 @@
+name: Calibrate Pick Model
+on:
+  workflow_dispatch:
+    inputs:
+      years:
+        description: 'Years to fit on (space-separated)'
+        required: true
+        default: '2022 2023 2024 2025'
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+      - name: Run Calibration
+        run: python calibrate_pick_model.py ${{ github.event.inputs.years }}
+      - name: Commit Weights
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add entry-analytics/calibrated_weights.json || true
+          git commit -m "Calibrated pick model weights" || echo "No changes"
+          git push
