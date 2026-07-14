@@ -1,0 +1,29 @@
+name: Backtest Pick Predictions
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: 'Year to backtest'
+        required: true
+        default: '2025'
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+      - name: Run Backtest
+        run: python backtest_pick_predictions.py ${{ github.event.inputs.year }}
+      - name: Commit Results
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add entry-analytics/backtest_*.csv || true
+          git commit -m "Backtest results: ${{ github.event.inputs.year }}" || echo "No changes"
+          git push
