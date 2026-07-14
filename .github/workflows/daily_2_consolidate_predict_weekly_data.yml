@@ -59,6 +59,7 @@ jobs:
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
           # Add all CSV files (assuming your script outputs CSVs)
-          git add *.csv nfl-schedules/*.csv contest-historical-data/*.csv nfl-power-ratings/*.csv last_updated.json          
+          git add *.csv nfl-schedules/*.csv contest-historical-data/*.csv nfl-power-ratings/*.csv last_updated.json 
+          git add entry-analytics/*.csv || true
           # Check if there are changes before committing to avoid errors
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update NFL data" && git push)
