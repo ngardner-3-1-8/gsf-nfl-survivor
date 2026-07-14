@@ -36,7 +36,7 @@ from entry_analytics import (
     detect_holiday_weeks, build_holiday_future_value,
 )
 
-MAX_ENTRIES_PER_WEEK = 3000   # sample cap for speed; raise for final fit
+MAX_ENTRIES_PER_WEEK = 10000   # sample cap for speed; raise for final fit
 RNG = np.random.default_rng(7)
 
 
