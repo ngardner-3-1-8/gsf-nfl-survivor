@@ -119,6 +119,54 @@ def build_future_value(week_team_data, upcoming_week, max_week):
     return fv
 
 
+def detect_holiday_weeks(sim_df):
+    """
+    Returns {week_num: "Thanksgiving"|"Christmas"} by scanning the
+    'Circa Week' column. Handles 2020 (no Christmas week) automatically.
+    """
+    holidays = {}
+    if "Circa Week" not in sim_df.columns:
+        return holidays
+    week_col = "Week_x" if "Week_x" in sim_df.columns else "Week"
+    for _, row in sim_df[[week_col, "Circa Week"]].drop_duplicates().iterrows():
+        label = str(row.get("Circa Week", "")).lower()
+        try:
+            w = int(row[week_col])
+        except (ValueError, TypeError):
+            continue
+        if "thanks" in label:
+            holidays[w] = "Thanksgiving"
+        elif "christ" in label:
+            holidays[w] = "Christmas"
+    return holidays
+
+
+def build_holiday_future_value(week_team_data, holiday_weeks, upcoming_week, max_week):
+    """
+    HFV(team, week) = value of this team on FUTURE holiday weeks specifically.
+    Entries hoard teams that are strong on short holiday slates, so a high
+    HFV suppresses a team's pick probability in the weeks BEFORE the holiday.
+    On the holiday week itself a team's HFV drops to 0 (the holiday is now),
+    so the hoarded teams flood out — the observed week-13 dynamic emerges
+    naturally from the feature.
+    """
+    from collections import defaultdict as _dd
+    hfv = _dd(lambda: _dd(float))
+    hol_weeks = sorted(w for w in holiday_weeks if w <= max_week)
+    for w in range(upcoming_week, max_week + 1):
+        future_hols = [h for h in hol_weeks if h > w]
+        for t in ALL_ABBRS:
+            total = 0.0
+            for h in future_hols:
+                d = week_team_data.get(h, {}).get(t)
+                if d:
+                    # Scarcity premium: short slates make strong holiday
+                    # teams more valuable than the same win% midseason
+                    total += max(0.0, d["win_pct"] - 0.60) * 2.0
+            hfv[w][t] = total
+    return hfv
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # 2. BEHAVIORAL PROFILES — learned from each entry's completed picks
 # ═══════════════════════════════════════════════════════════════════════════
@@ -177,31 +225,62 @@ def build_entry_profiles(picks_df, week_team_data, completed_weeks):
     return profiles
 
 
+_CALIBRATED = None
+_CAL_PATH = os.path.join("entry-analytics", "calibrated_weights.json")
+if os.path.exists(_CAL_PATH):
+    try:
+        import json as _json
+        with open(_CAL_PATH) as _f:
+            _CALIBRATED = _json.load(_f)
+        print(f"   Loaded calibrated pick-model weights "
+              f"(fit on {_CALIBRATED.get('n_decisions', '?')} decisions)")
+    except Exception:
+        _CALIBRATED = None
+
+
 def profile_to_weights(p):
-    """Map a behavioral profile to utility weights. All tunable."""
-    # Shrink toward league average when history is thin
+    """Map a behavioral profile to utility weights.
+    Uses calibrated conditional-logit weights when available,
+    falling back to hand-tuned heuristics."""
     shrink = min(1.0, p["n_picks"] / 8.0)
     def blend(v, prior):
         return prior + (v - prior) * shrink
 
-    chalk    = blend(p["chalk"], 0.5)
-    home     = blend(p["home_rate"], 0.55)
-    ev_align = blend(p["ev_align"], 0.5)
-    win_pref = blend(p["win_pref"], 0.65)
+    devs = {
+        "win":  blend(p["win_pref"], 0.65) - 0.65,
+        "ev":   blend(p["ev_align"], 0.5) - 0.5,
+        "pop":  blend(p["chalk"], 0.5) - 0.5,
+        "home": blend(p["home_rate"], 0.55) - 0.55,
+        "fv":   blend(p["ev_align"], 0.5) - 0.5,
+        "hfv":  blend(p["ev_align"], 0.5) - 0.5,
+    }
+
+    if _CALIBRATED:
+        beta = list(_CALIBRATED["beta"])
+        gamma = list(_CALIBRATED["gamma"])
+        # Backward compat: pad 5-feature (pre-holiday) calibrations
+        while len(beta) < 6:
+            beta.append(0.8)     # default hfv league weight
+        while len(gamma) < 6:
+            gamma.append(2.0)
+        order = ["win", "ev", "pop", "home", "fv", "hfv"]
+        return {f"w_{k}": beta[i] + gamma[i] * devs[k]
+                for i, k in enumerate(order)}
 
     return {
-        "w_win":  1.0 + 4.0 * (win_pref - 0.5),      # safety seekers weight win%
-        "w_pop":  6.0 * (chalk - 0.5),               # contrarians get NEGATIVE
-        "w_home": 3.0 * (home - 0.55),               # home/away lean
-        "w_ev":   3.0 * (ev_align - 0.5),            # EV optimizers
-        "w_fv":   1.5 * max(0.0, ev_align - 0.5),    # sophisticated → save teams
+        "w_win":  1.0 + 4.0 * devs["win"],
+        "w_pop":  6.0 * devs["pop"],
+        "w_home": 3.0 * devs["home"],
+        "w_ev":   3.0 * devs["ev"],
+        "w_fv":   1.5 * max(0.0, devs["fv"]),
+        "w_hfv":  2.0 * max(0.0, devs["hfv"]),
     }
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 3. UTILITY MATRICES — precomputed per (entry, week, team), fully vectorized
 # ═══════════════════════════════════════════════════════════════════════════
-def build_feature_tensors(week_team_data, future_value, weeks):
+def build_feature_tensors(week_team_data, future_value, weeks, holiday_fv=None):
     """
     Returns per-week z-scored feature arrays over the 32-team index:
       feats[w] = dict of np arrays shape (32,): win, ev, pop, home, fv, plays
@@ -212,11 +291,14 @@ def build_feature_tensors(week_team_data, future_value, weeks):
         teams = week_team_data.get(w, {})
         win = np.zeros(32); ev = np.zeros(32); pop = np.zeros(32)
         home = np.zeros(32); fv = np.zeros(32); plays = np.zeros(32)
+        hfv = np.zeros(32)
         for t, d in teams.items():
             i = TEAM_IDX[t]
             plays[i] = 1
             win[i], ev[i], pop[i], home[i] = d["win_pct"], d["ev"], d["pick_pct"], d["is_home"]
             fv[i] = future_value[w][t]
+            if holiday_fv is not None:
+                hfv[i] = holiday_fv[w][t]
 
         def z(x):
             m = plays.astype(bool)
@@ -228,8 +310,8 @@ def build_feature_tensors(week_team_data, future_value, weeks):
             return out
 
         feats[w] = {"win": z(win), "ev": z(ev), "pop": z(pop),
-                    "home": home, "fv": z(fv), "plays": plays,
-                    "raw_win": win}
+                    "home": home, "fv": z(fv), "hfv": z(hfv),
+                    "plays": plays, "raw_win": win, "raw_pop": pop}
     return feats
 
 
@@ -239,7 +321,8 @@ def entry_utilities(weights, feats_w):
           + weights["w_ev"]   * feats_w["ev"]
           + weights["w_pop"]  * feats_w["pop"]
           + weights["w_home"] * (feats_w["home"] - 0.5)
-          - weights["w_fv"]   * feats_w["fv"])
+          - weights["w_fv"]   * feats_w["fv"]
+          - weights.get("w_hfv", 0.0) * feats_w.get("hfv", 0.0))
 
 
 def pick_distribution(utility, available_mask, plays_mask, temp=SOFTMAX_TEMP):
@@ -254,6 +337,33 @@ def pick_distribution(utility, available_mask, plays_mask, temp=SOFTMAX_TEMP):
     ex[~mask] = 0
     s = ex.sum()
     return ex / s if s > 0 else None
+
+
+def apply_blend(field_pick_pct, feats, upcoming_week):
+    """Blend behavioral field prediction with the top-down prediction
+    (raw pick% from the sim file) using week-banded alpha from
+    entry-analytics/blend_alpha.json. No-op if the file doesn't exist."""
+    path = os.path.join("entry-analytics", "blend_alpha.json")
+    if not os.path.exists(path):
+        return field_pick_pct
+    import json as _json
+    with open(path) as f:
+        bands = _json.load(f)["bands"]
+
+    alpha = 0.5
+    for band, a in bands.items():
+        lo, hi = (int(x) for x in band.split("-"))
+        if lo <= upcoming_week <= hi:
+            alpha = a
+            break
+
+    topdown = feats[upcoming_week].get("raw_pop")
+    if topdown is None or topdown.sum() == 0:
+        return field_pick_pct
+
+    blended = alpha * field_pick_pct + (1 - alpha) * topdown
+    s = blended.sum()
+    return blended / s if s > 0 else field_pick_pct
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -510,8 +620,14 @@ def run_entry_analytics(picks_csv_path, sim_df, upcoming_week, target_year,
     remaining_weeks = list(range(upcoming_week, max_week + 1))
 
     future_value = build_future_value(week_team_data, upcoming_week, max_week)
+    holiday_weeks = detect_holiday_weeks(sim_df)
+    if holiday_weeks:
+        print(f"   Holiday weeks detected: {holiday_weeks}")
+    holiday_fv = build_holiday_future_value(
+        week_team_data, holiday_weeks, 1, max_week)
     feats = build_feature_tensors(week_team_data, future_value,
-                                  completed_weeks + remaining_weeks)
+                                  completed_weeks + remaining_weeks,
+                                  holiday_fv=holiday_fv)
 
     if synthetic_n_entries:
         # ── PRESEASON MODE — synthetic field ──
@@ -558,6 +674,7 @@ def run_entry_analytics(picks_csv_path, sim_df, upcoming_week, target_year,
     # ── Everything below is unchanged from the original ──
     entry_dists, field_pick_pct = predict_upcoming_picks(
         alive_entries, used_masks, profiles, feats, upcoming_week)
+    field_pick_pct = apply_blend(field_pick_pct, feats, upcoming_week)
 
     total_pot = total_entries * ENTRY_FEE * POT_MULT
     survival, fair_value, avg_survivors = run_season_simulation(
