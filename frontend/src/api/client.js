@@ -142,3 +142,12 @@ export async function fetchTransactions(year) {
   if (!res.ok) throw new Error(`Failed to fetch transactions for ${year}`)
   return res.json()
 }
+
+export async function fetchEntryAnalytics(year = null) {
+  const url = year != null
+    ? `${API_URL}/api/entry-analytics?year=${year}`
+    : `${API_URL}/api/entry-analytics`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Failed to fetch entry analytics')
+  return res.json()
+}
