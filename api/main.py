@@ -1236,6 +1236,67 @@ def get_transactions(year: int):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/entry-analytics")
+def get_entry_analytics(year: int = Query(None)):
+    """
+    Returns the most recent entry rankings (fair value, survival prob,
+    predicted picks) plus the predicted field pick percentages.
+    Finds the highest-week file for the requested (or current) year;
+    falls back to the preseason file if no weekly file exists.
+    """
+    try:
+        if year is None:
+            data = load_current_data(DATA_DIR)
+            year = data["target_year"]
+
+        analytics_dir = os.path.join(DATA_DIR, "entry-analytics")
+
+        # Prefer the highest-week weekly file, fall back to preseason
+        weekly = glob.glob(os.path.join(
+            analytics_dir, f"{year}_week_*_entry_rankings.csv"))
+        def wk(p):
+            try:
+                return int(os.path.basename(p).split("_week_")[1].split("_entry")[0])
+            except (IndexError, ValueError):
+                return 0
+
+        if weekly:
+            rank_file = max(weekly, key=wk)
+            week = wk(rank_file)
+            mode = "weekly"
+        else:
+            rank_file = os.path.join(
+                analytics_dir, f"{year}_preseason_entry_rankings.csv")
+            week = 0
+            mode = "preseason"
+
+        if not os.path.exists(rank_file):
+            raise FileNotFoundError(f"No entry analytics available for {year}")
+
+        rankings_df = clean_df(pd.read_csv(rank_file))
+
+        # Matching predicted pick% file
+        pick_file = rank_file.replace("_entry_rankings.csv",
+                                      "_predicted_pick_pct.csv")
+        predicted_picks = []
+        if os.path.exists(pick_file):
+            predicted_picks = clean_df(pd.read_csv(pick_file)).to_dict(orient="records")
+
+        return JSONResponse(content=sanitize({
+            "year": year,
+            "week": week,
+            "mode": mode,
+            "entry_count": len(rankings_df),
+            "rankings": rankings_df.to_dict(orient="records"),
+            "predicted_picks": predicted_picks,
+        }))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/debug-paths")
 def debug_paths():
     import os
