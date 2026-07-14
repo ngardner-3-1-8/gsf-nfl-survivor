@@ -28,6 +28,7 @@ import pandas as pd
 from entry_analytics import (
     build_week_team_data, build_future_value, build_feature_tensors,
     build_entry_profiles, predict_upcoming_picks, norm_abbr,
+    detect_holiday_weeks, build_holiday_future_value,
     ALL_ABBRS, TEAM_IDX, FULL_TO_ABBR,
 )
 
@@ -94,7 +95,10 @@ def run_backtest(year, test_weeks=None):
             continue
 
         fv = build_future_value(wtd, W, max_week)
-        feats = build_feature_tensors(wtd, fv, list(range(1, max_week + 1)))
+        holidays = detect_holiday_weeks(combined)
+        hfv = build_holiday_future_value(wtd, holidays, 1, max_week)
+        feats = build_feature_tensors(wtd, fv, list(range(1, max_week + 1)),
+                                      holiday_fv=hfv)
 
         # In-time knowledge: truncate picks, derive alive set + ground truth
         trunc, alive, actual_picks = truncate_picks(picks_df, W)
