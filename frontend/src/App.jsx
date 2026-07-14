@@ -75,7 +75,7 @@ export default function App() {
       case 'ev-calc': return <EVCalculatorView />
       case 'contest': return <ContestView />
       case 'transactions': return <ComingSoon name="Transactions" />
-      case 'analytics':    return <ComingSoon name="Analytics" />
+      case 'analytics':    return <AnalyticsView />
       case 'faq':          return <ComingSoon name="FAQ" />
       default:             return <OptimizerView />
     }
