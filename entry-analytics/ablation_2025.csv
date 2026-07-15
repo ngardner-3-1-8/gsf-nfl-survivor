@@ -1,0 +1,7 @@
+config,MAE,RMSE,late_MAE(w8+),entry_LL,top1%
+FULL (current),0.0182,0.0429,0.0197,1.553,48.0
+no self-consistency,0.0154,0.0323,0.0147,1.462,50.3
+no multi-entry coord,0.023,0.0667,0.0205,1.665,45.2
+no team FE,0.0198,0.048,0.019,1.582,46.7
+no contestant priors,0.0182,0.043,0.0197,1.553,48.1
+baseline (all new OFF),0.017,0.0452,0.0133,1.462,49.0
