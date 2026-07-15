@@ -1,6 +1,11 @@
 name: Fit Blend Model
 on:
-  workflow_dispatch: # manual trigger only
+  workflow_dispatch:
+    inputs:
+      years:
+        description: 'Years to fit on (space-separated, blank = all)'
+        required: false
+        default: ''
 jobs:
   fit-blend:
     runs-on: ubuntu-latest
