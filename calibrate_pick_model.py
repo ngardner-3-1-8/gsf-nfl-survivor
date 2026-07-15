@@ -30,7 +30,7 @@ from entry_analytics import (
     detect_holiday_weeks, build_holiday_future_value,
 )
 
-MAX_ENTRIES_PER_WEEK = 10000
+MAX_ENTRIES_PER_WEEK = 5000
 FE_L2 = 0.01          # L2 penalty on team fixed effects
 N_BASE = 6            # features with profile interactions
 N_FEAT = 9            # total linear features
