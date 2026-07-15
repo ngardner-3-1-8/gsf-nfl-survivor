@@ -19,11 +19,11 @@ jobs:
       - name: Install Dependencies
         run: pip install -r requirements.txt
       - name: Fit Stacked Blend
-        run: python fit_blend_model.py
+        run: python fit_blend_model.py ${{ github.event.inputs.years }}
       - name: Commit Blend Model
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add entry-analytics/blend_model.json || true
-          git commit -m "Fit stacked blend model" || echo "No changes"
+          git commit -m "Fit stacked blend model (${{ github.event.inputs.years || 'all years' }})" || echo "No changes"
           git push
