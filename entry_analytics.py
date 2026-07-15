@@ -36,8 +36,11 @@ N_OUTCOME_SIMS = 500      # game-outcome simulations
 N_PICK_PATHS   = 25       # sampled pick-paths per entry
 SOFTMAX_TEMP   = 1.0      # lower = entries more deterministic
 SURVIVAL_DECAY = 0.75     # assumed weekly field survival for stage projection
-DIVERSIFY_COEFF = 2.0     # multi-entry anti-correlation strength
-SELF_CONSISTENCY_ITERS = 3  # popularity feedback fixed-point iterations
+DIVERSIFY_COEFF = 2.0     # multi-entry anti-correlation strength (0 = off)
+SELF_CONSISTENCY_ITERS = 3  # popularity feedback iterations (1 = off)
+SELF_CONSISTENCY_DAMPING = 0.5  # partial pop update per iteration (kills overshoot)
+FE_SCALE = 1.0            # team fixed-effect strength (0 = off)
+USE_CONTESTANT_PRIORS = True  # cross-year identity priors (False = off)
 ENTRY_FEE      = 1000.0   # Circa entry fee
 POT_MULT       = 1.0      # pot = entries * fee * POT_MULT (adjust for rake if any)
 
@@ -278,7 +281,7 @@ def build_entry_profiles(picks_df, week_team_data, completed_weeks,
 
     # ── Cross-year identity: blend thin profiles toward the contestant's
     #    prior-year behavior instead of the league average ──
-    if contestant_priors:
+    if contestant_priors and USE_CONTESTANT_PRIORS:
         matched = 0
         for entry, p in profiles.items():
             if p["n_picks"] >= 8:
@@ -414,7 +417,7 @@ def entry_utilities(weights, feats_w, stage=0.0):
     thu = feats_w.get("thu")
     if thu is not None:
         u = u + weights.get("w_thu", 0.0) * thu
-    return u + _TEAM_FE
+    return u + FE_SCALE * _TEAM_FE
 
 
 def _zscore(x, plays_mask):
@@ -491,8 +494,7 @@ def apply_blend(field_pick_pct, feats, upcoming_week,
 # ═══════════════════════════════════════════════════════════════════════════
 def predict_upcoming_picks(alive_entries, used_masks, profiles, feats,
                            upcoming_week, contestant_of=None, stage=0.0,
-                           n_iter=SELF_CONSISTENCY_ITERS,
-                           diversify_coeff=DIVERSIFY_COEFF):
+                           n_iter=None, diversify_coeff=None):
     """
     Per-entry fractional pick prediction with two upgrades:
 
@@ -506,6 +508,10 @@ def predict_upcoming_picks(alive_entries, used_masks, profiles, feats,
     penalty proportional to probability already allocated by that contestant's
     other entries — entry 2 avoids entry 1's team.
     """
+    if n_iter is None:
+        n_iter = SELF_CONSISTENCY_ITERS
+    if diversify_coeff is None:
+        diversify_coeff = DIVERSIFY_COEFF
     fw = dict(feats[upcoming_week])   # shallow copy — we mutate pop only
     plays = fw["plays"]
 
@@ -534,10 +540,14 @@ def predict_upcoming_picks(alive_entries, used_masks, profiles, feats,
                 alloc += dist
         n = max(1, len(entry_dists))
         agg = agg / n
-        # Feed our aggregate back in as the popularity feature
+        # Feed our aggregate back in as the popularity feature — DAMPED
+        # (full replacement overshoots: herding feedback piles mass onto the
+        # leader; a partial step converges to the fixed point without runaway)
         if it < n_iter - 1:
-            fw["pop"] = _zscore(agg, plays)
-            fw["raw_pop"] = agg
+            d = SELF_CONSISTENCY_DAMPING
+            new_pop = d * agg + (1 - d) * fw["raw_pop"]
+            fw["pop"] = _zscore(new_pop, plays)
+            fw["raw_pop"] = new_pop
 
     return entry_dists, agg
 
