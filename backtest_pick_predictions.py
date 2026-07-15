@@ -29,6 +29,7 @@ from entry_analytics import (
     build_week_team_data, build_future_value, build_feature_tensors,
     build_entry_profiles, predict_upcoming_picks, norm_abbr,
     detect_holiday_weeks, build_holiday_future_value,
+    build_contestant_priors, contestant_name,
     ALL_ABBRS, TEAM_IDX, FULL_TO_ABBR,
 )
 
@@ -36,6 +37,19 @@ from entry_analytics import (
 def load_week_sim_file(year, week):
     path = f"nfl-power-ratings/final_sim_results_with_variance_week_{week}_{year}.csv"
     return pd.read_csv(path) if os.path.exists(path) else None
+
+
+def load_season_final_latest(year):
+    files = glob.glob(f"nfl-power-ratings/final_data/{year}_final_data/"
+                      f"Season_{year}_Through_Week_*_Final_Data.csv")
+    if not files:
+        return None
+    def wk(p):
+        try:
+            return int(os.path.basename(p).split("_Week_")[1].split("_Final")[0])
+        except (IndexError, ValueError):
+            return 0
+    return pd.read_csv(max(files, key=wk))
 
 
 def load_season_final(year, through_week):
@@ -70,6 +84,14 @@ def truncate_picks(picks_df, week):
 def run_backtest(year, test_weeks=None):
     picks_path = f"circa-pick-history/{year}_survivor_picks.csv"
     picks_df = pd.read_csv(picks_path)
+    total_entries = len(picks_df)
+
+    # Cross-year contestant priors from the prior season (if available)
+    contestant_priors = None
+    prior_picks = f"circa-pick-history/{year-1}_survivor_picks.csv"
+    prior_final = load_season_final_latest(year - 1)
+    if os.path.exists(prior_picks) and prior_final is not None:
+        contestant_priors = build_contestant_priors(prior_picks, prior_final)
     week_cols = [c for c in picks_df.columns if c.startswith("Week_")]
     max_week = len(week_cols)
 
@@ -106,7 +128,8 @@ def run_backtest(year, test_weeks=None):
             print(f"Week {W}: only {len(alive)} alive — skipping")
             continue
 
-        profiles = build_entry_profiles(trunc, wtd, list(range(1, W)))
+        profiles = build_entry_profiles(trunc, wtd, list(range(1, W)),
+                                        contestant_priors=contestant_priors)
 
         # Used masks from truncated history
         used_masks = {}
@@ -118,8 +141,24 @@ def run_backtest(year, test_weeks=None):
                     mask[TEAM_IDX[t]] = True
             used_masks[row["EntryName"]] = mask
 
-        # ── Model A: behavioral prediction ──
-        _, model_a = predict_upcoming_picks(alive, used_masks, profiles, feats, W)
+        # ── Model A: behavioral prediction (coordinated + staged) ──
+        stage = float(np.log(max(len(alive), 1) / max(total_entries, 1)))
+        contestant_of = {e: contestant_name(e) for e in alive}
+        entry_dists, model_a = predict_upcoming_picks(
+            alive, used_masks, profiles, feats, W,
+            contestant_of=contestant_of, stage=stage)
+
+        # ── Entry-level metrics (behavioral only — topdown has none) ──
+        lls, hits = [], []
+        for e, actual_team in actual_picks.items():
+            d = entry_dists.get(e)
+            if d is None or actual_team not in TEAM_IDX:
+                continue
+            ti = TEAM_IDX[actual_team]
+            lls.append(-np.log(max(d[ti], 1e-9)))
+            hits.append(1.0 if int(np.argmax(d)) == ti else 0.0)
+        entry_ll = float(np.mean(lls)) if lls else None
+        entry_top1 = float(np.mean(hits)) if hits else None
 
         # ── Ground truth from actual picks ──
         actual = np.zeros(32)
@@ -149,14 +188,20 @@ def run_backtest(year, test_weeks=None):
                 "topdown": round(model_b[i], 5),
                 "behavioral_err": round(model_a[i] - actual[i], 5),
                 "topdown_err": round(model_b[i] - actual[i], 5),
+                "alive": len(alive),
+                "entry_logloss": round(entry_ll, 4) if entry_ll is not None else None,
+                "entry_top1": round(entry_top1, 4) if entry_top1 is not None else None,
             })
 
         wk_a_mae = np.abs(model_a[playing] - actual[playing]).mean()
         wk_b_mae = np.abs(model_b[playing] - actual[playing]).mean()
         winner = "behavioral" if wk_a_mae < wk_b_mae else "topdown"
+        extra = ""
+        if entry_ll is not None:
+            extra = f"  entry-LL={entry_ll:.3f} top1={entry_top1*100:.0f}%"
         print(f"Week {W:>2}: MAE behavioral={wk_a_mae:.4f}  "
               f"topdown={wk_b_mae:.4f}  → {winner} "
-              f"({len(alive)} alive)")
+              f"({len(alive)} alive){extra}")
 
     if not results:
         print("No weeks backtested.")
@@ -185,6 +230,11 @@ def run_backtest(year, test_weeks=None):
     b_wins = int((wk_summary["behavioral_mae"] < wk_summary["topdown_mae"]).sum())
     print(f"\n  Weekly wins: behavioral {b_wins} — "
           f"topdown {len(wk_summary) - b_wins}")
+    ll_rows = df.dropna(subset=["entry_logloss"]).groupby("week").first()
+    if len(ll_rows):
+        print(f"  Entry-level (behavioral only — topdown has no entry model):")
+        print(f"    avg log-loss={ll_rows['entry_logloss'].mean():.3f}  "
+              f"avg top-1 hit={ll_rows['entry_top1'].mean()*100:.1f}%")
     print(f"  Detail saved → {out}")
 
 
