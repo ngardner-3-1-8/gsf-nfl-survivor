@@ -13,6 +13,7 @@ Writes: entry-analytics/blend_model.json
 """
 
 import os
+import sys
 import glob
 import json
 import numpy as np
@@ -21,8 +22,11 @@ import pandas as pd
 RIDGE_LAMBDA = 1e-4
 
 
-def fit():
+def fit(years=None):
     files = glob.glob("entry-analytics/backtest_*_results.csv")
+    if years:
+        files = [f for f in files
+                 if any(str(y) in os.path.basename(f) for y in years)]
     if not files:
         print("No backtest results found — run backtest_pick_predictions.py first")
         return
@@ -73,4 +77,5 @@ def fit():
 
 
 if __name__ == "__main__":
-    fit()
+    yrs = [int(y) for y in sys.argv[1:]] or None
+    fit(yrs)
