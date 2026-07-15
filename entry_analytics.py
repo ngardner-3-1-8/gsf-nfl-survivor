@@ -37,12 +37,13 @@ N_PICK_PATHS   = 25       # sampled pick-paths per entry
 SOFTMAX_TEMP   = 1.0      # lower = entries more deterministic
 SURVIVAL_DECAY = 0.75     # assumed weekly field survival for stage projection
 DIVERSIFY_COEFF = 2.0     # multi-entry anti-correlation strength (0 = off)
-SELF_CONSISTENCY_ITERS = 3  # popularity feedback iterations (1 = off)
+SELF_CONSISTENCY_ITERS = 1  # popularity feedback iterations (1 = off)
 SELF_CONSISTENCY_DAMPING = 0.5  # partial pop update per iteration (kills overshoot)
 FE_SCALE = 1.0            # team fixed-effect strength (0 = off)
 USE_CONTESTANT_PRIORS = True  # cross-year identity priors (False = off)
 ENTRY_FEE      = 1000.0   # Circa entry fee
 POT_MULT       = 1.0      # pot = entries * fee * POT_MULT (adjust for rake if any)
+
 
 ABBR_TO_FULL = {
     "ARI": "Arizona Cardinals",    "ATL": "Atlanta Falcons",
