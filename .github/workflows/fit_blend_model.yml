@@ -1,0 +1,24 @@
+name: Fit Blend Model
+on:
+  workflow_dispatch: # manual trigger only
+jobs:
+  fit-blend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+      - name: Fit Stacked Blend
+        run: python fit_blend_model.py
+      - name: Commit Blend Model
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add entry-analytics/blend_model.json || true
+          git commit -m "Fit stacked blend model" || echo "No changes"
+          git push
