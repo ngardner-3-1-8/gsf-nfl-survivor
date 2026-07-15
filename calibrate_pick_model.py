@@ -1,30 +1,24 @@
 """
-calibrate_pick_model.py
+calibrate_pick_model.py  (v3)
 
-Fits the pick-utility weights by maximum likelihood (conditional logit) on
-actual historical pick decisions, replacing the hand-tuned heuristics in
-profile_to_weights.
+Conditional-logit fit of the pick-utility model on historical pick decisions.
 
-Model:
-    u(entry i, team j, week w) = sum_k  (beta_k + gamma_k * dev_i,k) * x_j,k  [k=1..6]
-    P(i picks j) = softmax over available teams playing week w
+v3 feature set (9 + 32 team fixed effects):
+  base 6 (with profile interactions):  win, ev, pop, home, fv, hfv
+  global 3 (no interactions):          win×stage, pop×stage, thursday
+  team FE 32 (L2-regularized):         brand bias — marquee teams get
+                                       over-picked beyond their numbers
 
-  x_j = [z_win, z_ev, z_pop, home-0.5, -z_fv, -z_hfv]   (hfv = holiday future value)
-  dev_i = profile deviations:
-      [win_pref-0.65, ev_align-0.5, chalk-0.5, home_rate-0.55, ev_align-0.5]
-
-  beta  = league-average feature weights
-  gamma = how much each behavioral trait amplifies its matching feature
+  stage = log(alive / total entries) — the field's behavioral mix shifts
+  as survivors self-select.
 
 Output: entry-analytics/calibrated_weights.json
-        (entry_analytics.profile_to_weights auto-loads this if present)
-
-Usage:
-    python calibrate_pick_model.py 2022 2023 2024 2025
+Usage:  python calibrate_pick_model.py 2022 2023 2024 2025
 """
 
 import os
 import sys
+import glob
 import json
 import numpy as np
 import pandas as pd
@@ -32,16 +26,18 @@ from scipy.optimize import minimize
 
 from entry_analytics import (
     build_week_team_data, build_future_value, build_feature_tensors,
-    build_entry_profiles, norm_abbr, TEAM_IDX,
+    build_entry_profiles, norm_abbr, TEAM_IDX, ALL_ABBRS,
     detect_holiday_weeks, build_holiday_future_value,
 )
 
-MAX_ENTRIES_PER_WEEK = 10000   # sample cap for speed; raise for final fit
+MAX_ENTRIES_PER_WEEK = 10000
+FE_L2 = 0.01          # L2 penalty on team fixed effects
+N_BASE = 6            # features with profile interactions
+N_FEAT = 9            # total linear features
 RNG = np.random.default_rng(7)
 
 
 def load_season_final(year):
-    import glob
     files = glob.glob(f"nfl-power-ratings/final_data/{year}_final_data/"
                       f"Season_{year}_Through_Week_*_Final_Data.csv")
     if not files:
@@ -55,15 +51,7 @@ def load_season_final(year):
 
 
 def collect_choice_data(years):
-    """
-    Builds the choice dataset:
-      X:      (n_choices, n_alternatives, 5) feature matrix
-      chosen: (n_choices,) index of the picked alternative
-      devs:   (n_choices, 5) entry profile deviations
-      mask:   (n_choices, n_alternatives) availability mask
-    Alternatives are padded to the max candidate count.
-    """
-    X_list, chosen_list, dev_list = [], [], []
+    X_list, chosen_list, dev_list, team_list = [], [], [], []
 
     for year in years:
         final_df = load_season_final(year)
@@ -75,6 +63,7 @@ def collect_choice_data(years):
         picks_df = pd.read_csv(picks_path)
         week_cols = [c for c in picks_df.columns if c.startswith("Week_")]
         max_week = len(week_cols)
+        total_entries = len(picks_df)
 
         wtd = build_week_team_data(final_df, max_week + 1)
         fv = build_future_value(wtd, 1, max_week)
@@ -85,33 +74,36 @@ def collect_choice_data(years):
 
         n_year = 0
         for W in sorted(wtd.keys()):
-            if W < 2:      # week 1 has no history → profiles are all priors
+            if W < 2:
                 continue
             wcol = f"Week_{W}"
             if wcol not in picks_df.columns:
                 continue
 
-            # In-time profiles from weeks < W
             trunc = picks_df.copy()
             for col in week_cols:
                 if int(col.replace("Week_", "")) >= W:
                     trunc[col] = ""
             profiles = build_entry_profiles(trunc, wtd, list(range(1, W)))
 
-            # Entries that made a real pick in week W
             made_pick = picks_df[
                 picks_df[wcol].notna()
                 & (picks_df[wcol].astype(str).str.strip() != "")
                 & (picks_df[wcol].astype(str).str.upper() != "ELIMINATED")
             ]
-            if len(made_pick) > MAX_ENTRIES_PER_WEEK:
+            n_alive = len(made_pick)
+            stage = float(np.log(max(n_alive, 1) / max(total_entries, 1)))
+
+            if n_alive > MAX_ENTRIES_PER_WEEK:
                 made_pick = made_pick.sample(MAX_ENTRIES_PER_WEEK, random_state=7)
 
             fw = feats[W]
             playing = fw["plays"].astype(bool)
-            feat_mat = np.stack([fw["win"], fw["ev"], fw["pop"],
-                                 fw["home"] - 0.5, -fw["fv"],
-                                 -fw["hfv"]], axis=1)  # (32, 6)
+            base = np.stack([fw["win"], fw["ev"], fw["pop"],
+                             fw["home"] - 0.5, -fw["fv"], -fw["hfv"]], axis=1)
+            glob_f = np.stack([fw["win"] * stage, fw["pop"] * stage,
+                               fw["thu"]], axis=1)
+            feat_mat = np.concatenate([base, glob_f], axis=1)   # (32, 9)
 
             for _, row in made_pick.iterrows():
                 pick = norm_abbr(row[wcol])
@@ -128,12 +120,10 @@ def collect_choice_data(years):
 
                 avail = (~used) & playing
                 if not avail[pick_idx]:
-                    continue  # data inconsistency — skip
-
+                    continue
                 cand = np.where(avail)[0]
                 if len(cand) < 2:
                     continue
-                chosen_pos = int(np.where(cand == pick_idx)[0][0])
 
                 p = profiles.get(row["EntryName"])
                 if p is None:
@@ -144,77 +134,95 @@ def collect_choice_data(years):
                     p["chalk"]    - 0.5,
                     p["home_rate"]- 0.55,
                     p["ev_align"] - 0.5,
-                    p["ev_align"] - 0.5,   # hfv: planners hoard holiday teams
+                    p["ev_align"] - 0.5,
                 ])
 
-                X_list.append(feat_mat[cand])       # (n_cand, 5)
-                chosen_list.append(chosen_pos)
+                X_list.append(feat_mat[cand])
+                chosen_list.append(int(np.where(cand == pick_idx)[0][0]))
                 dev_list.append(dev)
+                team_list.append(cand)          # global team indices
                 n_year += 1
 
         print(f"   {year}: {n_year} pick decisions collected")
 
-    return X_list, np.array(chosen_list), np.array(dev_list)
+    return X_list, np.array(chosen_list), np.array(dev_list), team_list
 
 
-def fit_conditional_logit(X_list, chosen, devs):
-    """
-    Maximizes sum log softmax(u)[chosen] over beta (5) and gamma (5).
-    Weight for entry i on feature k: beta_k + gamma_k * dev_i,k
-    """
+def fit(X_list, chosen, devs, teams):
     n = len(X_list)
-    print(f"\n   Fitting conditional logit on {n} decisions...")
+    print(f"\n   Fitting conditional logit on {n} decisions "
+          f"({N_FEAT} features + 32 team FE, L2={FE_L2})...")
+
+    def unpack(params):
+        return params[:N_FEAT], params[N_FEAT:N_FEAT + N_BASE], params[N_FEAT + N_BASE:]
 
     def neg_ll(params):
-        beta, gamma = params[:6], params[6:]
+        beta, gamma, fe = unpack(params)
         total = 0.0
-        grad = np.zeros(12)
+        grad = np.zeros(len(params))
         for i in range(n):
-            X = X_list[i]                          # (n_cand, 5)
-            w = beta + gamma * devs[i]             # (5,)
-            u = X @ w                              # (n_cand,)
+            X = X_list[i]                              # (n_cand, 9)
+            w = beta.copy()
+            w[:N_BASE] = w[:N_BASE] + gamma * devs[i]
+            u = X @ w + fe[teams[i]]
             u -= u.max()
             ex = np.exp(u)
             p = ex / ex.sum()
             total -= np.log(max(p[chosen[i]], 1e-12))
-            # gradient
-            xbar = p @ X                           # (5,)
-            dW = X[chosen[i]] - xbar               # (5,) dLL/dw
-            grad[:6] -= dW
-            grad[6:] -= dW * devs[i]
-        return total / n, grad / n
+            xbar = p @ X
+            dW = X[chosen[i]] - xbar                   # (9,)
+            grad[:N_FEAT] -= dW
+            grad[N_FEAT:N_FEAT + N_BASE] -= dW[:N_BASE] * devs[i]
+            # team FE gradient
+            grad_fe = np.zeros(32)
+            grad_fe[teams[i][chosen[i]]] -= 1
+            np.add.at(grad_fe, teams[i], p)
+            grad[N_FEAT + N_BASE:] += grad_fe
+        # L2 on fe
+        total = total / n + FE_L2 * np.sum(unpack(params)[2] ** 2)
+        grad = grad / n
+        grad[N_FEAT + N_BASE:] += 2 * FE_L2 * unpack(params)[2]
+        return total, grad
 
-    # Warm start at the current hand-tuned league-average weights
-    x0 = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.8,    # beta
-                   4.0, 3.0, 6.0, 3.0, 1.5, 2.0])   # gamma
+    x0 = np.concatenate([
+        [1.4, 0.6, 0.5, 0.75, 0.35, 0.10, 0.0, 0.0, 0.0],   # beta (warm from v2 fit)
+        [5.5, -2.5, 0.4, 0.4, -0.6, 0.5],                    # gamma
+        np.zeros(32),                                        # team FE
+    ])
     res = minimize(neg_ll, x0, jac=True, method="L-BFGS-B",
-                   options={"maxiter": 200})
-    beta, gamma = res.x[:6], res.x[6:]
+                   options={"maxiter": 300})
+    beta, gamma, fe = unpack(res.x)
 
     print(f"   Converged: {res.success} (nll/decision = {res.fun:.4f})")
-    names = ["win", "ev", "pop", "home", "fv", "hfv"]
-    print(f"   {'feature':<8} {'beta':>8} {'gamma':>8}")
-    for k in range(6):
-        print(f"   {names[k]:<8} {beta[k]:>8.3f} {gamma[k]:>8.3f}")
-    return beta.tolist(), gamma.tolist()
+    names = ["win", "ev", "pop", "home", "fv", "hfv",
+             "win×stage", "pop×stage", "thursday"]
+    print(f"   {'feature':<10} {'beta':>8} {'gamma':>8}")
+    for k in range(N_FEAT):
+        g = f"{gamma[k]:>8.3f}" if k < N_BASE else "       —"
+        print(f"   {names[k]:<10} {beta[k]:>8.3f} {g}")
+    fe_rank = np.argsort(-fe)
+    print(f"   Most over-picked brands:  " +
+          ", ".join(f"{ALL_ABBRS[i]} {fe[i]:+.2f}" for i in fe_rank[:5]))
+    print(f"   Most under-picked brands: " +
+          ", ".join(f"{ALL_ABBRS[i]} {fe[i]:+.2f}" for i in fe_rank[-5:]))
+    return beta.tolist(), gamma.tolist(), fe.tolist()
 
 
 if __name__ == "__main__":
     years = [int(y) for y in sys.argv[1:]] or [2022, 2023, 2024, 2025]
     print(f"Calibrating on years: {years}")
 
-    X_list, chosen, devs = collect_choice_data(years)
+    X_list, chosen, devs, teams = collect_choice_data(years)
     if len(X_list) < 1000:
-        print("Not enough choice data collected — check paths.")
+        print("Not enough choice data — check paths.")
         sys.exit(1)
 
-    beta, gamma = fit_conditional_logit(X_list, chosen, devs)
+    beta, gamma, fe = fit(X_list, chosen, devs, teams)
 
     os.makedirs("entry-analytics", exist_ok=True)
     out = "entry-analytics/calibrated_weights.json"
     with open(out, "w") as f:
-        json.dump({"beta": beta, "gamma": gamma,
-                   "fitted_on": years,
-                   "n_decisions": len(X_list)}, f, indent=2)
+        json.dump({"beta": beta, "gamma": gamma, "team_fe": fe,
+                   "fitted_on": years, "n_decisions": len(X_list),
+                   "version": 3}, f, indent=2)
     print(f"\n   ✅ Saved calibrated weights → {out}")
-    print("   entry_analytics.profile_to_weights will now use these automatically.")
