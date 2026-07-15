@@ -3917,12 +3917,12 @@ def loop_through_simulations(date_str):
 
     from entry_analytics import run_entry_analytics
 
-        rankings, predicted_picks = run_entry_analytics(
-            picks_csv_path=f"circa-pick-history/{current_year}_survivor_picks.csv",
-            sim_df=df,                    # your loaded final_sim_results dataframe
-            upcoming_week=upcoming_week,
-            target_year=target_year,
-        )
+    rankings, predicted_picks = run_entry_analytics(
+        picks_csv_path=f"circa-pick-history/{current_year}_survivor_picks.csv",
+        sim_df=df,                    # your loaded final_sim_results dataframe
+        upcoming_week=upcoming_week,
+        target_year=target_year,
+    )
 
 
     def add_pick_predictions(df):
