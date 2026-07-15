@@ -35,6 +35,9 @@ from collections import defaultdict
 N_OUTCOME_SIMS = 500      # game-outcome simulations
 N_PICK_PATHS   = 25       # sampled pick-paths per entry
 SOFTMAX_TEMP   = 1.0      # lower = entries more deterministic
+SURVIVAL_DECAY = 0.75     # assumed weekly field survival for stage projection
+DIVERSIFY_COEFF = 2.0     # multi-entry anti-correlation strength
+SELF_CONSISTENCY_ITERS = 3  # popularity feedback fixed-point iterations
 ENTRY_FEE      = 1000.0   # Circa entry fee
 POT_MULT       = 1.0      # pot = entries * fee * POT_MULT (adjust for rake if any)
 
@@ -90,6 +93,15 @@ def build_week_team_data(sim_df, upcoming_week):
         if home not in TEAM_IDX or away not in TEAM_IDX:
             continue
 
+        # Thursday detection (picks lock at kickoff; Thu teams behave differently)
+        is_thu = 0.0
+        _d = row.get("Date_x") or row.get("Date")
+        if _d is not None and not pd.isna(_d):
+            try:
+                is_thu = 1.0 if pd.to_datetime(str(_d)).weekday() == 3 else 0.0
+            except Exception:
+                is_thu = 0.0
+
         h_win = float(row.get("Consensus Home Win Pct", 0.5) or 0.5)
         a_win = float(row.get("Consensus Away Win Pct", 0.5) or 0.5)
         h_ev  = float(row.get("consensus_Home_EV", 0) or 0)
@@ -98,9 +110,9 @@ def build_week_team_data(sim_df, upcoming_week):
         a_pk  = float(row.get("Away Pick %", 0) or 0)
 
         data[w][home] = {"win_pct": h_win, "ev": h_ev, "pick_pct": h_pk,
-                         "is_home": 1.0, "opp": away}
+                         "is_home": 1.0, "opp": away, "is_thu": is_thu}
         data[w][away] = {"win_pct": a_win, "ev": a_ev, "pick_pct": a_pk,
-                         "is_home": 0.0, "opp": home}
+                         "is_home": 0.0, "opp": home, "is_thu": is_thu}
     return dict(data)
 
 
@@ -170,7 +182,48 @@ def build_holiday_future_value(week_team_data, holiday_weeks, upcoming_week, max
 # ═══════════════════════════════════════════════════════════════════════════
 # 2. BEHAVIORAL PROFILES — learned from each entry's completed picks
 # ═══════════════════════════════════════════════════════════════════════════
-def build_entry_profiles(picks_df, week_team_data, completed_weeks):
+import re as _re
+
+def contestant_name(entry):
+    return _re.sub(r"-\d+$", "", str(entry).strip())
+
+
+def build_contestant_priors(prior_picks_csv, prior_season_df):
+    """
+    Cross-year identity: profiles from a PRIOR year keyed by contestant name,
+    used as informed priors for thin-history entries in the current year.
+    Multiple entries per contestant are averaged, weighted by picks observed.
+    """
+    prior_picks = pd.read_csv(prior_picks_csv)
+    week_cols = [c for c in prior_picks.columns if c.startswith("Week_")]
+    wtd = build_week_team_data(prior_season_df, len(week_cols) + 1)
+    completed = sorted(wtd.keys())
+    entry_profiles = build_entry_profiles(prior_picks, wtd, completed)
+
+    agg = {}
+    for entry, p in entry_profiles.items():
+        if p["n_picks"] < 3:
+            continue
+        c = contestant_name(entry)
+        if c not in agg:
+            agg[c] = {"w": 0.0, **{k: 0.0 for k in
+                      ("home_rate", "fav_rate", "chalk", "ev_align", "win_pref")}}
+        w = p["n_picks"]
+        for k in ("home_rate", "fav_rate", "chalk", "ev_align", "win_pref"):
+            agg[c][k] += p[k] * w
+        agg[c]["w"] += w
+
+    priors = {}
+    for c, a in agg.items():
+        if a["w"] > 0:
+            priors[c] = {k: a[k] / a["w"] for k in
+                         ("home_rate", "fav_rate", "chalk", "ev_align", "win_pref")}
+    print(f"   Built cross-year priors for {len(priors)} contestants")
+    return priors
+
+
+def build_entry_profiles(picks_df, week_team_data, completed_weeks,
+                         contestant_priors=None):
     """
     Per entry: home_rate, fav_rate, chalk_score, ev_align, avg_win_pref, n_picks.
     chalk_score: mean of (picked team's field pick% / max pick% that week);
@@ -222,16 +275,41 @@ def build_entry_profiles(picks_df, week_team_data, completed_weeks):
                 ev_align=float(np.mean(ev_pctls)) if ev_pctls else 0.5,
                 win_pref=float(np.mean(win_prefs)) if win_prefs else 0.65,
                 n_picks=n)
+
+    # ── Cross-year identity: blend thin profiles toward the contestant's
+    #    prior-year behavior instead of the league average ──
+    if contestant_priors:
+        matched = 0
+        for entry, p in profiles.items():
+            if p["n_picks"] >= 8:
+                continue
+            prior = contestant_priors.get(contestant_name(entry))
+            if not prior:
+                continue
+            w = p["n_picks"] / 8.0
+            for k in ("home_rate", "fav_rate", "chalk", "ev_align", "win_pref"):
+                p[k] = w * p[k] + (1 - w) * prior[k]
+            # Prior counts as ~5 picks of evidence → less shrink downstream
+            p["n_picks"] = min(8, p["n_picks"] + 5)
+            matched += 1
+        print(f"   Applied cross-year priors to {matched} thin-history entries")
     return profiles
 
 
 _CALIBRATED = None
+_TEAM_FE = np.zeros(32)
+_GLOBAL_W = {"w_win_stage": 0.0, "w_pop_stage": 0.0, "w_thu": 0.0}
 _CAL_PATH = os.path.join("entry-analytics", "calibrated_weights.json")
 if os.path.exists(_CAL_PATH):
     try:
         import json as _json
         with open(_CAL_PATH) as _f:
             _CALIBRATED = _json.load(_f)
+        if "team_fe" in _CALIBRATED:
+            _TEAM_FE = np.array(_CALIBRATED["team_fe"], dtype=float)
+        _b = _CALIBRATED.get("beta", [])
+        if len(_b) >= 9:      # v3 format: [6 base] + [win_stage, pop_stage, thu]
+            _GLOBAL_W = {"w_win_stage": _b[6], "w_pop_stage": _b[7], "w_thu": _b[8]}
         print(f"   Loaded calibrated pick-model weights "
               f"(fit on {_CALIBRATED.get('n_decisions', '?')} decisions)")
     except Exception:
@@ -258,16 +336,17 @@ def profile_to_weights(p):
     if _CALIBRATED:
         beta = list(_CALIBRATED["beta"])
         gamma = list(_CALIBRATED["gamma"])
-        # Backward compat: pad 5-feature (pre-holiday) calibrations
         while len(beta) < 6:
-            beta.append(0.8)     # default hfv league weight
+            beta.append(0.8)
         while len(gamma) < 6:
             gamma.append(2.0)
         order = ["win", "ev", "pop", "home", "fv", "hfv"]
-        return {f"w_{k}": beta[i] + gamma[i] * devs[k]
-                for i, k in enumerate(order)}
+        w = {f"w_{k}": beta[i] + gamma[i] * devs[k]
+             for i, k in enumerate(order)}
+        w.update(_GLOBAL_W)
+        return w
 
-    return {
+    w = {
         "w_win":  1.0 + 4.0 * devs["win"],
         "w_pop":  6.0 * devs["pop"],
         "w_home": 3.0 * devs["home"],
@@ -275,6 +354,8 @@ def profile_to_weights(p):
         "w_fv":   1.5 * max(0.0, devs["fv"]),
         "w_hfv":  2.0 * max(0.0, devs["hfv"]),
     }
+    w.update(_GLOBAL_W)
+    return w
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -291,12 +372,13 @@ def build_feature_tensors(week_team_data, future_value, weeks, holiday_fv=None):
         teams = week_team_data.get(w, {})
         win = np.zeros(32); ev = np.zeros(32); pop = np.zeros(32)
         home = np.zeros(32); fv = np.zeros(32); plays = np.zeros(32)
-        hfv = np.zeros(32)
+        hfv = np.zeros(32); thu = np.zeros(32)
         for t, d in teams.items():
             i = TEAM_IDX[t]
             plays[i] = 1
             win[i], ev[i], pop[i], home[i] = d["win_pct"], d["ev"], d["pick_pct"], d["is_home"]
             fv[i] = future_value[w][t]
+            thu[i] = d.get("is_thu", 0.0)
             if holiday_fv is not None:
                 hfv[i] = holiday_fv[w][t]
 
@@ -310,19 +392,39 @@ def build_feature_tensors(week_team_data, future_value, weeks, holiday_fv=None):
             return out
 
         feats[w] = {"win": z(win), "ev": z(ev), "pop": z(pop),
-                    "home": home, "fv": z(fv), "hfv": z(hfv),
+                    "home": home, "fv": z(fv), "hfv": z(hfv), "thu": thu,
                     "plays": plays, "raw_win": win, "raw_pop": pop}
     return feats
 
 
-def entry_utilities(weights, feats_w):
-    """Utility vector (32,) for one entry in one week."""
-    return (weights["w_win"]  * feats_w["win"]
-          + weights["w_ev"]   * feats_w["ev"]
-          + weights["w_pop"]  * feats_w["pop"]
-          + weights["w_home"] * (feats_w["home"] - 0.5)
-          - weights["w_fv"]   * feats_w["fv"]
-          - weights.get("w_hfv", 0.0) * feats_w.get("hfv", 0.0))
+def entry_utilities(weights, feats_w, stage=0.0):
+    """Utility vector (32,) for one entry in one week.
+    stage = log(alive/initial): survival-stage interactions shift the
+    behavioral mix as the field shrinks. Team fixed effects (brand bias)
+    are applied globally from the calibration."""
+    u = (weights["w_win"]  * feats_w["win"]
+       + weights["w_ev"]   * feats_w["ev"]
+       + weights["w_pop"]  * feats_w["pop"]
+       + weights["w_home"] * (feats_w["home"] - 0.5)
+       - weights["w_fv"]   * feats_w["fv"]
+       - weights.get("w_hfv", 0.0) * feats_w.get("hfv", 0.0))
+    if stage != 0.0:
+        u = u + stage * (weights.get("w_win_stage", 0.0) * feats_w["win"]
+                       + weights.get("w_pop_stage", 0.0) * feats_w["pop"])
+    thu = feats_w.get("thu")
+    if thu is not None:
+        u = u + weights.get("w_thu", 0.0) * thu
+    return u + _TEAM_FE
+
+
+def _zscore(x, plays_mask):
+    m = plays_mask.astype(bool)
+    if m.sum() < 2:
+        return x
+    mu, sd = x[m].mean(), x[m].std()
+    out = np.zeros_like(x, dtype=float)
+    out[m] = (x[m] - mu) / (sd if sd > 1e-9 else 1)
+    return out
 
 
 def pick_distribution(utility, available_mask, plays_mask, temp=SOFTMAX_TEMP):
@@ -339,55 +441,105 @@ def pick_distribution(utility, available_mask, plays_mask, temp=SOFTMAX_TEMP):
     return ex / s if s > 0 else None
 
 
-def apply_blend(field_pick_pct, feats, upcoming_week):
-    """Blend behavioral field prediction with the top-down prediction
-    (raw pick% from the sim file) using week-banded alpha from
-    entry-analytics/blend_alpha.json. No-op if the file doesn't exist."""
-    path = os.path.join("entry-analytics", "blend_alpha.json")
-    if not os.path.exists(path):
-        return field_pick_pct
+def apply_blend(field_pick_pct, feats, upcoming_week,
+                alive_count=None, total_entries=None):
+    """
+    Blends behavioral and top-down predictions.
+    Prefers the stacked ridge model (blend_model.json) when fitted;
+    falls back to week-banded alpha (blend_alpha.json); else no-op.
+    """
     import json as _json
-    with open(path) as f:
-        bands = _json.load(f)["bands"]
-
-    alpha = 0.5
-    for band, a in bands.items():
-        lo, hi = (int(x) for x in band.split("-"))
-        if lo <= upcoming_week <= hi:
-            alpha = a
-            break
-
-    topdown = feats[upcoming_week].get("raw_pop")
+    fw = feats[upcoming_week]
+    topdown = fw.get("raw_pop")
     if topdown is None or topdown.sum() == 0:
         return field_pick_pct
+    playing = fw["plays"].astype(bool)
 
-    blended = alpha * field_pick_pct + (1 - alpha) * topdown
-    s = blended.sum()
-    return blended / s if s > 0 else field_pick_pct
+    ridge_path = os.path.join("entry-analytics", "blend_model.json")
+    if os.path.exists(ridge_path):
+        with open(ridge_path) as f:
+            m = _json.load(f)
+        la = np.log(max(alive_count or 1, 1))
+        X = np.stack([field_pick_pct, topdown,
+                      np.full(32, upcoming_week, dtype=float),
+                      np.full(32, la)], axis=1)
+        pred = m["intercept"] + X @ np.array(m["coef"])
+        pred = np.clip(pred, 0, None)
+        pred[~playing] = 0
+        s = pred.sum()
+        return pred / s if s > 0 else field_pick_pct
+
+    alpha_path = os.path.join("entry-analytics", "blend_alpha.json")
+    if os.path.exists(alpha_path):
+        with open(alpha_path) as f:
+            bands = _json.load(f)["bands"]
+        alpha = 0.5
+        for band, a in bands.items():
+            lo, hi = (int(x) for x in band.split("-"))
+            if lo <= upcoming_week <= hi:
+                alpha = a
+                break
+        blended = alpha * field_pick_pct + (1 - alpha) * topdown
+        s = blended.sum()
+        return blended / s if s > 0 else field_pick_pct
+
+    return field_pick_pct
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 4. UPCOMING WEEK PREDICTION — the fractional pick model
 # ═══════════════════════════════════════════════════════════════════════════
-def predict_upcoming_picks(alive_entries, used_masks, profiles, feats, upcoming_week):
+def predict_upcoming_picks(alive_entries, used_masks, profiles, feats,
+                           upcoming_week, contestant_of=None, stage=0.0,
+                           n_iter=SELF_CONSISTENCY_ITERS,
+                           diversify_coeff=DIVERSIFY_COEFF):
     """
-    Returns:
-      entry_dists: {entry -> (32,) probability vector}
-      field_pick_pct: (32,) aggregated predicted pick% for the week
+    Per-entry fractional pick prediction with two upgrades:
+
+    SELF-CONSISTENCY: the 'pop' (herding) feature initially uses the top-down
+    prediction; after each pass we replace it with our own aggregate and
+    re-predict, converging to the herding fixed point — chalk entries respond
+    to what the field will ACTUALLY do.
+
+    MULTI-ENTRY COORDINATION: contestants with several entries diversify
+    deliberately. Entries are processed grouped by contestant, with a utility
+    penalty proportional to probability already allocated by that contestant's
+    other entries — entry 2 avoids entry 1's team.
     """
-    entry_dists = {}
-    agg = np.zeros(32)
-    fw = feats[upcoming_week]
-    for entry in alive_entries:
-        weights = profile_to_weights(profiles[entry])
-        u = entry_utilities(weights, fw)
-        dist = pick_distribution(u, ~used_masks[entry], fw["plays"])
-        if dist is None:
-            continue
-        entry_dists[entry] = dist
-        agg += dist
-    n = max(1, len(entry_dists))
-    return entry_dists, agg / n
+    fw = dict(feats[upcoming_week])   # shallow copy — we mutate pop only
+    plays = fw["plays"]
+
+    # Group entries by contestant for coordination
+    if contestant_of is None:
+        contestant_of = {e: e for e in alive_entries}
+    by_contestant = {}
+    for e in alive_entries:
+        by_contestant.setdefault(contestant_of.get(e, e), []).append(e)
+
+    entry_dists, agg = {}, np.zeros(32)
+    for it in range(max(1, n_iter)):
+        entry_dists, agg = {}, np.zeros(32)
+        for contestant, entries in by_contestant.items():
+            alloc = np.zeros(32)   # this contestant's cumulative allocation
+            for entry in entries:
+                weights = profile_to_weights(profiles[entry])
+                u = entry_utilities(weights, fw, stage=stage)
+                if len(entries) > 1:
+                    u = u - diversify_coeff * alloc
+                dist = pick_distribution(u, ~used_masks[entry], plays)
+                if dist is None:
+                    continue
+                entry_dists[entry] = dist
+                agg += dist
+                alloc += dist
+        n = max(1, len(entry_dists))
+        agg = agg / n
+        # Feed our aggregate back in as the popularity feature
+        if it < n_iter - 1:
+            fw["pop"] = _zscore(agg, plays)
+            fw["raw_pop"] = agg
+
+    return entry_dists, agg
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -427,7 +579,8 @@ def sample_game_outcomes_paired(week_team_data, weeks, n_sims, rng):
     return wins
 
 
-def sample_pick_paths(entry, used_mask, weights, feats, weeks, n_paths, rng):
+def sample_pick_paths(entry, used_mask, weights, feats, weeks, n_paths, rng,
+                      stage_by_week=None):
     """
     Samples n_paths pick sequences for one entry over remaining weeks.
     Returns int array (n_paths, n_weeks) of team indices, -1 = no valid pick.
@@ -437,7 +590,8 @@ def sample_pick_paths(entry, used_mask, weights, feats, weeks, n_paths, rng):
         avail = ~used_mask.copy()
         for wi, w in enumerate(weeks):
             fw = feats[w]
-            u = entry_utilities(weights, fw)
+            st = stage_by_week.get(w, 0.0) if stage_by_week else 0.0
+            u = entry_utilities(weights, fw, stage=st)
             dist = pick_distribution(u, avail, fw["plays"])
             if dist is None:
                 break
@@ -448,7 +602,8 @@ def sample_pick_paths(entry, used_mask, weights, feats, weeks, n_paths, rng):
 
 
 def run_season_simulation(alive_entries, used_masks, profiles, week_team_data,
-                          feats, remaining_weeks, total_pot, rng):
+                          feats, remaining_weeks, total_pot, rng,
+                          stage_by_week=None):
     """
     Returns per-entry: survival_prob (to end of season), fair_value.
     Handles survivor-count correlation via shared outcome sims.
@@ -469,7 +624,8 @@ def run_season_simulation(alive_entries, used_masks, profiles, week_team_data,
     for ei, entry in enumerate(alive_entries):
         weights = profile_to_weights(profiles[entry])
         paths = sample_pick_paths(entry, used_masks[entry], weights,
-                                  feats, weeks, N_PICK_PATHS, rng)  # (P, W)
+                                  feats, weeks, N_PICK_PATHS, rng,
+                                  stage_by_week=stage_by_week)  # (P, W)
 
         # survived[p, s] = all picks in path p won under sim s
         survived = np.ones((N_PICK_PATHS, N_OUTCOME_SIMS), dtype=bool)
@@ -663,7 +819,13 @@ def run_entry_analytics(picks_csv_path, sim_df, upcoming_week, target_year,
             used_masks[entry] = mask
         print(f"   {len(alive_entries)} alive entries of {len(picks_df)} total")
 
-        profiles = build_entry_profiles(picks_df, week_team_data, completed_weeks)
+        contestant_priors = None
+        if prior_picks_csv and prior_season_df is not None:
+            contestant_priors = build_contestant_priors(
+                prior_picks_csv, prior_season_df)
+        profiles = build_entry_profiles(picks_df, week_team_data,
+                                        completed_weeks,
+                                        contestant_priors=contestant_priors)
         total_entries = len(picks_df)
         contestant_of = dict(zip(picks_df["EntryName"],
                                  picks_df["EntryName"].astype(str).str.replace(
@@ -672,14 +834,22 @@ def run_entry_analytics(picks_csv_path, sim_df, upcoming_week, target_year,
         is_synthetic = False
 
     # ── Everything below is unchanged from the original ──
+    stage0 = float(np.log(max(len(alive_entries), 1) / max(total_entries, 1)))
+    stage_by_week = {w: stage0 + np.log(SURVIVAL_DECAY) * (w - upcoming_week)
+                     for w in remaining_weeks}
+
     entry_dists, field_pick_pct = predict_upcoming_picks(
-        alive_entries, used_masks, profiles, feats, upcoming_week)
-    field_pick_pct = apply_blend(field_pick_pct, feats, upcoming_week)
+        alive_entries, used_masks, profiles, feats, upcoming_week,
+        contestant_of=contestant_of, stage=stage0)
+    field_pick_pct = apply_blend(field_pick_pct, feats, upcoming_week,
+                                 alive_count=len(alive_entries),
+                                 total_entries=total_entries)
 
     total_pot = total_entries * ENTRY_FEE * POT_MULT
     survival, fair_value, avg_survivors = run_season_simulation(
         alive_entries, used_masks, profiles, week_team_data,
-        feats, remaining_weeks, total_pot, rng)
+        feats, remaining_weeks, total_pot, rng,
+        stage_by_week=stage_by_week)
     print(f"   Avg expected end-of-season survivors: {avg_survivors:.2f}")
     print(f"   Total pot: ${total_pot:,.0f}")
 
