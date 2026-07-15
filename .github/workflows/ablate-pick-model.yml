@@ -1,0 +1,35 @@
+name: Ablate Pick Model
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: 'Year to ablate'
+        required: true
+        default: '2025'
+jobs:
+  ablate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+      - name: Run Ablation
+        run: python ablate_pick_model.py ${{ github.event.inputs.year }}
+      - name: Commit Ablation Results
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add entry-analytics/ablation_*.csv || true
+
+          # Don't commit the backtest CSV — the ablation overwrites it with
+          # whatever config ran last, which would poison fit_blend_model
+          git checkout -- entry-analytics/backtest_*_results.csv 2>/dev/null || true
+
+          git commit -m "Ablation results: ${{ github.event.inputs.year }}" || echo "No changes"
+          git push
