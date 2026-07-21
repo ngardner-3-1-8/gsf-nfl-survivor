@@ -5913,6 +5913,153 @@ def loop_through_simulations(date_str):
     collect_schedule_travel_ranking_data_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv", index=False)
     print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv'")
 
+    # Load prior-season data ONCE, before both blocks use it
+    import glob as _glob
+    prior_year = target_year - 1
+    prior_picks_path = f"circa-pick-history/{prior_year}_survivor_picks.csv"
+    prior_season_df = None
+    prior_finals = _glob.glob(
+        f"nfl-power-ratings/final_data/{prior_year}_final_data/"
+        f"Season_{prior_year}_Through_Week_*_Final_Data.csv")
+    if prior_finals:
+        def _wk(p):
+            try:
+                return int(p.split("_Week_")[1].split("_Final")[0])
+            except (IndexError, ValueError):
+                return 0
+        prior_season_df = pd.read_csv(max(prior_finals, key=_wk))
+    if not os.path.exists(prior_picks_path):
+        prior_picks_path = None
+
+    try:
+        from entry_analytics import (build_week_team_data, build_future_value,
+            build_feature_tensors, build_entry_profiles, predict_upcoming_picks,
+            apply_blend, detect_holiday_weeks, build_holiday_future_value,
+            build_contestant_priors, contestant_name, FULL_TO_ABBR, ALL_ABBRS, TEAM_IDX)
+        import numpy as _np
+ 
+        picks_path = f"circa-pick-history/{target_year}_survivor_picks.csv"
+        if os.path.exists(picks_path):
+            _pick_df = pd.read_csv(picks_path)
+            _pick_df["Total_Wins"] = pd.to_numeric(
+                _pick_df["Total_Wins"], errors="coerce").fillna(0).astype(int)
+ 
+            _wtd = build_week_team_data(nfl_schedule_df, upcoming_week)
+            _mw = max(_wtd.keys()) if _wtd else upcoming_week
+            _hol = detect_holiday_weeks(nfl_schedule_df)
+            _fv = build_future_value(_wtd, upcoming_week, _mw)
+            _hfv = build_holiday_future_value(_wtd, _hol, 1, _mw)
+            _feats = build_feature_tensors(_wtd, _fv,
+                        list(range(1, _mw + 1)), holiday_fv=_hfv)
+ 
+            _priors = None
+            _pp = f"circa-pick-history/{target_year-1}_survivor_picks.csv"
+            _pf = prior_season_df if 'prior_season_df' in dir() else None
+            if os.path.exists(_pp) and _pf is not None:
+                _priors = build_contestant_priors(_pp, _pf)
+ 
+            _alive = _pick_df[_pick_df["Total_Wins"] >= upcoming_week - 1]
+            _wcols = [c for c in _pick_df.columns if c.startswith("Week_")]
+            _alive_e, _used = [], {}
+            for _, _r in _alive.iterrows():
+                _m = _np.zeros(32, dtype=bool)
+                for _c in _wcols:
+                    _t = str(_r.get(_c, "")).strip().upper()
+                    _t = {"JAC":"JAX","LAR":"LA","GNB":"GB","KAN":"KC","NOR":"NO",
+                          "SFO":"SF","TAM":"TB","LVR":"LV","WSH":"WAS"}.get(_t, _t)
+                    if _t in TEAM_IDX:
+                        _m[TEAM_IDX[_t]] = True
+                _alive_e.append(_r["EntryName"]); _used[_r["EntryName"]] = _m
+ 
+            _profiles = build_entry_profiles(_pick_df, _wtd,
+                            list(range(1, upcoming_week)), contestant_priors=_priors)
+            _cof = {e: contestant_name(e) for e in _alive_e}
+            _stage = float(_np.log(max(len(_alive_e),1)/max(len(_pick_df),1)))
+            _, _field = predict_upcoming_picks(_alive_e, _used, _profiles,
+                            _feats, upcoming_week, contestant_of=_cof, stage=_stage)
+            _field = apply_blend(_field, _feats, upcoming_week,
+                        alive_count=len(_alive_e), total_entries=len(_pick_df))
+ 
+            _bl = {ALL_ABBRS[i]: _field[i] for i in range(32) if _field[i] > 0}
+            _cw = nfl_schedule_df['Week'] == upcoming_week
+            for _idx in nfl_schedule_df[_cw].index:
+                _h = FULL_TO_ABBR.get(nfl_schedule_df.at[_idx,'Home Team'],
+                        str(nfl_schedule_df.at[_idx,'Home Team']).upper())
+                _a = FULL_TO_ABBR.get(nfl_schedule_df.at[_idx,'Away Team'],
+                        str(nfl_schedule_df.at[_idx,'Away Team']).upper())
+                if _h in _bl: nfl_schedule_df.at[_idx,'Home Pick %'] = _bl[_h]
+                if _a in _bl: nfl_schedule_df.at[_idx,'Away Pick %'] = _bl[_a]
+            print(f"   ✅ Blended pick% used in-run for week {upcoming_week}")
+    except Exception as _e:
+        print(f"   ⚠️  In-run blend skipped (non-fatal): {_e}")
+ 
+    try:
+        from entry_analytics import run_entry_analytics, FULL_TO_ABBR
+     
+        sim_path = (f"nfl-power-ratings/final_sim_results_with_variance_week_"
+                    f"{upcoming_week}_{target_year}.csv")
+        sim_df_for_analytics = pd.read_csv(sim_path)
+     
+        picks_path = f"circa-pick-history/{target_year}_survivor_picks.csv"
+     
+        # Preseason (no real entries yet) vs in-season
+        if not os.path.exists(picks_path) or upcoming_week <= 1:
+            rankings, predicted_picks = run_entry_analytics(
+                picks_csv_path=None,
+                sim_df=sim_df_for_analytics,
+                upcoming_week=max(1, upcoming_week),
+                target_year=target_year,
+                synthetic_n_entries=24000,               # preseason estimate
+                prior_picks_csv=prior_picks_path,
+                prior_season_df=prior_season_df,
+            )
+        else:
+            rankings, predicted_picks = run_entry_analytics(
+                picks_csv_path=picks_path,
+                sim_df=sim_df_for_analytics,
+                upcoming_week=upcoming_week,
+                target_year=target_year,
+                prior_picks_csv=prior_picks_path,        # STEP 2: priors
+                prior_season_df=prior_season_df,
+            )
+     
+        # ── STEP 1: write blended pick% back into the sim file (upcoming week only) ──
+        # predicted_picks is already blended inside run_entry_analytics via apply_blend
+        blended = dict(zip(predicted_picks["team"],
+                           predicted_picks["predicted_pick_pct"]))
+     
+        def _to_abbr(full):
+            return FULL_TO_ABBR.get(full, str(full).strip().upper())
+     
+        sim = pd.read_csv(sim_path)
+        week_col = "Week_x" if "Week_x" in sim.columns else "Week"
+        wk_mask = sim[week_col] == upcoming_week
+     
+        # Preserve the original top-down values (the 'pop' feature) before overwrite
+        if "Topdown Home Pick %" not in sim.columns:
+            sim["Topdown Home Pick %"] = sim["Home Pick %"]
+            sim["Topdown Away Pick %"] = sim["Away Pick %"]
+     
+        applied = 0
+        for idx in sim[wk_mask].index:
+            h = _to_abbr(sim.at[idx, "Home Team"])
+            a = _to_abbr(sim.at[idx, "Away Team"])
+            if h in blended:
+                sim.at[idx, "Home Pick %"] = blended[h]
+                applied += 1
+            if a in blended:
+                sim.at[idx, "Away Pick %"] = blended[a]
+                applied += 1
+     
+        sim.to_csv(sim_path, index=False)
+        print(f"   ✅ Blended pick% applied to {applied} teams for week "
+              f"{upcoming_week}; originals preserved in Topdown Home/Away Pick %")
+     
+    except Exception as _e:
+        import traceback
+        print(f"   ⚠️  Entry analytics / blend step failed (non-fatal): {_e}")
+        traceback.print_exc()
+
 
 if __name__ == "__main__":
     formatted_date = datetime.now().strftime("%m/%d/%Y")
