@@ -2875,6 +2875,49 @@ def loop_through_historical_final_data(date_str):
             actual_data["Actual Home Team EV"] = None
 
 
+        # ── Live prediction scorecard (out-of-sample blended vs topdown vs actual) ──
+        try:
+            score_rows = []
+            for _, r in actual_data.iterrows():
+                for side in ("Home", "Away"):
+                    team = r.get(f"{side} Team")
+                    actual_pk = r.get(f"{side} Actual Pick %")
+                    if actual_pk is None or pd.isna(actual_pk):
+                        continue
+                    # Blended prediction = the 'Pick %' that was in the sim file
+                    # (daily_2 overwrote it with blended for the upcoming week)
+                    blended_pred = r.get(f"{side} Pick %")
+                    # Top-down prediction preserved by daily_2's Step-1 block
+                    topdown_pred = r.get(f"Topdown {side} Pick %", blended_pred)
+                    score_rows.append({
+                        "year": target_year,
+                        "week": last_played_week,
+                        "team": team,
+                        "actual_pick_pct": float(actual_pk),
+                        "blended_pred": float(blended_pred) if pd.notna(blended_pred) else None,
+                        "topdown_pred": float(topdown_pred) if pd.notna(topdown_pred) else None,
+                    })
+         
+            if score_rows:
+                sc_df = pd.DataFrame(score_rows)
+                sc_df["blended_err"] = (sc_df["blended_pred"] - sc_df["actual_pick_pct"]).abs()
+                sc_df["topdown_err"] = (sc_df["topdown_pred"] - sc_df["actual_pick_pct"]).abs()
+         
+                sc_path = "entry-analytics/live_2026_scorecard.csv"
+                os.makedirs("entry-analytics", exist_ok=True)
+                if os.path.exists(sc_path):
+                    prev = pd.read_csv(sc_path)
+                    prev = prev[~((prev["year"] == target_year) &
+                                  (prev["week"] == last_played_week))]
+                    sc_df = pd.concat([prev, sc_df], ignore_index=True)
+                sc_df.to_csv(sc_path, index=False)
+         
+                b_mae = sc_df.loc[sc_df.year==target_year, "blended_err"].mean()
+                t_mae = sc_df.loc[sc_df.year==target_year, "topdown_err"].mean()
+                print(f"   📊 Live scorecard updated — season MAE: "
+                      f"blended={b_mae:.4f}  topdown={t_mae:.4f}")
+        except Exception as _e:
+            print(f"   ⚠️  Scorecard update skipped (non-fatal): {_e}")
         # ── 5b. Calculate Win/Loss and P/L for each bet type ─────────────────────
         try:
             DEFAULT_UNIT_RISK = 110.0
