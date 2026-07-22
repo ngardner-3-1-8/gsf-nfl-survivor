@@ -143,11 +143,18 @@ export async function fetchTransactions(year) {
   return res.json()
 }
 
-export async function fetchEntryAnalytics(year = null) {
-  const url = year != null
-    ? `${API_URL}/api/entry-analytics?year=${year}`
-    : `${API_URL}/api/entry-analytics`
-  const res = await fetch(url)
+export async function fetchEntryAnalyticsAvailable() {
+  const res = await fetch(`${API_URL}/api/entry-analytics/available`)
+  if (!res.ok) throw new Error('Failed to fetch analytics availability')
+  return res.json()
+}
+
+export async function fetchEntryAnalytics(year = null, week = null) {
+  const params = new URLSearchParams()
+  if (year != null) params.set('year', year)
+  if (week != null) params.set('week', week)
+  const qs = params.toString()
+  const res = await fetch(`${API_URL}/api/entry-analytics${qs ? '?' + qs : ''}`)
   if (!res.ok) throw new Error('Failed to fetch entry analytics')
   return res.json()
 }
