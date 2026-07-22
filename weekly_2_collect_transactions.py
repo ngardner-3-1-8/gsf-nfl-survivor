@@ -1,60 +1,71 @@
 """
-weekly_2_collect_transactions.py
+weekly_2_collect_transactions.py  (Spotrac version)
 
-Collects NFL offseason/in-season transactions and quantifies each in points,
-producing a per-team net-delta leaderboard and a transaction log.
+Scrapes NFL transactions from Spotrac (players AND coaches), values each
+move in points, and produces:
+  nfl-transactions/{year}_transactions.csv   (one row per transaction)
+  nfl-transactions/{year}_team_deltas.csv    (aggregated per team)
 
-Value model:
-  - Skill players (QB/RB/WR/TE): prior-season total EPA (passing+rushing+receiving)
-    QBs additionally cross-checked against the blended QB rating where available.
-  - Defensive players: position baseline (public defensive EPA credit is unreliable).
-  - Draft picks: expected rookie value by draft slot (Jimmy Johnson-style decay).
-  - Retirements: subtract the retiree's prior-year value from their last team.
-  - Coaching changes: neutral default (no clean data proxy) — flagged for manual edit.
-
-Output:
-  nfl-transactions/{year}_transactions.csv         (one row per transaction)
-  nfl-transactions/{year}_team_deltas.csv          (aggregated per team)
+Valuation model (unchanged from prior design):
+  - Skill players (QB/RB/WR/TE): prior-season total EPA scaled to points
+  - Defense / OL / unknown: position baseline
+  - Coaches: role-based baseline (HC > OC/DC > position coach)
+  - Departures (release/retire/fired): negative value for losing team
 """
 
 import os
+import re
+import time
+import random
 import pandas as pd
 import numpy as np
 import nflreadpy as nfl
 from datetime import datetime
+from bs4 import BeautifulSoup
+import undetected_chromedriver as uc
 
 OUTPUT_DIR = "nfl-transactions"
+DEBUG_DUMP_HTML = True  # set False once selectors are confirmed working
 
-# Position groups
+# ── Valuation constants (same knobs as before) ────────────────────────────
+EPA_TO_POINTS = 0.15
+
 SKILL_OFFENSE = {"QB", "RB", "WR", "TE", "FB"}
-OL = {"T", "G", "C", "OL", "OT", "OG"}
-DEFENSE = {"DE", "DT", "NT", "EDGE", "LB", "ILB", "OLB", "MLB", "CB", "S", "SS", "FS", "DB", "DL"}
-SPECIAL = {"K", "P", "LS"}
 
-# Position baseline point values (used where EPA credit is unreliable, e.g. defense, OL)
-# These are rough "starter caliber" season values in points. Tunable.
 POSITION_BASELINE = {
-    "QB": 0.0,   # QBs use rating delta / EPA, not baseline
-    "RB": 8.0, "WR": 12.0, "TE": 8.0, "FB": 2.0,
-    "T": 10.0, "G": 8.0, "C": 8.0, "OL": 9.0, "OT": 10.0, "OG": 8.0,
+    "QB": 6.0, "RB": 8.0, "WR": 12.0, "TE": 8.0, "FB": 2.0,
+    "T": 10.0, "G": 8.0, "C": 8.0, "OL": 9.0, "OT": 10.0, "OG": 8.0, "LT": 10.0, "RT": 10.0,
     "DE": 14.0, "EDGE": 14.0, "DT": 11.0, "NT": 8.0, "DL": 11.0,
     "LB": 9.0, "ILB": 8.0, "OLB": 10.0, "MLB": 9.0,
     "CB": 12.0, "S": 9.0, "SS": 9.0, "FS": 9.0, "DB": 10.0,
     "K": 4.0, "P": 2.0, "LS": 1.0,
 }
 
-# Multiplier converting a raw season EPA figure into "power-rating points"
-# EPA is already in points; scale down because a full-season EPA swing of ~50
-# shouldn't move a team rating by 50. Tunable to match your rating scale.
-EPA_TO_POINTS = 0.15
+# Coaching role values in points — tunable
+COACH_VALUES = {
+    "head coach": 12.0,
+    "offensive coordinator": 6.0,
+    "defensive coordinator": 6.0,
+    "special teams coordinator": 2.0,
+    "coordinator": 5.0,       # generic fallback
+    "coach": 1.5,             # position coaches etc.
+    "general manager": 4.0,
+}
 
-ABBR_MAP = {"JAC": "JAX", "LAR": "LA", "GNB": "GB", "KAN": "KC",
-            "NOR": "NO", "SFO": "SF", "TAM": "TB", "LVR": "LV", "WSH": "WAS"}
-
-
-def normalize_team(abbr):
-    a = str(abbr).strip().upper()
-    return ABBR_MAP.get(a, a)
+# Spotrac team names → your abbreviations
+SPOTRAC_TEAM_MAP = {
+    "arizona cardinals": "ARI", "atlanta falcons": "ATL", "baltimore ravens": "BAL",
+    "buffalo bills": "BUF", "carolina panthers": "CAR", "chicago bears": "CHI",
+    "cincinnati bengals": "CIN", "cleveland browns": "CLE", "dallas cowboys": "DAL",
+    "denver broncos": "DEN", "detroit lions": "DET", "green bay packers": "GB",
+    "houston texans": "HOU", "indianapolis colts": "IND", "jacksonville jaguars": "JAX",
+    "kansas city chiefs": "KC", "los angeles rams": "LA", "los angeles chargers": "LAC",
+    "las vegas raiders": "LV", "miami dolphins": "MIA", "minnesota vikings": "MIN",
+    "new england patriots": "NE", "new orleans saints": "NO", "new york giants": "NYG",
+    "new york jets": "NYJ", "philadelphia eagles": "PHI", "pittsburgh steelers": "PIT",
+    "seattle seahawks": "SEA", "san francisco 49ers": "SF", "tampa bay buccaneers": "TB",
+    "tennessee titans": "TEN", "washington commanders": "WAS",
+}
 
 
 def get_target_year(today=None):
@@ -62,296 +73,311 @@ def get_target_year(today=None):
     return today.year - 1 if today.month < 6 else today.year
 
 
-def draft_pick_value(overall_pick):
-    """
-    Expected rookie value in points by overall draft slot.
-    Uses a smooth decay — pick 1 is most valuable, tapering through 7 rounds.
-    Scaled into the same points space as EPA_TO_POINTS output.
-    """
-    if pd.isna(overall_pick) or overall_pick <= 0:
-        return 0.0
-    p = float(overall_pick)
-    # Exponential-ish decay: top picks ~6 pts, late picks ~0.5 pts
-    raw = 7.0 * np.exp(-p / 60.0)
-    return round(raw, 2)
+def normalize_team(text):
+    """Match a Spotrac team name (or fragment) to an abbreviation."""
+    if not text:
+        return None
+    t = str(text).strip().lower()
+    if t in SPOTRAC_TEAM_MAP:
+        return SPOTRAC_TEAM_MAP[t]
+    # Partial match — Spotrac sometimes shows just "Cardinals" or logo alt text
+    for full, abbr in SPOTRAC_TEAM_MAP.items():
+        if t in full or full.split()[-1] == t:
+            return abbr
+    # Already an abbreviation?
+    up = t.upper()
+    if up in SPOTRAC_TEAM_MAP.values():
+        return up
+    return None
 
 
+# ── Transaction type classification from description text ─────────────────
+def classify_transaction(description):
+    """
+    Returns (tx_type, direction) where direction is:
+      +1 = team gains value, -1 = team loses value, 0 = neutral/unknown
+    """
+    d = str(description).lower()
+
+    # Coaching moves
+    if any(k in d for k in ("hired", "named", "promoted to")):
+        if any(k in d for k in COACH_VALUES.keys()):
+            return "Coaching Hire", +1
+    if "fired" in d or "relieved" in d or ("parted ways" in d and "coach" in d):
+        return "Coaching Departure", -1
+
+    # Player moves
+    if "signed" in d or "agreed to terms" in d or "claimed" in d:
+        return "Signing", +1
+    if "re-signed" in d or "extension" in d or "restructure" in d:
+        return "Extension / Re-sign", 0   # keeps existing value, no delta
+    if "traded" in d or "acquired" in d:
+        return "Trade", +1                # direction handled by from/to teams
+    if "released" in d or "waived" in d or "cut" in d:
+        return "Release", -1
+    if "retired" in d or "retirement" in d:
+        return "Retirement", -1
+    if "drafted" in d or "draft pick" in d:
+        return "Draft Pick", +1
+    if "suspended" in d:
+        return "Suspension", -1
+    if "franchise tag" in d or "transition tag" in d:
+        return "Tag", 0
+
+    return "Other", 0
+
+
+def coach_value(description):
+    """Value a coaching move from its description text."""
+    d = str(description).lower()
+    for role, val in COACH_VALUES.items():
+        if role in d:
+            return val
+    return COACH_VALUES["coach"]
+
+
+# ── Player valuation (same EPA model as before) ────────────────────────────
 def build_player_values(prior_year):
-    """
-    Returns a dict: gsis_id -> {value, position, name}
-    Value is prior-season total EPA scaled to points for skill players,
-    or position baseline for non-skill / unreliable-EPA positions.
-    """
+    """name(lower) -> {value, position, epa}"""
     print(f"   Loading {prior_year} player stats for valuation...")
     stats = nfl.load_player_stats([prior_year])
     stats = stats.to_pandas() if hasattr(stats, "to_pandas") else stats
 
-    # Aggregate per player across the season
-    value_map = {}
+    agg = {}
     for _, row in stats.iterrows():
-        pid = row.get("player_id")
-        if not pid:
+        name = row.get("player_display_name") or row.get("player_name")
+        if not name:
             continue
+        key = str(name).strip().lower()
         pos = str(row.get("position", "")).upper()
-        name = row.get("player_display_name") or row.get("player_name") or ""
+        epa = (
+            float(row.get("passing_epa", 0) or 0)
+            + float(row.get("rushing_epa", 0) or 0)
+            + float(row.get("receiving_epa", 0) or 0)
+        )
+        if key not in agg:
+            agg[key] = {"position": pos, "total_epa": 0.0}
+        agg[key]["total_epa"] += epa
 
-        pass_epa = float(row.get("passing_epa", 0) or 0)
-        rush_epa = float(row.get("rushing_epa", 0) or 0)
-        rec_epa  = float(row.get("receiving_epa", 0) or 0)
-        total_epa = pass_epa + rush_epa + rec_epa
-
-        if pid not in value_map:
-            value_map[pid] = {
-                "position": pos,
-                "name": name,
-                "total_epa": 0.0,
-            }
-        value_map[pid]["total_epa"] += total_epa
-
-    # Convert to points
-    final = {}
-    for pid, d in value_map.items():
+    values = {}
+    for key, d in agg.items():
         pos = d["position"]
         if pos in SKILL_OFFENSE:
-            # EPA-based value for skill players
-            points = round(d["total_epa"] * EPA_TO_POINTS, 2)
-        elif pos in POSITION_BASELINE:
-            # Baseline for positions where EPA credit is unreliable
-            points = POSITION_BASELINE[pos]
+            pts = round(d["total_epa"] * EPA_TO_POINTS, 2)
         else:
-            points = 2.0  # unknown position default
-        final[pid] = {
-            "value": points,
-            "position": pos,
-            "name": d["name"],
-            "epa": round(d["total_epa"], 2),
-        }
-    return final
+            pts = POSITION_BASELINE.get(pos, 2.0)
+        values[key] = {"value": pts, "position": pos, "epa": round(d["total_epa"], 2)}
+    return values
 
 
-def collect_trades(target_year, player_values):
-    """Returns list of transaction dicts from trades."""
-    print("   Loading trades...")
+def player_value(name, position, player_values):
+    """Look up value; fall back to position baseline."""
+    key = str(name).strip().lower()
+    if key in player_values:
+        d = player_values[key]
+        return d["value"], d["position"] or position, d["epa"]
+    return POSITION_BASELINE.get(str(position).upper(), 2.0), position, None
+
+
+# ── Spotrac scraping ────────────────────────────────────────────────────────
+def scrape_spotrac_transactions(year):
+    """
+    Scrapes all transactions for a calendar year from Spotrac using
+    undetected_chromedriver (Spotrac blocks plain requests).
+    Returns list of raw dicts: {date, team, player, position, description}
+    """
+    url = (
+        f"https://www.spotrac.com/nfl/transactions/_/year/{year}"
+        f"/start/{year}-01-01/end/{year}-12-31"
+    )
+    print(f"   Launching browser for: {url}")
+
+    options = uc.ChromeOptions()
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--window-size=1920,3000")
+
+    driver = uc.Chrome(options=options)
+    raw_transactions = []
+
     try:
-        trades = nfl.load_trades(seasons=[target_year])
-        trades = trades.to_pandas() if hasattr(trades, "to_pandas") else trades
-    except Exception as e:
-        print(f"   ⚠️  Could not load trades: {e}")
-        return []
+        driver.get(url)
+        # Let JS render + any lazy loading settle
+        time.sleep(5 + random.uniform(0, 2))
 
-    transactions = []
-    for _, row in trades.iterrows():
-        # Only player rows (pick_season is NA for direct player trades)
-        if pd.notna(row.get("pick_season")):
-            # This is a traded draft pick
-            pick_val = draft_pick_value(row.get("pick_number"))
-            gave = normalize_team(row.get("gave"))
-            received = normalize_team(row.get("received"))
-            transactions.append({
-                "type": "Trade (pick)",
-                "player": f"Pick R{row.get('pick_round','?')} #{row.get('pick_number','?')}",
-                "position": "PICK",
-                "from_team": gave,
-                "to_team": received,
-                "value": pick_val,
-                "epa": None,
-                "season": target_year,
+        # Scroll to bottom a few times to trigger lazy-loaded rows
+        for _ in range(5):
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(1.5)
+
+        html = driver.page_source
+
+        if DEBUG_DUMP_HTML:
+            os.makedirs(OUTPUT_DIR, exist_ok=True)
+            debug_path = os.path.join(OUTPUT_DIR, f"spotrac_debug_{year}.html")
+            with open(debug_path, "w", encoding="utf-8") as f:
+                f.write(html)
+            print(f"   🐛 Dumped page HTML → {debug_path} (inspect if parsing misses rows)")
+
+        soup = BeautifulSoup(html, "html.parser")
+
+        # ── Strategy 1: standard Spotrac table rows ──
+        # Spotrac transaction pages typically use <table> with rows containing
+        # date, team logo/link, player link, and a description cell.
+        rows = soup.select("table tbody tr")
+        print(f"   Found {len(rows)} table rows")
+
+        current_date = None
+        for tr in rows:
+            cells = tr.find_all("td")
+            if not cells:
+                continue
+
+            text_cells = [c.get_text(" ", strip=True) for c in cells]
+            row_text = " | ".join(text_cells)
+
+            # Date detection — either a dedicated date cell or a date-only row
+            date_match = re.search(
+                r"((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{2,4})",
+                row_text,
+            )
+            if date_match:
+                current_date = date_match.group(1)
+
+            # Team — from a team link href (/nfl/<team-slug>/) or logo alt
+            team = None
+            team_link = tr.select_one("a[href*='/nfl/']")
+            if team_link:
+                href = team_link.get("href", "")
+                m = re.search(r"/nfl/([a-z\-]+)/", href)
+                if m:
+                    slug = m.group(1).replace("-", " ")
+                    team = normalize_team(slug)
+            if not team:
+                img = tr.find("img")
+                if img and img.get("alt"):
+                    team = normalize_team(img["alt"])
+
+            # Player — usually the first player-profile link
+            player = None
+            player_link = tr.select_one("a[href*='/player/'], a[href*='/redirect/player/']")
+            if player_link:
+                player = player_link.get_text(strip=True)
+
+            # Description — longest text cell (the sentence describing the move)
+            description = max(text_cells, key=len) if text_cells else ""
+
+            # Position — Spotrac often prefixes player names like "QB John Smith"
+            position = ""
+            pos_match = re.match(
+                r"^(QB|RB|WR|TE|FB|T|G|C|OT|OG|OL|LT|RT|DE|DT|NT|EDGE|LB|ILB|OLB|MLB|CB|S|SS|FS|DB|K|P|LS)\b",
+                description,
+            )
+            if pos_match:
+                position = pos_match.group(1)
+
+            if not description or len(description) < 10:
+                continue  # skip empty/nav rows
+
+            raw_transactions.append({
+                "date": current_date,
+                "team": team,
+                "player": player or extract_name_from_description(description),
+                "position": position,
+                "description": description,
             })
+
+    finally:
+        driver.quit()
+
+    print(f"   ✅ Scraped {len(raw_transactions)} raw transactions")
+    return raw_transactions
+
+
+def extract_name_from_description(description):
+    """Fallback: pull 'Firstname Lastname' from the description text."""
+    m = re.search(r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z'\-\.]+)+)\b", description)
+    return m.group(1) if m else "Unknown"
+
+
+# ── Transform raw → valued transactions ────────────────────────────────────
+def value_transactions(raw_transactions, player_values, target_year):
+    transactions = []
+    for raw in raw_transactions:
+        tx_type, direction = classify_transaction(raw["description"])
+
+        if tx_type in ("Other", "Tag", "Extension / Re-sign", "Suspension"):
+            # Log it with zero delta so it appears in the feed but doesn't move ratings
+            # (Suspension could be negative later — start neutral to avoid noise)
+            value = 0.0
+            epa = None
+            pos = raw["position"]
+        elif tx_type in ("Coaching Hire", "Coaching Departure"):
+            value = coach_value(raw["description"]) * direction
+            epa = None
+            pos = "COACH"
         else:
-            name = row.get("pfr_name") or "Unknown"
-            gave = normalize_team(row.get("gave"))
-            received = normalize_team(row.get("received"))
-            # Try to find value by name match (trades use pfr_name, not gsis_id)
-            val, pos, epa = match_value_by_name(name, player_values)
-            transactions.append({
-                "type": "Trade (player)",
-                "player": name,
-                "position": pos,
-                "from_team": gave,
-                "to_team": received,
-                "value": val,
-                "epa": epa,
-                "season": target_year,
-            })
-    return transactions
+            base_val, pos, epa = player_value(
+                raw["player"], raw["position"], player_values
+            )
+            value = base_val * direction
 
-
-def match_value_by_name(name, player_values):
-    """Fuzzy-match a player name to the value map. Returns (value, position, epa)."""
-    if not name:
-        return 0.0, "", None
-    target = str(name).strip().lower()
-    for pid, d in player_values.items():
-        if str(d["name"]).strip().lower() == target:
-            return d["value"], d["position"], d["epa"]
-    # No match — return neutral
-    return 0.0, "", None
-
-
-def collect_roster_changes(target_year, prior_year, player_values):
-    """
-    Detects free-agent signings and releases by comparing each player's team
-    from prior_year roster to target_year roster.
-    """
-    print("   Loading rosters for free agency detection...")
-    try:
-        prior = nfl.load_rosters([prior_year])
-        curr = nfl.load_rosters([target_year])
-        prior = prior.to_pandas() if hasattr(prior, "to_pandas") else prior
-        curr = curr.to_pandas() if hasattr(curr, "to_pandas") else curr
-    except Exception as e:
-        print(f"   ⚠️  Could not load rosters: {e}")
-        return []
-
-    # Build prior-year team-by-player
-    prior_team = {}
-    for _, row in prior.iterrows():
-        pid = row.get("gsis_id") or row.get("player_id")
-        if pid:
-            prior_team[pid] = normalize_team(row.get("team"))
-
-    transactions = []
-    seen = set()
-    for _, row in curr.iterrows():
-        pid = row.get("gsis_id") or row.get("player_id")
-        if not pid or pid in seen:
-            continue
-        seen.add(pid)
-
-        new_team = normalize_team(row.get("team"))
-        old_team = prior_team.get(pid)
-        name = row.get("full_name") or row.get("player_name") or ""
-        pos = str(row.get("position", "")).upper()
-
-        # Player changed teams via free agency (not in trades — those are separate)
-        if old_team and old_team != new_team:
-            val = player_values.get(pid, {}).get("value", POSITION_BASELINE.get(pos, 2.0))
-            epa = player_values.get(pid, {}).get("epa")
-            transactions.append({
-                "type": "Free Agent Signing",
-                "player": name,
-                "position": pos,
-                "from_team": old_team,
-                "to_team": new_team,
-                "value": val,
-                "epa": epa,
-                "season": target_year,
-            })
-
-    # Detect releases/retirements — players on prior roster not on any current roster
-    curr_ids = set(seen)
-    for pid, old_team in prior_team.items():
-        if pid not in curr_ids:
-            d = player_values.get(pid, {})
-            val = d.get("value", 0)
-            if val and val > 1.0:  # only note meaningful departures
-                transactions.append({
-                    "type": "Released / Retired",
-                    "player": d.get("name", "Unknown"),
-                    "position": d.get("position", ""),
-                    "from_team": old_team,
-                    "to_team": None,
-                    "value": -abs(val),  # negative — team loses this value
-                    "epa": d.get("epa"),
-                    "season": target_year,
-                })
-
-    return transactions
-
-
-def collect_draft(target_year, player_values):
-    """Draft picks add rookie value to the drafting team."""
-    print("   Loading draft picks...")
-    try:
-        draft = nfl.load_draft_picks([target_year])
-        draft = draft.to_pandas() if hasattr(draft, "to_pandas") else draft
-    except Exception as e:
-        print(f"   ⚠️  Could not load draft: {e}")
-        return []
-
-    transactions = []
-    for _, row in draft.iterrows():
-        team = normalize_team(row.get("team"))
-        overall = row.get("pick")
-        name = row.get("pfr_player_name") or row.get("player_name") or "Drafted Player"
-        pos = str(row.get("position", "")).upper()
-        val = draft_pick_value(overall)
         transactions.append({
-            "type": "Draft Pick",
-            "player": f"{name} (R{row.get('round','?')} #{overall})",
+            "date": raw["date"],
+            "type": tx_type,
+            "player": raw["player"],
             "position": pos,
-            "from_team": None,
-            "to_team": team,
-            "value": val,
-            "epa": None,
+            "team": raw["team"],
+            "from_team": raw["team"] if direction < 0 else None,
+            "to_team": raw["team"] if direction >= 0 else None,
+            "value": round(value, 2),
+            "epa": epa,
+            "description": raw["description"][:200],
             "season": target_year,
         })
     return transactions
 
 
 def aggregate_team_deltas(transactions):
-    """Net the points value of all moves per team, split by unit."""
     teams = {}
 
     def ensure(team):
         if team and team not in teams:
             teams[team] = {
-                "team": team,
-                "net_delta": 0.0,
-                "additions": 0.0,
-                "subtractions": 0.0,
-                "offense_delta": 0.0,
-                "defense_delta": 0.0,
-                "num_moves": 0,
+                "team": team, "net_delta": 0.0, "additions": 0.0,
+                "subtractions": 0.0, "offense_delta": 0.0,
+                "defense_delta": 0.0, "coaching_delta": 0.0, "num_moves": 0,
             }
 
+    OFFENSE_POS = SKILL_OFFENSE | {"T", "G", "C", "OL", "OT", "OG", "LT", "RT"}
+
     for t in transactions:
+        team = t.get("to_team") or t.get("from_team") or t.get("team")
+        if not team:
+            continue
+        ensure(team)
         val = t["value"] or 0
         pos = t.get("position", "")
-        is_offense = pos in SKILL_OFFENSE or pos in OL or pos == "PICK"
 
-        # Team that gains the player
-        to_team = t.get("to_team")
-        if to_team:
-            ensure(to_team)
-            teams[to_team]["net_delta"] += val
-            teams[to_team]["num_moves"] += 1
-            if val >= 0:
-                teams[to_team]["additions"] += val
-            else:
-                teams[to_team]["subtractions"] += val
-            if is_offense:
-                teams[to_team]["offense_delta"] += val
-            elif pos in DEFENSE:
-                teams[to_team]["defense_delta"] += val
+        teams[team]["net_delta"] += val
+        teams[team]["num_moves"] += 1
+        if val >= 0:
+            teams[team]["additions"] += val
+        else:
+            teams[team]["subtractions"] += val
 
-        # Team that loses the player (for trades and releases)
-        from_team = t.get("from_team")
-        if from_team and t["type"] != "Released / Retired":
-            # Trades: the giving team loses that value
-            ensure(from_team)
-            teams[from_team]["net_delta"] -= val
-            teams[from_team]["num_moves"] += 1
-            teams[from_team]["subtractions"] -= val
-            if is_offense:
-                teams[from_team]["offense_delta"] -= val
-            elif pos in DEFENSE:
-                teams[from_team]["defense_delta"] -= val
-        elif from_team and t["type"] == "Released / Retired":
-            # Already negative value, applied to the from_team
-            ensure(from_team)
-            teams[from_team]["net_delta"] += val  # val is negative
-            teams[from_team]["num_moves"] += 1
-            teams[from_team]["subtractions"] += val
-            if is_offense:
-                teams[from_team]["offense_delta"] += val
-            elif pos in DEFENSE:
-                teams[from_team]["defense_delta"] += val
+        if pos == "COACH":
+            teams[team]["coaching_delta"] += val
+        elif pos in OFFENSE_POS:
+            teams[team]["offense_delta"] += val
+        else:
+            teams[team]["defense_delta"] += val
 
-    # Round everything
     result = []
     for team, d in teams.items():
-        for k in ("net_delta", "additions", "subtractions", "offense_delta", "defense_delta"):
+        for k in ("net_delta", "additions", "subtractions",
+                  "offense_delta", "defense_delta", "coaching_delta"):
             d[k] = round(d[k], 2)
         result.append(d)
     result.sort(key=lambda x: -x["net_delta"])
@@ -361,38 +387,38 @@ def aggregate_team_deltas(transactions):
 def main():
     target_year = get_target_year()
     prior_year = target_year - 1
+    # Spotrac URL uses the calendar year of the offseason
+    scrape_year = datetime.now().year
 
-    print(f"\n🏈 Collecting {target_year} transactions (valuing against {prior_year})...")
+    print(f"\n🏈 Collecting {scrape_year} transactions from Spotrac "
+          f"(valuing against {prior_year} stats)...")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     player_values = build_player_values(prior_year)
     print(f"   Built value map for {len(player_values)} players")
 
-    all_transactions = []
-    all_transactions += collect_trades(target_year, player_values)
-    all_transactions += collect_roster_changes(target_year, prior_year, player_values)
-    all_transactions += collect_draft(target_year, player_values)
+    raw = scrape_spotrac_transactions(scrape_year)
+    if not raw:
+        print("   ⚠️  No transactions scraped — check the debug HTML dump")
+        return
 
-    print(f"   Collected {len(all_transactions)} total transactions")
+    transactions = value_transactions(raw, player_values, target_year)
 
-    # Save transaction log
-    tx_df = pd.DataFrame(all_transactions)
+    tx_df = pd.DataFrame(transactions)
     tx_file = os.path.join(OUTPUT_DIR, f"{target_year}_transactions.csv")
     tx_df.to_csv(tx_file, index=False)
-    print(f"   ✅ Saved transaction log → {tx_file}")
+    print(f"   ✅ Saved transaction log → {tx_file} ({len(tx_df)} rows)")
 
-    # Save team deltas
-    deltas = aggregate_team_deltas(all_transactions)
+    deltas = aggregate_team_deltas(transactions)
     deltas_df = pd.DataFrame(deltas)
     deltas_file = os.path.join(OUTPUT_DIR, f"{target_year}_team_deltas.csv")
     deltas_df.to_csv(deltas_file, index=False)
     print(f"   ✅ Saved team deltas → {deltas_file}")
 
-    # Print top movers
     print(f"\n   📊 Top 5 offseason gainers:")
     for d in deltas[:5]:
         print(f"      {d['team']:<4} +{d['net_delta']:>6.2f} pts ({d['num_moves']} moves)")
-    print(f"\n   📉 Bottom 5:")
+    print(f"   📉 Bottom 5:")
     for d in deltas[-5:]:
         print(f"      {d['team']:<4} {d['net_delta']:>7.2f} pts ({d['num_moves']} moves)")
 
