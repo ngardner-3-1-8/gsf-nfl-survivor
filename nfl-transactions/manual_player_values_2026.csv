@@ -1,0 +1,6 @@
+type,coach,role,from_team,to_team,value,date,note
+Coaching Departure,Brian Daboll,head coach,NYG,,1,2026-01-15,Fired — outbound from NYG
+Coaching Hire,John Harbaugh,head coach,BAL,NYG,,2026-01-20,Replaced Brian Daboll
+Coaching Hire,Declan Dolye,offensive coordinator,CHI,BAL,2,2026-01-25,New OC hire
+Coaching Hire,Jesse Minter,head coach,LAC,BAL,3,2026-01-20,Defensive minded coach going to the ravens
+Coaching Departure,Sean McDermott,head coach,BUF,,4,2026-01-15,Fired — outbound from BUF
