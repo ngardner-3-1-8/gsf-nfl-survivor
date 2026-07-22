@@ -67,8 +67,24 @@ COACH_VALUES = {
 # Backup compatibility: some call sites still reference POSITION_BASELINE.
 POSITION_BASELINE = STARTER_PPG
 
-ABBR_MAP = {"JAC": "JAX", "LAR": "LA", "GNB": "GB", "KAN": "KC",
-            "NOR": "NO", "SFO": "SF", "TAM": "TB", "LVR": "LV", "WSH": "WAS"}
+ABBR_MAP = {
+    # nflreadpy variants
+    "JAC": "JAX", "LAR": "LA", "GNB": "GB", "KAN": "KC",
+    "NOR": "NO", "SFO": "SF", "TAM": "TB", "LVR": "LV", "WSH": "WAS",
+    # PFR abbreviations (draft picks + snap counts are PFR-sourced)
+    "NWE": "NE", "GNB": "GB", "KAN": "KC", "NOR": "NO", "SFO": "SF",
+    "TAM": "TB", "NWE": "NE", "SDG": "LAC", "CLT": "IND", "RAV": "BAL",
+    "HTX": "HOU", "OTI": "TEN", "CRD": "ARI", "RAM": "LA",
+    # relocated franchises → current
+    "OAK": "LV", "SD": "LAC", "STL": "LA",
+}
+
+VALID_TEAMS = {
+    "ARI", "ATL", "BAL", "BUF", "CAR", "CHI", "CIN", "CLE", "DAL", "DEN",
+    "DET", "GB", "HOU", "IND", "JAX", "KC", "LA", "LAC", "LV", "MIA",
+    "MIN", "NE", "NO", "NYG", "NYJ", "PHI", "PIT", "SEA", "SF", "TB",
+    "TEN", "WAS",
+}
 
 
 def normalize_team(abbr):
@@ -323,11 +339,11 @@ def collect_trades(target_year, player_values):
         print(f"   ⚠️  Could not load trades: {e}")
         return []
 
-    # load_trades() returns ALL history — filter to the target season
+    # load_trades() returns ALL history — scope to the target season only
     if "season" in trades.columns:
         trades = trades[trades["season"] == target_year]
     else:
-        print(f"   ⚠️  No 'season' column in trades ({list(trades.columns)}); skipping")
+        print(f"   ⚠️  No 'season' column in trades; skipping")
         return []
 
     txs = []
@@ -478,6 +494,13 @@ def main():
     target_year = get_target_year()
     prior_year = target_year - 1
 
+    # Remove stale output so old-schema rows can never contaminate the new run
+    for _f in (os.path.join(OUTPUT_DIR, f"{target_year}_team_deltas.csv"),
+               os.path.join(OUTPUT_DIR, f"{target_year}_transactions.csv")):
+        if os.path.exists(_f):
+            os.remove(_f)
+            print(f"   🗑️  Removed stale {_f}")
+
     print(f"\n🏈 Collecting {target_year} transactions via nflreadpy "
           f"(valuing against {prior_year})...")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -499,6 +522,17 @@ def main():
     tx_file = os.path.join(OUTPUT_DIR, f"{target_year}_transactions.csv")
     tx_df.to_csv(tx_file, index=False)
     print(f"   ✅ Saved transaction log → {tx_file} ({len(tx_df)} rows)")
+
+    # Drop any transaction whose teams aren't current NFL teams (guards against
+    # PFR/legacy/relocated abbreviations that slipped past normalization)
+    _before = len(transactions)
+    transactions = [
+        t for t in transactions
+        if (not t.get("from_team") or t["from_team"] in VALID_TEAMS)
+        and (not t.get("to_team") or t["to_team"] in VALID_TEAMS)
+    ]
+    if _before != len(transactions):
+        print(f"   Filtered {_before - len(transactions)} txns with unrecognized teams")
 
     deltas = aggregate_team_deltas(transactions)
     deltas_df = pd.DataFrame(deltas)
