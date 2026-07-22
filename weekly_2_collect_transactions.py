@@ -318,7 +318,7 @@ def collect_roster_changes(target_year, prior_year, player_values):
 def collect_trades(target_year, player_values):
     print("   Loading trades...")
     try:
-        trades = _to_pandas(nfl.load_trades(seasons=[target_year]))
+        trades = _to_pandas(nfl.load_trades())
     except Exception as e:
         print(f"   ⚠️  Could not load trades: {e}")
         return []
