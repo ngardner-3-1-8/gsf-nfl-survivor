@@ -190,9 +190,16 @@ def build_player_values(prior_year, target_year=None):
             continue
         key = str(name).strip().lower()
         pos = str(row.get("position", "")).upper()
-        epa = (float(row.get("passing_epa", 0) or 0)
-               + float(row.get("rushing_epa", 0) or 0)
-               + float(row.get("receiving_epa", 0) or 0))
+        def _num(v):
+            # NaN is truthy in Python, so `v or 0` does NOT catch it — guard explicitly
+            try:
+                f = float(v)
+                return 0.0 if (f != f) else f   # f != f is True only for NaN
+            except (TypeError, ValueError):
+                return 0.0
+        epa = (_num(row.get("passing_epa"))
+               + _num(row.get("rushing_epa"))
+               + _num(row.get("receiving_epa")))
         d = agg.setdefault(key, {"position": pos, "total_epa": 0.0, "rows": 0,
                                  "games_col": None})
         d["total_epa"] += epa
@@ -221,7 +228,10 @@ def build_player_values(prior_year, target_year=None):
 
         if pos in SKILL_OFFENSE:
             games = games_for(key, d)
+            games = games if games and games > 0 else 17.0
             ppg = d["total_epa"] / games        # points per game of margin
+            if ppg != ppg:                       # NaN guard
+                ppg = STARTER_PPG.get(pos, 0.5) * 0.85
             if pos == "QB" and abs(ppg) < 0.5:  # unmatched backup QB
                 ss = snap_shares.get(key, {})
                 ppg = STARTER_PPG["QB"] * ss.get("off_pct", 0.5)
@@ -459,7 +469,14 @@ def aggregate_team_deltas(transactions):
         return "defense_delta"
 
     for t in transactions:
-        val = abs(float(t.get("value") or 0))
+        _v = t.get("value")
+        try:
+            _v = float(_v)
+            if _v != _v:      # NaN
+                _v = 0.0
+        except (TypeError, ValueError):
+            _v = 0.0
+        val = abs(_v)
         pos = t.get("position", "")
         unit = unit_of(pos)
         to_team, from_team = t.get("to_team"), t.get("from_team")
@@ -558,23 +575,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-import pandas as pd, numpy as np
-tx = pd.read_csv("nfl-transactions/2026_transactions.csv")
-
-print("total rows:", len(tx))
-print("value column dtype:", tx["value"].dtype)
-print("value NaN count:", tx["value"].isna().sum())
-print("value empty-string count:", (tx["value"].astype(str) == "").sum())
-print("from_team NaN count:", tx["from_team"].isna().sum())
-print("from_team populated:", tx["from_team"].notna().sum())
-print("to_team populated:", tx["to_team"].notna().sum())
-print()
-print("=== rows with NaN value ===")
-print(tx[tx["value"].isna()][["type","player","position","from_team","to_team","value"]].head(10).to_string())
-print()
-print("=== value stats ===")
-print("min:", tx["value"].min(), "max:", tx["value"].max())
-print()
-print("=== by type: how many have NaN value ===")
-print(tx.groupby("type")["value"].apply(lambda s: f"{s.isna().sum()}/{len(s)} NaN").to_string())
