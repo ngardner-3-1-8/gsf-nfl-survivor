@@ -241,7 +241,14 @@ def build_player_values(prior_year, target_year=None):
             games = games if games and games > 0 else 17.0
             ppg = d["total_epa"] / games        # points per game of margin
             if ppg != ppg:                       # NaN guard
-                ppg = STARTER_PPG.get(pos, 0.5) * 0.85
+                ppg = STARTER_PPG.get(pos, 0.5) * 0.25
+            # A player being ACQUIRED is worth at least deep-backup value, never
+            # a large negative — negative prior EPA (small-sample backups) means
+            # "low value," not "actively costs points to acquire." Floor at a
+            # small positive; the ceiling stays uncapped for stars.
+            floor = STARTER_PPG.get(pos, 0.5) * 0.15
+            if ppg < floor:
+                ppg = floor
             if pos == "QB" and abs(ppg) < 0.5:  # low-EPA QB = backup / spot starter
                 ss = snap_shares.get(key, {})
                 # Scale by actual playing time — a true backup (near-0 snaps)
