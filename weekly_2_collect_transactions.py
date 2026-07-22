@@ -102,9 +102,19 @@ def get_target_year(today=None):
 
 
 def draft_pick_value(overall_pick):
+    """
+    Expected YEAR-ONE margin contribution of a draft pick, in points per game.
+    Rookies are unproven — most contribute little as first-year players — so
+    this is deliberately modest and steep: a #1 overall is worth ~1.5 pts/game
+    of expected year-one value (a good-but-not-elite starter), tapering fast to
+    near zero by the late rounds. Picks appreciate later via their actual play,
+    which the roster/EPA valuation captures in subsequent seasons.
+    """
     if pd.isna(overall_pick) or overall_pick <= 0:
         return 0.0
-    return round(7.0 * np.exp(-float(overall_pick) / 60.0), 2)
+    p = float(overall_pick)
+    # 1.5 at pick 1 → ~0.6 at pick 32 (end R1) → ~0.2 at pick 100 → ~0.05 late
+    return round(1.5 * np.exp(-p / 45.0), 2)
 
 
 def _to_pandas(df):
@@ -232,9 +242,12 @@ def build_player_values(prior_year, target_year=None):
             ppg = d["total_epa"] / games        # points per game of margin
             if ppg != ppg:                       # NaN guard
                 ppg = STARTER_PPG.get(pos, 0.5) * 0.85
-            if pos == "QB" and abs(ppg) < 0.5:  # unmatched backup QB
+            if pos == "QB" and abs(ppg) < 0.5:  # low-EPA QB = backup / spot starter
                 ss = snap_shares.get(key, {})
-                ppg = STARTER_PPG["QB"] * ss.get("off_pct", 0.5)
+                # Scale by actual playing time — a true backup (near-0 snaps)
+                # lands near 0, not the full starter baseline.
+                share = ss.get("off_pct", 0.15)
+                ppg = STARTER_PPG["QB"] * share
             values[key] = {"value": round(ppg, 2), "position": pos,
                            "epa": round(d["total_epa"], 2)}
         else:
@@ -266,8 +279,9 @@ def player_value(name, position, player_values):
     if key in player_values:
         d = player_values[key]
         return d["value"], d["position"] or position, d["epa"]
-    # Unmatched → per-game starter baseline, mild backup discount
-    base = STARTER_PPG.get(str(position).upper(), 0.5) * 0.85
+    # Unmatched players are almost always fringe/depth (real starters match the
+    # stats or snap data). Value them as deep backups, not near-starters.
+    base = STARTER_PPG.get(str(position).upper(), 0.5) * 0.25
     return round(base, 2), position, None
 
 
