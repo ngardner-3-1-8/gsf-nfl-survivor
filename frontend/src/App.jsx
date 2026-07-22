@@ -8,6 +8,8 @@ import MyBetsView from './components/bets/MyBetsView'
 import BetHistoryView from './components/bets/BetHistoryView' 
 import EVCalculatorView from './components/evcalc/EVCalculatorView'
 import ContestView from './components/contest/ContestView'
+import TransactionsView from './components/transactions/TransactionsView'
+import AnalyticsView from './components/analytics/AnalyticsView'
 
 
 
@@ -74,7 +76,7 @@ export default function App() {
         )
       case 'ev-calc': return <EVCalculatorView />
       case 'contest': return <ContestView />
-      case 'transactions': return <ComingSoon name="Transactions" />
+      case 'transactions': return <TransactionsView />
       case 'analytics':    return <AnalyticsView />
       case 'faq':          return <ComingSoon name="FAQ" />
       default:             return <OptimizerView />
