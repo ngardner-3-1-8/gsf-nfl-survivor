@@ -23,6 +23,22 @@ import nflreadpy as nfl
 from datetime import datetime
 from bs4 import BeautifulSoup
 import undetected_chromedriver as uc
+import subprocess, re
+
+def _chrome_major():
+    """Detect the installed Chrome major version; None if not found."""
+    for cmd in (["google-chrome", "--version"],
+                ["google-chrome-stable", "--version"],
+                ["chromium", "--version"],
+                ["chromium-browser", "--version"]):
+        try:
+            out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode()
+            m = re.search(r"(\d+)\.", out)
+            if m:
+                return int(m.group(1))
+        except Exception:
+            continue
+    return None
 
 OUTPUT_DIR = "nfl-transactions"
 DEBUG_DUMP_HTML = True  # set False once selectors are confirmed working
@@ -198,7 +214,10 @@ def scrape_spotrac_transactions(year):
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,3000")
 
-    driver = uc.Chrome(options=options)
+    # in scrape_spotrac_transactions, replace the driver line:
+    _major = _chrome_major()
+    driver = (uc.Chrome(options=options, version_main=_major) if _major
+              else uc.Chrome(options=options))
     raw_transactions = []
 
     try:
