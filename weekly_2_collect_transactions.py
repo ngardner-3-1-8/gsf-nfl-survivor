@@ -246,6 +246,29 @@ def player_value(name, position, player_values):
 
 
 # ── Signings & departures from roster comparison ────────────────────────────
+def _season_end_teams(roster_df):
+    """Collapse weekly roster rows to one row per player: their LAST team that
+    season (highest week). Returns {gsis_id: {'team','name','pos'}}."""
+    df = roster_df
+    if "week" in df.columns:
+        df = df.sort_values("week")
+    result = {}
+    for _, row in df.iterrows():
+        pid = row.get("gsis_id")
+        if not pid or str(pid).strip() == "":
+            continue
+        team = normalize_team(row.get("team"))
+        if not team:
+            continue
+        # Overwrite so the LAST (highest-week) team wins
+        result[pid] = {
+            "team": team,
+            "name": row.get("full_name") or "",
+            "pos": str(row.get("position", "")).upper(),
+        }
+    return result
+
+
 def collect_roster_changes(target_year, prior_year, player_values):
     print("   Loading rosters (free agency / departures)...")
     try:
@@ -255,57 +278,40 @@ def collect_roster_changes(target_year, prior_year, player_values):
         print(f"   ⚠️  Could not load rosters: {e}")
         return []
 
-    def pid_of(row):
-        return row.get("gsis_id") or row.get("player_id")
+    prior_end = _season_end_teams(prior)
+    curr_end = _season_end_teams(curr)
 
-    prior_team, prior_meta = {}, {}
-    for _, row in prior.iterrows():
-        pid = pid_of(row)
-        if pid:
-            prior_team[pid] = normalize_team(row.get("team"))
-            prior_meta[pid] = {
-                "name": row.get("full_name") or row.get("player_name") or "",
-                "pos": str(row.get("position", "")).upper(),
-            }
+    transactions = []
 
-    transactions, seen = [], set()
-    for _, row in curr.iterrows():
-        pid = pid_of(row)
-        if not pid or pid in seen:
-            continue
-        seen.add(pid)
-
-        new_team = normalize_team(row.get("team"))
-        old_team = prior_team.get(pid)
-        name = row.get("full_name") or row.get("player_name") or ""
-        pos = str(row.get("position", "")).upper()
-
-        # Changed teams → both sides of the move
-        if old_team and new_team and old_team != new_team:
-            val, rpos, epa = player_value(name, pos, player_values)
+    # Players on a current roster whose team differs from prior season
+    for pid, cur in curr_end.items():
+        new_team = cur["team"]
+        old = prior_end.get(pid)
+        if old and old["team"] and old["team"] != new_team:
+            val, rpos, epa = player_value(cur["name"], cur["pos"], player_values)
             transactions.append({
-                "type": "Free Agent Signing", "player": name, "position": rpos,
-                "from_team": old_team, "to_team": new_team,
+                "type": "Free Agent Signing", "player": cur["name"], "position": rpos,
+                "from_team": old["team"], "to_team": new_team,
                 "value": round(val, 2), "epa": epa, "season": target_year,
-                "date": "", "description": f"{name} {old_team}→{new_team}",
+                "date": "", "description": f"{cur['name']} {old['team']}→{new_team}",
             })
 
-    # Departures — on prior roster, absent from every current roster
-    curr_ids = set(seen)
-    for pid, old_team in prior_team.items():
-        if pid in curr_ids or not old_team:
+    # Players on prior roster, absent from every current roster → departure
+    for pid, old in prior_end.items():
+        if pid in curr_end:
             continue
-        meta = prior_meta.get(pid, {})
-        name, pos = meta.get("name", ""), meta.get("pos", "")
-        val, rpos, epa = player_value(name, pos, player_values)
-        if val and val > 1.0:  # only meaningful departures
+        val, rpos, epa = player_value(old["name"], old["pos"], player_values)
+        if val and val > 0.3:  # per-game threshold now (values are smaller)
             transactions.append({
-                "type": "Released / Retired", "player": name, "position": rpos,
-                "from_team": old_team, "to_team": None,
+                "type": "Released / Retired", "player": old["name"], "position": rpos,
+                "from_team": old["team"], "to_team": None,
                 "value": round(val, 2), "epa": epa, "season": target_year,
-                "date": "", "description": f"{name} left {old_team}",
+                "date": "", "description": f"{old['name']} left {old['team']}",
             })
-    print(f"   → {len(transactions)} roster changes")
+
+    n_moves = sum(1 for t in transactions if t["type"] == "Free Agent Signing")
+    n_dep = sum(1 for t in transactions if t["type"] == "Released / Retired")
+    print(f"   → {n_moves} team changes, {n_dep} departures")
     return transactions
 
 
