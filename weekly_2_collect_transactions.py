@@ -323,6 +323,13 @@ def collect_trades(target_year, player_values):
         print(f"   ⚠️  Could not load trades: {e}")
         return []
 
+    # load_trades() returns ALL history — filter to the target season
+    if "season" in trades.columns:
+        trades = trades[trades["season"] == target_year]
+    else:
+        print(f"   ⚠️  No 'season' column in trades ({list(trades.columns)}); skipping")
+        return []
+
     txs = []
     for _, row in trades.iterrows():
         gave = normalize_team(row.get("gave"))
