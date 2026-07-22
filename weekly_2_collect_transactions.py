@@ -38,26 +38,34 @@ OL = {"T", "G", "C", "OL", "OT", "OG", "LT", "RT"}
 DEFENSE = {"DE", "DT", "NT", "EDGE", "LB", "ILB", "OLB", "MLB",
            "CB", "S", "SS", "FS", "DB", "DL"}
 
-POSITION_BASELINE = {
-    "QB": 6.0, "RB": 8.0, "WR": 12.0, "TE": 8.0, "FB": 2.0,
-    "T": 10.0, "G": 8.0, "C": 8.0, "OL": 9.0, "OT": 10.0, "OG": 8.0, "LT": 10.0, "RT": 10.0,
-    "DE": 14.0, "EDGE": 14.0, "DT": 11.0, "NT": 8.0, "DL": 11.0,
-    "LB": 9.0, "ILB": 8.0, "OLB": 10.0, "MLB": 9.0,
-    "CB": 12.0, "S": 9.0, "SS": 9.0, "FS": 9.0, "DB": 10.0,
-    "K": 4.0, "P": 2.0, "LS": 1.0,
+# ── VALUE UNIT: net points per game of margin a player adds vs a replacement ──
+# STARTER_PPG = value of a FULL-TIME STARTER at this position. Backups scale
+# down by snap share; elite players scale UP via prior-season EPA (skill) or a
+# manual override (any position). Numbers are per-GAME, so they're small and
+# interpretable — a starting CB adds ~1.4 pts/game of margin vs a replacement.
+STARTER_PPG = {
+    "QB": 3.5, "RB": 1.0, "WR": 1.5, "TE": 0.9, "FB": 0.2,
+    "T": 1.2, "G": 0.9, "C": 0.9, "OL": 1.0, "OT": 1.2, "OG": 0.9, "LT": 1.3, "RT": 1.1,
+    "DE": 1.6, "EDGE": 1.8, "DT": 1.2, "NT": 0.8, "DL": 1.3,
+    "LB": 1.1, "ILB": 1.0, "OLB": 1.3, "MLB": 1.1,
+    "CB": 1.4, "S": 1.1, "SS": 1.1, "FS": 1.1, "DB": 1.2,
+    "K": 0.7, "P": 0.3, "LS": 0.1,
 }
 
+# Coaching values are net points-per-game of MARGIN. A defensive-minded coach
+# whose scheme yields 4 fewer points scored but 6 fewer allowed = +2 net.
 COACH_VALUES = {
-    "head coach": 12.0,
-    "offensive coordinator": 6.0,
-    "defensive coordinator": 6.0,
-    "special teams coordinator": 2.0,
-    "coordinator": 5.0,
-    "coach": 1.5,
-    "general manager": 4.0,
+    "head coach": 2.0,
+    "offensive coordinator": 1.2,
+    "defensive coordinator": 1.2,
+    "special teams coordinator": 0.4,
+    "coordinator": 1.0,
+    "coach": 0.4,
+    "general manager": 0.8,
 }
 
-EPA_TO_POINTS = 0.15
+# Backup compatibility: some call sites still reference POSITION_BASELINE.
+POSITION_BASELINE = STARTER_PPG
 
 ABBR_MAP = {"JAC": "JAX", "LAR": "LA", "GNB": "GB", "KAN": "KC",
             "NOR": "NO", "SFO": "SF", "TAM": "TB", "LVR": "LV", "WSH": "WAS"}
@@ -88,11 +96,77 @@ def _to_pandas(df):
 
 
 # ── Player valuation from prior-season EPA ──────────────────────────────────
-def build_player_values(prior_year):
-    """name(lower) -> {value, position, epa}"""
+def _load_snap_shares(prior_year):
+    """pfr player name(lower) -> {off_pct, def_pct, games} averaged over the
+    prior season. Used to scale position baselines by playing time so a
+    full-time starter is worth more than a rotational backup."""
+    try:
+        snaps = _to_pandas(nfl.load_snap_counts([prior_year]))
+    except Exception as e:
+        print(f"   ⚠️  Snap counts unavailable ({e}); baselines won't be snap-scaled")
+        return {}
+    agg = {}
+    for _, r in snaps.iterrows():
+        name = str(r.get("player", "")).strip().lower()
+        if not name:
+            continue
+        def pct(v):
+            v = float(v or 0)
+            return v / 100.0 if v > 1.5 else v   # handle 0-100 vs 0-1 encodings
+        d = agg.setdefault(name, {"off": 0.0, "def": 0.0, "n": 0})
+        d["off"] += pct(r.get("offense_pct"))
+        d["def"] += pct(r.get("defense_pct"))
+        d["n"] += 1
+    out = {}
+    for name, d in agg.items():
+        if d["n"] > 0:
+            out[name] = {"off_pct": d["off"] / d["n"],
+                         "def_pct": d["def"] / d["n"],
+                         "games": d["n"]}
+    return out
+
+
+def _load_manual_player_values(target_year, output_dir=OUTPUT_DIR):
+    """Optional hand-set per-game values for specific players (the all-pros you
+    care about). File: nfl-transactions/manual_player_values_{year}.csv
+    Columns: player,value,note  — value is net points-per-game, overrides auto."""
+    path = os.path.join(output_dir, f"manual_player_values_{target_year}.csv")
+    if not os.path.exists(path):
+        return {}
+    try:
+        m = pd.read_csv(path)
+    except Exception:
+        return {}
+    out = {}
+    for _, r in m.iterrows():
+        name = str(r.get("player", "")).strip().lower()
+        val = r.get("value")
+        if name and pd.notna(val):
+            out[name] = float(val)
+    if out:
+        print(f"   ✅ Loaded {len(out)} manual player-value overrides")
+    return out
+
+
+def build_player_values(prior_year, target_year=None):
+    """
+    name(lower) -> {value, position, epa}  where value is NET POINTS PER GAME.
+
+    Skill players (QB/RB/WR/TE): prior-season total EPA / games played — this
+      is already a per-game points figure and differentiates quality naturally
+      (an all-pro WR has far more EPA than a mediocre one).
+    Defense / OL / ST: STARTER_PPG[pos] scaled by snap share, so a full-time
+      starter is worth the baseline and a rotational backup proportionally less.
+    Manual overrides (if provided) win outright — use them for elite players
+      whose value should exceed a full-time starter's baseline.
+    """
     print(f"   Loading {prior_year} player stats for valuation...")
     stats = _to_pandas(nfl.load_player_stats([prior_year]))
+    snap_shares = _load_snap_shares(prior_year)
+    manual = _load_manual_player_values(target_year) if target_year else {}
 
+    # Aggregate EPA + games from (possibly weekly) player stats
+    weekly = "week" in stats.columns
     agg = {}
     for _, row in stats.iterrows():
         name = row.get("player_display_name") or row.get("player_name")
@@ -103,22 +177,61 @@ def build_player_values(prior_year):
         epa = (float(row.get("passing_epa", 0) or 0)
                + float(row.get("rushing_epa", 0) or 0)
                + float(row.get("receiving_epa", 0) or 0))
-        if key not in agg:
-            agg[key] = {"position": pos, "total_epa": 0.0}
-        agg[key]["total_epa"] += epa
+        d = agg.setdefault(key, {"position": pos, "total_epa": 0.0, "rows": 0,
+                                 "games_col": None})
+        d["total_epa"] += epa
+        d["rows"] += 1
+        if "games" in row and pd.notna(row.get("games")):
+            d["games_col"] = float(row.get("games"))
+
+    def games_for(name, d):
+        if d["games_col"]:
+            return max(1.0, d["games_col"])
+        if weekly and d["rows"] > 0:
+            return float(d["rows"])
+        ss = snap_shares.get(name)
+        if ss and ss["games"] > 0:
+            return float(ss["games"])
+        return 17.0
 
     values = {}
     for key, d in agg.items():
         pos = d["position"]
+
+        if key in manual:                       # manual override wins
+            values[key] = {"value": round(manual[key], 2), "position": pos,
+                           "epa": round(d["total_epa"], 2)}
+            continue
+
         if pos in SKILL_OFFENSE:
-            epa_pts = d["total_epa"] * EPA_TO_POINTS
-            if pos == "QB" and abs(epa_pts) < 1.0:
-                pts = POSITION_BASELINE.get("QB", 6.0)
-            else:
-                pts = round(epa_pts, 2)
+            games = games_for(key, d)
+            ppg = d["total_epa"] / games        # points per game of margin
+            if pos == "QB" and abs(ppg) < 0.5:  # unmatched backup QB
+                ss = snap_shares.get(key, {})
+                ppg = STARTER_PPG["QB"] * ss.get("off_pct", 0.5)
+            values[key] = {"value": round(ppg, 2), "position": pos,
+                           "epa": round(d["total_epa"], 2)}
         else:
-            pts = POSITION_BASELINE.get(pos, 2.0)
-        values[key] = {"value": pts, "position": pos, "epa": round(d["total_epa"], 2)}
+            base = STARTER_PPG.get(pos, 0.5)
+            ss = snap_shares.get(key)
+            if ss:
+                # Defensive positions use def snaps, OL/ST use offense/either
+                share = ss["def_pct"] if pos in DEFENSE else max(ss["off_pct"], ss["def_pct"])
+                share = share if share > 0 else 0.5
+            else:
+                share = 0.85   # no snap data → assume near-starter
+            values[key] = {"value": round(base * share, 2), "position": pos,
+                           "epa": None}
+
+    # Players with snaps but no stats row (most defenders) — value them too
+    for name, ss in snap_shares.items():
+        if name in values or name in manual:
+            continue
+        # position not known here; leave for player_value() fallback at lookup
+    for name, val in manual.items():
+        if name not in values:
+            values[name] = {"value": round(val, 2), "position": "", "epa": None}
+
     return values
 
 
@@ -127,7 +240,9 @@ def player_value(name, position, player_values):
     if key in player_values:
         d = player_values[key]
         return d["value"], d["position"] or position, d["epa"]
-    return POSITION_BASELINE.get(str(position).upper(), 2.0), position, None
+    # Unmatched → per-game starter baseline, mild backup discount
+    base = STARTER_PPG.get(str(position).upper(), 0.5) * 0.85
+    return round(base, 2), position, None
 
 
 # ── Signings & departures from roster comparison ────────────────────────────
@@ -354,7 +469,7 @@ def main():
           f"(valuing against {prior_year})...")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    player_values = build_player_values(prior_year)
+    player_values = build_player_values(prior_year, target_year)
     print(f"   Built value map for {len(player_values)} players")
 
     transactions = []
