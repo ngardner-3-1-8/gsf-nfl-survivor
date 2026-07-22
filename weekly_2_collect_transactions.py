@@ -558,3 +558,23 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+import pandas as pd, numpy as np
+tx = pd.read_csv("nfl-transactions/2026_transactions.csv")
+
+print("total rows:", len(tx))
+print("value column dtype:", tx["value"].dtype)
+print("value NaN count:", tx["value"].isna().sum())
+print("value empty-string count:", (tx["value"].astype(str) == "").sum())
+print("from_team NaN count:", tx["from_team"].isna().sum())
+print("from_team populated:", tx["from_team"].notna().sum())
+print("to_team populated:", tx["to_team"].notna().sum())
+print()
+print("=== rows with NaN value ===")
+print(tx[tx["value"].isna()][["type","player","position","from_team","to_team","value"]].head(10).to_string())
+print()
+print("=== value stats ===")
+print("min:", tx["value"].min(), "max:", tx["value"].max())
+print()
+print("=== by type: how many have NaN value ===")
+print(tx.groupby("type")["value"].apply(lambda s: f"{s.isna().sum()}/{len(s)} NaN").to_string())
