@@ -1237,56 +1237,140 @@ def get_transactions(year: int):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/entry-analytics")
-def get_entry_analytics(year: int = Query(None)):
+@app.get("/api/entry-analytics/available")
+def get_entry_analytics_available():
     """
-    Returns the most recent entry rankings (fair value, survival prob,
-    predicted picks) plus the predicted field pick percentages.
-    Finds the highest-week file for the requested (or current) year;
-    falls back to the preseason file if no weekly file exists.
+    Returns the years and weeks for which entry rankings can be shown.
+    A (year, week) is available if either a cached rankings CSV exists OR
+    the raw inputs (picks file + a final-data file for that week) exist so
+    it can be generated on demand.
     """
     try:
+        out = {}
+        analytics_dir = os.path.join(DATA_DIR, "entry-analytics")
+        picks_dir = os.path.join(DATA_DIR, "circa-pick-history")
+ 
+        # Years that have a picks file at all
+        for pf in glob.glob(os.path.join(picks_dir, "*_survivor_picks.csv")):
+            try:
+                y = int(os.path.basename(pf).split("_")[0])
+            except ValueError:
+                continue
+            # Weeks with a season final-data file (these define scoreable weeks)
+            fd = glob.glob(os.path.join(
+                DATA_DIR,
+                f"nfl-power-ratings/final_data/{y}_final_data/"
+                f"Season_{y}_Through_Week_*_Final_Data.csv"))
+            weeks = []
+            for f in fd:
+                try:
+                    weeks.append(int(os.path.basename(f).split("_Week_")[1].split("_Final")[0]))
+                except (IndexError, ValueError):
+                    pass
+            # Also include any cached weekly rankings
+            for rf in glob.glob(os.path.join(analytics_dir, f"{y}_week_*_entry_rankings.csv")):
+                try:
+                    weeks.append(int(os.path.basename(rf).split("_week_")[1].split("_entry")[0]))
+                except (IndexError, ValueError):
+                    pass
+            if weeks:
+                out[str(y)] = sorted(set(weeks))
+        return {"available": out}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+ 
+ 
+@app.get("/api/entry-analytics")
+def get_entry_analytics(year: int = Query(None), week: int = Query(None)):
+    """
+    Returns entry rankings for a given year and week.
+      - If year/week omitted → most recent available (current behavior).
+      - Cached CSV is served if present.
+      - Otherwise rankings are generated on the fly for that historical week
+        using the picks file + the season-through-that-week final-data file.
+    """
+    try:
+        analytics_dir = os.path.join(DATA_DIR, "entry-analytics")
+ 
+        # Default: current target year, latest available week
         if year is None:
             data = load_current_data(DATA_DIR)
             year = data["target_year"]
-
-        analytics_dir = os.path.join(DATA_DIR, "entry-analytics")
-
-        # Prefer the highest-week weekly file, fall back to preseason
-        weekly = glob.glob(os.path.join(
-            analytics_dir, f"{year}_week_*_entry_rankings.csv"))
-        def wk(p):
-            try:
-                return int(os.path.basename(p).split("_week_")[1].split("_entry")[0])
-            except (IndexError, ValueError):
-                return 0
-
-        if weekly:
-            rank_file = max(weekly, key=wk)
-            week = wk(rank_file)
-            mode = "weekly"
-        else:
-            rank_file = os.path.join(
-                analytics_dir, f"{year}_preseason_entry_rankings.csv")
-            week = 0
-            mode = "preseason"
-
-        if not os.path.exists(rank_file):
-            raise FileNotFoundError(f"No entry analytics available for {year}")
-
+ 
+        # 1. Try a cached rankings file (exact week, else highest week)
+        def cached_path(y, w):
+            return os.path.join(analytics_dir, f"{y}_week_{w}_entry_rankings.csv")
+ 
+        rank_file = None
+        if week is not None and os.path.exists(cached_path(year, week)):
+            rank_file = cached_path(year, week)
+        elif week is None:
+            weekly = glob.glob(os.path.join(analytics_dir, f"{year}_week_*_entry_rankings.csv"))
+            if weekly:
+                def wk(p):
+                    try:
+                        return int(os.path.basename(p).split("_week_")[1].split("_entry")[0])
+                    except (IndexError, ValueError):
+                        return 0
+                rank_file = max(weekly, key=wk)
+                week = wk(rank_file)
+            else:
+                preseason = os.path.join(analytics_dir, f"{year}_preseason_entry_rankings.csv")
+                if os.path.exists(preseason):
+                    rank_file = preseason
+                    week = 0
+ 
+        # 2. No cache → generate on the fly for this historical week
+        if rank_file is None:
+            if week is None:
+                raise FileNotFoundError(f"No entry analytics for {year}")
+ 
+            picks_path = os.path.join(DATA_DIR, f"circa-pick-history/{year}_survivor_picks.csv")
+            fd = glob.glob(os.path.join(
+                DATA_DIR,
+                f"nfl-power-ratings/final_data/{year}_final_data/"
+                f"Season_{year}_Through_Week_*_Final_Data.csv"))
+            if not os.path.exists(picks_path) or not fd:
+                raise FileNotFoundError(
+                    f"Cannot generate rankings for {year} week {week} — inputs missing")
+ 
+            def wk(p):
+                try:
+                    return int(os.path.basename(p).split("_Week_")[1].split("_Final")[0])
+                except (IndexError, ValueError):
+                    return 0
+            season_df = pd.read_csv(max(fd, key=wk))
+ 
+            # Generate (cached to disk by run_entry_analytics)
+            from entry_analytics import run_entry_analytics
+            prior_final = glob.glob(os.path.join(
+                DATA_DIR,
+                f"nfl-power-ratings/final_data/{year-1}_final_data/"
+                f"Season_{year-1}_Through_Week_*_Final_Data.csv"))
+            prior_picks = os.path.join(DATA_DIR, f"circa-pick-history/{year-1}_survivor_picks.csv")
+            run_entry_analytics(
+                picks_csv_path=picks_path,
+                sim_df=season_df,
+                upcoming_week=week,
+                target_year=year,
+                output_dir=analytics_dir,
+                prior_picks_csv=prior_picks if os.path.exists(prior_picks) else None,
+                prior_season_df=(pd.read_csv(max(prior_final, key=wk)) if prior_final else None),
+            )
+            rank_file = cached_path(year, week)
+            if not os.path.exists(rank_file):
+                raise FileNotFoundError(f"Generation failed for {year} week {week}")
+ 
         rankings_df = clean_df(pd.read_csv(rank_file))
-
-        # Matching predicted pick% file
-        pick_file = rank_file.replace("_entry_rankings.csv",
-                                      "_predicted_pick_pct.csv")
+        pick_file = rank_file.replace("_entry_rankings.csv", "_predicted_pick_pct.csv")
         predicted_picks = []
         if os.path.exists(pick_file):
             predicted_picks = clean_df(pd.read_csv(pick_file)).to_dict(orient="records")
-
+ 
         return JSONResponse(content=sanitize({
             "year": year,
             "week": week,
-            "mode": mode,
+            "mode": "preseason" if week == 0 else "weekly",
             "entry_count": len(rankings_df),
             "rankings": rankings_df.to_dict(orient="records"),
             "predicted_picks": predicted_picks,
