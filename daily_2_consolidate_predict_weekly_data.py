@@ -1856,64 +1856,99 @@ def loop_through_simulations(date_str):
         'LAR': 'LA', 'STL': 'LA', 'SD': 'LAC', 'OAK': 'LV'
     }
 
-    module_name = f"starting_qb_injuries_{target_year}"
+    def _norm_team_key(abbr):
+        return str(abbr).strip().upper()
     
-    # 1. Dynamically import the module
-    qb_module = importlib.import_module(module_name)
     
-    # 2. Extract the variables you need from that module
-    TYPICAL_STARTERS = qb_module.TYPICAL_STARTERS
-    MANUAL_CURRENT_STARTERS = qb_module.MANUAL_CURRENT_STARTERS
-
-    def get_qb_ratings_fast(years, target_year, current_upcoming_week):
-        print(f"Loading Player Stats for {years}...")
+    def load_qb_starter_config(target_year, upcoming_week=None):
+        """
+        Returns (TYPICAL_STARTERS, MANUAL_CURRENT_STARTERS).
+    
+        Prefers the hand-maintained starting_qb_injuries_{year}.py module when it
+        exists; otherwise derives both from that season's actual QB usage.
+        """
+        module_name = f"starting_qb_injuries_{target_year}"
         try:
-            stats = nfl.load_player_stats(seasons=years).to_pandas()
-            qbs = stats[stats['position'] == 'QB'].copy()
-            
-            qbs = qbs[
-                (qbs['season'] < target_year) | 
-                ((qbs['season'] == target_year) & (qbs['week'] < current_upcoming_week))
-            ].copy()
-            
-            if 'sacks_suffered' in qbs.columns:
-                qbs['sacks_val'] = qbs['sacks_suffered']
-            elif 'sacks' in qbs.columns:
-                qbs['sacks_val'] = qbs['sacks']
-            else:
-                qbs['sacks_val'] = 0 
-                
-            cols_to_fix = ['passing_epa', 'rushing_epa', 'attempts', 'carries']
-            for col in cols_to_fix:
-                if col in qbs.columns:
-                    qbs[col] = qbs[col].fillna(0)
-                else:
-                    qbs[col] = 0
-            qbs['sacks_val'] = qbs['sacks_val'].fillna(0)
-                
-            qbs['total_epa'] = qbs['passing_epa'] + qbs['rushing_epa']
-            qbs['total_involvement'] = qbs['attempts'] + qbs['sacks_val'] + qbs['carries']
-            
-            qb_career = qbs.groupby('player_name').agg(
-                career_epa=('total_epa', 'sum'),
-                career_plays=('total_involvement', 'sum')
-            ).reset_index()
-            
-            experienced_qbs = qb_career[qb_career['career_plays'] > 150].copy()
-            experienced_qbs['raw_epa_per_play'] = experienced_qbs['career_epa'] / experienced_qbs['career_plays']
-            
-            replacement_epa = experienced_qbs['raw_epa_per_play'].quantile(0.25) if not experienced_qbs.empty else -0.05
-            
-            B = 100 
-            qb_career['epa_per_play'] = (qb_career['career_epa'] + (B * replacement_epa)) / (qb_career['career_plays'] + B)
-            
-            qb_rating_map = pd.Series(qb_career.epa_per_play.values, index=qb_career.player_name).to_dict()
-            
-            return qb_rating_map, replacement_epa
-        
+            qb_module = importlib.import_module(module_name)
+            typical = getattr(qb_module, "TYPICAL_STARTERS", {}) or {}
+            manual = getattr(qb_module, "MANUAL_CURRENT_STARTERS", {}) or {}
+            print(f"   ✅ QB config from {module_name}.py "
+                  f"({len(typical)} typical, {len(manual)} current)")
+            return typical, manual
+        except ModuleNotFoundError:
+            print(f"   ℹ️  No {module_name}.py — deriving QB starters from "
+                  f"{target_year} play data")
         except Exception as e:
-            print(f"Error loading player stats: {e}")
-            return {}, -0.05
+            print(f"   ⚠️  {module_name}.py failed to load ({e}) — deriving instead")
+    
+        # ── Derive from the season's own data ──────────────────────────────────
+        try:
+            stats = nfl.load_player_stats(seasons=[target_year])
+            stats = stats.to_pandas() if hasattr(stats, "to_pandas") else stats
+        except Exception as e:
+            print(f"   ⚠️  Could not load {target_year} player stats: {e}")
+            return {}, {}
+    
+        if stats is None or stats.empty or "position" not in stats.columns:
+            print(f"   ⚠️  No usable {target_year} stats — QB overrides disabled")
+            return {}, {}
+    
+        qbs = stats[stats["position"] == "QB"].copy()
+        if qbs.empty:
+            print(f"   ⚠️  No QB rows for {target_year} — QB overrides disabled")
+            return {}, {}
+    
+        # Team column name varies by nflreadpy version
+        team_col = next((c for c in ("recent_team", "team", "team_abbr")
+                         if c in qbs.columns), None)
+        name_col = next((c for c in ("player_display_name", "player_name")
+                         if c in qbs.columns), None)
+        if not team_col or not name_col:
+            print(f"   ⚠️  Missing team/name column in stats "
+                  f"({list(qbs.columns)[:12]}...) — QB overrides disabled")
+            return {}, {}
+    
+        if "attempts" not in qbs.columns:
+            qbs["attempts"] = 0
+        qbs["attempts"] = pd.to_numeric(qbs["attempts"], errors="coerce").fillna(0)
+        qbs = qbs[qbs[team_col].notna() & qbs[name_col].notna()]
+    
+        def _primary_by_team(frame):
+            """Team -> QB with the most attempts in `frame`."""
+            out = {}
+            if frame.empty:
+                return out
+            agg = (frame.groupby([team_col, name_col])["attempts"]
+                        .sum().reset_index())
+            for team, grp in agg.groupby(team_col):
+                if grp["attempts"].max() > 0:
+                    best = grp.loc[grp["attempts"].idxmax(), name_col]
+                    out[_norm_team_key(team)] = best
+            return out
+    
+        # Season-long primary starter
+        typical = _primary_by_team(qbs)
+    
+        # Starter as of the last completed week before upcoming_week (in-time)
+        manual = {}
+        if upcoming_week and "week" in qbs.columns:
+            qbs["week"] = pd.to_numeric(qbs["week"], errors="coerce")
+            prior = qbs[qbs["week"] < upcoming_week]
+            if not prior.empty:
+                last_wk = int(prior["week"].max())
+                manual = _primary_by_team(prior[prior["week"] == last_wk])
+                print(f"   Derived current starters from week {last_wk} usage")
+    
+        # Fall back to the season primary where a team has no recent-week starter
+        for team, qb in typical.items():
+            manual.setdefault(team, qb)
+    
+        print(f"   ✅ Derived QB config for {target_year}: "
+              f"{len(typical)} typical, {len(manual)} current")
+        return typical, manual
+
+    TYPICAL_STARTERS, MANUAL_CURRENT_STARTERS = load_qb_starter_config(
+        target_year, upcoming_week)
 
     def get_advanced_passing_stats_365(simulation_date_str):
         """
