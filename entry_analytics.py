@@ -37,13 +37,12 @@ N_PICK_PATHS   = 25       # sampled pick-paths per entry
 SOFTMAX_TEMP   = 1.0      # lower = entries more deterministic
 SURVIVAL_DECAY = 0.75     # assumed weekly field survival for stage projection
 DIVERSIFY_COEFF = 2.0     # multi-entry anti-correlation strength (0 = off)
-SELF_CONSISTENCY_ITERS = 1  # popularity feedback iterations (1 = off)
+SELF_CONSISTENCY_ITERS = 1  # popularity feedback iterations (1 = off; ablation: 3 hurts)
 SELF_CONSISTENCY_DAMPING = 0.5  # partial pop update per iteration (kills overshoot)
 FE_SCALE = 1.0            # team fixed-effect strength (0 = off)
 USE_CONTESTANT_PRIORS = True  # cross-year identity priors (False = off)
 ENTRY_FEE      = 1000.0   # Circa entry fee
 POT_MULT       = 1.0      # pot = entries * fee * POT_MULT (adjust for rake if any)
-
 
 ABBR_TO_FULL = {
     "ARI": "Arizona Cardinals",    "ATL": "Atlanta Falcons",
@@ -818,11 +817,19 @@ def run_entry_analytics(picks_csv_path, sim_df, upcoming_week, target_year,
         week_cols = [c for c in picks_df.columns if c.startswith("Week_")]
 
         alive_df = picks_df[picks_df["Total_Wins"] >= upcoming_week - 1]
+
+        # Only weeks BEFORE the upcoming week are known at this point in time.
+        # Iterating every week column would leak future picks — an entry that
+        # finished the season would show teams from weeks 13-20 as already used
+        # while you're viewing week 13.
+        past_week_cols = [c for c in week_cols
+                          if int(c.replace("Week_", "")) < upcoming_week]
+
         alive_entries, used_masks = [], {}
         for _, row in alive_df.iterrows():
             entry = row["EntryName"]
             mask = np.zeros(32, dtype=bool)
-            for col in week_cols:
+            for col in past_week_cols:
                 t = norm_abbr(row.get(col, ""))
                 if t in TEAM_IDX:
                     mask[TEAM_IDX[t]] = True
@@ -841,7 +848,10 @@ def run_entry_analytics(picks_csv_path, sim_df, upcoming_week, target_year,
         contestant_of = dict(zip(picks_df["EntryName"],
                                  picks_df["EntryName"].astype(str).str.replace(
                                      r"-\d+$", "", regex=True)))
-        wins_of = dict(zip(alive_df["EntryName"], alive_df["Total_Wins"]))
+        # Wins AS OF this week — an entry that finished 20-0 should display 12
+        # wins when you're viewing week 13, not its final total.
+        wins_of = {e: min(int(w), upcoming_week - 1)
+                   for e, w in zip(alive_df["EntryName"], alive_df["Total_Wins"])}
         is_synthetic = False
 
     # ── Everything below is unchanged from the original ──
