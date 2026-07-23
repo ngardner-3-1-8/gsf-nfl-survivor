@@ -319,7 +319,7 @@ if __name__ == "__main__":
 #        "11/01/2023", #Leading up to Week 9
 #        "11/08/2023", #Leading up to Week 10
 #        "11/15/2023", #Leading up to Week 11
-#        "11/22/2023", #Leading up to Week 12
+        "11/22/2023", #Leading up to Week 12
 #        "11/25/2023", #Leading up to Week 13
 #        "11/29/2023", #Leading up to Week 14
 #        "12/06/2023", #Leading up to Week 15
@@ -390,7 +390,7 @@ if __name__ == "__main__":
 #        "12/23/2020", #Leading up to Week 17
 #        "12/30/2020", #Leading up to Week 18
         
-        formatted_date
+#        formatted_date
     ]
 
     for date in week_starting_dates:
