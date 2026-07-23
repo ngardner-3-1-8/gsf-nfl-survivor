@@ -1950,6 +1950,56 @@ def loop_through_simulations(date_str):
     TYPICAL_STARTERS, MANUAL_CURRENT_STARTERS = load_qb_starter_config(
         target_year, upcoming_week)
 
+    def get_qb_ratings_fast(years, target_year, current_upcoming_week):
+        print(f"Loading Player Stats for {years}...")
+        try:
+            stats = nfl.load_player_stats(seasons=years).to_pandas()
+            qbs = stats[stats['position'] == 'QB'].copy()
+
+            qbs = qbs[
+                (qbs['season'] < target_year) |
+                ((qbs['season'] == target_year) & (qbs['week'] < current_upcoming_week))
+            ].copy()
+
+            if 'sacks_suffered' in qbs.columns:
+                qbs['sacks_val'] = qbs['sacks_suffered']
+            elif 'sacks' in qbs.columns:
+                qbs['sacks_val'] = qbs['sacks']
+            else:
+                qbs['sacks_val'] = 0
+
+            cols_to_fix = ['passing_epa', 'rushing_epa', 'attempts', 'carries']
+            for col in cols_to_fix:
+                if col in qbs.columns:
+                    qbs[col] = qbs[col].fillna(0)
+                else:
+                    qbs[col] = 0
+            qbs['sacks_val'] = qbs['sacks_val'].fillna(0)
+
+            qbs['total_epa'] = qbs['passing_epa'] + qbs['rushing_epa']
+            qbs['total_involvement'] = qbs['attempts'] + qbs['sacks_val'] + qbs['carries']
+
+            qb_career = qbs.groupby('player_name').agg(
+                career_epa=('total_epa', 'sum'),
+                career_plays=('total_involvement', 'sum')
+            ).reset_index()
+
+            experienced_qbs = qb_career[qb_career['career_plays'] > 150].copy()
+            experienced_qbs['raw_epa_per_play'] = experienced_qbs['career_epa'] / experienced_qbs['career_plays']
+
+            replacement_epa = experienced_qbs['raw_epa_per_play'].quantile(0.25) if not experienced_qbs.empty else -0.05
+
+            B = 100
+            qb_career['epa_per_play'] = (qb_career['career_epa'] + (B * replacement_epa)) / (qb_career['career_plays'] + B)
+
+            qb_rating_map = pd.Series(qb_career.epa_per_play.values, index=qb_career.player_name).to_dict()
+
+            return qb_rating_map, replacement_epa
+
+        except Exception as e:
+            print(f"Error loading player stats: {e}")
+            return {}, -0.05
+
     def get_advanced_passing_stats_365(simulation_date_str):
         """
         Calculates Pressure Rate (Offense and Defense), Zone/Man Rate, and EPA splits 
