@@ -139,16 +139,24 @@ def _load_snap_shares(prior_year):
         def pct(v):
             v = float(v or 0)
             return v / 100.0 if v > 1.5 else v   # handle 0-100 vs 0-1 encodings
-        d = agg.setdefault(name, {"off": 0.0, "def": 0.0, "n": 0})
+        d = agg.setdefault(name, {"off": 0.0, "def": 0.0, "n": 0, "total_snaps": 0.0})
         d["off"] += pct(r.get("offense_pct"))
         d["def"] += pct(r.get("defense_pct"))
         d["n"] += 1
+        # Raw snap counts (offense + defense) for cross-player significance ranking
+        for col in ("offense_snaps", "defense_snaps"):
+            v = r.get(col)
+            try:
+                d["total_snaps"] += float(v) if v is not None and float(v) == float(v) else 0.0
+            except (TypeError, ValueError):
+                pass
     out = {}
     for name, d in agg.items():
         if d["n"] > 0:
             out[name] = {"off_pct": d["off"] / d["n"],
                          "def_pct": d["def"] / d["n"],
-                         "games": d["n"]}
+                         "games": d["n"],
+                         "total_snaps": d.get("total_snaps", 0)}
     return out
 
 
@@ -191,6 +199,29 @@ def build_player_values(prior_year, target_year=None):
     snap_shares = _load_snap_shares(prior_year)
     manual = _load_manual_player_values(target_year) if target_year else {}
 
+    # ── Significance gate: only the top 20% of players by raw prior-season
+    #    snaps get a real value. Everyone below floors to 0 (they still appear
+    #    in the transaction log, just with no leaderboard impact). This filters
+    #    the ~1500 noisy depth/practice-squad moves down to the players who
+    #    actually affect a team, and fixes cases like a 3rd-string QB whose
+    #    position baseline made him look valuable.
+    _snap_totals = sorted((s["total_snaps"] for s in snap_shares.values()
+                           if s["total_snaps"] > 0), reverse=True)
+    if _snap_totals:
+        _cut_idx = max(0, int(len(_snap_totals) * 0.20) - 1)
+        SNAP_THRESHOLD = _snap_totals[_cut_idx]
+        print(f"   Significance gate: top-20% snap threshold = "
+              f"{SNAP_THRESHOLD:.0f} snaps "
+              f"({sum(1 for s in _snap_totals if s >= SNAP_THRESHOLD)} of "
+              f"{len(_snap_totals)} snap-recorded players qualify)")
+    else:
+        SNAP_THRESHOLD = 0
+        print("   ⚠️  No snap data — significance gate disabled")
+
+    def _is_significant(name):
+        ss = snap_shares.get(name)
+        return bool(ss and ss["total_snaps"] >= SNAP_THRESHOLD and SNAP_THRESHOLD > 0)
+
     # Aggregate EPA + games from (possibly weekly) player stats
     weekly = "week" in stats.columns
     agg = {}
@@ -231,8 +262,14 @@ def build_player_values(prior_year, target_year=None):
     for key, d in agg.items():
         pos = d["position"]
 
-        if key in manual:                       # manual override wins
+        if key in manual:                       # manual override always wins
             values[key] = {"value": round(manual[key], 2), "position": pos,
+                           "epa": round(d["total_epa"], 2)}
+            continue
+
+        # Significance gate — sub-threshold players get 0 (still logged elsewhere)
+        if not _is_significant(key):
+            values[key] = {"value": 0.0, "position": pos,
                            "epa": round(d["total_epa"], 2)}
             continue
 
@@ -286,10 +323,9 @@ def player_value(name, position, player_values):
     if key in player_values:
         d = player_values[key]
         return d["value"], d["position"] or position, d["epa"]
-    # Unmatched players are almost always fringe/depth (real starters match the
-    # stats or snap data). Value them as deep backups, not near-starters.
-    base = STARTER_PPG.get(str(position).upper(), 0.5) * 0.25
-    return round(base, 2), position, None
+    # Unmatched players didn't clear the significance gate (no stats/snap match),
+    # so they're depth — value 0. They still appear in the transaction log.
+    return 0.0, position, None
 
 
 # ── Signings & departures from roster comparison ────────────────────────────
