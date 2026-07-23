@@ -12,8 +12,6 @@ import math
 from fastapi.responses import JSONResponse
 import glob
 
-
-
 def sanitize(obj):
     """Recursively replace nan/inf with None for JSON serialization."""
     if isinstance(obj, float):
