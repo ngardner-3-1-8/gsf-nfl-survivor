@@ -228,7 +228,15 @@ def loop_through_historical_final_data(date_str):
     
     # 3. Apply Adjustments
     # Use separate 'if' statements if you want them to be additive (+2 total)
-#    if target_year == 2020:
+    if target_year == 2020:
+        if today >= two_days_after_thanksgiving:
+            print(f"Detected: Date is after {current_year} Thanksgiving. +1 to NUM_WEEKS_TO_KEEP.")
+            NUM_WEEKS_TO_KEEP += 1
+            starting_week += 1
+            last_played_week += 1
+            if today < five_days_after_thanksgiving:
+                nfl_last_played_week += 1
+    else:
 #        if today >= two_days_after_thanksgiving:
 #            print(f"Detected: Date is after {current_year} Thanksgiving. +1 to NUM_WEEKS_TO_KEEP.")
 #            NUM_WEEKS_TO_KEEP += 1
@@ -236,21 +244,13 @@ def loop_through_historical_final_data(date_str):
 #            last_played_week += 1
 #            if today < five_days_after_thanksgiving:
 #                nfl_last_played_week += 1
-#    else:
-#        if today >= two_days_after_thanksgiving:
-#            print(f"Detected: Date is after {current_year} Thanksgiving. +1 to NUM_WEEKS_TO_KEEP.")
-#            NUM_WEEKS_TO_KEEP += 1
-#            starting_week += 1
-#            last_played_week += 1
-#            if today < five_days_after_thanksgiving:
-#                nfl_last_played_week += 1
-#        if today >= christmas_season_cutoff:
-#            print(f"Detected: Date is after {current_year} Christmas. +1 to NUM_WEEKS_TO_KEEP.")
-#            NUM_WEEKS_TO_KEEP += 1
-#            starting_week += 1
-#            last_played_week += 1
-#            if today < christmas_season_cutoff_plus_one:
-#                nfl_last_played_week += 1
+        if today >= christmas_season_cutoff:
+            print(f"Detected: Date is after {current_year} Christmas. +1 to NUM_WEEKS_TO_KEEP.")
+            NUM_WEEKS_TO_KEEP += 1
+            starting_week += 1
+            last_played_week += 1
+            if today < christmas_season_cutoff_plus_one:
+                nfl_last_played_week += 1
     print("THIS IS THE TEST")
     print(f"Last Played Week: {last_played_week}")
     print(f"Starting Week: {starting_week}")
