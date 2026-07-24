@@ -251,6 +251,10 @@ def loop_through_historical_final_data(date_str):
             last_played_week += 1
             if today < christmas_season_cutoff_plus_one:
                 nfl_last_played_week += 1
+            print("THIS IS THE TEST")
+            print(f"Last Played Week: {last_played_week}")
+            print(f"Starting Week: {starting_week}")
+            print(f"Num Weeks to Keep: {NUM_WEEKS_TO_KEEP}") 
     
     print(f"Final NUM_WEEKS_TO_KEEP: {NUM_WEEKS_TO_KEEP}")
     
