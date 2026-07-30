@@ -158,3 +158,9 @@ export async function fetchEntryAnalytics(year = null, week = null) {
   if (!res.ok) throw new Error('Failed to fetch entry analytics')
   return res.json()
 }
+
+export async function fetchFinalResults(year) {
+  const res = await fetch(`${API_URL}/api/entry-analytics/final?year=${year}`)
+  if (!res.ok) throw new Error('Failed to fetch final results')
+  return res.json()
+}
