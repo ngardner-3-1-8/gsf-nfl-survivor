@@ -600,6 +600,12 @@ def sample_pick_paths(entry, used_mask, weights, feats, weeks, n_paths, rng,
         avail = ~used_mask.copy()
         for wi, w in enumerate(weeks):
             fw = feats[w]
+            # A week with NO games at all is a data gap (or a scheduling quirk),
+            # not an elimination. Mark it -2 so the survival loop carries the
+            # entry forward instead of killing it. -1 stays "no legal pick".
+            if fw["plays"].sum() == 0:
+                paths[k, wi] = -2
+                continue
             st = stage_by_week.get(w, 0.0) if stage_by_week else 0.0
             u = entry_utilities(weights, fw, stage=st)
             dist = pick_distribution(u, avail, fw["plays"])
@@ -642,13 +648,14 @@ def run_season_simulation(alive_entries, used_masks, profiles, week_team_data,
         for wi in range(W):
             picks = paths[:, wi]                       # (P,)
             valid = picks >= 0
+            skipped = picks == -2                      # no games that week
             # win lookup: outcome_wins[s, wi, pick]
             wk_wins = outcome_wins[:, wi, :]           # (S, 32)
             pick_won = np.ones((N_PICK_PATHS, N_OUTCOME_SIMS), dtype=bool)
             if valid.any():
                 pick_won[valid] = wk_wins[:, picks[valid]].T   # (n_valid, S)
-            # A path with no pick (ran out of teams) is treated as eliminated
-            pick_won[~valid] = False
+            # Ran out of legal picks (-1) = eliminated. No games (-2) = carry on.
+            pick_won[~valid & ~skipped] = False
             survived &= pick_won
 
         survive_prob_per_sim[ei] = survived.mean(axis=0)   # avg over paths
@@ -687,6 +694,8 @@ def optimal_paths(used_mask, feats, weeks):
     win_prob = 1.0
     for w in weeks:
         fw = feats[w]
+        if fw["plays"].sum() == 0:
+            continue          # no games scheduled/known this week — skip it
         cand = np.where(avail & fw["plays"].astype(bool))[0]
         if len(cand) == 0:
             win_prob = 0.0
@@ -701,6 +710,8 @@ def optimal_paths(used_mask, feats, weeks):
     ev_raw = {w: feats[w]["ev"] for w in weeks}  # z-scored; fine for ranking
     for w in weeks:
         fw = feats[w]
+        if fw["plays"].sum() == 0:
+            continue
         cand = np.where(avail & fw["plays"].astype(bool))[0]
         if len(cand) == 0:
             break
@@ -784,6 +795,13 @@ def run_entry_analytics(picks_csv_path, sim_df, upcoming_week, target_year,
     max_week = max(week_team_data.keys()) if week_team_data else 20
     completed_weeks = list(range(1, upcoming_week))
     remaining_weeks = list(range(upcoming_week, max_week + 1))
+
+    # Surface data gaps — a missing week silently zeroed survival before
+    _gap_weeks = [w for w in range(upcoming_week, max_week + 1)
+                  if w not in week_team_data]
+    if _gap_weeks:
+        print(f"   ⚠️  No game data for week(s) {_gap_weeks} — they will be "
+              f"skipped in the simulation (check the season final-data file)")
 
     future_value = build_future_value(week_team_data, upcoming_week, max_week)
     holiday_weeks = detect_holiday_weeks(sim_df)
