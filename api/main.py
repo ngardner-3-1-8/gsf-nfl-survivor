@@ -11,7 +11,7 @@ from api.optimizer import run_optimizer
 import math
 from fastapi.responses import JSONResponse
 import glob
-
+import re
 
 
 def sanitize(obj):
@@ -1381,6 +1381,86 @@ def get_entry_analytics(year: int = Query(None), week: int = Query(None)):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+# ── Add to api/main.py ──────────────────────────────────────────────────────
+
+@app.get("/api/entry-analytics/final")
+def get_final_results(year: int = Query(...)):
+    """
+    Final results for a completed season: the entries that finished with the
+    most wins (Circa's rule — if nobody survives every week, the entries with
+    the most wins split the pot), plus their full week-by-week pick history.
+    """
+    try:
+        picks_path = os.path.join(
+            DATA_DIR, f"circa-pick-history/{year}_survivor_picks.csv")
+        if not os.path.exists(picks_path):
+            raise FileNotFoundError(f"No picks file for {year}")
+
+        df = pd.read_csv(picks_path)
+        df["Total_Wins"] = pd.to_numeric(
+            df["Total_Wins"], errors="coerce").fillna(0).astype(int)
+
+        week_cols = sorted(
+            [c for c in df.columns if c.startswith("Week_")],
+            key=lambda c: int(c.replace("Week_", "")))
+
+        total_entries = len(df)
+        max_wins = int(df["Total_Wins"].max()) if total_entries else 0
+        winners_df = df[df["Total_Wins"] == max_wins]
+
+        # Pot / payout (mirrors entry_analytics constants)
+        ENTRY_FEE = 1000.0
+        pot = total_entries * ENTRY_FEE
+        n_winners = len(winners_df)
+        payout_each = pot / n_winners if n_winners else 0.0
+
+        # Did anyone survive every scheduled week?
+        perfect = max_wins >= len(week_cols)
+
+        winners = []
+        for _, row in winners_df.iterrows():
+            picks = {}
+            for c in week_cols:
+                v = str(row.get(c, "") or "").strip()
+                if v and v.upper() != "ELIMINATED":
+                    picks[c.replace("Week_", "")] = v
+            entry = str(row["EntryName"])
+            winners.append({
+                "entry": entry,
+                "contestant": re.sub(r"-\d+$", "", entry),
+                "wins": int(row["Total_Wins"]),
+                "picks": picks,
+                "payout": round(payout_each, 2),
+            })
+        winners.sort(key=lambda w: w["entry"])
+
+        # Survivor curve: how many entries were still alive entering each week
+        survival_curve = []
+        for c in week_cols:
+            w = int(c.replace("Week_", ""))
+            alive = int((df["Total_Wins"] >= w - 1).sum())
+            survival_curve.append({"week": w, "alive": alive})
+
+        return JSONResponse(content=sanitize({
+            "year": year,
+            "total_entries": total_entries,
+            "max_wins": max_wins,
+            "weeks_in_season": len(week_cols),
+            "perfect_season": bool(perfect),
+            "winner_count": n_winners,
+            "pot": round(pot, 2),
+            "payout_each": round(payout_each, 2),
+            "winners": winners,
+            "survival_curve": survival_curve,
+        }))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/api/debug-paths")
 def debug_paths():
