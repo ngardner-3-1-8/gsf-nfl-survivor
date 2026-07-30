@@ -6157,16 +6157,16 @@ if __name__ == "__main__":
 #        "10/08/2025", #Leading up to Week 6
 #        "10/15/2025", #Leading up to Week 7
 #        "10/22/2025", #Leading up to Week 8
-#        "10/29/2025", #Leading up to Week 9
-#        "11/05/2025", #Leading up to Week 10
-#        "11/12/2025", #Leading up to Week 11
-#        "11/19/2025", #Leading up to Week 12
+        "10/29/2025", #Leading up to Week 9
+        "11/05/2025", #Leading up to Week 10
+        "11/12/2025", #Leading up to Week 11
+        "11/19/2025", #Leading up to Week 12
 #        "11/26/2025", #Leading up to Week 13
 #        "11/29/2025", #Leading up to Week 14
 #        "12/03/2025", #Leading up to Week 15
-        "12/10/2025", #Leading up to Week 16
-        "12/17/2025", #Leading up to Week 17
-        "12/24/2025", #Leading up to Week 18
+#        "12/10/2025", #Leading up to Week 16
+#        "12/17/2025", #Leading up to Week 17
+#        "12/24/2025", #Leading up to Week 18
 #        "12/26/2025", #Leading up to Week 19
 #        "12/31/2025", #Leading up to Week 20
         
