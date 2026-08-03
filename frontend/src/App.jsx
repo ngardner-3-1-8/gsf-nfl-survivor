@@ -12,8 +12,6 @@ import TransactionsView from './components/transactions/TransactionsView'
 import AnalyticsView from './components/analytics/AnalyticsView'
 import FAQView from './components/faq/FAQView'
 
-
-
 const ComingSoon = ({ name }) => (
   <div className="flex items-center justify-center h-64">
     <p className="text-gray-500 text-sm">{name} coming soon...</p>
