@@ -78,7 +78,7 @@ export default function App() {
       case 'contest': return <ContestView />
       case 'transactions': return <TransactionsView />
       case 'analytics':    return <AnalyticsView />
-      case 'faq':          return <ComingSoon name="FAQ" />
+      case 'faq':          return <FAQView />
       default:             return <OptimizerView />
     }
   }
