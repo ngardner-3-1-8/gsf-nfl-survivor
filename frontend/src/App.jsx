@@ -10,6 +10,7 @@ import EVCalculatorView from './components/evcalc/EVCalculatorView'
 import ContestView from './components/contest/ContestView'
 import TransactionsView from './components/transactions/TransactionsView'
 import AnalyticsView from './components/analytics/AnalyticsView'
+import FAQview from'./components/faq/FAQView'
 
 
 
