@@ -57,6 +57,8 @@ class OptimizeRequest(BaseModel):
 
     pick_source: Literal["model", "actual"] = "model"
 
+    year: Optional[int] = None
+
     # How many top solutions to return per method (EV-based + ranking-based)
     number_solutions: Literal[1, 5, 10, 25, 50, 100] = 10
 
