@@ -164,3 +164,13 @@ export async function fetchFinalResults(year) {
   if (!res.ok) throw new Error('Failed to fetch final results')
   return res.json()
 }
+
+export async function fetchContestCharts(year = null, throughWeek = null) {
+  const p = new URLSearchParams()
+  if (year != null) p.set('year', year)
+  if (throughWeek != null) p.set('through_week', throughWeek)
+  const qs = p.toString()
+  const res = await fetch(`${API_URL}/api/contest/charts${qs ? '?' + qs : ''}`)
+  if (!res.ok) throw new Error('Failed to fetch contest charts')
+  return res.json()
+}
