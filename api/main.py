@@ -270,21 +270,31 @@ def get_available_weeks(year: int = Query(None)):
 
 @app.post("/api/optimize")
 def optimize(request: OptimizeRequest):
-    """
-    Runs the OR-Tools SCIP optimizer with user-defined constraints.
-    Returns up to N EV-optimized and N win%-optimized solutions.
-    """
     try:
         data = load_current_data(DATA_DIR)
-        sim_df = data["sim_df"]
-        target_year = data["target_year"]   
+        current_year = data["target_year"]
+        target_year = request.year if request.year else current_year
+
+        if target_year == current_year:
+            sim_df = data["sim_df"]
+        else:
+            # Load the historical season's sim file
+            import glob as _glob
+            files = _glob.glob(os.path.join(
+                DATA_DIR,
+                f"nfl-power-ratings/final_sim_results_with_variance_week_*_{target_year}.csv"))
+            if not files:
+                raise FileNotFoundError(f"No sim data for {target_year}")
+            def wk(p):
+                try:
+                    return int(os.path.basename(p).split("_week_")[1].split(f"_{target_year}")[0])
+                except (IndexError, ValueError):
+                    return 0
+            sim_df = pd.read_csv(max(files, key=wk))
+
         sim_df = _apply_pick_source(sim_df, target_year, request.pick_source)
         result = run_optimizer(sim_df, request)
         return result
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/rankings")
 def get_rankings(year: int = Query(None), week: int = Query(None)):
