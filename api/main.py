@@ -1461,6 +1461,162 @@ def get_final_results(year: int = Query(...)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+# ── Add to api/main.py ──────────────────────────────────────────────────────
+# Supplies data for the two Contest charts. Reads the same picks + sim files
+# the rest of the app uses. Works for any year that has a picks file.
+
+@app.get("/api/contest/charts")
+def get_contest_charts(year: int = Query(None), through_week: int = Query(None)):
+    """
+    Returns:
+      availability: [{team, available}] — alive entries that still have each
+                    team unused (as of through_week, or the latest week).
+      pick_by_week: [{week, KC, BUF, ...}] — actual field pick% per team per
+                    completed week.
+    """
+    try:
+        if year is None:
+            year = load_current_data(DATA_DIR)["target_year"]
+
+        picks_path = os.path.join(
+            DATA_DIR, f"circa-pick-history/{year}_survivor_picks.csv")
+        if not os.path.exists(picks_path):
+            raise FileNotFoundError(f"No picks file for {year}")
+
+        df = pd.read_csv(picks_path)
+        df["Total_Wins"] = pd.to_numeric(
+            df["Total_Wins"], errors="coerce").fillna(0).astype(int)
+        week_cols = sorted(
+            [c for c in df.columns if c.startswith("Week_")],
+            key=lambda c: int(c.replace("Week_", "")))
+        max_week = len(week_cols)
+        cutoff = through_week or max_week
+
+        # Normalize an abbreviation
+        VARIANT = {"JAC": "JAX", "LAR": "LA", "GNB": "GB", "KAN": "KC",
+                   "NOR": "NO", "SFO": "SF", "TAM": "TB", "LVR": "LV", "WSH": "WAS"}
+        def norm(t):
+            t = str(t or "").strip().upper()
+            return VARIANT.get(t, t)
+
+        ALL = ["ARI","ATL","BAL","BUF","CAR","CHI","CIN","CLE","DAL","DEN","DET",
+               "GB","HOU","IND","JAX","KC","LA","LAC","LV","MIA","MIN","NE","NO",
+               "NYG","NYJ","PHI","PIT","SEA","SF","TB","TEN","WAS"]
+
+        # ── Availability: alive entries that haven't used each team ──
+        alive = df[df["Total_Wins"] >= cutoff - 1] if cutoff else df
+        used_counts = {t: 0 for t in ALL}
+        n_alive = 0
+        for _, row in alive.iterrows():
+            n_alive += 1
+            for c in week_cols:
+                w = int(c.replace("Week_", ""))
+                if w >= cutoff:
+                    continue
+                t = norm(row.get(c))
+                if t in used_counts:
+                    used_counts[t] += 1
+        availability = [{"team": t, "available": n_alive - used_counts[t]}
+                        for t in ALL]
+
+        # ── Pick% by week: share of that week's pickers on each team ──
+        pick_by_week = []
+        for c in week_cols:
+            w = int(c.replace("Week_", ""))
+            if w > cutoff:
+                continue
+            counts, total = {}, 0
+            for _, row in df.iterrows():
+                t = norm(row.get(c))
+                if t in used_counts and t != "":
+                    counts[t] = counts.get(t, 0) + 1
+                    total += 1
+            if total == 0:
+                continue
+            row_out = {"week": w}
+            for t, ct in counts.items():
+                row_out[t] = round(ct / total, 4)
+            pick_by_week.append(row_out)
+
+        return JSONResponse(content=sanitize({
+            "year": year,
+            "through_week": cutoff,
+            "alive_entries": n_alive,
+            "availability": availability,
+            "pick_by_week": pick_by_week,
+        }))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Pick-source toggle for the Optimizer / EV Calc ──────────────────────────
+# The sim file already holds BOTH the blended model pick% ("Home/Away Pick %")
+# and, for completed weeks, the actual pick% can be read from the picks file
+# via the historical pipeline. This endpoint lets the frontend request either.
+#
+# Add `pick_source` to the optimize request handling: when "actual", swap the
+# sim file's Home/Away Pick % columns for the ACTUAL pick% (from the season
+# final-data file's "Home/Away Actual Pick %" columns) before optimizing.
+
+def _apply_pick_source(sim_df, year, pick_source):
+    """
+    pick_source: "model" (default) uses the blended model pick% already in the
+    sim file; "actual" overwrites it with the realized pick% from the season
+    final-data file (only meaningful for completed weeks — future weeks have no
+    actual, so they fall back to the model value).
+    """
+    if pick_source != "actual":
+        return sim_df
+
+    import glob as _glob
+    fd = _glob.glob(os.path.join(
+        DATA_DIR, f"nfl-power-ratings/final_data/{year}_final_data/"
+        f"Season_{year}_Through_Week_*_Final_Data.csv"))
+    if not fd:
+        return sim_df  # no actuals available; keep model values
+
+    def wk(p):
+        try:
+            return int(os.path.basename(p).split("_Week_")[1].split("_Final")[0])
+        except (IndexError, ValueError):
+            return 0
+    actual_df = pd.read_csv(max(fd, key=wk))
+
+    # Match on team + week; overwrite pick% where an actual exists
+    wcol = "Week_x" if "Week_x" in sim_df.columns else "Week"
+    if "Home Actual Pick %" not in actual_df.columns:
+        return sim_df
+
+    key = {}
+    awcol = "Week_x" if "Week_x" in actual_df.columns else "Week"
+    for _, r in actual_df.iterrows():
+        try:
+            k = (int(r[awcol]), r["Home Team"], r["Away Team"])
+        except (KeyError, ValueError, TypeError):
+            continue
+        key[k] = (r.get("Home Actual Pick %"), r.get("Away Actual Pick %"))
+
+    sim_df = sim_df.copy()
+    for idx, r in sim_df.iterrows():
+        try:
+            k = (int(r[wcol]), r["Home Team"], r["Away Team"])
+        except (KeyError, ValueError, TypeError):
+            continue
+        if k in key:
+            hp, ap = key[k]
+            if pd.notna(hp): sim_df.at[idx, "Home Pick %"] = hp
+            if pd.notna(ap): sim_df.at[idx, "Away Pick %"] = ap
+    return sim_df
+
+
+# In the optimize endpoint, add pick_source to OptimizeRequest (Literal
+# ["model","actual"] = "model") and call:
+#     sim_df = _apply_pick_source(sim_df, target_year, request.pick_source)
+# right after loading sim_df, before running the optimizer.
+
 
 @app.get("/api/debug-paths")
 def debug_paths():
