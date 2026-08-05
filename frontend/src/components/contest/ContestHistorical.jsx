@@ -273,7 +273,6 @@ export default function ContestHistorical({ years }) {
                   ))}
                 </tr>
               ))}
-              ))}
             </tbody>
           </table>
         </div>
