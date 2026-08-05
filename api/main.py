@@ -277,6 +277,7 @@ def optimize(request: OptimizeRequest):
     try:
         data = load_current_data(DATA_DIR)
         sim_df = data["sim_df"]
+        target_year = data["target_year"]   
         sim_df = _apply_pick_source(sim_df, target_year, request.pick_source)
         result = run_optimizer(sim_df, request)
         return result
@@ -295,18 +296,26 @@ def get_rankings(year: int = Query(None), week: int = Query(None)):
 
         ratings_dir = os.path.join(DATA_DIR, "nfl-power-ratings")
 
-        if target != current_year:
-            # For historical years use the latest available rankings file
+        def extract_week(p):
+            try:
+                return int(os.path.basename(p).split("_week_")[1].split(f"_{target}")[0])
+            except Exception:
+                return 0
+
+        # If a specific week is requested, load that week's file directly
+        if week is not None:
+            current_file = os.path.join(
+                ratings_dir,
+                f"nfl_power_ratings_blended_week_{week}_{target}.csv"
+            )
+            if not os.path.exists(current_file):
+                raise FileNotFoundError(f"No rankings file for {target} week {week}")
+            upcoming_week = week
+        elif target != current_year:
             files = glob.glob(os.path.join(
-                ratings_dir, f"nfl_power_ratings_blended_week_*_{target}.csv"
-            ))
+                ratings_dir, f"nfl_power_ratings_blended_week_*_{target}.csv"))
             if not files:
                 raise FileNotFoundError(f"No rankings file found for {target}")
-            def extract_week(p):
-                try:
-                    return int(os.path.basename(p).split("_week_")[1].split(f"_{target}")[0])
-                except:
-                    return 0
             current_file = max(files, key=extract_week)
             upcoming_week = extract_week(current_file)
         else:
@@ -315,11 +324,12 @@ def get_rankings(year: int = Query(None), week: int = Query(None)):
                 f"nfl_power_ratings_blended_week_{upcoming_week}_{target}.csv"
             )
             if not os.path.exists(current_file):
-                import glob as g
-                files = g.glob(os.path.join(ratings_dir, f"nfl_power_ratings_blended_week_*_{target}.csv"))
+                files = glob.glob(os.path.join(
+                    ratings_dir, f"nfl_power_ratings_blended_week_*_{target}.csv"))
                 if not files:
                     raise FileNotFoundError(f"No rankings file found for {target}")
-                current_file = max(files, key=lambda p: int(os.path.basename(p).split("_week_")[1].split(f"_{target}")[0]))
+                current_file = max(files, key=extract_week)
+                upcoming_week = extract_week(current_file)
 
         df = pd.read_csv(current_file)
         df = df.rename(columns={"Power Rating": "GSF Power Rating"})
