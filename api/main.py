@@ -285,7 +285,7 @@ def optimize(request: OptimizeRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/rankings")
-def get_rankings(year: int = Query(None)):
+def get_rankings(year: int = Query(None), week: int = Query(None)):
     try:
         data = load_current_data(DATA_DIR)
         current_year = data["target_year"]
@@ -1610,6 +1610,34 @@ def _apply_pick_source(sim_df, year, pick_source):
             if pd.notna(hp): sim_df.at[idx, "Home Pick %"] = hp
             if pd.notna(ap): sim_df.at[idx, "Away Pick %"] = ap
     return sim_df
+
+@app.get("/api/rankings/weeks/available")
+def get_rankings_weeks_available(year: int = Query(...)):
+    """
+    Which weeks have rankings data for a given year. Derived from the season
+    final-data files (each Season_..._Through_Week_N file = week N is available)
+    plus the current sim file for the live upcoming week.
+    """
+    try:
+        weeks = set()
+        fd = glob.glob(os.path.join(
+            DATA_DIR, f"nfl-power-ratings/final_data/{year}_final_data/"
+            f"Season_{year}_Through_Week_*_Final_Data.csv"))
+        for f in fd:
+            try:
+                weeks.add(int(os.path.basename(f).split("_Week_")[1].split("_Final")[0]))
+            except (IndexError, ValueError):
+                pass
+        # Include the live upcoming week if this is the current season
+        try:
+            cur = load_current_data(DATA_DIR)
+            if cur["target_year"] == year:
+                weeks.add(cur["upcoming_week"])
+        except Exception:
+            pass
+        return {"year": year, "weeks": sorted(weeks)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # In the optimize endpoint, add pick_source to OptimizeRequest (Literal
