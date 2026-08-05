@@ -3,8 +3,6 @@ import Toggle from '../ui/Toggle'
 import Select from '../ui/Select'
 import SectionHeader from '../ui/SectionHeader'
 
-const [pickSource, setPickSource] = useState('model')
-
 const OBJECTIVE_OPTIONS = [
   { value: 'consensus', label: 'Consensus (EV + Win Odds)' },
   { value: 'sportsbook', label: 'Sportsbook (EV + Win Odds)' },
@@ -36,6 +34,7 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek, week
   const [numSolutions, setNumSolutions] = useState(1)
   const [startWeek, setStartWeek] = useState(upcomingWeek || 1)
   const [endWeek, setEndWeek] = useState(20)
+  const [pickSource, setPickSource] = useState('model')
 
   const [mustBeFavored, setMustBeFavored] = useState(false)
   const [favoredQualifier, setFavoredQualifier] = useState('sportsbook')
@@ -128,6 +127,7 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek, week
       prohibited_teams: prohibited,
       required_picks: required,
       prohibited_weekly_picks: prohibitedWeekly,
+      pick_source: pickSource,
       scheduling: {
         ...scheduling,
         ...bayesian,
@@ -153,6 +153,21 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek, week
           onChange={v => setNumSolutions(Number(v))}
           options={SOLUTIONS_OPTIONS}
         />
+      </div>
+
+      <div className="mt-3">
+        <Select
+          label="Pick % source"
+          value={pickSource}
+          onChange={setPickSource}
+          options={[
+            { value: 'model',  label: 'Model estimate' },
+            { value: 'actual', label: 'Actual (historical)' },
+          ]}
+        />
+        <p className="text-xs text-gray-600 mt-1">
+          "Actual" uses realized pick % — only differs from the model on completed weeks.
+        </p>
       </div>
 
       {/* Week range */}
