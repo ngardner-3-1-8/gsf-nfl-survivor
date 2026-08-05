@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { fetchRankings } from '../../api/client'
+import { fetchRankings, fetchRankingsWeeks } from '../../api/client'
 import { useAvailableYears } from '../../hooks/useAvailableYears'
 import YearSelector from '../ui/YearSelector'
 
@@ -73,16 +73,31 @@ export default function RankingsView() {
 
   const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
 
-  // Reload rankings when year changes
+  const [week, setWeek] = useState(null)
+  const [availableWeeks, setAvailableWeeks] = useState([])
+
+  // When the year changes, load which weeks have rankings and default to latest
   useEffect(() => {
     if (!selectedYear) return
+    fetchRankingsWeeks(selectedYear)
+      .then(d => {
+        const w = d.weeks || []
+        setAvailableWeeks(w)
+        setWeek(w.length ? w[w.length - 1] : null)
+      })
+      .catch(() => { setAvailableWeeks([]); setWeek(null) })
+  }, [selectedYear])
+
+  // Reload rankings when year or week changes
+  useEffect(() => {
+    if (!selectedYear || week == null) return
     setLoading(true)
     setError(null)
-    fetchRankings(selectedYear)
+    fetchRankings(selectedYear, week)
       .then(d => setData(d))
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
-  }, [selectedYear])
+  }, [selectedYear, week])
 
   const rankings = data?.rankings || []
   const hasPreseason = data?.has_preseason
@@ -131,9 +146,24 @@ export default function RankingsView() {
         selectedYear={selectedYear}
         onChange={setSelectedYear}
       />
+      {availableWeeks.length > 0 && (
+        <>
+          <span className="text-xs text-gray-500 uppercase tracking-wide ml-2">Week</span>
+          <div className="flex gap-1 flex-wrap">
+            {availableWeeks.map(w => (
+              <button key={w} onClick={() => setWeek(w)}
+                className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors font-mono ${
+                  week === w ? 'bg-gray-700 text-white border-gray-600'
+                    : 'border-gray-700 text-gray-500 hover:text-white'}`}>
+                {w}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
       {isHistorical && (
-        <span className="text-xs text-amber-400">
-          📋 {selectedYear} final season rankings
+        <span className="text-xs text-amber-400 ml-2">
+          📋 {selectedYear} historical rankings
         </span>
       )}
     </div>
