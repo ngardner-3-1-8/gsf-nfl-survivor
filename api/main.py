@@ -294,6 +294,10 @@ def optimize(request: OptimizeRequest):
         sim_df = _apply_pick_source(sim_df, target_year, request.pick_source)
         result = run_optimizer(sim_df, request)
         return result
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/rankings")
 def get_rankings(year: int = Query(None), week: int = Query(None)):
