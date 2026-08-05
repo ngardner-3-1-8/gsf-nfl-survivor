@@ -50,7 +50,7 @@ export default function OptimizerView() {
     setError(null)
     setResults(null)
     try {
-      const data = await runOptimizer(constraints)
+      const data = await runOptimizer({ ...constraints, year: selectedYear })  // ← add year
       setResults(data)
     } catch (err) {
       setError(err.message || 'Something went wrong')
