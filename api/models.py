@@ -55,6 +55,8 @@ class OptimizeRequest(BaseModel):
         "consensus", "sportsbook", "mp", "gsf", "sim", "win_pct"
     ] = "consensus"
 
+    pick_source: Literal["model", "actual"] = "model"
+
     # How many top solutions to return per method (EV-based + ranking-based)
     number_solutions: Literal[1, 5, 10, 25, 50, 100] = 10
 
