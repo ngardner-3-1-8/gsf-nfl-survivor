@@ -3,6 +3,7 @@ import Toggle from '../ui/Toggle'
 import Select from '../ui/Select'
 import SectionHeader from '../ui/SectionHeader'
 
+const [pickSource, setPickSource] = useState('model')
 
 const OBJECTIVE_OPTIONS = [
   { value: 'consensus', label: 'Consensus (EV + Win Odds)' },
