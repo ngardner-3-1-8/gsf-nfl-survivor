@@ -277,6 +277,7 @@ def optimize(request: OptimizeRequest):
     try:
         data = load_current_data(DATA_DIR)
         sim_df = data["sim_df"]
+        sim_df = _apply_pick_source(sim_df, target_year, request.pick_source)
         result = run_optimizer(sim_df, request)
         return result
     except FileNotFoundError as e:
