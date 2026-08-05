@@ -43,11 +43,12 @@ export async function fetchSchedule(week = null, year = null) {
   return res.json()
 }
 
-export async function fetchRankings(year = null) {
-  const url = year != null
-    ? `${API_URL}/api/rankings?year=${year}`
-    : `${API_URL}/api/rankings`
-  const res = await fetch(url)
+export async function fetchRankings(year = null, week = null) {
+  const p = new URLSearchParams()
+  if (year != null) p.set('year', year)
+  if (week != null) p.set('week', week)
+  const qs = p.toString()
+  const res = await fetch(`${API_URL}/api/rankings${qs ? '?' + qs : ''}`)
   if (!res.ok) throw new Error('Failed to fetch rankings')
   return res.json()
 }
@@ -174,3 +175,10 @@ export async function fetchContestCharts(year = null, throughWeek = null) {
   if (!res.ok) throw new Error('Failed to fetch contest charts')
   return res.json()
 }
+
+export async function fetchRankingsWeeks(year) {
+  const res = await fetch(`${API_URL}/api/rankings/weeks/available?year=${year}`)
+  if (!res.ok) throw new Error('Failed to fetch rankings weeks')
+  return res.json()
+
+
