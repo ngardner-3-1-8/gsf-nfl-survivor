@@ -180,5 +180,5 @@ export async function fetchRankingsWeeks(year) {
   const res = await fetch(`${API_URL}/api/rankings/weeks/available?year=${year}`)
   if (!res.ok) throw new Error('Failed to fetch rankings weeks')
   return res.json()
-
+}
 
