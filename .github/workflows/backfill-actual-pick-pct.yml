@@ -1,0 +1,35 @@
+name: Backfill Actual Pick %
+on:
+  workflow_dispatch:
+    inputs:
+      years:
+        description: 'Years to backfill (space-separated, e.g. "2022 2023 2024")'
+        required: true
+        default: '2022 2023 2024'
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Backfill
+        run: python backfill_actual_pick_pct.py ${{ github.event.inputs.years }}
+
+      - name: Commit Updated Final Data
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add nfl-power-ratings/final_data/*/Week_*_Final_Data.csv || true
+          git add nfl-power-ratings/final_data/*/Season_*_Final_Data.csv || true
+          git commit -m "Backfill actual pick % and actual EV (${{ github.event.inputs.years }})" || echo "No changes to commit"
+          git push
