@@ -150,6 +150,9 @@ export default function ContestView() {
           {currentSeasonCharts}
         </div>
       )}
+
+      {/* Spacer so chart tooltips near the bottom aren't clipped by the page edge */}
+      <div className="h-64" aria-hidden="true" />
     </div>
   )
 }
