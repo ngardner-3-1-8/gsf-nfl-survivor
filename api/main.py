@@ -781,6 +781,12 @@ def _apply_pick_source(sim_df, year, pick_source):
     if "Home Actual Pick %" not in actual_df.columns:
         return sim_df
 
+    # Actual EV column names as written by the backfill / weekly_1
+    actual_home_ev = next((c for c in ("Actual Home Team EV", "Home Actual EV")
+                           if c in actual_df.columns), None)
+    actual_away_ev = next((c for c in ("Actual Away Team EV", "Away Actual EV")
+                           if c in actual_df.columns), None)
+
     key = {}
     awcol = "Week_x" if "Week_x" in actual_df.columns else "Week"
     for _, r in actual_df.iterrows():
@@ -788,7 +794,21 @@ def _apply_pick_source(sim_df, year, pick_source):
             k = (int(r[awcol]), r["Home Team"], r["Away Team"])
         except (KeyError, ValueError, TypeError):
             continue
-        key[k] = (r.get("Home Actual Pick %"), r.get("Away Actual Pick %"))
+        key[k] = {
+            "hp": r.get("Home Actual Pick %"),
+            "ap": r.get("Away Actual Pick %"),
+            "hev": r.get(actual_home_ev) if actual_home_ev else None,
+            "aev": r.get(actual_away_ev) if actual_away_ev else None,
+        }
+
+    # The optimizer selects one of these EV columns by objective. In "actual"
+    # mode we overwrite ALL of them with the actual EV, so whichever objective
+    # the user picks, it optimizes on what actually happened — not just the
+    # pick% (which the optimizer never reads directly for the objective).
+    HOME_EV_COLS = ["consensus_Home_EV", "sportsbook_Home_EV", "mp_Home_EV",
+                    "gsf_Home_EV", "sim_Home_EV"]
+    AWAY_EV_COLS = ["consensus_Away_EV", "sportsbook_Away_EV", "mp_Away_EV",
+                    "gsf_Away_EV", "sim_Away_EV"]
 
     sim_df = sim_df.copy()
     for idx, r in sim_df.iterrows():
@@ -796,10 +816,19 @@ def _apply_pick_source(sim_df, year, pick_source):
             k = (int(r[wcol]), r["Home Team"], r["Away Team"])
         except (KeyError, ValueError, TypeError):
             continue
-        if k in key:
-            hp, ap = key[k]
-            if pd.notna(hp): sim_df.at[idx, "Home Pick %"] = hp
-            if pd.notna(ap): sim_df.at[idx, "Away Pick %"] = ap
+        if k not in key:
+            continue
+        v = key[k]
+        if pd.notna(v["hp"]): sim_df.at[idx, "Home Pick %"] = v["hp"]
+        if pd.notna(v["ap"]): sim_df.at[idx, "Away Pick %"] = v["ap"]
+        if v["hev"] is not None and pd.notna(v["hev"]):
+            for c in HOME_EV_COLS:
+                if c in sim_df.columns:
+                    sim_df.at[idx, c] = v["hev"]
+        if v["aev"] is not None and pd.notna(v["aev"]):
+            for c in AWAY_EV_COLS:
+                if c in sim_df.columns:
+                    sim_df.at[idx, c] = v["aev"]
     return sim_df
 
 
