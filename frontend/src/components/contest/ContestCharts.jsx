@@ -43,6 +43,7 @@ export function AvailabilityBarChart({ availability }) {
           <XAxis type="number" tick={{ fill: '#6b7280', fontSize: 11 }}
             axisLine={{ stroke: '#374151' }} tickLine={false} />
           <YAxis type="category" dataKey="team" width={44}
+            interval={0}
             tick={{ fill: '#9ca3af', fontSize: 11 }}
             axisLine={false} tickLine={false} />
           <Tooltip
