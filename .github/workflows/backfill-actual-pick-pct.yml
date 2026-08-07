@@ -22,6 +22,9 @@ jobs:
       - name: Install Dependencies
         run: pip install -r requirements.txt
 
+      - name: Split master Circa file into per-year files
+        run: python split_circa_historical.py
+
       - name: Run Backfill
         run: python backfill_actual_pick_pct.py ${{ github.event.inputs.years }}
 
