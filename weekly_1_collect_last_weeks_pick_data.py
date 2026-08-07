@@ -180,7 +180,7 @@ def loop_through_historical_final_data(date_str):
     
     print(f"✅ Final Configuration -> Year: {current_year} | Starting Week: {starting_week}")
     if target_year == 2026:
-        MAX_PAGES = 225    
+        MAX_PAGES = 260    
     elif target_year == 2025:
         MAX_PAGES = 187
     elif target_year == 2024:
@@ -200,7 +200,7 @@ def loop_through_historical_final_data(date_str):
     circa_2023_entries = 9234
     circa_2024_entries = 14221
     circa_2025_entries = 18718
-    circa_2026_entries = 22500
+    circa_2026_entries = 26000
     # ==============================================================================
     # SECTION 1: SURVIVORGRID.COM SCRAPING (UNCHANGED - nflreadpy CANNOT DO THIS)
     # ==============================================================================
