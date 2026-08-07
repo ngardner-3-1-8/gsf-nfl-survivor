@@ -219,38 +219,70 @@ def loop_through_historical_final_data(date_str):
     
     # 2. HOLIDAY CALCULATIONS BASED ON THE SEASON YEAR (current_year)
     # If it's Jan 2026, current_year is 2025. This ensures we look at 2025 holidays.
+    # These match daily_2 EXACTLY so both files assign the same Circa week number
+    # to the same slate around the holidays (a one-day rule difference here would
+    # misalign actual pick % against the model in holiday weeks).
     thanksgiving_season = get_thanksgiving(current_year)
+    black_friday = thanksgiving_season + timedelta(days=1)
+    christmas_day = datetime(current_year, 12, 25)
+    boxing_day = datetime(current_year, 12, 26)
+
+    # Keep the old names available for any downstream references
     two_days_after_thanksgiving = thanksgiving_season + timedelta(days=2)
     five_days_after_thanksgiving = thanksgiving_season + timedelta(days=5)
-    
-    christmas_season_cutoff = datetime(current_year, 12, 26)
-    christmas_season_cutoff_plus_one = christmas_season_cutoff + timedelta(days=1)
-    
-    # 3. Apply Adjustments
-    # Use separate 'if' statements if you want them to be additive (+2 total)
+    christmas_season_cutoff = boxing_day
+    christmas_season_cutoff_plus_one = boxing_day + timedelta(days=1)
+
+    def _holiday_bump(reason):
+        """Apply a +1 Circa-week shift to every week counter (mirrors daily_2)."""
+        print(f"Detected: {reason}. +1 Circa week shift.")
+
+    # 3. Apply Adjustments — PER-YEAR, matching daily_2's loop_through_simulations
+    # Thanksgiving/Black Friday shift (all years): after Black Friday, Circa has
+    # advanced a contest week relative to the NFL week.
+    if today > black_friday:
+        NUM_WEEKS_TO_KEEP += 1
+        starting_week += 1
+        last_played_week += 1
+        _holiday_bump(f"date is after {current_year} Black Friday")
+
+    # Christmas shift — the exact cutoff differs by year (Circa split the holiday
+    # slate differently each season), so daily_2 encodes each one explicitly.
     if target_year == 2020:
-        if today >= two_days_after_thanksgiving:
-            print(f"Detected: Date is after {current_year} Thanksgiving. +1 to NUM_WEEKS_TO_KEEP.")
+        if today >= boxing_day:
+            pass  # 2020: no additional Christmas shift (handled by TG bump only)
+    elif target_year == 2022:
+        if today >= christmas_day:
             NUM_WEEKS_TO_KEEP += 1
             starting_week += 1
             last_played_week += 1
-            if today < five_days_after_thanksgiving:
+            if today < christmas_day + timedelta(days=1):
                 nfl_last_played_week += 1
-    else:
-#        if today >= two_days_after_thanksgiving:
-#            print(f"Detected: Date is after {current_year} Thanksgiving. +1 to NUM_WEEKS_TO_KEEP.")
-#            NUM_WEEKS_TO_KEEP += 1
-#            starting_week += 1
-#            last_played_week += 1
-#            if today < five_days_after_thanksgiving:
-#                nfl_last_played_week += 1
-        if today >= christmas_season_cutoff:
-            print(f"Detected: Date is after {current_year} Christmas. +1 to NUM_WEEKS_TO_KEEP.")
+            _holiday_bump(f"date is on/after {current_year} Christmas (2022 rule)")
+    elif target_year == 2023:
+        if today >= christmas_day:
             NUM_WEEKS_TO_KEEP += 1
             starting_week += 1
             last_played_week += 1
-            if today < christmas_season_cutoff_plus_one:
+            if today < christmas_day + timedelta(days=1):
                 nfl_last_played_week += 1
+            _holiday_bump(f"date is on/after {current_year} Christmas (2023 rule)")
+    elif target_year == 2024:
+        if today > boxing_day:
+            NUM_WEEKS_TO_KEEP += 1
+            starting_week += 1
+            last_played_week += 1
+            if today < boxing_day + timedelta(days=1):
+                nfl_last_played_week += 1
+            _holiday_bump(f"date is after {current_year} Boxing Day (2024 rule)")
+    elif target_year in (2021, 2025, 2026) or target_year >= 2027:
+        if today >= boxing_day:
+            NUM_WEEKS_TO_KEEP += 1
+            starting_week += 1
+            last_played_week += 1
+            if today < boxing_day + timedelta(days=1):
+                nfl_last_played_week += 1
+            _holiday_bump(f"date is on/after {current_year} Boxing Day")
     print("THIS IS THE TEST")
     print(f"Last Played Week: {last_played_week}")
     print(f"Starting Week: {starting_week}")
@@ -3290,7 +3322,7 @@ if __name__ == "__main__":
 #        "12/10/2025",  #Following Week 15
 #        "12/17/2025",  #Following Week 16
 #        "12/24/2025",  #Following Week 17
-        "12/26/2025",  #Following Week 18
+#        "12/26/2025",  #Following Week 18
 #        "12/31/2025", #Following Week 19
 #        "01/07/2026", #Following Week 20
         
@@ -3402,7 +3434,7 @@ if __name__ == "__main__":
 #        "12/30/2020",   #Following Week 17
 #        "01/06/2021",  #Following Week 18
         
-#        formatted_date
+        formatted_date
     ]
 
     for date in week_starting_dates:
