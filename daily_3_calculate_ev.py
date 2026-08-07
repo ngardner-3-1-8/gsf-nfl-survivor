@@ -95,12 +95,16 @@ def loop_through_ev(date_str):
                     starting_week += 0
                     upcoming_week += 0
             elif target_year == 2022:
-                if today >= (boxing_day - timedelta(days=2)):
+                if today >= christmas_day:
                     upcoming_week += 1
             elif target_year == 2023:
-                if today >= (boxing_day - timedelta(days=1)):
+                if today >= christmas_day:
                     upcoming_week += 1
-            elif target_year in [2021, 2024,2025,2026]:
+            elif target_year == 2024:
+                if today > boxing_day:
+                    starting_week += 0
+                    upcoming_week += 1
+            elif target_year in [2021,2025,2026]:
                 if today >= boxing_day:
                     starting_week += 0
                     upcoming_week += 1
