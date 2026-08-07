@@ -13,7 +13,6 @@ from fastapi.responses import JSONResponse
 import glob
 import re
 
-
 def sanitize(obj):
     """Recursively replace nan/inf with None for JSON serialization."""
     if isinstance(obj, float):
@@ -733,6 +732,7 @@ def get_contest_charts(year: int = Query(None), through_week: int = Query(None))
         return JSONResponse(content=sanitize({
             "year": year,
             "through_week": cutoff,
+            "max_week": max_week,
             "alive_entries": n_alive,
             "availability": availability,
             "pick_by_week": pick_by_week,
