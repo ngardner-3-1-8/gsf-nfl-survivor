@@ -37,7 +37,7 @@ export function AvailabilityBarChart({ availability }) {
       <p className="text-gray-500 text-xs mb-4">
         How many alive entries still have each team available to pick
       </p>
-      <ResponsiveContainer width="100%" height={Math.max(260, data.length * 20)}>
+      <ResponsiveContainer width="100%" height={Math.max(320, data.length * 22)}>
         <BarChart data={data} layout="vertical"
           margin={{ top: 0, right: 24, bottom: 0, left: 8 }}>
           <XAxis type="number" tick={{ fill: '#6b7280', fontSize: 11 }}
@@ -73,16 +73,18 @@ export function AvailabilityBarChart({ availability }) {
 export function PickPctByWeekChart({ pickByWeek, teams }) {
   const drawnTeams = useMemo(() => {
     if (teams && teams.length) return teams
-    // Auto-pick the 6 teams with the highest peak pick% across the season
     if (!pickByWeek?.length) return []
-    const peaks = {}
+    // Include EVERY team that appears anywhere in the data (all 32 when present)
+    const seen = new Set()
     pickByWeek.forEach(row => {
-      Object.keys(row).forEach(k => {
-        if (k === 'week') return
-        peaks[k] = Math.max(peaks[k] || 0, row[k] || 0)
-      })
+      Object.keys(row).forEach(k => { if (k !== 'week') seen.add(k) })
     })
-    return Object.entries(peaks).sort((a, b) => b[1] - a[1]).slice(0, 6).map(e => e[0])
+    // Sort by peak pick% so the legend is ordered, but keep them ALL
+    const peaks = {}
+    seen.forEach(t => {
+      peaks[t] = Math.max(...pickByWeek.map(r => r[t] || 0))
+    })
+    return [...seen].sort((a, b) => peaks[b] - peaks[a])
   }, [pickByWeek, teams])
 
   if (!pickByWeek?.length || !drawnTeams.length) return null
@@ -110,7 +112,7 @@ export function PickPctByWeekChart({ pickByWeek, teams }) {
             labelFormatter={w => `Week ${w}`}
             formatter={(v, name) => [`${(v * 100).toFixed(1)}%`, name]}
           />
-          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Legend wrapperStyle={{ fontSize: 10, maxHeight: 72, overflowY: 'auto' }} />
           {drawnTeams.map(t => (
             <Line key={t} type="monotone" dataKey={t}
               stroke={TEAM_COLORS[t] || '#4b5563'} strokeWidth={2}
