@@ -801,35 +801,46 @@ def loop_through_simulations(date_str):
         df['Date'] = pd.to_datetime(df['Date'], format='%b %d, %Y')
         # Adjust January games to 2025 in the DataFrame
         if target_year == 2020:
-            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 0
+            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(boxing_day), 'Week'] += 0
         elif target_year == 2021:
-            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 1
+            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(boxing_day), 'Week'] += 1
+            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
+            df.loc[df['Date'] == pd.to_datetime(christmas_day - timedelta(days=2)), 'Circa Week'] = 'Christmas'
         elif target_year == 2022:
-            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date - timedelta(days=2)), 'Week'] += 1
+            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(christmas_day), 'Week'] += 1
+            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
+            df.loc[df['Date'] == pd.to_datetime(boxing_day), 'Circa Week'] = 'Christmas'
         elif target_year == 2023:
-            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date - timedelta(days=1)), 'Week'] += 1
+            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(christmas_day), 'Week'] += 1
+            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
         elif target_year == 2024:
-            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 1
+            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
+            df.loc[df['Date'] > pd.to_datetime(boxing_day), 'Week'] += 1
+            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
+            df.loc[df['Date'] == pd.to_datetime(boxing_day), 'Circa Week'] = 'Christmas'            
         elif target_year == 2025:
-            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 1
+            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(boxing_day), 'Week'] += 1
+            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'            
         elif target_year == 2026:
-            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 1
+            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(boxing_day), 'Week'] += 1
+            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
+            df.loc[df['Date'] == pd.to_datetime(christmas_day - timedelta(days=1)), 'Circa Week'] = 'Christmas'
+
         else:
-            df.loc[df['Date'] >= pd.to_datetime(thanksgiving_reset_date), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(christmas_reset_date), 'Week'] += 1
+            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
+            df.loc[df['Date'] >= pd.to_datetime(boxing_day), 'Week'] += 1
+            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
+            df.loc[df['Date'] == pd.to_datetime(boxing_day), 'Circa Week'] = 'Christmas'
 
         df.loc[df['Date'] == pd.to_datetime(thanksgiving_date), 'Circa Week'] = 'Thanksgiving'
         df.loc[df['Date'] == pd.to_datetime(black_friday), 'Circa Week'] = 'Thanksgiving'
-        if target_year != 2020:
-            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
-            df.loc[df['Date'] == pd.to_datetime(boxing_day), 'Circa Week'] = 'Christmas'
+
     
     
         # Convert 'Week' back to string format if needed
