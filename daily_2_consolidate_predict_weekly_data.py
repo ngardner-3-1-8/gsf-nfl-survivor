@@ -6186,8 +6186,8 @@ if __name__ == "__main__":
 #        "12/31/2025", #Leading up to Week 20
         
 #        "09/04/2024", #Leading up to Week 1
-        "09/11/2024", #Leading up to Week 2
-#        "09/18/2024", #Leading up to Week 3
+#        "09/11/2024", #Leading up to Week 2
+        "09/18/2024", #Leading up to Week 3
 #        "09/25/2024", #Leading up to Week 4
 #        "10/02/2024", #Leading up to Week 5
 #        "10/09/2024", #Leading up to Week 6
