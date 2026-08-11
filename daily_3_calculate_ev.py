@@ -291,26 +291,26 @@ if __name__ == "__main__":
 #        "12/26/2025", #Leading up to Week 19
 #        "12/31/2025", #Leading up to Week 20
         
-#        "09/04/2024", #Leading up to Week 1
-#        "09/11/2024", #Leading up to Week 2
-#        "09/18/2024", #Leading up to Week 3
-#        "09/25/2024", #Leading up to Week 4
-#        "10/02/2024", #Leading up to Week 5
-#        "10/09/2024", #Leading up to Week 6
-#        "10/16/2024", #Leading up to Week 7
-#        "10/23/2024", #Leading up to Week 8
-#        "10/30/2024", #Leading up to Week 9
-#        "11/06/2024", #Leading up to Week 10
-#        "11/13/2024", #Leading up to Week 11
-#        "11/20/2024", #Leading up to Week 12
-#        "11/27/2024", #Leading up to Week 13
-#        "11/30/2024", #Leading up to Week 14
-#        "12/04/2024", #Leading up to Week 15
-#        "12/11/2024", #Leading up to Week 16
-#        "12/18/2024", #Leading up to Week 17
-#        "12/24/2024", #Leading up to Week 18
-#        "12/27/2024", #Leading up to Week 19
-#        "01/01/2025", #Leading up to Week 20
+        "09/04/2024", #Leading up to Week 1
+        "09/11/2024", #Leading up to Week 2
+        "09/18/2024", #Leading up to Week 3
+        "09/25/2024", #Leading up to Week 4
+        "10/02/2024", #Leading up to Week 5
+        "10/09/2024", #Leading up to Week 6
+        "10/16/2024", #Leading up to Week 7
+        "10/23/2024", #Leading up to Week 8
+        "10/30/2024", #Leading up to Week 9
+        "11/06/2024", #Leading up to Week 10
+        "11/13/2024", #Leading up to Week 11
+        "11/20/2024", #Leading up to Week 12
+        "11/27/2024", #Leading up to Week 13
+        "11/30/2024", #Leading up to Week 14
+        "12/04/2024", #Leading up to Week 15
+        "12/11/2024", #Leading up to Week 16
+        "12/18/2024", #Leading up to Week 17
+        "12/24/2024", #Leading up to Week 18
+        "12/27/2024", #Leading up to Week 19
+        "01/01/2025", #Leading up to Week 20
         
 #        "09/06/2023", #Leading up to Week 1
 #        "09/13/2023", #Leading up to Week 2
@@ -394,7 +394,7 @@ if __name__ == "__main__":
 #        "12/23/2020", #Leading up to Week 17
 #        "12/30/2020", #Leading up to Week 18
         
-        formatted_date
+#        formatted_date
     ]
 
     for date in week_starting_dates:
