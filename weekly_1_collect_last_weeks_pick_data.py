@@ -3327,26 +3327,26 @@ if __name__ == "__main__":
 #        "01/07/2026", #Following Week 20
         
 
-#        "09/11/2024",  #Following Week 1
-#        "09/18/2024",  #Following Week 2
-#        "09/25/2024",  #Following Week 3
-#        "10/02/2024",  #Following Week 4
-#        "10/09/2024",  #Following Week 5
-#        "10/16/2024",  #Following Week 6
-#        "10/23/2024",  #Following Week 7
-#        "10/30/2024",  #Following Week 8
-#        "11/06/2024",  #Following Week 9
-#        "11/13/2024",  #Following Week 10
-#        "11/20/2024",  #Following Week 11
-#        "11/27/2024",  #Following Week 12
-#        "11/30/2024",  #Following Week 13
-#        "12/04/2024",  #Following Week 14
-#        "12/11/2024",  #Following Week 15
-#        "12/18/2024",  #Following Week 16
-#        "12/24/2024",  #Following Week 17
-#        "12/27/2024",  #Following Week 18
-#        "01/01/2025", #Following Week 19
-#        "01/08/2025", #Following Week 20
+        "09/11/2024",  #Following Week 1
+        "09/18/2024",  #Following Week 2
+        "09/25/2024",  #Following Week 3
+        "10/02/2024",  #Following Week 4
+        "10/09/2024",  #Following Week 5
+        "10/16/2024",  #Following Week 6
+        "10/23/2024",  #Following Week 7
+        "10/30/2024",  #Following Week 8
+        "11/06/2024",  #Following Week 9
+        "11/13/2024",  #Following Week 10
+        "11/20/2024",  #Following Week 11
+        "11/27/2024",  #Following Week 12
+        "11/30/2024",  #Following Week 13
+        "12/04/2024",  #Following Week 14
+        "12/11/2024",  #Following Week 15
+        "12/18/2024",  #Following Week 16
+        "12/24/2024",  #Following Week 17
+        "12/27/2024",  #Following Week 18
+        "01/01/2025", #Following Week 19
+        "01/08/2025", #Following Week 20
         
 
 #        "09/13/2023",  #Following Week 1
@@ -3434,7 +3434,7 @@ if __name__ == "__main__":
 #        "12/30/2020",   #Following Week 17
 #        "01/06/2021",  #Following Week 18
         
-        formatted_date
+#        formatted_date
     ]
 
     for date in week_starting_dates:
