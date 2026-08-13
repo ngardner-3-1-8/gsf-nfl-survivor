@@ -43,7 +43,32 @@ export default function App() {
 
   const renderTab = () => {
     switch (activeTab) {
-      case 'optimizer':    return <OptimizerView />
+      case 'optimizer':
+        return (
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-1 border-b border-gray-800 -mb-4 pb-0">
+              {[
+                { id: 'recommended', label: 'Circa Optimizer' },
+                { id: 'my-bets',     label: 'Splash Optimizer' },
+              ].map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setBetsSubTab(t.id)}
+                  className={`text-sm px-4 py-3 border-b-2 transition-colors ${
+                    betsSubTab === t.id
+                      ? 'border-green-500 text-white font-medium'
+                      : 'border-transparent text-gray-500 hover:text-white'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            {betsSubTab === 'recommended' && <OptimizerView />}
+            {betsSubTab === 'my-bets'     && <SplashOptimizerView />}
+          </div>
+        )
+    
       case 'schedule':     return <ScheduleView />
       case 'rankings':     return <RankingsView />
       case 'bets':
