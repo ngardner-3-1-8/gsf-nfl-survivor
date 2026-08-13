@@ -4982,6 +4982,44 @@ def loop_through_simulations(date_str):
             }
             print(f"✅ Model {n_key} ready! Features: {final_features}")
 
+
+        # ============================================================
+        # 🌊 SPLASH MODEL — predicts the PUBLIC (square) pick %
+        # ============================================================
+        # Splash behavior tracks the survivorgrid "Public Pick %" (squarer than
+        # Circa's sharp Pick %). Public Pick % isn't available for FUTURE weeks,
+        # so we train a model to PREDICT it from fundamentals that ARE available
+        # (win%, future value, rankings, week context) — never using Public Pick
+        # % as a feature (it's the target). This parallels the Circa model but
+        # with a different target.
+        splash_model = None
+        splash_features = []
+        try:
+            splash_feat_candidates = [f for f in clean_base
+                                      if f in df_historical.columns]
+            df_splash = df_historical.dropna(subset=[assumed_public_pick_col]).copy()
+            if not df_splash.empty and splash_feat_candidates:
+                Xs = df_splash[splash_feat_candidates].fillna(0)
+                ys = df_splash[assumed_public_pick_col]  # ← target = public/square %
+
+                print("🌊 Running RFE for the Splash (public pick %) model...")
+                s_base = RandomForestRegressor(n_estimators=50, n_jobs=-1, random_state=42)
+                s_sel = RFE(estimator=s_base, n_features_to_select=1, step=1)
+                s_sel.fit(Xs, ys)
+                s_ranks = pd.Series(s_sel.ranking_, index=splash_feat_candidates).sort_values()
+                s_top = s_ranks.head(9).index.tolist()
+                splash_features = list(dict.fromkeys(s_top + mandatory_features))
+                splash_features = [f for f in splash_features if f in Xs.columns]
+
+                splash_model = RandomForestRegressor(
+                    n_estimators=100, random_state=42, n_jobs=-1, min_samples_leaf=5)
+                splash_model.fit(Xs[splash_features], ys)
+                print(f"✅ Splash model ready! Features: {splash_features}")
+            else:
+                print("⚠️ No Public Pick % history — Splash pick% will be blank.")
+        except Exception as _e:
+            print(f"⚠️ Splash model training failed ({_e}); Splash pick% blank.")
+
         # ============================================================
         # End of Training Block (Proceed to your simulation/testing)
         # ============================================================
@@ -5605,6 +5643,41 @@ def loop_through_simulations(date_str):
                 
                 # Map Away Pick % for downstream math
                 nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team), 'Away Pick %'] = pick_percent
+
+            # ── 🌊 Splash (public/square) pick % for this week ──
+            # If REAL public pick % exists for this week (available from the
+            # Monday before game week onward), use it DIRECTLY — no estimation.
+            # Only fall back to the model for future weeks where it's absent.
+            if public_picks_available:
+                print(f"🌊 Week {current_week}: using ACTUAL public pick % for Splash")
+                # The Home/Away Team Public Pick % columns already hold the real
+                # values; copy them straight into the Splash columns.
+                nfl_schedule_df.loc[current_week_mask, 'Home Splash Pick %'] = \
+                    nfl_schedule_df.loc[current_week_mask, 'Home Team Public Pick %']
+                nfl_schedule_df.loc[current_week_mask, 'Away Splash Pick %'] = \
+                    nfl_schedule_df.loc[current_week_mask, 'Away Team Public Pick %']
+            elif splash_model is not None and splash_features:
+                try:
+                    print(f"🌊 Week {current_week}: ESTIMATING Splash public pick % (no actual yet)")
+                    s_predict = pick_predictions_df.copy()
+                    s_missing = list(set(splash_features) - set(s_predict.columns))
+                    if s_missing:
+                        s_predict[s_missing] = 0.0
+                    s_X = s_predict[splash_features].fillna(0)
+                    s_predict['Splash_Pick_Pct'] = splash_model.predict(s_X)
+                    # Normalize to sum to 1.0 across the week (same as Circa)
+                    s_sum = s_predict['Splash_Pick_Pct'].sum()
+                    if s_sum > 0:
+                        s_predict['Splash_Pick_Pct'] /= s_sum
+                    # Map back to Home/Away by team
+                    s_map = dict(zip(s_predict['Team'], s_predict['Splash_Pick_Pct'])) \
+                        if 'Team' in s_predict.columns else {}
+                    for team in all_teams:
+                        sp = s_map.get(team, np.nan)
+                        nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Home Team'] == team), 'Home Splash Pick %'] = sp
+                        nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team), 'Away Splash Pick %'] = sp
+                except Exception as _se:
+                    print(f"⚠️ Splash prediction failed for week {current_week}: {_se}")
     
             # 5. Calculate Survivors and Eliminations for this week
             nfl_schedule_df.loc[current_week_mask, 'Expected Home Team Survivors'] = \
@@ -6200,11 +6273,11 @@ if __name__ == "__main__":
 #        "11/27/2024", #Leading up to Week 13
 #        "11/30/2024", #Leading up to Week 14
 #        "12/04/2024", #Leading up to Week 15
-        "12/11/2024", #Leading up to Week 16
-        "12/18/2024", #Leading up to Week 17
-        "12/24/2024", #Leading up to Week 18
-        "12/27/2024", #Leading up to Week 19
-        "01/01/2025", #Leading up to Week 20
+#        "12/11/2024", #Leading up to Week 16
+#        "12/18/2024", #Leading up to Week 17
+#        "12/24/2024", #Leading up to Week 18
+#        "12/27/2024", #Leading up to Week 19
+#        "01/01/2025", #Leading up to Week 20
         
 #        "09/06/2023", #Leading up to Week 1
 #        "09/13/2023", #Leading up to Week 2
@@ -6288,7 +6361,7 @@ if __name__ == "__main__":
 #        "12/23/2020", #Leading up to Week 17
 #        "12/30/2020", #Leading up to Week 18
         
-#        formatted_date
+        formatted_date
     ]
 
     for date in week_starting_dates:
