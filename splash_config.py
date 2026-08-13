@@ -30,8 +30,10 @@ double-pick week.
 SPLASH_CONTESTS = {
     "big_splash": {
         "display_name": "The Big Splash",
-        "entries": 21000,          # ← update each week
-        "survivors": 21000,        # ← update each week
+        "entries": 33000,          # ← update each week
+        "survivors": 33000,        # ← update each week
+        "entry-fee": 100,
+        "total_prize": 3000000,
         "double_pick_weeks": [3, 6, 9, 12, 13, 14, 15, 16],   # ← e.g. [10, 14, 17] as they're announced
         "weekly_pick_data": {
             #1: {"ARI": 1.0, "ATL": 1.0, "BAL": 1.0, "BUF": 1.0, "CAR": 1.0, "CHI": 1.0, "CIN": 1.0, "CLE": 1.0, "DAL": 1.0, "DEN": 1.0, "DET": 1.0, "GB": 1.0, "HOU": 1.0, "IND": 1.0, "JAX": 1.0, "KC": 1.0, 
@@ -52,8 +54,10 @@ SPLASH_CONTESTS = {
     },
     "survivor_world_championship": {
         "display_name": "The Survivor World Championship",
-        "entries": 33000,           # ← update each week
-        "survivors": 33000,         # ← update each week
+        "entries": 21000,           # ← update each week
+        "survivors": 21000,         # ← update each week
+        "entry-fee": 1000,
+        "total_prize": 21000000,
         "double_pick_weeks": [3, 6, 9, 12, 13, 14, 15, 16],   # ← e.g. [6, 12] as they're announced
         "weekly_pick_data": {
             #1: {"ARI": 1.0, "ATL": 1.0, "BAL": 1.0, "BUF": 1.0, "CAR": 1.0, "CHI": 1.0, "CIN": 1.0, "CLE": 1.0, "DAL": 1.0, "DEN": 1.0, "DET": 1.0, "GB": 1.0, "HOU": 1.0, "IND": 1.0, "JAX": 1.0, "KC": 1.0, 
