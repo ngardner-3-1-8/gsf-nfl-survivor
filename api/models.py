@@ -25,24 +25,12 @@ class SchedulingConstraints(BaseModel):
     min_away_spread: float = 3.0           # only active if avoid_away_close=True
 
     # Bayesian / ranking consistency constraint
-    # ── Massey-Peabody Bayesian constraints ──
-    mp_bayesian_all_metrics: bool = False          # Same Winner Across All Metrics
-    mp_bayesian_preseason_and_current: bool = False # Same Current and Preseason Adjusted Winner
-    mp_bayesian_current_and_adjusted: bool = False  # Same Current and Adjusted Current Winner
-    
-    # ── Generic Sports Fan Bayesian constraints ──
-    gsf_bayesian_adjusted: bool = False            # Same Adjusted Winner
-    gsf_bayesian_preseason_and_current: bool = False # Current and Preseason Adjusted Winner
-    gsf_bayesian_current_and_adjusted: bool = False  # Same Current and Adjusted Current Winner
-    
-    # ── Sportsbook / Sim / Consensus cross-model constraints ──
-    sportsbook_bayesian_preseason_and_current: bool = False
-    sim_bayesian_preseason_and_current: bool = False
-    consensus_bayesian_preseason_and_current: bool = False
-    
-    # Require ALL selected Bayesian constraints to be satisfied (True)
-    # vs. ANY one of them (False)
-    bayesian_require_all: bool = False
+    bayesian_constraint: Literal[
+        "none",
+        "preseason_and_current_and_travel",
+        "current_and_travel",
+        "preseason_and_current"
+    ] = "none"
 
 
 # ─────────────────────────────────────────────
@@ -55,16 +43,24 @@ class OptimizeRequest(BaseModel):
         "consensus", "sportsbook", "mp", "gsf", "sim", "win_pct"
     ] = "consensus"
 
-    pick_source: Literal["model", "actual"] = "model"
-
-    year: Optional[int] = None
-
     # How many top solutions to return per method (EV-based + ranking-based)
     number_solutions: Literal[1, 5, 10, 25, 50, 100] = 10
 
     # --- Week range ---
     start_week: int = Field(default=1, ge=1, le=20)
     end_week: int = Field(default=20, ge=1, le=20)
+
+    # --- Contest type ---
+    # "circa" (default, Circa Survivor with holiday weeks) or a Splash contest.
+    # Splash uses raw NFL weeks and may have double-pick weeks.
+    contest: str = "circa"
+
+    pick_source: Literal["model", "actual"] = "model"
+
+    # --- Double-pick weeks (Splash only) ---
+    # NFL week numbers that require picking TWO teams (both must win to survive,
+    # both are burned for the season). Empty = every week is a single pick.
+    double_pick_weeks: List[int] = []
 
     # --- Contest pool size ---
     # -1 = auto-calculate from historical pick data
@@ -86,11 +82,8 @@ class OptimizeRequest(BaseModel):
     must_be_favored: bool = False
     favored_qualifier: Literal[
         "sportsbook",
-        "mp",
-        "gsf",
-        "sim",
-        "consensus",
-        "all"       # must be favored by every model
+        "internal",
+        "both"
     ] = "sportsbook"
 
     # --- Team availability this week ---
@@ -118,7 +111,6 @@ class OptimizeRequest(BaseModel):
 # ─────────────────────────────────────────────
 class PickResult(BaseModel):
     week: int
-    circa_week: Optional[str] = None
     team: str
     ev: float
     win_pct: float
@@ -126,19 +118,6 @@ class PickResult(BaseModel):
     home_or_away: str
     opponent: str
     spread: Optional[float] = None
-    temperature: Optional[float] = None
-    precipitation: Optional[float] = None
-    wind: Optional[float] = None
-    dome: bool = False
-    starting_qb: Optional[str] = None
-    is_thanksgiving: bool = False
-    is_christmas: bool = False
-    day_of_week: Optional[str] = None      # "Thursday Night", "Monday Night", "Sunday", etc.
-    days_of_rest: Optional[int] = None     # this team's rest days
-    rest_advantage: Optional[float] = None # positive = this team has more rest
-    cumulative_rest: Optional[float] = None
-    stadium: Optional[str] = None
-    is_international: bool = False
 
 class OptimizeResponse(BaseModel):
     # EV-optimized solutions
