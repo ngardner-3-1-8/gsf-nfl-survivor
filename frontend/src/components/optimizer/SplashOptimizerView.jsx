@@ -94,7 +94,11 @@ export default function SplashOptimizerView() {
           </div>
           <div>
             <p className="text-gray-500 text-xs">Average Entry Value</p>
-            <p className="text-white font-mono">{contest.total_prize && contest.entries? `$${Math.round(contest.total_prize / contest.surviving_entries).toLocaleString()}`: '—'}</p>
+            <p className="text-white font-mono">
+              {contest.total_prize && contest.surviving_entries
+                ? `$${Math.round(contest.total_prize / contest.surviving_entries).toLocaleString()}`
+                : '—'}
+            </p>
           </div>
           <div className="ml-auto max-w-xs">
             <p className="text-gray-600 text-xs">
