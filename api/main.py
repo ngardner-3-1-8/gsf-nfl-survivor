@@ -13,7 +13,6 @@ from fastapi.responses import JSONResponse
 import glob
 import re
 
-
 def sanitize(obj):
     """Recursively replace nan/inf with None for JSON serialization."""
     if isinstance(obj, float):
@@ -296,6 +295,31 @@ def optimize(request: OptimizeRequest):
             sim_df = pd.read_csv(max(files, key=wk))
 
         sim_df = _apply_pick_source(sim_df, target_year, request.pick_source)
+
+        # ── Splash contest: NFL weeks (strip Circa holiday-week rows) ──
+        if request.contest and request.contest != "circa":
+            try:
+                import splash_config as _splash
+                cfg = _splash.get_contest(request.contest)
+            except Exception:
+                cfg = None
+            if cfg is not None:
+                # Drop Circa holiday-labeled rows so weeks are raw NFL weeks.
+                circa_col = "Circa Week" if "Circa Week" in sim_df.columns else None
+                if circa_col:
+                    holiday_mask = sim_df[circa_col].astype(str).str.contains(
+                        "Christmas|Thanksgiving", case=False, na=False)
+                    sim_df = sim_df[~holiday_mask].reset_index(drop=True)
+                # Inject the contest's double-pick weeks
+                if not request.double_pick_weeks:
+                    request.double_pick_weeks = _splash.get_double_pick_weeks(request.contest)
+                # Merge the contest's manual pick% overrides (don't clobber
+                # any the user already sent)
+                overrides = _splash.get_weekly_pick_overrides(request.contest)
+                merged = dict(overrides)
+                merged.update(request.custom_pick_percentages or {})
+                request.custom_pick_percentages = merged
+
         result = run_optimizer(sim_df, request)
         return result
     except FileNotFoundError as e:
@@ -1691,6 +1715,31 @@ def get_rankings_weeks_available(year: int = Query(...)):
 # ["model","actual"] = "model") and call:
 #     sim_df = _apply_pick_source(sim_df, target_year, request.pick_source)
 # right after loading sim_df, before running the optimizer.
+
+
+@app.get("/api/splash/contests")
+def get_splash_contests():
+    """
+    Returns the Splash contests and their current manual config (entries,
+    survivors, double-pick weeks) for the Optimizer's Splash sub-tab.
+    """
+    try:
+        import splash_config as _splash
+        out = []
+        for key, name in _splash.list_contests():
+            c = _splash.get_contest(key)
+            out.append({
+                "key": key,
+                "display_name": name,
+                "entries": c.get("entries"),
+                "survivors": c.get("survivors"),
+                "double_pick_weeks": list(c.get("double_pick_weeks", [])),
+                "weeks_with_pick_data": sorted(
+                    int(w) for w in c.get("weekly_pick_data", {}).keys()),
+            })
+        return {"contests": out}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/debug-paths")
