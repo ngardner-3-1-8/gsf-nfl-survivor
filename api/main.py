@@ -1761,11 +1761,16 @@ def get_splash_contests():
             out.append({
                 "key": key,
                 "display_name": name,
-                "entries": c.get("entries"),
-                "survivors": c.get("survivors"),
+                # New config field names (with fallbacks to old names)
+                "total_entries": c.get("total_entries", c.get("entries")),
+                "surviving_entries": c.get("surviving_entries", c.get("survivors")),
+                "entry_fee": c.get("entry_fee"),
+                "total_prize": c.get("total_prize"),
                 "double_pick_weeks": list(c.get("double_pick_weeks", [])),
                 "weeks_with_pick_data": sorted(
                     int(w) for w in c.get("weekly_pick_data", {}).keys()),
+                "weeks_with_availability": sorted(
+                    int(w) for w in c.get("weekly_availability", {}).keys()),
             })
         return {"contests": out}
     except Exception as e:
