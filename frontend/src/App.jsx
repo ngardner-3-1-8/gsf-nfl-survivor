@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { fetchLastUpdated } from './api/client'
 import OptimizerView from './components/optimizer/OptimizerView'
+import SplashOptimizerView from './components/optimizer/SplashOptimizerView'
 import ScheduleView from './components/schedule/ScheduleView'
 import RankingsView from './components/rankings/RankingsView'
 import RecommendedBetsView from './components/bets/RecommendedBetsView'
