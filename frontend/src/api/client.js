@@ -182,3 +182,8 @@ export async function fetchRankingsWeeks(year) {
   return res.json()
 }
 
+export async function fetchSplashContests() {
+  const res = await fetch(`${API_URL}/api/splash/contests`)
+  if (!res.ok) throw new Error('Failed to fetch Splash contests')
+  return res.json()
+}
