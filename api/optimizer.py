@@ -12,30 +12,21 @@ from typing import List, Tuple
 
 from api.models import OptimizeRequest, OptimizeResponse, PickResult
 
-def safe_float(val, default=None):
-    """Convert to float, returning default if None, NaN or inf."""
-    try:
-        if val is None:
-            return default
-        f = float(val)
-        if f != f:  # NaN check
-            return default
-        if f == float('inf') or f == float('-inf'):
-            return default
-        return f
-    except (TypeError, ValueError):
-        return default
-
 # ─────────────────────────────────────────────────────────────
 # Column mapping — current CSV → internal solver names
 # ─────────────────────────────────────────────────────────────
+# These are the columns we actually need from the sim CSV.
+# Keys = current CSV column names, Values = internal names used in this file.
 
 AWAY_COL_MAP = {
     "Away Team":                                        "Team",
     "Home Team":                                        "Opponent",
-    "Week":                                             "Week_Num",
-    "Actual Stadium":                                   "Actual Stadium",
-    "International Game":                               "International Game",
+    "Week":                                             "Week_Num",       # Circa contest week
+    "Date_x":                                          "Date",
+    "Time":                                            "Time",
+    "Location":                                        "Location",        # not in CSV — use Actual Stadium
+    "Actual Stadium":                                  "Location",
+    "Thursday Night Game":                             "Thursday Night Game",
     "Divisional Matchup?":                             "Divisional Matchup?",
     "Away Team Short Rest":                            "Away Team Short Rest",
     "Away Team 3 games in 10 days":                    "3 Games in 10 Days",
@@ -57,10 +48,10 @@ AWAY_COL_MAP = {
     "Away Team Sportsbook Fair Odds":                  "Fair Odds Based on Sportsbook Odds",
     "Away Team Massey-Peabody Fair Odds":              "Fair Odds Based on MP",
     "Away Team Generic Sports Fan Fair Odds":          "Fair Odds Based on GSF",
-    "Consensus Away Win Pct":                          "Fair Odds Consensus",
+    "Away Team Fair Odds":                             "Fair Odds Consensus",
     "Away Team Sportsbook Spread":                     "Spread Based on Sportsbook Odds",
     "Massey-Peabody Away Team Spread":                 "Spread Based on MP",
-    "Favorite":                                        "Favorite",
+    "Sportsbook Favorite":                             "Favorite",
     "Away Team Massey-Peabody Preseason Rank":         "Preseason Rank",
     "Away Team Adjusted MP + GSF Average Preseason Rank": "Adjusted Preseason Rank",
     "Home Team Adjusted MP + GSF Average Preseason Rank": "Opp Adjusted Preseason Rank",
@@ -80,28 +71,19 @@ AWAY_COL_MAP = {
     "Away Team Previous Location":                     "Previous Game Location",
     "Away Team Next Opponent":                         "Next Opponent",
     "Away Team Next Location":                         "Next Game Location",
-    "Date_x":                                          "Date",
-    "Time":                                            "Game_Time",
-    "Dome":                                            "Dome",
-    "Away_Starting_QB":                                "Starting_QB",
-    "Thursday Night Game":                             "Thursday Night Game",
-    "Away Team Weekly Rest":                           "Days_of_Rest",
-    "Weekly Away Rest Advantage":                      "Rest_Advantage",
-    "Away Cumulative Rest Advantage":                  "Cumulative_Rest",
-    "Circa Week":                                      "Circa_Week",
-    "Temperature":                                     "Temperature",
-    "Precipitation":                                   "Precipitation",
-    "Wind":                                            "Wind",
+    # EV columns — model-specific, added dynamically
 }
 
 HOME_COL_MAP = {
     "Home Team":                                        "Team",
     "Away Team":                                        "Opponent",
     "Week":                                             "Week_Num",
-    "Actual Stadium":                                   "Actual Stadium",
-    "International Game":                               "International Game",
+    "Date_x":                                          "Date",
+    "Time":                                            "Time",
+    "Actual Stadium":                                  "Location",
+    "Thursday Night Game":                             "Thursday Night Game",
     "Divisional Matchup?":                             "Divisional Matchup?",
-    "Away Team Short Rest":                            "Away Team Short Rest",
+    "Away Team Short Rest":                            "Away Team Short Rest",   # same col — short rest flag is always about away team
     "Home Team 3 games in 10 days":                    "3 Games in 10 Days",
     "Home Team 4 games in 17 days":                    "4 Games in 17 Days",
     "Back to Back Away Games":                         "Back to Back Away Games",
@@ -120,10 +102,10 @@ HOME_COL_MAP = {
     "Home Team Sportsbook Fair Odds":                  "Fair Odds Based on Sportsbook Odds",
     "Home Team Massey-Peabody Fair Odds":              "Fair Odds Based on MP",
     "Home Team Generic Sports Fan Fair Odds":          "Fair Odds Based on GSF",
-    "Consensus Home Win Pct":                          "Fair Odds Consensus",
+    "Home Team Fair Odds":                             "Fair Odds Consensus",
     "Home Team Sportsbook Spread":                     "Spread Based on Sportsbook Odds",
     "Massey-Peabody Home Team Spread":                 "Spread Based on MP",
-    "Favorite":                                        "Favorite",
+    "Sportsbook Favorite":                             "Favorite",
     "Home Team Massey-Peabody Preseason Rank":         "Preseason Rank",
     "Home Team Adjusted MP + GSF Average Preseason Rank": "Adjusted Preseason Rank",
     "Away Team Adjusted MP + GSF Average Preseason Rank": "Opp Adjusted Preseason Rank",
@@ -143,20 +125,9 @@ HOME_COL_MAP = {
     "Home Team Previous Location":                     "Previous Game Location",
     "Home Team Next Opponent":                         "Next Opponent",
     "Home Team Next Location":                         "Next Game Location",
-    "Date_x":                                          "Date",
-    "Time":                                            "Game_Time",
-    "Dome":                                            "Dome",
-    "Home_Starting_QB":                                "Starting_QB",
-    "Thursday Night Game":                             "Thursday Night Game",
-    "Home Team Weekly Rest":                           "Days_of_Rest",
-    "Weekly Home Rest Advantage":                      "Rest_Advantage",
-    "Home Cumulative Rest Advantage":                  "Cumulative_Rest",
-    "Circa Week":                                      "Circa_Week",
-    "Temperature":                                     "Temperature",
-    "Precipitation":                                   "Precipitation",
-    "Wind":                                            "Wind",
 }
 
+# Maps request.objective → EV column suffix in the CSV
 OBJECTIVE_EV_COLS = {
     "consensus":  ("consensus_Away_EV",  "consensus_Home_EV"),
     "sportsbook": ("sportsbook_Away_EV", "sportsbook_Home_EV"),
@@ -166,13 +137,14 @@ OBJECTIVE_EV_COLS = {
     "win_pct":    ("Consensus Away Win Pct", "Consensus Home Win Pct"),
 }
 
+# Maps request.objective → win probability column for PickResult output
 OBJECTIVE_WIN_PCT_COLS = {
-    "consensus":  ("Consensus Away Win Pct",             "Consensus Home Win Pct"),
-    "sportsbook": ("Away Team Sportsbook Fair Odds",     "Home Team Sportsbook Fair Odds"),
+    "consensus":  ("Consensus Away Win Pct",    "Consensus Home Win Pct"),
+    "sportsbook": ("Away Team Sportsbook Fair Odds", "Home Team Sportsbook Fair Odds"),
     "mp":         ("Away Team Massey-Peabody Fair Odds", "Home Team Massey-Peabody Fair Odds"),
     "gsf":        ("Away Team Generic Sports Fan Fair Odds", "Home Team Generic Sports Fan Fair Odds"),
-    "sim":        ("Sim_Away_Win_Pct",                   "Sim_Home_Win_Pct"),
-    "win_pct":    ("Consensus Away Win Pct",             "Consensus Home Win Pct"),
+    "sim":        ("Sim_Away_Win_Pct",          "Sim_Home_Win_Pct"),
+    "win_pct":    ("Consensus Away Win Pct",    "Consensus Home Win Pct"),
 }
 
 
@@ -183,14 +155,12 @@ OBJECTIVE_WIN_PCT_COLS = {
 def prepare_df(sim_df: pd.DataFrame, request: OptimizeRequest) -> pd.DataFrame:
     """
     Converts the game-centric sim CSV into a team-centric DataFrame
-    (one row per team per game), then applies week range and
+    (one row per team per game), then applies week range and 
     prohibited team filters.
-
-    IMPORTANT: always returns a DataFrame with a clean 0-based integer index
-    so that positional indexing (df.iloc[i]) and dict keys (picks[i]) align.
     """
-    df = sim_df.copy().reset_index(drop=True)
+    df = sim_df.copy()
 
+    # Resolve the EV column for this objective
     away_ev_col, home_ev_col = OBJECTIVE_EV_COLS.get(
         request.objective, ("consensus_Away_EV", "consensus_Home_EV")
     )
@@ -202,46 +172,38 @@ def prepare_df(sim_df: pd.DataFrame, request: OptimizeRequest) -> pd.DataFrame:
     away_cols = {k: v for k, v in AWAY_COL_MAP.items() if k in df.columns}
     away_df = df[list(away_cols.keys())].rename(columns=away_cols).copy()
     away_df["Team Is Away"] = True
-    away_df["EV"] = df[away_ev_col].values if away_ev_col in df.columns else 0.0
-    away_df["Win Pct"] = df[away_win_col].values if away_win_col in df.columns else 0.0
-    away_df["Sportsbook Spread"] = df["Away Team Sportsbook Spread"].values if "Away Team Sportsbook Spread" in df.columns else 0.0
+    away_df["EV"] = df[away_ev_col] if away_ev_col in df.columns else 0.0
+    away_df["Win Pct"] = df[away_win_col] if away_win_col in df.columns else 0.0
+    away_df["Sportsbook Spread"] = df["Away Team Sportsbook Spread"] if "Away Team Sportsbook Spread" in df.columns else 0.0
     away_df["Game_Index"] = df.index
-    # Away display columns — bypass duplicate key limitation in AWAY_COL_MAP
-    away_df["Days_of_Rest"] = df["Away Team Weekly Rest"].values if "Away Team Weekly Rest" in df.columns else None
-    away_df["Rest_Advantage"] = df["Weekly Away Rest Advantage"].values if "Weekly Away Rest Advantage" in df.columns else None
-    away_df["Cumulative_Rest"] = df["Away Cumulative Rest Advantage"].values if "Away Cumulative Rest Advantage" in df.columns else None
 
     # ── Home team rows ──
     home_cols = {k: v for k, v in HOME_COL_MAP.items() if k in df.columns}
     home_df = df[list(home_cols.keys())].rename(columns=home_cols).copy()
     home_df["Team Is Away"] = False
-    home_df["EV"] = df[home_ev_col].values if home_ev_col in df.columns else 0.0
-    home_df["Win Pct"] = df[home_win_col].values if home_win_col in df.columns else 0.0
-    home_df["Sportsbook Spread"] = df["Home Team Sportsbook Spread"].values if "Home Team Sportsbook Spread" in df.columns else 0.0
+    home_df["EV"] = df[home_ev_col] if home_ev_col in df.columns else 0.0
+    home_df["Win Pct"] = df[home_win_col] if home_win_col in df.columns else 0.0
+    home_df["Sportsbook Spread"] = df["Home Team Sportsbook Spread"] if "Home Team Sportsbook Spread" in df.columns else 0.0
     home_df["Game_Index"] = df.index
+    # Home teams are never on short rest (the flag is always about the away team)
     home_df["Away Team Short Rest"] = "No"
     home_df["Back to Back Away Games"] = False
-    # Home display columns
-    home_df["Days_of_Rest"] = df["Home Team Weekly Rest"].values if "Home Team Weekly Rest" in df.columns else None
-    home_df["Rest_Advantage"] = df["Weekly Home Rest Advantage"].values if "Weekly Home Rest Advantage" in df.columns else None
-    home_df["Cumulative_Rest"] = df["Home Cumulative Rest Advantage"].values if "Home Cumulative Rest Advantage" in df.columns else None
 
-    # Concatenate and immediately reset to a clean 0-based index
     combined = pd.concat([away_df, home_df], ignore_index=True)
 
-    # Filter week range — reset index after every filter
+    # ── Filter week range ──
     combined = combined[
         (combined["Week_Num"] >= request.start_week) &
         (combined["Week_Num"] <= request.end_week)
     ].reset_index(drop=True)
 
-    # Filter prohibited teams — reset index after every filter
+    # ── Filter prohibited teams ──
     if request.prohibited_teams:
         combined = combined[
             ~combined["Team"].isin(request.prohibited_teams)
         ].reset_index(drop=True)
 
-    # Custom pick percentage overrides
+    # ── Apply custom EV overrides ──
     for week_key, team_overrides in request.custom_pick_percentages.items():
         try:
             week_num = int(week_key.replace("week_", ""))
@@ -252,18 +214,18 @@ def prepare_df(sim_df: pd.DataFrame, request: OptimizeRequest) -> pd.DataFrame:
                 mask = (combined["Week_Num"] == week_num) & (combined["Team"] == team)
                 combined.loc[mask, "Expected Pick Percent"] = pct
 
-    # Custom ranking overrides
+    # ── Apply custom rankings ──
     for team, ranking in request.custom_rankings.items():
         mask = combined["Team"] == team
         combined.loc[mask, "Adjusted Current Rank"] = ranking
 
-    # Final safety reset — guarantees iloc[i] == picks key i
-    return combined.reset_index(drop=True)
+    return combined
 
 
 # ─────────────────────────────────────────────────────────────
 # Step 2 — Apply constraints to the solver
 # ─────────────────────────────────────────────────────────────
+
 def apply_constraints(
     solver: pywraplp.Solver,
     picks: dict,
@@ -272,234 +234,236 @@ def apply_constraints(
 ) -> None:
     """
     Adds all scheduling and situational constraints to the solver.
-    df MUST have a clean 0-based index (guaranteed by prepare_df).
+    Each constraint sets picks[i] == 0 for rows that violate it.
     """
     s = request.scheduling
+    fq = request.favored_qualifier  # "sportsbook", "internal", or "both"
 
-    # ── Required picks FIRST — force specific team-week combinations ──
-    # Must be done before the per-row loop so required_positions is defined
-    required_positions = set()
-    for team, req_week in request.required_picks.items():
-        if req_week > 0:
-            positions = [
-                i for i in range(len(df))
-                if df.iloc[i]["Team"] == team and df.iloc[i]["Week_Num"] == req_week
-            ]
-            if positions:
-                solver.Add(picks[positions[0]] == 1)
-                required_positions.add(positions[0])
-                # Force all other teams in this week to 0
-                for j in range(len(df)):
-                    if j != positions[0] and df.iloc[j]["Week_Num"] == req_week:
-                        solver.Add(picks[j] == 0)
-
-    # ── Built once outside the row loop ──
-    BAYESIAN_CHECKS = [
-        (s.mp_bayesian_all_metrics,
-            "Massey-Peabody Bayesian Same Winner Across All Metrics"),
-        (s.mp_bayesian_preseason_and_current,
-            "Massey-Peabody Bayesian Same Current and Preseason Adjusted Winner"),
-        (s.mp_bayesian_current_and_adjusted,
-            "Massey-Peabody Bayesian Same Current and Adjusted Current Winner"),
-        (s.gsf_bayesian_adjusted,
-            "Generic Sports Fan Bayesian Same Adjusted Winner Across All Metrics"),
-        (s.gsf_bayesian_preseason_and_current,
-            "Generic Sports Fan Bayesian Current and Preseason Adjusted Winner"),
-        (s.gsf_bayesian_current_and_adjusted,
-            "Generic Sports Fan Bayesian Same Current and Adjusted Current Winner"),
-        (s.sportsbook_bayesian_preseason_and_current,
-            "Sportsbook Bayesian Same Current and Preseason Adjusted Winner"),
-        (s.sim_bayesian_preseason_and_current,
-            "Sim Bayesian Same Current and Preseason Adjusted Winner"),
-        (s.consensus_bayesian_preseason_and_current,
-            "Consensus Bayesian Same Current and Preseason Adjusted Winner"),
-    ]
-    active_bayesian_checks = [(enabled, col) for enabled, col in BAYESIAN_CHECKS if enabled]
-
-    CLOSE_MATCHUP_COLS = {
-        "sportsbook": "Fair Odds Based on Sportsbook Odds",
-        "mp":         "Fair Odds Based on MP",
-        "gsf":        "Fair Odds Based on GSF",
-        "sim":        "Win Pct",
-        "consensus":  "Fair Odds Consensus",
-        "win_pct":    "Fair Odds Consensus",
-    }
-
-    FAIR_ODDS_COLS = {
-        "sportsbook": "Fair Odds Based on Sportsbook Odds",
-        "mp":         "Fair Odds Based on MP",
-        "gsf":        "Fair Odds Based on GSF",
-        "sim":        "Win Pct",
-        "consensus":  "Fair Odds Consensus",
-        "win_pct":    "Fair Odds Consensus",
-    }
-
-    def is_favored_by(model: str, team: str, row, is_away: bool) -> bool:
-        col = FAIR_ODDS_COLS.get(model)
-        if not col:
-            return True
-        if col not in df.columns:
-            if model == "consensus":
-                col = "Win Pct"
-            else:
-                return True
-        if col not in df.columns:
-            return True
-        val = row.get(col, None)
-        if val is None or (isinstance(val, float) and np.isnan(val)):
-            return True
-        return float(val) > 0.5
-
-    fq = request.favored_qualifier
-
-    # ── Per-row constraints — skip required picks ──
     for i in range(len(df)):
-        # Required picks bypass all constraints
-        if i in required_positions:
-            continue
-
         row = df.iloc[i]
         is_away = bool(row.get("Team Is Away", False))
+        spread_sb = float(row.get("Sportsbook Spread", 0) or 0)
+        spread_int = float(row.get("Adjusted Current Difference", 0) or 0)
+        adj_winner = str(row.get("Adjusted Current Winner", ""))
+        favorite = str(row.get("Favorite", ""))
         team = str(row.get("Team", ""))
         week_num = int(row.get("Week_Num", 0))
 
-        # Must be favored
+        # ── Must be favored ──
+        # ── Must be favored ──
         if request.must_be_favored:
+            fq = request.favored_qualifier
+        
+            # Maps each qualifier → the CSV column that identifies the favorite
+            # For spread-based models, the team is favored if their spread is negative
+            # For fair odds models, the team is favored if their odds > 0.5
+            FAVORED_COL_MAP = {
+                "sportsbook": ("Favorite",              None),
+                "mp":         ("Massey-Peabody Current Winner",         None),
+                "gsf":        ("Generic Sports Fan Current Winner",     None),
+                "sim":        ("Sim_Home_Win_Pct",       "Sim_Away_Win_Pct"),   # compare by value
+                "consensus":  ("Consensus Home Win Pct", "Consensus Away Win Pct"),
+            }
+        
+            def is_favored_by(model: str) -> bool:
+                if model == "sportsbook":
+                    return team == str(row.get("Favorite", ""))
+                elif model == "mp":
+                    col = "Massey-Peabody Current Winner"
+                    if col not in df.columns:
+                        return True
+                    return team == str(row.get(col, ""))
+                elif model == "gsf":
+                    col = "Generic Sports Fan Current Winner"
+                    if col not in df.columns:
+                        return True
+                    return team == str(row.get(col, ""))
+                elif model == "sim":
+                    col = "Sim Favorite"   # col 292 — now exists directly
+                    if col not in df.columns:
+                        # fall back to win pct comparison
+                        pct_col = "Sim_Away_Win_Pct" if is_away else "Sim_Home_Win_Pct"
+                        return float(row.get(pct_col, 0.5) or 0.5) > 0.5
+                    return team == str(row.get(col, ""))
+                elif model == "consensus":
+                    col = "Consensus Favorite"   # col 293 — now exists directly
+                    if col not in df.columns:
+                        pct_col = "Consensus Away Win Pct" if is_away else "Consensus Home Win Pct"
+                        return float(row.get(pct_col, 0.5) or 0.5) > 0.5
+                    return team == str(row.get(col, ""))
+                return True
+        
             if fq == "all":
+                # Team must be favored by every single model
                 all_models = ["sportsbook", "mp", "gsf", "sim", "consensus"]
-                if not all(is_favored_by(m, team, row, is_away) for m in all_models):
+                if not all(is_favored_by(m) for m in all_models):
                     solver.Add(picks[i] == 0)
             else:
-                if not is_favored_by(fq, team, row, is_away):
+                # Team must be favored by the selected model
+                if not is_favored_by(fq):
                     solver.Add(picks[i] == 0)
 
-        # Away teams in close matchups
+        # ── Away teams in close matchups ──
         if s.avoid_away_close and is_away:
-            col = CLOSE_MATCHUP_COLS.get(request.objective, "Fair Odds Consensus")
-            if col in df.columns:
-                val = row.get(col, None)
-                if val is not None and not (isinstance(val, float) and np.isnan(val)):
-                    if float(val) < 0.65:
-                        solver.Add(picks[i] == 0)
+            if fq == "internal":
+                if spread_int <= s.min_away_spread:
+                    solver.Add(picks[i] == 0)
+            else:
+                # Sportsbook spread for away team is negative when favored
+                # e.g. -3.5 means favored by 3.5. Avoid if not favored by enough
+                if spread_sb > -s.min_away_spread:
+                    solver.Add(picks[i] == 0)
 
-        # Close divisional matchups
+        # ── Close divisional matchups ──
         if s.avoid_close_divisional:
             is_div = row.get("Divisional Matchup?", 0)
             if is_div == 1 or is_div == "Divisional" or is_div is True:
-                col = CLOSE_MATCHUP_COLS.get(request.objective, "Fair Odds Consensus")
-                if col in df.columns:
-                    val = row.get(col, None)
-                    if val is not None and not (isinstance(val, float) and np.isnan(val)):
-                        if float(val) < 0.65:
-                            solver.Add(picks[i] == 0)
+                if fq == "internal":
+                    if spread_int <= s.min_div_spread:
+                        solver.Add(picks[i] == 0)
+                else:
+                    if spread_sb > -s.min_div_spread:
+                        solver.Add(picks[i] == 0)
 
-        # Away divisional matchups
+        # ── Away divisional matchups ──
         if s.avoid_away_divisional and is_away:
             is_div = row.get("Divisional Matchup?", 0)
             if is_div == 1 or is_div == "Divisional" or is_div is True:
                 solver.Add(picks[i] == 0)
 
-        # Away short rest
+        # ── Away team short rest ──
         if s.avoid_away_short_rest:
-            val = str(row.get("Away Team Short Rest", "No")).strip().lower()
-            if val in ("yes", "true", "1"):
+            if str(row.get("Away Team Short Rest", "No")).strip() == "Yes":
                 solver.Add(picks[i] == 0)
 
-        # 3 in 10
+        # ── 3 games in 10 days ──
         if s.avoid_3_in_10:
-            val = str(row.get("3 Games in 10 Days", "No")).strip().lower()
-            if val in ("yes", "true", "1"):
+            if str(row.get("3 Games in 10 Days", "No")).strip() == "Yes":
                 solver.Add(picks[i] == 0)
 
-        # 4 in 17
+        # ── 4 games in 17 days ──
         if s.avoid_4_in_17:
-            val = str(row.get("4 Games in 17 Days", "No")).strip().lower()
-            if val in ("yes", "true", "1"):
+            if str(row.get("4 Games in 17 Days", "No")).strip() == "Yes":
                 solver.Add(picks[i] == 0)
 
-        # International
+        # ── International games ──
         if s.avoid_international:
-            if bool(row.get("International Game", False)):
+            location = str(row.get("Location", "")).lower()
+            if "london" in location or "munich" in location or "madrid" in location:
                 solver.Add(picks[i] == 0)
 
-        # TNF all teams
+        # ── Thursday Night Football — all teams ──
         if s.avoid_thursday_all:
-            val = str(row.get("Thursday Night Game", "False")).strip().lower()
-            if val in ("yes", "true", "1"):
+            if str(row.get("Thursday Night Game", "False")).strip() == "True":
                 solver.Add(picks[i] == 0)
 
-        # TNF away only
+        # ── Thursday Night Football — away teams only ──
         if s.avoid_thursday_away and is_away:
-            val = str(row.get("Thursday Night Game", "False")).strip().lower()
-            if val in ("yes", "true", "1"):
+            if str(row.get("Thursday Night Game", "False")).strip() == "True":
                 solver.Add(picks[i] == 0)
 
-        # Back to back away
+        # ── Back to back away games ──
         if s.avoid_back_to_back_away and is_away:
-            val = str(row.get("Back to Back Away Games", "False")).strip().lower()
-            if val in ("yes", "true", "1"):
+            if str(row.get("Back to Back Away Games", "False")).strip() == "True":
                 solver.Add(picks[i] == 0)
 
-        # Weekly rest disadvantage
+        # ── Weekly rest disadvantage ──
         if s.avoid_weekly_rest_disadvantage:
-            rest_adv = row.get("Rest_Advantage", None)
-            if rest_adv is not None and not (isinstance(rest_adv, float) and np.isnan(rest_adv)):
-                if float(rest_adv) < 0:
-                    solver.Add(picks[i] == 0)
+            rest_adv = float(row.get("Weekly Rest Advantage", 0) or 0)
+            if rest_adv < 0:
+                solver.Add(picks[i] == 0)
 
-        # Cumulative rest disadvantage
+        # ── Cumulative rest disadvantage ──
         if s.avoid_cumulative_rest:
-            cum_adv = row.get("Cumulative_Rest", None)
-            if cum_adv is not None and not (isinstance(cum_adv, float) and np.isnan(cum_adv)):
-                if float(cum_adv) < 0:
-                    solver.Add(picks[i] == 0)
+            rest_adv = float(row.get("Season-Long Rest Advantage Including This Week", 0) or 0)
+            if is_away and rest_adv < -10:
+                solver.Add(picks[i] == 0)
+            elif not is_away and rest_adv < -5:
+                solver.Add(picks[i] == 0)
 
-        # Travel disadvantage
+        # ── Travel disadvantage ──
         if s.avoid_travel_disadvantage and is_away:
-            travel = row.get("Travel Advantage", None)
-            if travel is not None and not (isinstance(travel, float) and np.isnan(travel)):
-                if float(travel) < 0:
-                    solver.Add(picks[i] == 0)
+            travel = float(row.get("Travel Advantage", 0) or 0)
+            if travel < -850:
+                solver.Add(picks[i] == 0)
 
-        # Bayesian constraints
-        if active_bayesian_checks:
-            bay_results = []
-            for _, col in active_bayesian_checks:
+        # ── Bayesian constraints ──
+        # Maps each toggle → the CSV column it checks
+        BAYESIAN_CHECKS = [
+            (s.mp_bayesian_all_metrics,
+                "Massey-Peabody Bayesian Same Winner Across All Metrics"),
+            (s.mp_bayesian_preseason_and_current,
+                "Massey-Peabody Bayesian Same Current and Preseason Adjusted Winner"),
+            (s.mp_bayesian_current_and_adjusted,
+                "Massey-Peabody Bayesian Same Current and Adjusted Current Winner"),
+            (s.gsf_bayesian_adjusted,
+                "Generic Sports Fan Bayesian Same Adjusted Winner Across All Metrics"),
+            (s.gsf_bayesian_preseason_and_current,
+                "Generic Sports Fan Bayesian Current and Preseason Adjusted Winner"),
+            (s.gsf_bayesian_current_and_adjusted,
+                "Generic Sports Fan Bayesian Same Current and Adjusted Current Winner"),
+            (s.sportsbook_bayesian_preseason_and_current,
+                "Sportsbook Same Current and Preseason Adjusted Winner"),
+            (s.sim_bayesian_preseason_and_current,
+                "Sim Same Current and Preseason Adjusted Winner"),
+            (s.consensus_bayesian_preseason_and_current,
+                "Consensus Same Current and Preseason Adjusted Winner"),
+        ]
+        
+        # Only evaluate constraints the user has actually toggled on
+        active_checks = [(enabled, col) for enabled, col in BAYESIAN_CHECKS if enabled]
+        
+        if active_checks:
+            results = []
+            for enabled, col in active_checks:
+                # Gracefully handle missing or empty columns
                 if col not in df.columns:
-                    continue  # column missing — skip, don't penalise
+                    # Column doesn't exist — treat as not satisfied
+                    results.append(False)
+                    continue
                 val = row.get(col, None)
                 if val is None or (isinstance(val, float) and np.isnan(val)):
-                    continue  # empty value — skip, don't penalise
-                bay_results.append(
-                    str(val).strip().lower() in ("true", "yes", "1", "same")
-                )
+                    # Empty value — treat as not satisfied
+                    results.append(False)
+                    continue
+                # Accept True, 1, "True", "Yes", "1" as passing
+                results.append(str(val).strip() in ("True", "Yes", "1", "true", "yes"))
+        
+            if s.bayesian_require_all:
+                # ALL active constraints must pass
+                if not all(results):
+                    solver.Add(picks[i] == 0)
+            else:
+                # AT LEAST ONE active constraint must pass
+                if not any(results):
+                    solver.Add(picks[i] == 0)
 
-            if bay_results:  # only constrain if we got at least one real value
-                if s.bayesian_require_all:
-                    if not all(bay_results):
-                        solver.Add(picks[i] == 0)
-                else:
-                    if not any(bay_results):
-                        solver.Add(picks[i] == 0)
-
-        # Prohibited weekly picks
+        # ── Prohibited weekly picks ──
         if team in request.prohibited_weekly_picks:
             if week_num in request.prohibited_weekly_picks[team]:
                 solver.Add(picks[i] == 0)
 
-    # ── One pick per week — skip required weeks (already handled above) ──
-    required_weeks = {df.iloc[i]["Week_Num"] for i in required_positions}
-    for week in df["Week_Num"].unique():
-        if week in required_weeks:
-            continue  # required picks already enforce one pick for this week
-        weekly_picks = [
-            picks[i] for i in range(len(df))
-            if df.iloc[i]["Week_Num"] == week
-        ]
-        if weekly_picks:
-            solver.Add(solver.Sum(weekly_picks) == 1)
+    # ── Required picks (force specific team-week combinations) ──
+    for team, req_week in request.required_picks.items():
+        if req_week > 0:
+            required_indices = df[
+                (df["Team"] == team) & (df["Week_Num"] == req_week)
+            ].index.tolist()
+            if required_indices:
+                solver.Add(picks[required_indices[0]] == 1)
 
-    # ── Each team picked at most once ──
+    # ── Picks per week (1 normally, 2 on Splash double-pick weeks) ──
+    # request.double_pick_weeks is a list of NFL week numbers that require two
+    # picks. On those weeks the entrant must select TWO teams and BOTH must win
+    # to survive. The no-reuse constraint below then burns both for the season.
+    double_weeks = set(getattr(request, "double_pick_weeks", None) or [])
+    for week in df["Week_Num"].unique():
+        weekly_picks = [picks[i] for i in range(len(df)) if df.iloc[i]["Week_Num"] == week]
+        if weekly_picks:
+            required = 2 if int(week) in double_weeks else 1
+            solver.Add(solver.Sum(weekly_picks) == required)
+
+    # ── Each team can only be picked once across the whole season ──
     for team in df["Team"].unique():
         team_picks = [picks[i] for i in range(len(df)) if df.iloc[i]["Team"] == team]
         if team_picks:
@@ -518,13 +482,14 @@ def run_solver(
     """
     Runs the SCIP solver up to request.number_solutions times.
     Each iteration adds a constraint forbidding the previous solution.
-    df must have a clean 0-based index.
-    """
-    # Guarantee clean index for this solver run
-    df = df.reset_index(drop=True)
 
+    maximize_ev=True  → maximize EV (ev_solutions)
+    maximize_ev=False → maximize win probability (ranking_solutions)
+
+    Returns (solutions, feasible, message)
+    """
     solutions: List[List[PickResult]] = []
-    forbidden_solutions: List[List[int]] = []
+    forbidden_solutions: List[List[int]] = []  # list of game indices per solution
     objective_label = "EV" if maximize_ev else "Win %"
 
     for iteration in range(request.number_solutions):
@@ -532,14 +497,17 @@ def run_solver(
         if not solver:
             return [], False, "SCIP solver unavailable"
 
+        # Create binary decision variables
         picks = {i: solver.IntVar(0, 1, f"pick_{i}") for i in range(len(df))}
 
+        # Apply all constraints
         apply_constraints(solver, picks, df, request)
 
         # Forbid all previous solutions
         for prev_indices in forbidden_solutions:
             prev_vars = [picks[i] for i in prev_indices if i in picks]
             if prev_vars:
+                # At least one pick from the previous solution must NOT be chosen
                 solver.Add(solver.Sum([1 - v for v in prev_vars]) >= 1)
 
         # Set objective
@@ -558,87 +526,32 @@ def run_solver(
 
         if status != pywraplp.Solver.OPTIMAL:
             if iteration == 0:
+                # No solution at all — constraints are too restrictive
                 return [], False, (
                     f"No feasible solution found for {objective_label} objective. "
                     f"Try relaxing some constraints."
                 )
             else:
+                # Ran out of distinct solutions
                 break
 
+        # Extract chosen picks
         chosen_indices = [i for i in range(len(df)) if picks[i].solution_value() > 0.5]
         forbidden_solutions.append(chosen_indices)
 
+        # Build PickResult list for this solution
         pick_results = []
         for i in sorted(chosen_indices, key=lambda x: df.iloc[x]["Week_Num"]):
             row = df.iloc[i]
-
-            # Update holiday detection to handle both string and integer values
-            thanksgiving_val = str(row.get("Thanksgiving Favorite", "")).strip()
-            christmas_val = str(row.get("Christmas Favorite", "")).strip()
-            underdog_thanksgiving = str(row.get("Thanksgiving Underdog", "")).strip()
-            underdog_christmas = str(row.get("Christmas Underdog", "")).strip()
-            
-            is_thanksgiving = thanksgiving_val in ("1", "Thanksgiving", "True", "true") or \
-                              underdog_thanksgiving in ("1", "Thanksgiving", "True", "true")
-            is_christmas = christmas_val in ("1", "Christmas", "True", "true") or \
-                           underdog_christmas in ("1", "Christmas", "True", "true")
-            dome_val = row.get("Dome", None)
-            is_dome = bool(dome_val) if dome_val is not None and pd.notna(dome_val) else None
-            # Derive day of week from Date column
-            day_label = None
-            try:
-                from datetime import datetime as dt
-                date_val = row.get("Date")
-                if date_val and pd.notna(date_val):
-                    date_obj = pd.to_datetime(date_val)
-                    day_name = date_obj.strftime("%A")  # Monday, Tuesday, etc.
-                    game_time = str(row.get("Game_Time", "") or "")
-                    is_tnf = str(row.get("Thursday Night Game", "False")).strip() == "True"
-                    # Check for Monday Night Football (after 7pm ET on Monday)
-                    is_mnf = day_name == "Monday" and game_time >= "19:00"
-                    # Check for Sunday Night Football (after 7pm ET on Sunday)
-                    is_snf = day_name == "Sunday" and game_time >= "19:00"
-            
-                    if is_tnf:
-                        day_label = "Thu 🌙"
-                    elif is_mnf:
-                        day_label = "Mon 🌙"
-                    elif is_snf:
-                        day_label = "Sun 🌙"
-                    elif day_name == "Sunday":
-                        day_label = "Sun"
-                    elif day_name == "Saturday":
-                        day_label = "Sat"
-                    elif day_name == "Friday":
-                        day_label = "Fri"
-                    else:
-                        day_label = day_name[:3]
-            except Exception:
-                pass
-            
             pick_results.append(PickResult(
                 week=int(row["Week_Num"]),
-                circa_week=str(row["Circa_Week"]) if pd.notna(row.get("Circa_Week")) else None,
                 team=str(row["Team"]),
-                ev=safe_float(row.get("EV"), 0.0),
-                win_pct=safe_float(row.get("Win Pct"), 0.0),
-                pick_pct=safe_float(row.get("Expected Pick Percent"), 0.0),
+                ev=round(float(row.get("EV", 0) or 0), 4),
+                win_pct=round(float(row.get("Win Pct", 0) or 0), 4),
+                pick_pct=round(float(row.get("Expected Pick Percent", 0) or 0), 4),
                 home_or_away="Away" if bool(row.get("Team Is Away", False)) else "Home",
                 opponent=str(row.get("Opponent", "")),
-                spread=safe_float(row.get("Sportsbook Spread")),
-                temperature=safe_float(row.get("Temperature")),
-                precipitation=safe_float(row.get("Precipitation")),
-                wind=safe_float(row.get("Wind")),
-                dome=is_dome,
-                starting_qb=str(row["Starting_QB"]) if pd.notna(row.get("Starting_QB")) else None,
-                is_thanksgiving=is_thanksgiving,
-                is_christmas=is_christmas,
-                day_of_week=day_label,
-                days_of_rest=int(row["Days_of_Rest"]) if pd.notna(row.get("Days_of_Rest")) else None,
-                rest_advantage=safe_float(row.get("Rest_Advantage")),
-                cumulative_rest=safe_float(row.get("Cumulative_Rest")),
-                stadium=str(row["Actual Stadium"]) if pd.notna(row.get("Actual Stadium")) else None,
-                is_international=bool(row.get("International Game", False)),
+                spread=round(float(row.get("Sportsbook Spread", 0) or 0), 1),
             ))
 
         solutions.append(pick_results)
@@ -673,7 +586,10 @@ def run_optimizer(sim_df: pd.DataFrame, request: OptimizeRequest) -> OptimizeRes
             message="No games found for the selected week range and constraints."
         )
 
+    # ── EV solutions ──
     ev_solutions, ev_feasible, ev_message = run_solver(df, request, maximize_ev=True)
+
+    # ── Win % solutions ──
     rank_solutions, rank_feasible, rank_message = run_solver(df, request, maximize_ev=False)
 
     feasible = ev_feasible or rank_feasible
@@ -683,6 +599,7 @@ def run_optimizer(sim_df: pd.DataFrame, request: OptimizeRequest) -> OptimizeRes
     if rank_message:
         message_parts.append(f"Win%: {rank_message}")
 
+    # Aggregate totals from the top EV solution
     total_ev = sum(p.ev for p in ev_solutions[0]) if ev_solutions else 0.0
     total_win_pct = sum(p.win_pct for p in ev_solutions[0]) if ev_solutions else 0.0
 
