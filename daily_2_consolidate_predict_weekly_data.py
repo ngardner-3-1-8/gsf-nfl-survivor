@@ -5678,6 +5678,40 @@ def loop_through_simulations(date_str):
                         nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team), 'Away Splash Pick %'] = sp
                 except Exception as _se:
                     print(f"⚠️ Splash prediction failed for week {current_week}: {_se}")
+
+            # ── 🌊 Cap Splash pick % by manual availability report (if entered) ──
+            # Splash publishes a per-team availability rate; a team can't be
+            # picked by more entries than still have it. We cap here (in the
+            # pick%-generation stage) so daily_3 computes Splash EV from the
+            # capped values — mirroring the Circa flow.
+            try:
+                import splash_config as _sc
+                # Union of availability across all Splash contests for this week:
+                # take the MIN availability per team (most conservative) so the
+                # generated column is a sensible shared baseline. Per-contest
+                # optimize requests can still override at request time.
+                _avail_wk = {}
+                for _key, _name in _sc.list_contests():
+                    _wa = _sc.get_weekly_availability(_key).get(current_week) \
+                        or _sc.get_weekly_availability(_key).get(str(current_week))
+                    if _wa:
+                        for _t, _v in _wa.items():
+                            _tu = str(_t).strip().upper()
+                            _avail_wk[_tu] = min(_avail_wk.get(_tu, 1.0), float(_v))
+                if _avail_wk:
+                    print(f"🌊 Week {current_week}: capping Splash pick% by availability report")
+                    for team in all_teams:
+                        _tu = str(team).strip().upper()
+                        if _tu in _avail_wk:
+                            cap_val = _avail_wk[_tu]
+                            hmask = current_week_mask & (nfl_schedule_df['Home Team'] == team)
+                            amask = current_week_mask & (nfl_schedule_df['Away Team'] == team)
+                            nfl_schedule_df.loc[hmask, 'Home Splash Pick %'] = \
+                                nfl_schedule_df.loc[hmask, 'Home Splash Pick %'].clip(upper=cap_val)
+                            nfl_schedule_df.loc[amask, 'Away Splash Pick %'] = \
+                                nfl_schedule_df.loc[amask, 'Away Splash Pick %'].clip(upper=cap_val)
+            except Exception as _ce:
+                print(f"⚠️ Splash availability cap skipped for week {current_week}: {_ce}")
     
             # 5. Calculate Survivors and Eliminations for this week
             nfl_schedule_df.loc[current_week_mask, 'Expected Home Team Survivors'] = \
