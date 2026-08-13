@@ -70,11 +70,11 @@ export default function SplashOptimizerView() {
         <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-6 flex-wrap text-sm">
           <div>
             <p className="text-gray-500 text-xs">Total Entries</p>
-            <p className="text-white font-mono">{contest.entries?.toLocaleString() ?? '—'}</p>
+            <p className="text-white font-mono">{contest.total_entries?.toLocaleString() ?? '—'}</p>
           </div>
           <div>
             <p className="text-gray-500 text-xs">Surviving Entries</p>
-            <p className="text-white font-mono">{contest.survivors?.toLocaleString() ?? '—'}</p>
+            <p className="text-white font-mono">{contest.surviving_entries?.toLocaleString() ?? '—'}</p>
           </div>
           <div>
             <p className="text-gray-500 text-xs">Double-pick weeks</p>
@@ -94,7 +94,7 @@ export default function SplashOptimizerView() {
           </div>
           <div>
             <p className="text-gray-500 text-xs">Average Entry Value</p>
-            <p className="text-white font-mono">{contest.total_prize && contest.entries? `$${Math.round(contest.total_prize / contest.entries).toLocaleString()}`: '—'}</p>
+            <p className="text-white font-mono">{contest.total_prize && contest.entries? `$${Math.round(contest.total_prize / contest.surviving_entries).toLocaleString()}`: '—'}</p>
           </div>
           <div className="ml-auto max-w-xs">
             <p className="text-gray-600 text-xs">
