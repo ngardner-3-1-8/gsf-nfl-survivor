@@ -320,6 +320,10 @@ def optimize(request: OptimizeRequest):
                 merged.update(request.custom_pick_percentages or {})
                 request.custom_pick_percentages = merged
 
+                # Override pick% with Splash pick%, cap by manual availability,
+                # and recompute EV from the capped pick%.
+                sim_df = _apply_splash_pick_and_availability(sim_df, request.contest)
+
         result = run_optimizer(sim_df, request)
         return result
     except FileNotFoundError as e:
@@ -777,6 +781,32 @@ def get_contest_charts(year: int = Query(None), through_week: int = Query(None))
 # Add `pick_source` to the optimize request handling: when "actual", swap the
 # sim file's Home/Away Pick % columns for the ACTUAL pick% (from the season
 # final-data file's "Home/Away Actual Pick %" columns) before optimizing.
+
+def _apply_splash_pick_and_availability(sim_df, contest_key):
+    """
+    Splash EV/pick% are precomputed in the sim file by the daily pipeline
+    (daily_2 caps Splash pick% by availability; daily_3 writes Splash_{prefix}_
+    Home/Away_EV). Here we simply point the optimizer's pick% and EV columns at
+    the Splash-versioned columns so it optimizes on Splash values — no live
+    recomputation (mirrors _apply_pick_source).
+    """
+    sim_df = sim_df.copy()
+
+    # Pick % → Splash pick %
+    if "Home Splash Pick %" in sim_df.columns:
+        sim_df["Home Pick %"] = sim_df["Home Splash Pick %"].fillna(sim_df.get("Home Pick %"))
+    if "Away Splash Pick %" in sim_df.columns:
+        sim_df["Away Pick %"] = sim_df["Away Splash Pick %"].fillna(sim_df.get("Away Pick %"))
+
+    # EV columns → Splash-versioned EV (Splash_{prefix}_Home/Away_EV)
+    for prefix in ("consensus", "sportsbook", "mp", "gsf", "sim"):
+        for side in ("Home", "Away"):
+            base = f"{prefix}_{side}_EV"
+            splash = f"Splash_{prefix}_{side}_EV"
+            if splash in sim_df.columns and base in sim_df.columns:
+                sim_df[base] = sim_df[splash].fillna(sim_df[base])
+    return sim_df
+
 
 def _apply_pick_source(sim_df, year, pick_source):
     """
