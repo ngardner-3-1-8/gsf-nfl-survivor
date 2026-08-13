@@ -179,7 +179,9 @@ def loop_through_ev(date_str):
             }
         }
     
-        def calculate_all_scenarios(week_df, away_prob_col, home_prob_col):
+        def calculate_all_scenarios(week_df, away_prob_col, home_prob_col,
+                                    home_pick_col='Home Pick %',
+                                    away_pick_col='Away Pick %'):
             """
             EV(team) = P(team wins) / E[total survivors this week]
             E[survivors] = sum of (each team's pick% * their win probability)
@@ -187,11 +189,14 @@ def loop_through_ev(date_str):
             Teams with 0% availability (pick% == 0) are excluded from the
             expected survivors calculation — they're not pickable so they
             don't affect EV for the remaining eligible teams.
+
+            home_pick_col/away_pick_col let the same formula run on Circa pick%
+            ('Home/Away Pick %') or Splash pick% ('Home/Away Splash Pick %').
             """
             home_probs = week_df[home_prob_col].values
             away_probs = week_df[away_prob_col].values
-            home_picks = week_df['Home Pick %'].values
-            away_picks = week_df['Away Pick %'].values
+            home_picks = week_df[home_pick_col].values
+            away_picks = week_df[away_pick_col].values
         
             # Only include teams with non-zero availability in the denominator
             home_eligible = home_picks > 0
@@ -206,13 +211,13 @@ def loop_through_ev(date_str):
             for i, row in week_df.iterrows():
                 if expected_survivors > 0:
                     # Home team — only assign EV if eligible
-                    if row['Home Pick %'] > 0:
+                    if row[home_pick_col] > 0:
                         ev_results[row['Home Team']] = row[home_prob_col] / expected_survivors
                     else:
                         ev_results[row['Home Team']] = 0
         
                     # Away team — only assign EV if eligible
-                    if row['Away Pick %'] > 0:
+                    if row[away_pick_col] > 0:
                         ev_results[row['Away Team']] = row[away_prob_col] / expected_survivors
                     else:
                         ev_results[row['Away Team']] = 0
@@ -261,6 +266,40 @@ def loop_through_ev(date_str):
                         away_ev_col
                     ] = ev_results.get(team, 0)
     
+        # ── 🌊 SPLASH EV — same 5 scenarios, using the Splash pick% columns ──
+        if 'Home Splash Pick %' in df.columns and 'Away Splash Pick %' in df.columns:
+            print("Computing Splash EV from Splash pick% columns...")
+            for scenario_name, scenario_config in probability_scenarios.items():
+                away_prob_col = scenario_config["away_col"]
+                home_prob_col = scenario_config["home_col"]
+                prefix = scenario_config["prefix"]
+
+                home_ev_col = f"Splash_{prefix}_Home_EV"
+                away_ev_col = f"Splash_{prefix}_Away_EV"
+                df[home_ev_col] = 0.0
+                df[away_ev_col] = 0.0
+
+                for week in tqdm(range(start_w, end_w),
+                                 desc=f"Processing SPLASH {prefix.upper()} EV", leave=False):
+                    week_df = df[df['Week_x'] == week].copy()
+                    if week_df.empty:
+                        continue
+                    ev_results = calculate_all_scenarios(
+                        week_df,
+                        away_prob_col=away_prob_col,
+                        home_prob_col=home_prob_col,
+                        home_pick_col='Home Splash Pick %',
+                        away_pick_col='Away Splash Pick %',
+                    )
+                    for team in week_df['Home Team'].unique():
+                        df.loc[(df['Week_x'] == week) & (df['Home Team'] == team),
+                               home_ev_col] = ev_results.get(team, 0)
+                    for team in week_df['Away Team'].unique():
+                        df.loc[(df['Week_x'] == week) & (df['Away Team'] == team),
+                               away_ev_col] = ev_results.get(team, 0)
+        else:
+            print("(No Splash pick% columns — skipping Splash EV)")
+
         # Save the updated main dataframe overwriting the original input file
         df.to_csv(main_file_path, index=False)
         print(f"\nSuccessfully appended all EV columns and saved to: {main_file_path}")
@@ -291,26 +330,25 @@ if __name__ == "__main__":
 #        "12/26/2025", #Leading up to Week 19
 #        "12/31/2025", #Leading up to Week 20
         
-        "09/04/2024", #Leading up to Week 1
-        "09/11/2024", #Leading up to Week 2
-        "09/18/2024", #Leading up to Week 3
-        "09/25/2024", #Leading up to Week 4
-        "10/02/2024", #Leading up to Week 5
-        "10/09/2024", #Leading up to Week 6
-        "10/16/2024", #Leading up to Week 7
-        "10/23/2024", #Leading up to Week 8
-        "10/30/2024", #Leading up to Week 9
-        "11/06/2024", #Leading up to Week 10
-        "11/13/2024", #Leading up to Week 11
-        "11/20/2024", #Leading up to Week 12
-        "11/27/2024", #Leading up to Week 13
-        "11/30/2024", #Leading up to Week 14
-        "12/04/2024", #Leading up to Week 15
-        "12/11/2024", #Leading up to Week 16
-        "12/18/2024", #Leading up to Week 17
-        "12/24/2024", #Leading up to Week 18
-        "12/27/2024", #Leading up to Week 19
-        "01/01/2025", #Leading up to Week 20
+#        "09/04/2024", #Leading up to Week 1
+#        "09/11/2024", #Leading up to Week 2
+#        "09/18/2024", #Leading up to Week 3
+#        "09/25/2024", #Leading up to Week 4
+#        "10/02/2024", #Leading up to Week 5
+#        "10/09/2024", #Leading up to Week 6
+#        "10/16/2024", #Leading up to Week 7
+#        "10/23/2024", #Leading up to Week 8
+#        "10/30/2024", #Leading up to Week 9
+#        "11/06/2024", #Leading up to Week 10
+#        "11/13/2024", #Leading up to Week 11
+#        "11/20/2024", #Leading up to Week 12
+#        "11/27/2024", #Leading up to Week 13
+#        "11/30/2024", #Leading up to Week 14
+#        "12/11/2024", #Leading up to Week 16
+#        "12/18/2024", #Leading up to Week 17
+#        "12/24/2024", #Leading up to Week 18
+#        "12/27/2024", #Leading up to Week 19
+#        "01/01/2025", #Leading up to Week 20
         
 #        "09/06/2023", #Leading up to Week 1
 #        "09/13/2023", #Leading up to Week 2
@@ -394,7 +432,7 @@ if __name__ == "__main__":
 #        "12/23/2020", #Leading up to Week 17
 #        "12/30/2020", #Leading up to Week 18
         
-#        formatted_date
+        formatted_date
     ]
 
     for date in week_starting_dates:
