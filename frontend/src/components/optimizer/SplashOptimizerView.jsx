@@ -69,11 +69,11 @@ export default function SplashOptimizerView() {
       {contest && (
         <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-6 flex-wrap text-sm">
           <div>
-            <p className="text-gray-500 text-xs">Entries</p>
+            <p className="text-gray-500 text-xs">Total Entries</p>
             <p className="text-white font-mono">{contest.entries?.toLocaleString() ?? '—'}</p>
           </div>
           <div>
-            <p className="text-gray-500 text-xs">Survivors</p>
+            <p className="text-gray-500 text-xs">Surviving Entries</p>
             <p className="text-white font-mono">{contest.survivors?.toLocaleString() ?? '—'}</p>
           </div>
           <div>
@@ -83,6 +83,18 @@ export default function SplashOptimizerView() {
                 ? contest.double_pick_weeks.join(', ')
                 : 'none set'}
             </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Entry Fee</p>
+            <p className="text-white font-mono">${contest.entry_fee?.toLocaleString() ?? '—'}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Total Prizes</p>
+            <p className="text-white font-mono">${contest.total_prize?.toLocaleString() ?? '—'}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Average Entry Value</p>
+            <p className="text-white font-mono">{contest.total_prize && contest.entries? `$${Math.round(contest.total_prize / contest.entries).toLocaleString()}`: '—'}</p>
           </div>
           <div className="ml-auto max-w-xs">
             <p className="text-gray-600 text-xs">
