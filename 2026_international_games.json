@@ -1,9 +1,9 @@
 {
   "games": [
     {
-      "game_id": "2026_01_LAR_SF",
-      "home_team": "San Francisco 49ers",
-      "away_team": "Los Angeles Rams",
+      "game_id": "2026_01_SF_LA",
+      "home_team": "Los Angeles Rams",
+      "away_team": "San Francisco 49ers",
       "date": "2026-09-10",
       "stadium": "Melbourne Cricket Ground",
       "city": "Melbourne, Australia",
