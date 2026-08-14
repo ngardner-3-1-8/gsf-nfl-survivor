@@ -615,15 +615,15 @@ def loop_through_simulations(date_str):
         game_id = row.get("Game ID") or row.get("game_id")
         location_type = str(row.get("Location", "Home")).strip()
 
-        print(f"\n🌍 international_games dict has {len(international_games)} entries:")
-        for gid, info in international_games.items():
-            print(f"   {gid}: {info.get('stadium')} ({info.get('timezone')})")
+        ####print(f"\n🌍 international_games dict has {len(international_games)} entries:")
+        ####for gid, info in international_games.items():
+        ####    print(f"   {gid}: {info.get('stadium')} ({info.get('timezone')})")
     
-        #if location_type == "Neutral":
-        print(f"🏟️  Neutral game: {game_id}  {row.get('Away Team')} @ {home_team}")
+        ####if location_type == "Neutral":
+        ####print(f"🏟️  Neutral game: {game_id}  {row.get('Away Team')} @ {home_team}")
         if game_id in international_games:
             intl = international_games[game_id]
-            print(f"   ✅ Matched international → {intl['stadium']}")
+            print(f"   ✅ Matched international → Game ID: {game_id}. {row.get('Away Team')} @ {home_team}. Location: {intl['stadium']}")
             return {
                 "actual_stadium":   intl["stadium"],
                 "actual_lat":       intl["latitude"],
