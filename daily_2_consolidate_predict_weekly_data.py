@@ -2015,18 +2015,23 @@ def loop_through_simulations(date_str):
             print(f"Error loading player stats: {e}")
             return {}, -0.05
 
-    def get_advanced_passing_stats_365(simulation_date_str):
+    def get_advanced_passing_stats_365(simulation_date_str, first_game_date_str):
         """
         Calculates Pressure Rate (Offense and Defense), Zone/Man Rate, and EPA splits 
         looking back exactly 365 days from the simulation date using nflreadpy.
         """
         sim_date = pd.to_datetime(simulation_date_str)
+        first_game_date = pd.to_datetime(first_game_date_str)
         start_date = (sim_date - timedelta(days=365)).strftime('%Y-%m-%d')
         end_date = sim_date.strftime('%Y-%m-%d')
         
         current_year = sim_date.year
-        seasons_to_load = [current_year - 1, current_year]
         
+        if sim_date >= first_game_date:
+            seasons_to_load = [current_year - 1, current_year]
+        else:
+            seasons_to_load = [current_year - 1]
+
         print(f"📊 Loading 365-day stats: {start_date} to {end_date}...")
         
         try:
@@ -3988,7 +3993,7 @@ def loop_through_simulations(date_str):
             # NEW: INTEGRATE ADVANCED PASSING METRICS
             # ============================================================
             print("📊 Calculating Advanced Passing Metrics (Pressure, Zone, Man)...")
-            adv_stats_dict = get_advanced_passing_stats_365(today)
+            adv_stats_dict = get_advanced_passing_stats_365(today, first_game_date)
             
             metrics_to_add = [
                 'Offensive Pressure Allowed Rate', 'Defensive Pressure Generated Rate', 
