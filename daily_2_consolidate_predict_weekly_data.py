@@ -619,20 +619,20 @@ def loop_through_simulations(date_str):
         for gid, info in international_games.items():
             print(f"   {gid}: {info.get('stadium')} ({info.get('timezone')})")
     
-        if location_type == "Neutral":
-            print(f"🏟️  Neutral game: {game_id}  {row.get('Away Team')} @ {home_team}")
-            if game_id in international_games:
-                intl = international_games[game_id]
-                print(f"   ✅ Matched international → {intl['stadium']}")
-                return {
-                    "actual_stadium":   intl["stadium"],
-                    "actual_lat":       intl["latitude"],
-                    "actual_lon":       intl["longitude"],
-                    "actual_timezone":  intl["timezone"],
-                    "is_international": True,
-                }
-            else:
-                print(f"DEBUG No match found in international_games — falling back to home stadium")
+        #if location_type == "Neutral":
+        print(f"🏟️  Neutral game: {game_id}  {row.get('Away Team')} @ {home_team}")
+        if game_id in international_games:
+            intl = international_games[game_id]
+            print(f"   ✅ Matched international → {intl['stadium']}")
+            return {
+                "actual_stadium":   intl["stadium"],
+                "actual_lat":       intl["latitude"],
+                "actual_lon":       intl["longitude"],
+                "actual_timezone":  intl["timezone"],
+                "is_international": True,
+            }
+####        else:
+####            print(f"DEBUG No match found in international_games — falling back to home stadium")
     
         # Default — use home team's stadium
         home_info = stadiums.get(home_team, {})
