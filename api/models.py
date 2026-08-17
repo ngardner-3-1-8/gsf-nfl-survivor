@@ -50,6 +50,11 @@ class OptimizeRequest(BaseModel):
     start_week: int = Field(default=1, ge=1, le=20)
     end_week: int = Field(default=20, ge=1, le=20)
 
+    # --- Season year ---
+    # None = current season; a past year loads that season's data for historical
+    # optimization (used by the year selector + model/actual toggle).
+    year: Optional[int] = None
+
     # --- Contest type ---
     # "circa" (default, Circa Survivor with holiday weeks) or a Splash contest.
     # Splash uses raw NFL weeks and may have double-pick weeks.
