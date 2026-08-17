@@ -4027,12 +4027,19 @@ def loop_through_simulations(date_str):
 
     from entry_analytics import run_entry_analytics
 
-    rankings, predicted_picks = run_entry_analytics(
-        picks_csv_path=f"circa-pick-history/{current_year}_survivor_picks.csv",
-        sim_df=df,                    # your loaded final_sim_results dataframe
-        upcoming_week=upcoming_week,
-        target_year=target_year,
-    )
+    picks_csv_path = f"circa-pick-history/{target_year}_survivor_picks.csv"
+
+    if not os.path.exists(picks_csv_path):
+        print(f"ℹ️  No pick history yet at {picks_csv_path} — "
+              f"skipping entry analytics (expected in the preseason).")
+        rankings, predicted_picks = None, None
+    else: 
+        rankings, predicted_picks = run_entry_analytics(
+            picks_csv_path=f"circa-pick-history/{current_year}_survivor_picks.csv",
+            sim_df=df,                    # your loaded final_sim_results dataframe
+            upcoming_week=upcoming_week,
+            target_year=target_year,
+        )
 
 
     def add_pick_predictions(df):
