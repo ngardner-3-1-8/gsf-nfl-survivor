@@ -327,9 +327,11 @@ def optimize(request: OptimizeRequest):
         result = run_optimizer(sim_df, request)
         return result
     except FileNotFoundError as e:
+        import traceback; traceback.print_exc()
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback; traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")
 
 @app.get("/api/rankings")
 def get_rankings(year: int = Query(None), week: int = Query(None)):
