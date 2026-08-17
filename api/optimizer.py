@@ -158,7 +158,11 @@ def prepare_df(sim_df: pd.DataFrame, request: OptimizeRequest) -> pd.DataFrame:
     (one row per team per game), then applies week range and 
     prohibited team filters.
     """
-    df = sim_df.copy()
+    # Reset the index so downstream column assignments (away_df["EV"] = df[col])
+    # align positionally on a guaranteed-unique 0..N index. A non-unique index
+    # (from CSV load + upstream slicing) causes:
+    #   "Reindexing only valid with uniquely valued Index objects"
+    df = sim_df.copy().reset_index(drop=True)
 
     # Resolve the EV column for this objective
     away_ev_col, home_ev_col = OBJECTIVE_EV_COLS.get(
@@ -172,19 +176,19 @@ def prepare_df(sim_df: pd.DataFrame, request: OptimizeRequest) -> pd.DataFrame:
     away_cols = {k: v for k, v in AWAY_COL_MAP.items() if k in df.columns}
     away_df = df[list(away_cols.keys())].rename(columns=away_cols).copy()
     away_df["Team Is Away"] = True
-    away_df["EV"] = df[away_ev_col] if away_ev_col in df.columns else 0.0
-    away_df["Win Pct"] = df[away_win_col] if away_win_col in df.columns else 0.0
-    away_df["Sportsbook Spread"] = df["Away Team Sportsbook Spread"] if "Away Team Sportsbook Spread" in df.columns else 0.0
-    away_df["Game_Index"] = df.index
+    away_df["EV"] = df[away_ev_col].values if away_ev_col in df.columns else 0.0
+    away_df["Win Pct"] = df[away_win_col].values if away_win_col in df.columns else 0.0
+    away_df["Sportsbook Spread"] = df["Away Team Sportsbook Spread"].values if "Away Team Sportsbook Spread" in df.columns else 0.0
+    away_df["Game_Index"] = df.index.values
 
     # ── Home team rows ──
     home_cols = {k: v for k, v in HOME_COL_MAP.items() if k in df.columns}
     home_df = df[list(home_cols.keys())].rename(columns=home_cols).copy()
     home_df["Team Is Away"] = False
-    home_df["EV"] = df[home_ev_col] if home_ev_col in df.columns else 0.0
-    home_df["Win Pct"] = df[home_win_col] if home_win_col in df.columns else 0.0
-    home_df["Sportsbook Spread"] = df["Home Team Sportsbook Spread"] if "Home Team Sportsbook Spread" in df.columns else 0.0
-    home_df["Game_Index"] = df.index
+    home_df["EV"] = df[home_ev_col].values if home_ev_col in df.columns else 0.0
+    home_df["Win Pct"] = df[home_win_col].values if home_win_col in df.columns else 0.0
+    home_df["Sportsbook Spread"] = df["Home Team Sportsbook Spread"].values if "Home Team Sportsbook Spread" in df.columns else 0.0
+    home_df["Game_Index"] = df.index.values
     # Home teams are never on short rest (the flag is always about the away team)
     home_df["Away Team Short Rest"] = "No"
     home_df["Back to Back Away Games"] = False
@@ -452,16 +456,11 @@ def apply_constraints(
             if required_indices:
                 solver.Add(picks[required_indices[0]] == 1)
 
-    # ── Picks per week (1 normally, 2 on Splash double-pick weeks) ──
-    # request.double_pick_weeks is a list of NFL week numbers that require two
-    # picks. On those weeks the entrant must select TWO teams and BOTH must win
-    # to survive. The no-reuse constraint below then burns both for the season.
-    double_weeks = set(getattr(request, "double_pick_weeks", None) or [])
+    # ── One pick per week ──
     for week in df["Week_Num"].unique():
         weekly_picks = [picks[i] for i in range(len(df)) if df.iloc[i]["Week_Num"] == week]
         if weekly_picks:
-            required = 2 if int(week) in double_weeks else 1
-            solver.Add(solver.Sum(weekly_picks) == required)
+            solver.Add(solver.Sum(weekly_picks) == 1)
 
     # ── Each team can only be picked once across the whole season ──
     for team in df["Team"].unique():
