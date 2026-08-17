@@ -788,10 +788,6 @@ def run_entry_analytics(picks_csv_path, sim_df, upcoming_week, target_year,
                         output_dir="entry-analytics", seed=42,
                         synthetic_n_entries=None,
                         prior_picks_csv=None, prior_season_df=None):
-    if not os.path.exists(picks_csv_path):
-        print(f"⚠️  Picks file not found: {picks_csv_path} — "
-              f"returning empty analytics.")
-        return None, None   # match whatever the caller unpacks
     rng = np.random.default_rng(seed)
     os.makedirs(output_dir, exist_ok=True)
 
@@ -833,6 +829,11 @@ def run_entry_analytics(picks_csv_path, sim_df, upcoming_week, target_year,
     else:
         # ── REGULAR MODE — real entries ──
         print(f"\n🎯 Entry analytics — {target_year} week {upcoming_week}")
+        # Guard: no picks file (preseason / missing) → return empty, don't crash.
+        # os.path.exists(None) raises TypeError, so check for None first.
+        if picks_csv_path is None or not os.path.exists(picks_csv_path):
+            print(f"   ⚠️  No picks file ({picks_csv_path}) — returning empty analytics")
+            return None, None
         picks_df = pd.read_csv(picks_csv_path)
         picks_df["Total_Wins"] = pd.to_numeric(
             picks_df["Total_Wins"], errors="coerce").fillna(0).astype(int)
