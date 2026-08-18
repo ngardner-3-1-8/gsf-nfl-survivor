@@ -24,13 +24,26 @@ class SchedulingConstraints(BaseModel):
     avoid_away_close: bool = False
     min_away_spread: float = 3.0           # only active if avoid_away_close=True
 
-    # Bayesian / ranking consistency constraint
+    # Bayesian / ranking consistency constraint (legacy single-enum form)
     bayesian_constraint: Literal[
         "none",
         "preseason_and_current_and_travel",
         "current_and_travel",
         "preseason_and_current"
     ] = "none"
+
+    # Granular per-metric Bayesian toggles (what the optimizer reads).
+    # All default False so they're inert unless the frontend sends them.
+    bayesian_require_all: bool = False
+    mp_bayesian_all_metrics: bool = False
+    mp_bayesian_preseason_and_current: bool = False
+    mp_bayesian_current_and_adjusted: bool = False
+    gsf_bayesian_adjusted: bool = False
+    gsf_bayesian_current_and_adjusted: bool = False
+    gsf_bayesian_preseason_and_current: bool = False
+    consensus_bayesian_preseason_and_current: bool = False
+    sim_bayesian_preseason_and_current: bool = False
+    sportsbook_bayesian_preseason_and_current: bool = False
 
 
 # ─────────────────────────────────────────────
