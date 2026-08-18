@@ -325,7 +325,11 @@ def optimize(request: OptimizeRequest):
                 sim_df = _apply_splash_pick_and_availability(sim_df, request.contest)
 
         result = run_optimizer(sim_df, request)
-        return result
+        # Sanitize NaN/inf → None before JSON encoding (JSON has no NaN, so an
+        # unsanitized NaN in any pick field 500s the response).
+        payload = result.model_dump() if hasattr(result, "model_dump") else (
+            result.dict() if hasattr(result, "dict") else result)
+        return JSONResponse(content=sanitize(payload))
     except FileNotFoundError as e:
         import traceback; traceback.print_exc()
         raise HTTPException(status_code=404, detail=str(e))
