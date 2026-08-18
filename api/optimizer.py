@@ -24,7 +24,6 @@ AWAY_COL_MAP = {
     "Week":                                             "Week_Num",       # Circa contest week
     "Date_x":                                          "Date",
     "Time":                                            "Time",
-    "Location":                                        "Location",        # not in CSV — use Actual Stadium
     "Actual Stadium":                                  "Location",
     "Thursday Night Game":                             "Thursday Night Game",
     "Divisional Matchup?":                             "Divisional Matchup?",
