@@ -803,6 +803,7 @@ def loop_through_simulations(date_str):
     	# Because 'data' is a list of dicts, pandas automatically matches the keys to column names
         df = pd.DataFrame(data)
         df['Circa Week'] = df['Week'].astype(str)
+        df['NFL Week'] = df['Week']
         df['Date'] = pd.to_datetime(df['Date'], format='%b %d, %Y')
         # Adjust January games to 2025 in the DataFrame
         if target_year == 2020:
