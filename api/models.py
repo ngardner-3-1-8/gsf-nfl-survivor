@@ -129,6 +129,7 @@ class OptimizeRequest(BaseModel):
 # ─────────────────────────────────────────────
 class PickResult(BaseModel):
     week: int
+    circa_week: Optional[str] = None   # "Christmas", "Thanksgiving", or the week number as text
     team: str
     ev: float
     win_pct: float
