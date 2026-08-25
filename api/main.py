@@ -304,12 +304,17 @@ def optimize(request: OptimizeRequest):
             except Exception:
                 cfg = None
             if cfg is not None:
-                # Drop Circa holiday-labeled rows so weeks are raw NFL weeks.
-                circa_col = "Circa Week" if "Circa Week" in sim_df.columns else None
-                if circa_col:
-                    holiday_mask = sim_df[circa_col].astype(str).str.contains(
-                        "Christmas|Thanksgiving", case=False, na=False)
-                    sim_df = sim_df[~holiday_mask].reset_index(drop=True)
+                # Splash uses TRUE NFL weeks (1-18), not Circa weeks (1-20 with
+                # Thanksgiving/Christmas inserted). daily_2 writes an "NFL Week"
+                # column that collapses those insertions. Point the optimizer's
+                # week column at it so double-pick weeks and the week range align
+                # to NFL weeks, and holiday slates merge into their real week.
+                if "NFL Week" in sim_df.columns:
+                    sim_df = sim_df.copy()
+                    sim_df["Week"] = sim_df["NFL Week"]
+                    # Also blank the Circa label so results show the NFL week int
+                    if "Circa Week" in sim_df.columns:
+                        sim_df["Circa Week"] = sim_df["NFL Week"]
                 # Inject the contest's double-pick weeks
                 if not request.double_pick_weeks:
                     request.double_pick_weeks = _splash.get_double_pick_weeks(request.contest)
