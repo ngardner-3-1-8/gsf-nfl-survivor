@@ -26,6 +26,7 @@ AWAY_COL_MAP = {
     "Date_x":                                          "Date",
     "Time":                                            "Time",
     "Actual Stadium":                                  "Location",
+    "Temperature":                                     "Temperature",
     "Thursday Night Game":                             "Thursday Night Game",
     "Divisional Matchup?":                             "Divisional Matchup?",
     "Away Team Short Rest":                            "Away Team Short Rest",
@@ -82,6 +83,7 @@ HOME_COL_MAP = {
     "Date_x":                                          "Date",
     "Time":                                            "Time",
     "Actual Stadium":                                  "Location",
+    "Temperature":                                     "Temperature",
     "Thursday Night Game":                             "Thursday Night Game",
     "Divisional Matchup?":                             "Divisional Matchup?",
     "Away Team Short Rest":                            "Away Team Short Rest",   # same col — short rest flag is always about away team
@@ -559,6 +561,19 @@ def run_solver(
                 home_or_away="Away" if bool(row.get("Team Is Away", False)) else "Home",
                 opponent=str(row.get("Opponent", "")),
                 spread=round(float(row.get("Sportsbook Spread", 0) or 0), 1),
+                stadium=(str(row.get("Location")) if row.get("Location") is not None
+                         and str(row.get("Location")) not in ("nan", "Home", "") else None),
+                day=(str(row.get("Day")) if row.get("Day") is not None
+                     and str(row.get("Day")) != "nan" else None),
+                temperature=(float(row.get("Temperature")) if row.get("Temperature") is not None
+                             and str(row.get("Temperature")) != "nan" else None),
+                weekly_rest=(float(row.get("Weekly Rest")) if row.get("Weekly Rest") is not None
+                             and str(row.get("Weekly Rest")) != "nan" else None),
+                rest_advantage=(float(row.get("Weekly Rest Advantage")) if row.get("Weekly Rest Advantage") is not None
+                                and str(row.get("Weekly Rest Advantage")) != "nan" else None),
+                cumulative_rest_advantage=(float(row.get("Season-Long Rest Advantage Including This Week"))
+                    if row.get("Season-Long Rest Advantage Including This Week") is not None
+                    and str(row.get("Season-Long Rest Advantage Including This Week")) != "nan" else None),
             ))
 
         solutions.append(pick_results)
