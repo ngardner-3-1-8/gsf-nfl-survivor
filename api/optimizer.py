@@ -22,6 +22,7 @@ AWAY_COL_MAP = {
     "Away Team":                                        "Team",
     "Home Team":                                        "Opponent",
     "Week":                                             "Week_Num",       # Circa contest week
+    "Circa Week":                                       "Circa_Week_Label",
     "Date_x":                                          "Date",
     "Time":                                            "Time",
     "Actual Stadium":                                  "Location",
@@ -77,6 +78,7 @@ HOME_COL_MAP = {
     "Home Team":                                        "Team",
     "Away Team":                                        "Opponent",
     "Week":                                             "Week_Num",
+    "Circa Week":                                       "Circa_Week_Label",
     "Date_x":                                          "Date",
     "Time":                                            "Time",
     "Actual Stadium":                                  "Location",
@@ -455,11 +457,15 @@ def apply_constraints(
             if required_indices:
                 solver.Add(picks[required_indices[0]] == 1)
 
-    # ── One pick per week ──
+    # ── Picks per week (1 normally, 2 on Splash double-pick weeks) ──
+    # request.double_pick_weeks lists NFL weeks requiring TWO picks (both must
+    # win to survive). The no-reuse constraint then burns both for the season.
+    double_weeks = set(int(w) for w in (getattr(request, "double_pick_weeks", None) or []))
     for week in df["Week_Num"].unique():
         weekly_picks = [picks[i] for i in range(len(df)) if df.iloc[i]["Week_Num"] == week]
         if weekly_picks:
-            solver.Add(solver.Sum(weekly_picks) == 1)
+            required = 2 if int(week) in double_weeks else 1
+            solver.Add(solver.Sum(weekly_picks) == required)
 
     # ── Each team can only be picked once across the whole season ──
     for team in df["Team"].unique():
@@ -541,8 +547,11 @@ def run_solver(
         pick_results = []
         for i in sorted(chosen_indices, key=lambda x: df.iloc[x]["Week_Num"]):
             row = df.iloc[i]
+            _circa_lbl = row.get("Circa_Week_Label")
             pick_results.append(PickResult(
                 week=int(row["Week_Num"]),
+                circa_week=(str(_circa_lbl) if _circa_lbl is not None
+                            and str(_circa_lbl) != "nan" else str(int(row["Week_Num"]))),
                 team=str(row["Team"]),
                 ev=round(float(row.get("EV", 0) or 0), 4),
                 win_pct=round(float(row.get("Win Pct", 0) or 0), 4),
