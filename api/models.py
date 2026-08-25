@@ -137,6 +137,13 @@ class PickResult(BaseModel):
     home_or_away: str
     opponent: str
     spread: Optional[float] = None
+    # Display fields for the results table
+    stadium: Optional[str] = None
+    day: Optional[str] = None
+    temperature: Optional[float] = None
+    weekly_rest: Optional[float] = None
+    rest_advantage: Optional[float] = None
+    cumulative_rest_advantage: Optional[float] = None
 
 class OptimizeResponse(BaseModel):
     # EV-optimized solutions
