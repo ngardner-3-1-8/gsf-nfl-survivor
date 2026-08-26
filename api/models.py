@@ -144,6 +144,13 @@ class PickResult(BaseModel):
     weekly_rest: Optional[float] = None
     rest_advantage: Optional[float] = None
     cumulative_rest_advantage: Optional[float] = None
+    precipitation: Optional[float] = None
+    wind: Optional[float] = None
+    dome: Optional[bool] = None
+    starting_qb: Optional[str] = None
+    is_thanksgiving: Optional[bool] = None
+    is_christmas: Optional[bool] = None
+    is_international: Optional[bool] = None
 
 class OptimizeResponse(BaseModel):
     # EV-optimized solutions
