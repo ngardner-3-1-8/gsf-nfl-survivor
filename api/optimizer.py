@@ -27,8 +27,13 @@ AWAY_COL_MAP = {
     "Time":                                            "Time",
     "Actual Stadium":                                  "Location",
     "Temperature":                                     "Temperature",
+    "Precipitation":                                   "Precipitation",
+    "Wind":                                            "Wind",
+    "Dome":                                            "Dome",
     "Thursday Night Game":                             "Thursday Night Game",
     "Divisional Matchup?":                             "Divisional Matchup?",
+    "Away QB":                                         "Starting QB",
+    "Day of Week":                                     "Day",
     "Away Team Short Rest":                            "Away Team Short Rest",
     "Away Team 3 games in 10 days":                    "3 Games in 10 Days",
     "Away Team 4 games in 17 days":                    "4 Games in 17 Days",
@@ -84,8 +89,13 @@ HOME_COL_MAP = {
     "Time":                                            "Time",
     "Actual Stadium":                                  "Location",
     "Temperature":                                     "Temperature",
+    "Precipitation":                                   "Precipitation",
+    "Wind":                                            "Wind",
+    "Dome":                                            "Dome",
     "Thursday Night Game":                             "Thursday Night Game",
     "Divisional Matchup?":                             "Divisional Matchup?",
+    "Home QB":                                         "Starting QB",
+    "Day of Week":                                     "Day",
     "Away Team Short Rest":                            "Away Team Short Rest",   # same col — short rest flag is always about away team
     "Home Team 3 games in 10 days":                    "3 Games in 10 Days",
     "Home Team 4 games in 17 days":                    "4 Games in 17 Days",
@@ -574,6 +584,17 @@ def run_solver(
                 cumulative_rest_advantage=(float(row.get("Season-Long Rest Advantage Including This Week"))
                     if row.get("Season-Long Rest Advantage Including This Week") is not None
                     and str(row.get("Season-Long Rest Advantage Including This Week")) != "nan" else None),
+                precipitation=(float(row.get("Precipitation")) if row.get("Precipitation") is not None
+                               and str(row.get("Precipitation")) != "nan" else None),
+                wind=(float(row.get("Wind")) if row.get("Wind") is not None
+                      and str(row.get("Wind")) != "nan" else None),
+                dome=(bool(row.get("Dome")) if row.get("Dome") is not None
+                      and str(row.get("Dome")) != "nan" else None),
+                starting_qb=(str(row.get("Starting QB")) if row.get("Starting QB") is not None
+                             and str(row.get("Starting QB")) not in ("nan", "") else None),
+                is_thanksgiving=("thanksgiving" in str(_circa_lbl).lower()) if _circa_lbl is not None else False,
+                is_christmas=("christmas" in str(_circa_lbl).lower()) if _circa_lbl is not None else False,
+                is_international=(str(row.get("Location", "Home")).strip().lower() == "neutral"),
             ))
 
         solutions.append(pick_results)
