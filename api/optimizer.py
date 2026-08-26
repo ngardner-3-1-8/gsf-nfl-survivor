@@ -504,6 +504,14 @@ def run_solver(
 
     Returns (solutions, feasible, message)
     """
+
+    # Teams that play on Thanksgiving / Christmas anywhere this season, so we can
+    # warn when a pick burns a team the user may want for a holiday slate.
+    _tg_teams, _xmas_teams = set(), set()
+    if "Circa_Week_Label" in df.columns and "Team" in df.columns:
+        _lbl = df["Circa_Week_Label"].astype(str).str.lower()
+        _tg_teams = set(df.loc[_lbl.str.contains("thanksgiving", na=False), "Team"])
+        _xmas_teams = set(df.loc[_lbl.str.contains("christmas", na=False), "Team"])
     solutions: List[List[PickResult]] = []
     forbidden_solutions: List[List[int]] = []  # list of game indices per solution
     objective_label = "EV" if maximize_ev else "Win %"
@@ -592,8 +600,10 @@ def run_solver(
                       and str(row.get("Dome")) != "nan" else None),
                 starting_qb=(str(row.get("Starting QB")) if row.get("Starting QB") is not None
                              and str(row.get("Starting QB")) not in ("nan", "") else None),
-                is_thanksgiving=("thanksgiving" in str(_circa_lbl).lower()) if _circa_lbl is not None else False,
-                is_christmas=("christmas" in str(_circa_lbl).lower()) if _circa_lbl is not None else False,
+                # Flag if THIS TEAM plays on a holiday in ANY week — warns the
+                # user that picking them now burns a potential holiday-week team.
+                is_thanksgiving=(str(row["Team"]) in _tg_teams),
+                is_christmas=(str(row["Team"]) in _xmas_teams),
                 is_international=(str(row.get("Location", "Home")).strip().lower() == "neutral"),
             ))
 
