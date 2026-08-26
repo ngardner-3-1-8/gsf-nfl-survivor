@@ -1,0 +1,36 @@
+name: One-Time Run
+
+on:
+  workflow_dispatch:  # enables the manual "Run workflow" button
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Adjust to your needs, e.g.:
+          pip install pandas numpy
+          # Or if you have a requirements file:
+          # pip install -r requirements.txt
+
+      - name: Run script
+        run: python one-time-run.py
+
+      - name: Commit updated CSV
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add nfl-power-ratings/final_sim_results_with_variance_week_1_2026.csv
+          git diff --staged --quiet || git commit -m "Update week 1 2026 sim results"
+          git push
