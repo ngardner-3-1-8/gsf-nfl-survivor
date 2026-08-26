@@ -147,7 +147,7 @@ export default function PickCard({ solution, index, label, allWeeklyPickPcts }) 
                       {pick.circa_week || pick.week}
                     </td>
                     <td className="px-4 py-2.5 text-base">{holiday}</td>
-                    <td className="px-4 py-2.5 text-gray-400 text-xs">{pick.day_of_week || '—'}</td>
+                    <td className="px-4 py-2.5 text-gray-400 text-xs">{pick.day || '—'}</td>
                     <td className="px-4 py-2.5 font-semibold text-white">{pick.team}</td>
                     <td className="px-4 py-2.5 text-gray-300 text-xs">{pick.starting_qb || '—'}</td>
                     <td className="px-4 py-2.5 text-gray-400 text-xs">{pick.opponent}</td>
@@ -167,7 +167,7 @@ export default function PickCard({ solution, index, label, allWeeklyPickPcts }) 
                     </td>
                     <td className="px-4 py-2.5 text-base">{weather}</td>
                     <td className="px-4 py-2.5 text-right font-mono text-xs text-gray-300">
-                      {pick.days_of_rest ?? '—'}
+                      {pick.weekly_rest != null ? pick.weekly_rest : '—'}
                     </td>
                     <td className={`px-4 py-2.5 text-right font-mono text-xs ${
                       pick.rest_advantage > 0 ? 'text-green-400' :
@@ -178,11 +178,11 @@ export default function PickCard({ solution, index, label, allWeeklyPickPcts }) 
                         : '—'}
                     </td>
                     <td className={`px-4 py-2.5 text-right font-mono text-xs ${
-                      pick.cumulative_rest > 0 ? 'text-green-400' :
-                      pick.cumulative_rest < 0 ? 'text-red-400' : 'text-gray-400'
+                      pick.cumulative_rest_advantage > 0 ? 'text-green-400' :
+                      pick.cumulative_rest_advantage < 0 ? 'text-red-400' : 'text-gray-400'
                     }`}>
-                      {pick.cumulative_rest != null
-                        ? (pick.cumulative_rest > 0 ? '+' : '') + pick.cumulative_rest
+                      {pick.cumulative_rest_advantage != null
+                        ? (pick.cumulative_rest_advantage > 0 ? '+' : '') + pick.cumulative_rest_advantage
                         : '—'}
                     </td>
                     <td className="px-4 py-2.5 text-right font-mono text-xs">
