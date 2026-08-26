@@ -805,6 +805,7 @@ def loop_through_simulations(date_str):
         df['Circa Week'] = df['Week'].astype(str)
         df['NFL Week'] = df['Week']
         df['Date'] = pd.to_datetime(df['Date'], format='%b %d, %Y')
+        df['Day of Week'] = pd.to_datetime(df['Date']).dt.day_name()
         # Adjust January games to 2025 in the DataFrame
         if target_year == 2020:
             df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
