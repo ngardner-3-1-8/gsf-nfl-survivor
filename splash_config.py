@@ -58,7 +58,7 @@ SPLASH_CONTESTS = {
         "surviving_entries": 21000,         # ← update each week
         "entry_fee": 1000,
         "total_prize": 21000000,
-        "double_pick_weeks": [3, 6, 9, 12, 13, 14, 15, 16],   # ← e.g. [6, 12] as they're announced
+        "double_pick_weeks": [9, 12, 13, 14, 15, 16],   # ← e.g. [6, 12] as they're announced
         "weekly_pick_data": {
             #1: {"ARI": 1.0, "ATL": 1.0, "BAL": 1.0, "BUF": 1.0, "CAR": 1.0, "CHI": 1.0, "CIN": 1.0, "CLE": 1.0, "DAL": 1.0, "DEN": 1.0, "DET": 1.0, "GB": 1.0, "HOU": 1.0, "IND": 1.0, "JAX": 1.0, "KC": 1.0, 
             #    "LA": 1.0, "LAC": 1.0, "LV": 1.0, "MIA": 1.0, "MIN": 1.0, "NE": 1.0, "NO": 1.0, "NYG": 1.0, "NYJ": 1.0, "PHI": 1.0, "PIT": 1.0, "SEA": 1.0, "SF": 1.0, "TB": 1.0, "TEN": 1.0, "WAS": 1.0,
