@@ -13,7 +13,6 @@ from fastapi.responses import JSONResponse
 import glob
 import re
 
-
 def sanitize(obj):
     """Recursively replace nan/inf with None for JSON serialization."""
     if isinstance(obj, float):
@@ -489,7 +488,50 @@ def get_recommended_bets(year: int = Query(None)):
                 if is_historical:
                     base["win_loss"] = row.get(f"{bet_label} Win/Loss")
                     base["pnl"]      = row.get(f"{bet_label} P/L")
+                _attach_details(base)
                 return base
+
+            def _num(v):
+                try:
+                    f = float(v)
+                    return None if f != f else round(f, 3)  # NaN-safe
+                except (TypeError, ValueError):
+                    return None
+
+            def _attach_details(base):
+                """Attach sportsbook line + model estimates for this bet type so
+                the UI tile can show everything in one place."""
+                cat = base.get("bet_type", "")
+                pick = str(base.get("pick", ""))
+                is_home = pick == str(row.get("Home Team"))
+                side = "Home" if is_home else "Away"
+
+                d = {}
+                if cat == "Spread":
+                    # Current sportsbook spread for the picked side
+                    d["sportsbook_line"] = _num(row.get(f"{side} Team Sportsbook Spread"))
+                    # Model spreads (picked side sign)
+                    d["mp_spread"]  = _num(row.get(f"Massey-Peabody {side} Team Spread"))
+                    d["gsf_spread"] = _num(row.get(f"Generic Sports Fan {side} Team Spread"))
+                    d["mc_spread"]  = _num(row.get(f"Monte Carlo {side} Team Spread"))
+                    d["consensus_spread"] = _num(row.get(f"Consensus {side} Team Spread"))
+                    d["sim_spread_mean"]   = _num(row.get("Sim_Spread_Mean"))
+                    d["sim_spread_median"] = _num(row.get("Sim_Spread_Median"))
+                elif cat == "Total":
+                    d["sportsbook_line"] = _num(row.get("Total Line"))
+                    d["mc_total"]        = _num(row.get("Monte Carlo Total"))
+                    d["sim_total_mean"]   = _num(row.get("Sim_Total_Mean"))
+                    d["sim_total_median"] = _num(row.get("Sim_Total_Median"))
+                    d["sim_prob_over"]    = _num(row.get("Sim_Prob_Over"))
+                elif cat == "Moneyline":
+                    d["sportsbook_line"] = _num(row.get(f"{side} Team Sportsbook Moneyline"))
+                    # Implied probabilities from every model
+                    d["implied_sportsbook"] = _num(row.get(f"{side} Team Sportsbook Implied Odds to Win"))
+                    d["implied_mp"]  = _num(row.get(f"{side} Team Massey-Peabody Implied Odds to Win"))
+                    d["implied_gsf"] = _num(row.get(f"{side} Team Generic Sports Fan Implied Odds to Win"))
+                    d["implied_consensus"] = _num(row.get(f"Consensus {side} Win Pct"))
+                    d["implied_market"] = _num(row.get(f"Market {side} Team Implied Odds"))
+                base["details"] = d
 
             # MC Spread
             mc_spread_bet  = row.get("Monte Carlo Spread Bet")
