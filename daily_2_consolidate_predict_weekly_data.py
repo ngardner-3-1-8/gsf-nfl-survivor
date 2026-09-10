@@ -128,6 +128,7 @@ def loop_through_simulations(date_str):
         else:
             # If no week is fully completed yet, we are still in Week 1
             starting_week = 1
+            upcoming_week = 1
 
     print(f"Target Year: {target_year}")
     print(f"Starting Week: {starting_week}")
