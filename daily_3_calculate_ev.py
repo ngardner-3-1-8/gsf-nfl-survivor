@@ -118,6 +118,7 @@ def loop_through_ev(date_str):
         else:
             # If no week is fully completed yet, we are still in Week 1
             starting_week = 1
+            upcoming_week = 1
     
     
     # 5. Final Assignment to your variables
