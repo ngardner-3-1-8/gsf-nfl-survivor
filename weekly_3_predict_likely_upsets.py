@@ -58,6 +58,7 @@ def loop_through_predictions(date):
                 starting_week = 18
         else:
             starting_week = 1
+            upcoming_week = 1
     
     # 5. Final Assignment to your variables
     current_year = target_year
