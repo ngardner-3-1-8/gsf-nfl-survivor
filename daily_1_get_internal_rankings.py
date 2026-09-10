@@ -109,6 +109,8 @@ def loop_through_rankings(date):
                     print(f"Today ({today.date()}) is before the first game ({first_game_date.date()}). dropping years to load by 1.")
                     # Reload schedule for the adjusted year so we can calculate the week correctly below
                     target_year_load = target_year - 1
+                else:
+                    target_year_load = target_year
             
             # 4. Calculate the Current Week
             # We find the latest game that has happened to determine "current" week
