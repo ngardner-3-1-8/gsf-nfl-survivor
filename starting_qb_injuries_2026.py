@@ -38,7 +38,7 @@ TYPICAL_STARTERS = {
 # True = Backup is starting, False = Typical Starter is playing
 MANUAL_CURRENT_STARTERS = {
     'ARI': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'ATL': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+    'ATL': ['C.Rush', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'BAL': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'BUF': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'CAR': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
