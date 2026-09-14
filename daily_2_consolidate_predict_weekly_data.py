@@ -154,7 +154,7 @@ def loop_through_simulations(date_str):
         2023: 9234,
         2024: 14221,
         2025: 18718,
-        2026: 24000
+        2026: 25017
     }
     circa_2020_entries = circa_entries[2020]
     circa_2021_entries = circa_entries[2021]
