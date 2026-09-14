@@ -180,7 +180,7 @@ def loop_through_historical_final_data(date_str):
     
     print(f"✅ Final Configuration -> Year: {current_year} | Starting Week: {starting_week}")
     if target_year == 2026:
-        MAX_PAGES = 260    
+        MAX_PAGES = 250    
     elif target_year == 2025:
         MAX_PAGES = 187
     elif target_year == 2024:
@@ -200,7 +200,7 @@ def loop_through_historical_final_data(date_str):
     circa_2023_entries = 9234
     circa_2024_entries = 14221
     circa_2025_entries = 18718
-    circa_2026_entries = 26000
+    circa_2026_entries = 25017
     # ==============================================================================
     # SECTION 1: SURVIVORGRID.COM SCRAPING (UNCHANGED - nflreadpy CANNOT DO THIS)
     # ==============================================================================
@@ -1502,13 +1502,13 @@ def loop_through_historical_final_data(date_str):
         # The actual headers to use for the CSV output (Entry_Name, Total_Wins, and weeks up to starting_week - 1)
         WEEKS_TO_KEEP = ALL_20_WEEK_HEADERS########[:NUM_WEEKS_TO_KEEP] 
         FIXED_HEADERS = ["EntryName", "Total_Wins"]
-########        COLUMN_HEADERS = FIXED_HEADERS + WEEKS_TO_KEEP
-        COLUMN_HEADERS = FIXED_HEADERS + ALL_20_WEEK_HEADERS
+        COLUMN_HEADERS = FIXED_HEADERS + WEEKS_TO_KEEP
+########        COLUMN_HEADERS = FIXED_HEADERS + ALL_20_WEEK_HEADERS
         
         
         FIRST_PICK_CELL_INDEX = 2
-########        LAST_PICK_CELL_INDEX = FIRST_PICK_CELL_INDEX + NUM_WEEKS_TO_KEEP # The index up to (but not including) which we scrape
-        LAST_PICK_CELL_INDEX = FIRST_PICK_CELL_INDEX + len(ALL_20_WEEK_HEADERS) # The index up to (but not including) which we scrape
+        LAST_PICK_CELL_INDEX = FIRST_PICK_CELL_INDEX + NUM_WEEKS_TO_KEEP # The index up to (but not including) which we scrape
+########        LAST_PICK_CELL_INDEX = FIRST_PICK_CELL_INDEX + len(ALL_20_WEEK_HEADERS) # The index up to (but not including) which we scrape
     
         all_entries_data = []
         
@@ -1617,8 +1617,8 @@ def loop_through_historical_final_data(date_str):
         print(f"Applying 'ELIMINATED' status for empty picks in Week_1 through Week_{NUM_WEEKS_TO_KEEP}...")
         
         # Check only the weeks we are keeping
-########        weeks_to_check = WEEKS_TO_KEEP 
-        weeks_to_check = ALL_20_WEEK_HEADERS
+        weeks_to_check = WEEKS_TO_KEEP 
+########        weeks_to_check = ALL_20_WEEK_HEADERS
     
         for entry in all_entries_data:
             for week_header in ALL_20_WEEK_HEADERS:
@@ -1644,7 +1644,7 @@ def loop_through_historical_final_data(date_str):
         if 'getAuth' in globals(): # A check for the canvas environment
             print("Note: Running as a standalone Python script, not using Firebase initialization.")
         
-########        scrape_circa_survivor_picks()
+        scrape_circa_survivor_picks()
     
     # --- User Provided Data ---
     team_dictionary = {
