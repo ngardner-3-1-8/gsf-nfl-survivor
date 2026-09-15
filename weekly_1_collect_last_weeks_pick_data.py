@@ -175,6 +175,8 @@ def loop_through_historical_final_data(date_str):
     # 5. Final Assignment to your variables
     current_year = target_year
     starting_year = target_year
+    print(F"CURRENT YEAR = {current_year}")
+    print(F"TARGET YEAR = {target_year}")
     
     current_year_plus_1 = current_year + 1
     
@@ -562,6 +564,8 @@ def loop_through_historical_final_data(date_str):
     
     print("TESTING DF")
     print(df)
+    print(F"CURRENT YEAR = {current_year}")
+    print(F"TARGET YEAR = {target_year}")
     # Convert 'Week' to integer representing the week number
     #df['Week'] = df['Week'].str.replace('Week ', '').astype(int)
     # df['Week'] = pd.to_numeric(df['Week']) # This is now redundant after astype(int)
@@ -1139,7 +1143,7 @@ def loop_through_historical_final_data(date_str):
     for year in thanksgiving_weeks.keys():
         # Convert year to integer for comparison
         current_year = int(year)
-        print("THIS IS THE ERROR: CURRENT_YEAR = current_year")
+        
         
         # 1. Update 'Thanksgiving Favorite'
         fav_teams = thanksgiving_favorites.get(current_year, [])
@@ -1190,7 +1194,8 @@ def loop_through_historical_final_data(date_str):
                             (df['Team'].isin(pre_teams)) & \
                             (df['Week'] < holiday_week)
             df.loc[condition_pre, 'Pre Christmas'] = 1
-    
+    print(F"CURRENT YEAR = {current_year}")
+    print(F"TARGET YEAR = {target_year}")
     # 1. Create lookup maps for the Win % on the actual holiday weeks
     # This isolates the team's strength specifically on the day of the holiday
     xmas_map = df[df['christmas_week'] == 1].set_index(['Year', 'Team'])['Win %']
@@ -1518,7 +1523,8 @@ def loop_through_historical_final_data(date_str):
         
         print(f"Starting scrape from page 1 to {MAX_PAGES}...")
         print(f"Limiting output columns to Week_1 through Week_{NUM_WEEKS_TO_KEEP} (since starting_week={starting_week}).")
-    
+        print(F"CURRENT YEAR = {current_year}")
+        print(F"TARGET YEAR = {target_year}")
         # Iterate through all pages
         for page in range(1, MAX_PAGES + 1):
             url = f"{BASE_URL}?season={current_year}&page={page}"
