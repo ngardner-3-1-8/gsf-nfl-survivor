@@ -1138,7 +1138,8 @@ def loop_through_historical_final_data(date_str):
     # --- Thanksgiving Logic (2020-2025) ---
     for year in thanksgiving_weeks.keys():
         # Convert year to integer for comparison
-        current_year = int(year) 
+        current_year = int(year)
+        print("THIS IS THE ERROR: CURRENT_YEAR = current_year")
         
         # 1. Update 'Thanksgiving Favorite'
         fav_teams = thanksgiving_favorites.get(current_year, [])
