@@ -475,8 +475,9 @@ def loop_through_historical_final_data(date_str):
     df_api_schedule.dropna(subset=['Winner/tie', 'Loser/tie'], inplace=True)
     
     # Convert to string and clean up data types
-    df_api_schedule['Week'] = df_api_schedule['Week'].astype(int)    
+    df_api_schedule['Week'] = df_api_schedule['Week'].astype(int)
 
+    df_api_schedule['Calendar Date'] = pd.to_datetime(df_api_schedule['Calendar Date'], format='%m/%d/%y').dt.strftime('%Y-%m-%d')
     df_api_schedule['Calendar Date'] = df_api_schedule['Calendar Date'].dt.strftime('%Y-%m-%d')
     
     historical_home_df = pd.read_csv('contest-historical-data/Historical Home and Away data.csv')
