@@ -208,6 +208,17 @@ def loop_through_historical_final_data(date_str):
     # ==============================================================================
     
     # --- AUTOMATION FIX 3: Thanksgiving & Christmas Adjustment ---
+    files = [
+        "contest-historical-data/Circa_historical_data_2020.csv",
+        "contest-historical-data/Circa_historical_data_2021.csv",
+        "contest-historical-data/Circa_historical_data_2022.csv",
+        "contest-historical-data/Circa_historical_data_2023.csv",
+        "contest-historical-data/Circa_historical_data_2024.csv",
+        "contest-historical-data/Circa_historical_data_2025.csv",
+    ]
+    circa_data_df = pd.concat((pd.read_csv(f) for f in files), ignore_index=True)
+
+    circa_data_df.to_csv('contest-historical-data/Circa_historical_data.csv', index=False)
     
     def get_thanksgiving(year):
         # Thanksgiving is the 4th Thursday in November
@@ -463,10 +474,7 @@ def loop_through_historical_final_data(date_str):
     df_api_schedule.dropna(subset=['Winner/tie', 'Loser/tie'], inplace=True)
     
     # Convert to string and clean up data types
-    df_api_schedule['Week'] = df_api_schedule['Week'].astype(int)
-    
-    df_api_schedule['Calendar Date'] = pd.to_datetime(df_api_schedule['Calendar Date'], format='%m/%d/%y').dt.strftime('%Y-%m-%d')
-    
+    df_api_schedule['Week'] = df_api_schedule['Week'].astype(int)    
 
     df_api_schedule['Calendar Date'] = df_api_schedule['Calendar Date'].dt.strftime('%Y-%m-%d')
     
