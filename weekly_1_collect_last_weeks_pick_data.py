@@ -219,7 +219,7 @@ def loop_through_historical_final_data(date_str):
     circa_data_df = pd.concat((pd.read_csv(f) for f in files), ignore_index=True)
     circa_data_df.to_csv('contest-historical-data/Circa_historical_data.csv', index=False)
     print("MAKING CIRCA DATA")
-    
+    print(circa_data_df.head)
     
     def get_thanksgiving(year):
         # Thanksgiving is the 4th Thursday in November
