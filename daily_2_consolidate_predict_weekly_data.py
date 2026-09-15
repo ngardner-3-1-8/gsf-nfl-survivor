@@ -13,8 +13,6 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 from tqdm import tqdm
 from ortools.linear_solver import pywraplp
-import concurrent.futures
-from concurrent.futures import ProcessPoolExecutor
 import itertools
 import re
 from selenium import webdriver
@@ -32,7 +30,6 @@ import random
 import csv
 from typing import Optional
 from typing import Dict, List, Any
-from sklearn.feature_selection import RFE
 from scipy.stats import percentileofscore
 import warnings
 import calendar
@@ -4977,15 +4974,23 @@ def loop_through_simulations(date_str):
             X_train = df_train[feat_list].fillna(0)
             y_train = df_train['Pick %']
             
-            print(f"⚙️ Running RFE to find best features for Model {n_key}...")
-            
-            # Run RFE to rank features
-            base_rf = RandomForestRegressor(n_estimators=50, n_jobs=-1, random_state=42)
-            selector = RFE(estimator=base_rf, n_features_to_select=1, step=1)
-            selector.fit(X_train, y_train)
-            
-            # Create ranked list and select the Top N
-            ranks = pd.Series(selector.ranking_, index=feat_list).sort_values()
+            print(f"⚙️ Ranking features for Model {n_key}...")
+
+            # A single RandomForest fit + feature_importances_ gives an
+            # importance ranking for this purpose without RFE's per-step
+            # refitting: RFE(step=1) eliminates one feature at a time down
+            # to 1, refitting a full forest at every step — for ~30
+            # candidate features that's ~29 forest fits just to produce a
+            # ranking, and this whole block reruns every single daily run.
+            # One larger fit here (used only for the ranking) replaces that
+            # entire elimination chain; the final model below is still
+            # fit fresh on the selected subset exactly as before.
+            importance_rf = RandomForestRegressor(n_estimators=200, n_jobs=-1, random_state=42)
+            importance_rf.fit(X_train, y_train)
+
+            # Create ranked list and select the Top N (descending importance,
+            # same "best features first" semantics as the old ranks.head())
+            ranks = pd.Series(importance_rf.feature_importances_, index=feat_list).sort_values(ascending=False)
             top_n_list = ranks.head(config['target_n']).index.tolist()
             
             # Combine Top N with Mandatory features (ensuring no duplicates)
@@ -5022,11 +5027,13 @@ def loop_through_simulations(date_str):
                 Xs = df_splash[splash_feat_candidates].fillna(0)
                 ys = df_splash[assumed_public_pick_col]  # ← target = public/square %
 
-                print("🌊 Running RFE for the Splash (public pick %) model...")
-                s_base = RandomForestRegressor(n_estimators=50, n_jobs=-1, random_state=42)
-                s_sel = RFE(estimator=s_base, n_features_to_select=1, step=1)
-                s_sel.fit(Xs, ys)
-                s_ranks = pd.Series(s_sel.ranking_, index=splash_feat_candidates).sort_values()
+                print("🌊 Ranking features for the Splash (public pick %) model...")
+                # Same swap as the Circa models above: one importance fit
+                # instead of RFE's full step=1 elimination chain.
+                s_importance_rf = RandomForestRegressor(n_estimators=200, n_jobs=-1, random_state=42)
+                s_importance_rf.fit(Xs, ys)
+                s_ranks = pd.Series(s_importance_rf.feature_importances_,
+                                     index=splash_feat_candidates).sort_values(ascending=False)
                 s_top = s_ranks.head(9).index.tolist()
                 splash_features = list(dict.fromkeys(s_top + mandatory_features))
                 splash_features = [f for f in splash_features if f in Xs.columns]
@@ -5665,39 +5672,79 @@ def loop_through_simulations(date_str):
                 nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team), 'Away Pick %'] = pick_percent
 
             # ── 🌊 Splash (public/square) pick % for this week ──
-            # If REAL public pick % exists for this week (available from the
-            # Monday before game week onward), use it DIRECTLY — no estimation.
-            # Only fall back to the model for future weeks where it's absent.
-            if public_picks_available:
-                print(f"🌊 Week {current_week}: using ACTUAL public pick % for Splash")
-                # The Home/Away Team Public Pick % columns already hold the real
-                # values; copy them straight into the Splash columns.
-                nfl_schedule_df.loc[current_week_mask, 'Home Splash Pick %'] = \
-                    nfl_schedule_df.loc[current_week_mask, 'Home Team Public Pick %']
-                nfl_schedule_df.loc[current_week_mask, 'Away Splash Pick %'] = \
-                    nfl_schedule_df.loc[current_week_mask, 'Away Team Public Pick %']
-            elif splash_model is not None and splash_features:
+            # Real public pick % trickles in game-by-game through the week
+            # rather than landing for the whole slate at once — books/sites
+            # tend to post next week's numbers for one or two marquee games
+            # well before the rest. The old logic treated "ANY real value
+            # present this week" (public_picks_available) as "the whole
+            # week is covered" and copied Public Pick % straight across,
+            # leaving every other game's Splash Pick % as NaN with no
+            # fallback (the elif below never ran). daily_3's EV formula
+            # divides by the week's total pick-weighted win probability
+            # (expected_survivors), which should always be ~1.0 across a
+            # full slate; with most games missing, that denominator
+            # collapsed to a small fraction of 1.0 and inflated EV for any
+            # team that *did* have data — e.g. the Chargers' Week 2 Splash
+            # EV of 3.4+ came from a denominator of ~0.22 instead of ~1.0.
+            #
+            # Fix: blend row-by-row — use the real number wherever it
+            # exists, fall back to the model prediction everywhere else —
+            # then renormalize the whole week back to target_pick_sum so
+            # the EV denominator downstream is always built from a
+            # complete distribution, exactly like the Circa Pick % columns.
+            home_est = pd.Series(np.nan, index=nfl_schedule_df.index)
+            away_est = pd.Series(np.nan, index=nfl_schedule_df.index)
+
+            if splash_model is not None and splash_features:
                 try:
-                    print(f"🌊 Week {current_week}: ESTIMATING Splash public pick % (no actual yet)")
                     s_predict = pick_predictions_df.copy()
                     s_missing = list(set(splash_features) - set(s_predict.columns))
                     if s_missing:
                         s_predict[s_missing] = 0.0
                     s_X = s_predict[splash_features].fillna(0)
                     s_predict['Splash_Pick_Pct'] = splash_model.predict(s_X)
-                    # Normalize to sum to 1.0 across the week (same as Circa)
+                    # Normalize the model's own prediction to sum to 1.0 first,
+                    # so it's a sane distribution before real data is blended in.
                     s_sum = s_predict['Splash_Pick_Pct'].sum()
                     if s_sum > 0:
                         s_predict['Splash_Pick_Pct'] /= s_sum
-                    # Map back to Home/Away by team
                     s_map = dict(zip(s_predict['Team'], s_predict['Splash_Pick_Pct'])) \
                         if 'Team' in s_predict.columns else {}
                     for team in all_teams:
                         sp = s_map.get(team, np.nan)
-                        nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Home Team'] == team), 'Home Splash Pick %'] = sp
-                        nfl_schedule_df.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team), 'Away Splash Pick %'] = sp
+                        home_est.loc[current_week_mask & (nfl_schedule_df['Home Team'] == team)] = sp
+                        away_est.loc[current_week_mask & (nfl_schedule_df['Away Team'] == team)] = sp
                 except Exception as _se:
                     print(f"⚠️ Splash prediction failed for week {current_week}: {_se}")
+
+            # Overlay real Public Pick % wherever it's present; keep the model
+            # estimate everywhere else. combine_first prefers the real value.
+            real_home = nfl_schedule_df.loc[current_week_mask, 'Home Team Public Pick %']
+            real_away = nfl_schedule_df.loc[current_week_mask, 'Away Team Public Pick %']
+            home_final = real_home.combine_first(home_est.loc[current_week_mask])
+            away_final = real_away.combine_first(away_est.loc[current_week_mask])
+
+            if public_picks_available:
+                n_real = int(real_home.notna().sum() + real_away.notna().sum())
+                n_total = int(2 * current_week_mask.sum())
+                print(f"🌊 Week {current_week}: using ACTUAL public pick % for "
+                      f"{n_real}/{n_total} team-slots, model-filling the rest")
+            elif splash_model is not None and splash_features:
+                print(f"🌊 Week {current_week}: ESTIMATING Splash public pick % (no actual yet)")
+
+            # Renormalize the blended week back to target_pick_sum — the same
+            # invariant the Circa Pick % columns already guarantee — so a
+            # partially-populated real feed can never silently shrink the
+            # EV denominator in daily_3.
+            wk_sum = home_final.sum(skipna=True) + away_final.sum(skipna=True)
+            if wk_sum > 0:
+                home_final = home_final / wk_sum * target_pick_sum
+                away_final = away_final / wk_sum * target_pick_sum
+            else:
+                print(f"⚠️ Week {current_week}: no Splash pick % data (real or modeled) — leaving blank")
+
+            nfl_schedule_df.loc[current_week_mask, 'Home Splash Pick %'] = home_final
+            nfl_schedule_df.loc[current_week_mask, 'Away Splash Pick %'] = away_final
 
             # ── 🌊 Cap Splash pick % by manual availability report (if entered) ──
             # Splash publishes a per-team availability rate; a team can't be
@@ -5730,6 +5777,49 @@ def loop_through_simulations(date_str):
                                 nfl_schedule_df.loc[hmask, 'Home Splash Pick %'].clip(upper=cap_val)
                             nfl_schedule_df.loc[amask, 'Away Splash Pick %'] = \
                                 nfl_schedule_df.loc[amask, 'Away Splash Pick %'].clip(upper=cap_val)
+
+                    # ── Redistribute the mass the cap just trimmed away ──
+                    # Clipping a team's pick% down to its availability ceiling
+                    # removes probability mass from the week without putting
+                    # it anywhere else. Left alone, that's the same failure
+                    # mode as the missing-data bug above — the week's total
+                    # falls below target_pick_sum and daily_3's EV denominator
+                    # (expected_survivors) comes in artificially low, inflating
+                    # everyone's EV for that week. The Circa Pick % code a
+                    # few dozen lines above already re-homes trimmed mass onto
+                    # teams with headroom; mirror that here for Splash.
+                    home_vals = nfl_schedule_df.loc[current_week_mask, 'Home Splash Pick %'].fillna(0.0)
+                    away_vals = nfl_schedule_df.loc[current_week_mask, 'Away Splash Pick %'].fillna(0.0)
+                    residual = target_pick_sum - (home_vals.sum() + away_vals.sum())
+
+                    if residual > 1e-9:
+                        home_teams = nfl_schedule_df.loc[current_week_mask, 'Home Team']
+                        away_teams = nfl_schedule_df.loc[current_week_mask, 'Away Team']
+                        cap_home = home_teams.map(lambda t: _avail_wk.get(str(t).strip().upper(), 1.0))
+                        cap_away = away_teams.map(lambda t: _avail_wk.get(str(t).strip().upper(), 1.0))
+
+                        for _redistribute_pass in range(50):
+                            if residual <= 1e-9:
+                                break
+                            headroom_home = (cap_home - home_vals).clip(lower=0.0)
+                            headroom_away = (cap_away - away_vals).clip(lower=0.0)
+                            total_headroom = headroom_home.sum() + headroom_away.sum()
+                            if total_headroom <= 1e-12:
+                                # Every team is already at its Splash ceiling —
+                                # the slate genuinely can't place the residual.
+                                break
+                            add_frac = min(residual, total_headroom) / total_headroom
+                            home_vals = home_vals + headroom_home * add_frac
+                            away_vals = away_vals + headroom_away * add_frac
+                            residual = target_pick_sum - (home_vals.sum() + away_vals.sum())
+
+                        nfl_schedule_df.loc[current_week_mask, 'Home Splash Pick %'] = home_vals
+                        nfl_schedule_df.loc[current_week_mask, 'Away Splash Pick %'] = away_vals
+
+                        if residual > 1e-6:
+                            print(f"⚠️ Week {current_week}: Splash availability caps leave "
+                                  f"{residual:.1%} of pick mass unplaced (slate saturated) — "
+                                  f"daily_3's coverage guard will catch this if it's large")
             except Exception as _ce:
                 print(f"⚠️ Splash availability cap skipped for week {current_week}: {_ce}")
     
