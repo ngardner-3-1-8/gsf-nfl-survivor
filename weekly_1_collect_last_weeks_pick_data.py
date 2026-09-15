@@ -221,8 +221,16 @@ def loop_through_historical_final_data(date_str):
 #    print("MAKING CIRCA DATA")
 #    print(circa_data_df.head)
 
+
+    def parse_calendar_date(s):
+        try:
+            return pd.to_datetime(s, format='%m/%d/%y')
+        except ValueError:
+            return pd.to_datetime(s, format='%Y-%m-%d')
     
     circa_hist_df = pd.read_csv("contest-historical-data/Circa_historical_data.csv")
+    circa_hist_df['Calendar Date'] = circa_hist_df['Calendar Date'].apply(parse_calendar_date).dt.strftime('%Y-%m-%d')
+
     
     years = [2020, 2021, 2022, 2023, 2024, 2025]
     
@@ -231,7 +239,6 @@ def loop_through_historical_final_data(date_str):
         out_path = f"contest-historical-data/Circa_historical_data_{year}.csv"
         year_df.to_csv(out_path, index=False)
         print(f"{out_path}: {len(year_df)} rows")
-
     
     def get_thanksgiving(year):
         # Thanksgiving is the 4th Thursday in November
