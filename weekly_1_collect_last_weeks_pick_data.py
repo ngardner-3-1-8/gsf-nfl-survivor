@@ -230,6 +230,7 @@ def loop_through_historical_final_data(date_str):
     
     circa_hist_df = pd.read_csv("contest-historical-data/Circa_historical_data.csv")
     circa_hist_df['Calendar Date'] = circa_hist_df['Calendar Date'].apply(parse_calendar_date).dt.strftime('%Y-%m-%d')
+    circa_hist_df.to_csv("contest-historical-data/Circa_historical_data.csv", index=False)
 
     
     years = [2020, 2021, 2022, 2023, 2024, 2025]
@@ -1465,6 +1466,8 @@ def loop_through_historical_final_data(date_str):
     ###df = df[df['Year'] == current_year]
     
     df2 = pd.read_csv("contest-historical-data/Circa_historical_data.csv")
+    df2['Calendar Date'] = df2['Calendar Date'].apply(parse_calendar_date).dt.strftime('%Y-%m-%d')
+
     df2 = df2[df2['Year'] != current_year]
     df = df[df['Year'] == current_year]
     
