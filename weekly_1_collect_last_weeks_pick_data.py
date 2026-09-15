@@ -477,8 +477,14 @@ def loop_through_historical_final_data(date_str):
     # Convert to string and clean up data types
     df_api_schedule['Week'] = df_api_schedule['Week'].astype(int)
 
-    df_api_schedule['Calendar Date'] = pd.to_datetime(df_api_schedule['Calendar Date'], format='%m/%d/%y').dt.strftime('%Y-%m-%d')
-    df_api_schedule['Calendar Date'] = df_api_schedule['Calendar Date'].dt.strftime('%Y-%m-%d')
+
+    def parse_calendar_date(s):
+        try:
+            return pd.to_datetime(s, format='%m/%d/%y')
+        except ValueError:
+            return pd.to_datetime(s, format='%Y-%m-%d')
+    
+    df_api_schedule['Calendar Date'] = df_api_schedule['Calendar Date'].apply(parse_calendar_date).dt.strftime('%Y-%m-%d')
     
     historical_home_df = pd.read_csv('contest-historical-data/Historical Home and Away data.csv')
     
