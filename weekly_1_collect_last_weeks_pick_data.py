@@ -367,7 +367,7 @@ def loop_through_historical_final_data(date_str):
     df['Team'] = df['Team'].str.replace(r'\s\(L\)', '', regex=True)
     df['Team'] = df['Team'].str.replace(r'\s\(W\)', '', regex=True)
     df['Opponent'] = df['Opponent'].str.replace('@', '', regex=True)
-    df['Opponent'] = df['Opponent'].str.replace('r'\s\(n\)', '', regex=True)
+    df['Opponent'] = df['Opponent'].str.replace(r'\s\(n\)', '', regex=True)
     df['Opponent'] = df['Opponent'].str.replace(r'[\t\n\+\-]', '', regex=True)
     df['Opponent'] = (
         df['Opponent']
