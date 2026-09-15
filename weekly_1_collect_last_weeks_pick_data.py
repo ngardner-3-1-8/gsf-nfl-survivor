@@ -560,6 +560,8 @@ def loop_through_historical_final_data(date_str):
     df['Pick %'].fillna(0.0, inplace=True)
     df['Public Pick %'] = df['Pick %']
     
+    print("TESTING DF")
+    print(df)
     # Convert 'Week' to integer representing the week number
     #df['Week'] = df['Week'].str.replace('Week ', '').astype(int)
     # df['Week'] = pd.to_numeric(df['Week']) # This is now redundant after astype(int)
