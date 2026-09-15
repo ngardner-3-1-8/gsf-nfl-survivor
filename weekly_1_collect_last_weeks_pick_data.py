@@ -208,18 +208,30 @@ def loop_through_historical_final_data(date_str):
     # ==============================================================================
     
     # --- AUTOMATION FIX 3: Thanksgiving & Christmas Adjustment ---
-    files = [
-        "contest-historical-data/Circa_historical_data_2020.csv",
-        "contest-historical-data/Circa_historical_data_2021.csv",
-        "contest-historical-data/Circa_historical_data_2022.csv",
-        "contest-historical-data/Circa_historical_data_2023.csv",
-        "contest-historical-data/Circa_historical_data_2024.csv",
-        "contest-historical-data/Circa_historical_data_2025.csv",
-    ]
-    circa_data_df = pd.concat((pd.read_csv(f) for f in files), ignore_index=True)
-    circa_data_df.to_csv('contest-historical-data/Circa_historical_data.csv', index=False)
-    print("MAKING CIRCA DATA")
-    print(circa_data_df.head)
+#    files = [
+#        "contest-historical-data/Circa_historical_data_2020.csv",
+#        "contest-historical-data/Circa_historical_data_2021.csv",
+##        "contest-historical-data/Circa_historical_data_2022.csv",
+#        "contest-historical-data/Circa_historical_data_2023.csv",
+#        "contest-historical-data/Circa_historical_data_2024.csv",
+#        "contest-historical-data/Circa_historical_data_2025.csv",
+#    ]
+#    circa_data_df = pd.concat((pd.read_csv(f) for f in files), ignore_index=True)
+#    circa_data_df.to_csv('contest-historical-data/Circa_historical_data.csv', index=False)
+#    print("MAKING CIRCA DATA")
+#    print(circa_data_df.head)
+
+    
+    circa_hist_df = pd.read_csv("contest-historical-data/Circa_historical_data.csv")
+    
+    years = [2020, 2021, 2022, 2023, 2024, 2025]
+    
+    for year in years:
+        year_df = circa_hist_df[circa_hist_df["Year"] == year]
+        out_path = f"contest-historical-data/Circa_historical_data_{year}.csv"
+        year_df.to_csv(out_path, index=False)
+        print(f"{out_path}: {len(year_df)} rows")
+
     
     def get_thanksgiving(year):
         # Thanksgiving is the 4th Thursday in November
