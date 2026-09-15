@@ -418,7 +418,7 @@ def loop_through_historical_final_data(date_str):
     
     df = df[df['Year'] == current_year]
     # Save the initial scraped data
-    df.to_csv(f'contest-historical-data/historical_pick_data_FV_week_{starting_week - 1}.csv', index=False)
+    df.to_csv(f'contest-historical-data/historical_pick_data_FV_week_{starting_week - 1}_{current_year}.csv', index=False)
     
     ###
     ###df.to_csv(f'contest-historical-data/historical_pick_data_FV_ALL_Years.csv', index=False)
@@ -551,7 +551,7 @@ def loop_through_historical_final_data(date_str):
     # since nflreadpy already uses the abbreviations (e.g., ARI, BAL) that your
     # web-scraped data uses. This simplifies the code significantly!
     df = pd.read_csv('contest-historical-data/historical_pick_data_FV_ALL_Years.csv')
-    df2 = pd.read_csv(f'contest-historical-data/historical_pick_data_FV_week_{starting_week - 1}.csv')
+    df2 = pd.read_csv(f'contest-historical-data/historical_pick_data_FV_week_{starting_week - 1}_{current_year}.csv')
       
     #condition_to_remove = (
     #    (df['Year'] == current_year)
@@ -1045,7 +1045,7 @@ def loop_through_historical_final_data(date_str):
     condition_2026_date = (df['Year'] == 2026) & (df['Calendar Date'] >= pd.to_datetime('2026-11-28'))
     df.loc[condition_2026_date, 'Week'] += 1
     
-    condition_2026_week = (df['Year'] == 2026) & (df['Calendar Date'] >= pd.to_datetime('2025-12-26'))
+    condition_2026_week = (df['Year'] == 2026) & (df['Calendar Date'] >= pd.to_datetime('2026-12-26'))
     df.loc[condition_2026_week, 'Week'] += 1
     
     condition_2026_xmas = (df['Year'] == 2026) & (df['Calendar Date'] == pd.to_datetime('2026-12-25'))
@@ -2206,13 +2206,16 @@ def loop_through_historical_final_data(date_str):
     
         # 2. Get all unique combinations of 'Year' and 'Week'
         year_week_pairs = df[['Year', 'Week']].drop_duplicates()
+        print("YEAR WEEK PAIRS")
+        print(year_week_pairs)
         
         # 3. Sort them so we process chronologically
         year_week_pairs_sorted = year_week_pairs.sort_values(by=['Year', 'Week']).values
         
         # 4. Iterate through the (year, week) pairs using TQDM
         for year, week in tqdm(year_week_pairs_sorted, desc="Processing Year/Weeks"):
-            
+            print(f"YEAR: {year}")
+            print(f"WEEK: {week}")
             # Filter the dataframe for the specific year AND week
             week_df = df[(df['Year'] == year) & (df['Week'] == week)].copy()
             print(f"Getting EV Calculations for Week {week} in Year {year}.")
