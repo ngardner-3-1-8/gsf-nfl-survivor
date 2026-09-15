@@ -143,15 +143,34 @@ def loop_through_ev(date_str):
     
     def calculate_ev(df, config: dict, use_cache=False):
         start_w = upcoming_week
-    
-        # 1. Enforce team abbreviation standardization directly on main df
-        replace_dict = {'JAC': 'JAX', 'LAR': 'LA'}
-        df['Away Team'] = df['Away Team'].replace(replace_dict)
-        df['Home Team'] = df['Home Team'].replace(replace_dict)
-    
+
+        # NOTE: team names in this pipeline are full names ("Los Angeles
+        # Chargers"), not abbreviations, so a {'JAC': 'JAX', 'LAR': 'LA'}
+        # replace on 'Away Team'/'Home Team' is a silent no-op here — it
+        # never matches anything and was removed. If an upstream data
+        # source ever goes back to abbreviated codes, re-add a mapping
+        # that matches whatever abbreviations that source actually uses
+        # (and watch for historically relocated/renamed franchises —
+        # Raiders OAK/LV, Chargers SD/LAC, Rams STL/LA, Commanders'
+        # several names — if any historical training data merges on team
+        # name/abbreviation across seasons).
+
         # Find ending week bounds based on the full file
         end_w = int(df['Week_x'].max()) + 1
-    
+
+        # Expected total pick-% mass across a full slate in a given week.
+        # Every remaining entry picks exactly one team, so Home Pick % +
+        # Away Pick % across ALL of that week's games should sum to ~1.0
+        # (bump this to 2.0/3.0 if daily_2's target_pick_sum is ever set
+        # higher for a multi-pick week). If the actual mass comes in well
+        # below this, the pick% data for that week is incomplete — e.g.
+        # the Week 2 Splash bug, where public pick % had only posted for
+        # a handful of games and the rest were still NaN. Dividing by an
+        # incomplete mass is exactly what inflated EV past 3.0, so treat
+        # low coverage as missing data rather than compute from it.
+        EXPECTED_PICK_MASS = 1.0
+        MIN_PICK_MASS_COVERAGE = 0.85  # fraction of EXPECTED_PICK_MASS required to trust the week
+
         probability_scenarios = {
             "sportsbook": {
                 "away_col": "Away Team Sportsbook Fair Odds",
@@ -179,94 +198,101 @@ def loop_through_ev(date_str):
                 "prefix": "consensus"
             }
         }
-    
-        def calculate_all_scenarios(week_df, away_prob_col, home_prob_col,
+
+        def calculate_all_scenarios(week_df, week_num, away_prob_col, home_prob_col,
                                     home_pick_col='Home Pick %',
                                     away_pick_col='Away Pick %'):
             """
             EV(team) = P(team wins) / E[total survivors this week]
             E[survivors] = sum of (each team's pick% * their win probability)
-            
-            Teams with 0% availability (pick% == 0) are excluded from the
-            expected survivors calculation — they're not pickable so they
-            don't affect EV for the remaining eligible teams.
 
-            home_pick_col/away_pick_col let the same formula run on Circa pick%
-            ('Home/Away Pick %') or Splash pick% ('Home/Away Splash Pick %').
+            Teams with 0%/missing availability (pick% == 0 or NaN) are
+            excluded from the expected-survivors denominator — they're not
+            pickable so they don't affect EV for the remaining eligible
+            teams. BUT the denominator is only meaningful if pick% data
+            exists for (essentially) the whole slate — see EXPECTED_PICK_MASS
+            above — so we bail out to all-zero EV for the week rather than
+            silently compute from a partial distribution.
+
+            home_pick_col/away_pick_col let the same formula run on Circa
+            pick% ('Home/Away Pick %') or Splash pick% ('Home/Away Splash
+            Pick %').
             """
-            home_probs = week_df[home_prob_col].values
-            away_probs = week_df[away_prob_col].values
-            home_picks = week_df[home_pick_col].values
-            away_picks = week_df[away_pick_col].values
-        
+            home_probs = week_df[home_prob_col].to_numpy(dtype=float)
+            away_probs = week_df[away_prob_col].to_numpy(dtype=float)
+            home_picks = week_df[home_pick_col].fillna(0).to_numpy(dtype=float)
+            away_picks = week_df[away_pick_col].fillna(0).to_numpy(dtype=float)
+
+            total_pick_mass = home_picks.sum() + away_picks.sum()
+            if total_pick_mass < EXPECTED_PICK_MASS * MIN_PICK_MASS_COVERAGE:
+                print(f"⚠️ Week {week_num}: {home_pick_col}/{away_pick_col} pick% "
+                      f"coverage is only {total_pick_mass:.1%} of expected — "
+                      f"treating as missing data and zeroing EV for this week "
+                      f"(check upstream pick% generation).")
+                zero = np.zeros(len(week_df))
+                return (dict(zip(week_df['Home Team'], zero)),
+                        dict(zip(week_df['Away Team'], zero)))
+
             # Only include teams with non-zero availability in the denominator
             home_eligible = home_picks > 0
             away_eligible = away_picks > 0
-        
+
             expected_survivors = (
                 np.sum(home_probs[home_eligible] * home_picks[home_eligible]) +
                 np.sum(away_probs[away_eligible] * away_picks[away_eligible])
             )
-        
-            ev_results = {}
-            for i, row in week_df.iterrows():
-                if expected_survivors > 0:
-                    # Home team — only assign EV if eligible
-                    if row[home_pick_col] > 0:
-                        ev_results[row['Home Team']] = row[home_prob_col] / expected_survivors
-                    else:
-                        ev_results[row['Home Team']] = 0
-        
-                    # Away team — only assign EV if eligible
-                    if row[away_pick_col] > 0:
-                        ev_results[row['Away Team']] = row[away_prob_col] / expected_survivors
-                    else:
-                        ev_results[row['Away Team']] = 0
-                else:
-                    ev_results[row['Home Team']] = 0
-                    ev_results[row['Away Team']] = 0
-        
-            return ev_results
-    
+
+            if expected_survivors > 0:
+                home_ev = np.where(home_eligible, home_probs / expected_survivors, 0.0)
+                away_ev = np.where(away_eligible, away_probs / expected_survivors, 0.0)
+            else:
+                home_ev = np.zeros(len(week_df))
+                away_ev = np.zeros(len(week_df))
+
+            return (dict(zip(week_df['Home Team'], home_ev)),
+                    dict(zip(week_df['Away Team'], away_ev)))
+
+        def compute_and_write_ev(home_prob_col, away_prob_col, home_ev_col, away_ev_col,
+                                  home_pick_col, away_pick_col, desc):
+            df[home_ev_col] = 0.0
+            df[away_ev_col] = 0.0
+
+            for week in tqdm(range(start_w, end_w), desc=desc, leave=False):
+                week_mask = df['Week_x'] == week
+                week_df = df.loc[week_mask]
+
+                if week_df.empty:
+                    continue
+
+                home_ev_map, away_ev_map = calculate_all_scenarios(
+                    week_df, week,
+                    away_prob_col=away_prob_col,
+                    home_prob_col=home_prob_col,
+                    home_pick_col=home_pick_col,
+                    away_pick_col=away_pick_col,
+                )
+
+                # Vectorized write-back: one map() per side instead of a
+                # per-team boolean-mask scan over the whole df (this was
+                # O(teams) redundant full-column scans per week per
+                # scenario before).
+                df.loc[week_mask, home_ev_col] = df.loc[week_mask, 'Home Team'].map(home_ev_map)
+                df.loc[week_mask, away_ev_col] = df.loc[week_mask, 'Away Team'].map(away_ev_map)
+
         for scenario_name, scenario_config in probability_scenarios.items():
             away_prob_col = scenario_config["away_col"]
             home_prob_col = scenario_config["home_col"]
             prefix = scenario_config["prefix"]
-            
-            # Create dynamically named columns for the scenario on the main DataFrame
-            home_ev_col = f"{prefix}_Home_EV"
-            away_ev_col = f"{prefix}_Away_EV"
-            
-            # Initialize with default value for past weeks or empty rows
-            df[home_ev_col] = 0.0
-            df[away_ev_col] = 0.0
-    
-            for week in tqdm(range(start_w, end_w), desc=f"Processing {prefix.upper()} EV", leave=False):
-                # Filter rows for the current week being processed
-                week_df = df[df['Week_x'] == week].copy()
-    
-                if week_df.empty:
-                    continue
-    
-                ev_results = calculate_all_scenarios(
-                    week_df,
-                    away_prob_col=away_prob_col,
-                    home_prob_col=home_prob_col
-                )
-    
-                # Write results back to the MAIN df
-                for team in week_df['Home Team'].unique():
-                    df.loc[
-                        (df['Week_x'] == week) & (df['Home Team'] == team),
-                        home_ev_col
-                    ] = ev_results.get(team, 0)
-    
-                for team in week_df['Away Team'].unique():
-                    df.loc[
-                        (df['Week_x'] == week) & (df['Away Team'] == team),
-                        away_ev_col
-                    ] = ev_results.get(team, 0)
-    
+
+            compute_and_write_ev(
+                home_prob_col, away_prob_col,
+                home_ev_col=f"{prefix}_Home_EV",
+                away_ev_col=f"{prefix}_Away_EV",
+                home_pick_col='Home Pick %',
+                away_pick_col='Away Pick %',
+                desc=f"Processing {prefix.upper()} EV",
+            )
+
         # ── 🌊 SPLASH EV — same 5 scenarios, using the Splash pick% columns ──
         if 'Home Splash Pick %' in df.columns and 'Away Splash Pick %' in df.columns:
             print("Computing Splash EV from Splash pick% columns...")
@@ -275,36 +301,21 @@ def loop_through_ev(date_str):
                 home_prob_col = scenario_config["home_col"]
                 prefix = scenario_config["prefix"]
 
-                home_ev_col = f"Splash_{prefix}_Home_EV"
-                away_ev_col = f"Splash_{prefix}_Away_EV"
-                df[home_ev_col] = 0.0
-                df[away_ev_col] = 0.0
-
-                for week in tqdm(range(start_w, end_w),
-                                 desc=f"Processing SPLASH {prefix.upper()} EV", leave=False):
-                    week_df = df[df['Week_x'] == week].copy()
-                    if week_df.empty:
-                        continue
-                    ev_results = calculate_all_scenarios(
-                        week_df,
-                        away_prob_col=away_prob_col,
-                        home_prob_col=home_prob_col,
-                        home_pick_col='Home Splash Pick %',
-                        away_pick_col='Away Splash Pick %',
-                    )
-                    for team in week_df['Home Team'].unique():
-                        df.loc[(df['Week_x'] == week) & (df['Home Team'] == team),
-                               home_ev_col] = ev_results.get(team, 0)
-                    for team in week_df['Away Team'].unique():
-                        df.loc[(df['Week_x'] == week) & (df['Away Team'] == team),
-                               away_ev_col] = ev_results.get(team, 0)
+                compute_and_write_ev(
+                    home_prob_col, away_prob_col,
+                    home_ev_col=f"Splash_{prefix}_Home_EV",
+                    away_ev_col=f"Splash_{prefix}_Away_EV",
+                    home_pick_col='Home Splash Pick %',
+                    away_pick_col='Away Splash Pick %',
+                    desc=f"Processing SPLASH {prefix.upper()} EV",
+                )
         else:
             print("(No Splash pick% columns — skipping Splash EV)")
 
         # Save the updated main dataframe overwriting the original input file
         df.to_csv(main_file_path, index=False)
         print(f"\nSuccessfully appended all EV columns and saved to: {main_file_path}")
-    
+
     calculate_ev(df, config={})
 
 if __name__ == "__main__":
