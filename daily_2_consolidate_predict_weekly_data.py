@@ -4334,6 +4334,7 @@ def loop_through_simulations(date_str):
         public_pick_df['Team'] = public_pick_df['Team'].str.replace(r'\s\(L\)', '', regex=True)
         public_pick_df['Team'] = public_pick_df['Team'].str.replace(r'\s\(W\)', '', regex=True)
         public_pick_df['Opponent'] = public_pick_df['Opponent'].str.replace('@', '', regex=True)
+        public_pick_df['Opponent'] = public_pick_df['Opponent'].str.replace('(n)', '', regex=True)
         public_pick_df['Opponent'] = public_pick_df['Opponent'].str.replace(r'[\t\n\+\-]', '', regex=True)
         public_pick_df['Opponent'] = (
             public_pick_df['Opponent']
