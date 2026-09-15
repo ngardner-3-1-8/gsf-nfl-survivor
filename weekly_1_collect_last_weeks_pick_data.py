@@ -1105,10 +1105,10 @@ def loop_through_historical_final_data(date_str):
     ## 2. Define Variables (Using Dictionaries for Years)
     # Using strings for keys aligns with 'Year' column if it's an integer
     thanksgiving_weeks = {
-        2020: 12, 2021: 12, 2022: 12, 2023: 12, 2024: 13, 2025: 13
+        2020: 12, 2021: 12, 2022: 12, 2023: 12, 2024: 13, 2025: 13, 2026: 12
     }
     christmas_weeks = {
-        2021: 17, 2022: 18, 2023: 18, 2024: 18, 2025: 18 
+        2021: 17, 2022: 18, 2023: 18, 2024: 18, 2025: 18, 2026: 17 
     }
     
     
@@ -1116,17 +1116,17 @@ def loop_through_historical_final_data(date_str):
     # You will populate these lists with the actual team names
     thanksgiving_favorites = {
         2020: ['HOU', 'DAL'], 2021: ['BUF', 'DAL', 'CHI'], 2022: ['DAL', 'MIN', 'BUF'], 2023: ['DAL', 'MIA', 'DET', 'SF'], 
-        2024: ['KC', 'DET', 'GB', 'DAL'], 2025: ['DET', 'BAL', 'KC', 'PHI']
+        2024: ['KC', 'DET', 'GB', 'DAL'], 2025: ['DET', 'BAL', 'KC', 'PHI'], 2026: ['LAR', 'DAL', 'BUF', 'DET', 'DEN']
     }
     thanksgiving_underdogs = {
         2020: ['DET', 'WAS'], 2021: ['DET', 'LV', 'NO'], 2022: ['NE', 'DET', 'NYG'], 2023: ['SEA', 'GB', 'NYJ', 'WAS'], 
-        2024: ['NYG', 'MIA', 'LV', 'CHI'], 2025: ['GB', 'DAL', 'CIN', 'CHI']
+        2024: ['NYG', 'MIA', 'LV', 'CHI'], 2025: ['GB', 'DAL', 'CIN', 'CHI'], 2026: ['GB', 'PHI', 'KC', 'CHI', 'PIT']
     }
     christmas_favorites = {
-        2021: ['GB', 'SF', 'ARI'], 2022: ['TB', 'MIA', 'LAC', 'DEN'], 2023: ['KC', 'SF', 'PHI'], 2024: ['BAL', 'SEA', 'KC'], 2025: ['DAL', 'DET', 'KC']
+        2021: ['GB', 'SF', 'ARI'], 2022: ['TB', 'MIA', 'LAC', 'DEN'], 2023: ['KC', 'SF', 'PHI'], 2024: ['BAL', 'SEA', 'KC'], 2025: ['DAL', 'DET', 'KC'], 2026: ['PHI', 'LAR', 'CHI', 'BUF']
     }
     christmas_underdogs = {
-        2021: ['IND', 'TEN', 'CLE'], 2022: ['ARI', 'GB', 'LAR', 'IND'], 2023: ['LV', 'NYG', 'BAL'], 2024: ['PIT', 'CHI', 'HOU'], 2025: ['WAS', 'MIN', 'DEN']
+        2021: ['IND', 'TEN', 'CLE'], 2022: ['ARI', 'GB', 'LAR', 'IND'], 2023: ['LV', 'NYG', 'BAL'], 2024: ['PIT', 'CHI', 'HOU'], 2025: ['WAS', 'MIN', 'DEN'], 2026: ['HOU', 'SEA', 'GB', 'DEN']
     }
     
     
