@@ -1,0 +1,56 @@
+name: Build Entry Pick Training Data
+
+on:
+  # No schedule -- this is a manual-only workflow. Run it from the
+  # Actions tab whenever you want to (re)assemble the historical
+  # choice-set training table (e.g. after adding/fixing a season's
+  # files, or updating YEARS_TO_PROCESS in the script).
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-training-data:
+    runs-on: ubuntu-latest
+    # This script does a full python row-by-row pass across every
+    # entry/week/candidate-team combination for every year in
+    # YEARS_TO_PROCESS (currently 2020-2025) -- with ~25k entries/year
+    # and up to 20 weeks, that's a lot of iterating, not just I/O. Give
+    # it plenty of runway rather than let a slow year get killed by a
+    # default timeout. Lower this once you've seen how long a real run
+    # actually takes.
+    timeout-minutes: 180
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # build_entry_pick_training_data.py only reads/writes CSVs with
+          # pandas/numpy -- no scraping, no ML, no browser automation.
+          pip install pandas numpy
+
+      - name: Run Build Entry Pick Training Data
+        run: |
+          python build_entry_pick_training_data.py
+
+      - name: Commit and Push Data
+        # Saves the assembled training_data/entry_pick_choice_training_data.csv
+        # back to your repository. This file can get large across 6 seasons,
+        # so if it ever trips a repo size limit, switch this step to upload
+        # it as a workflow artifact instead of committing it -- say the word
+        # and I'll swap this step for that.
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add training_data/entry_pick_choice_training_data.csv
+          # Check if there are changes before committing to avoid errors
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Rebuild entry pick choice training data" && git push)
