@@ -5316,6 +5316,20 @@ def loop_through_simulations(date_str):
     
         # Ensure 'Total Remaining Entries at Start of Week' has been correctly initialized
         # If the entry size is not set, the simulation will break.
+        def _team_holiday_winpct(nfl_schedule_df, holiday_week_num):
+            """Each team's Win % (Fair Odds) on one specific week number of the full
+            season schedule, keyed by team. Built once, from the full schedule --
+            NOT from pick_predictions_df, which inside the week loop only ever
+            holds one week at a time and can't see the holiday week from any
+            earlier iteration."""
+            wk = nfl_schedule_df[nfl_schedule_df['Week'] == holiday_week_num]
+            home = wk.set_index('Home Team')['Home Team Fair Odds']
+            away = wk.set_index('Away Team')['Away Team Fair Odds']
+            return pd.concat([home, away]).to_dict()
+        
+        thanksgiving_holiday_winpct = _team_holiday_winpct(nfl_schedule_df, thanksgiving_week)
+        christmas_holiday_winpct = _team_holiday_winpct(nfl_schedule_df, christmas_week)
+        
         if nfl_schedule_df.loc[nfl_schedule_df['Week'] == upcoming_week, 'Total Remaining Entries at Start of Week'].empty:
              print(f"Error: 'Total Remaining Entries' not set for starting week {starting_week}. Assuming {default_entries}.")
              nfl_schedule_df.loc[nfl_schedule_df['Week'] == upcoming_week, 'Total Remaining Entries at Start of Week'] = default_entries
@@ -5718,7 +5732,20 @@ def loop_through_simulations(date_str):
             pick_predictions_df['Availability_Rank_Density'] = pick_predictions_df['Availability_Rank'] / pick_predictions_df['Num_Teams_This_Week']
     
     
-            pick_predictions_df = compute_holiday_lookahead_features(pick_predictions_df)
+            pick_predictions_df['Christmas_WinPct_Lookahead'] = np.where(
+                pick_predictions_df['Pre Christmas'].fillna(0).astype(bool),
+                pick_predictions_df['Team'].map(christmas_holiday_winpct).fillna(0.0), 0.0)
+            pick_predictions_df['Thanksgiving_WinPct_Lookahead'] = np.where(
+                pick_predictions_df['Pre Thanksgiving'].fillna(0).astype(bool),
+                pick_predictions_df['Team'].map(thanksgiving_holiday_winpct).fillna(0.0), 0.0)
+            pick_predictions_df['Weeks_To_Christmas'] = np.where(
+                pick_predictions_df['Pre Christmas'].fillna(0).astype(bool),
+                max(christmas_week - current_week, 0), 0.0)
+            pick_predictions_df['Weeks_To_Thanksgiving'] = np.where(
+                pick_predictions_df['Pre Thanksgiving'].fillna(0).astype(bool),
+                max(thanksgiving_week - current_week, 0), 0.0)
+            pick_predictions_df['Holiday_Lookahead_Strength'] = pick_predictions_df[
+                ['Christmas_WinPct_Lookahead', 'Thanksgiving_WinPct_Lookahead']].max(axis=1)
             
             # --- LOOP THROUGH ALL 80 MODELS ---
             print("--- Predicting and normalizing across all feature configurations ---")
