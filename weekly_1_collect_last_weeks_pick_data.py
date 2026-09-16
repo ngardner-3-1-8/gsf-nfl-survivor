@@ -1702,10 +1702,10 @@ def loop_through_historical_final_data(date_str):
         "CAR": "CAR", "CHI": "CHI", "CIN": "CIN", "CLE": "CLE",
         "DAL": "DAL", "DEN": "DEN", "DET": "DET", "GB": "GB",
         "HOU": "HOU", "IND": "IND", "JAX": "JAC", "KC": "KC",
-        "LAC": "LAC", "LA": "LAR", "LV": "LV", "MIA": "MIA",
+        "LAC": "LAC", "LAR": "LA", "LV": "LV", "MIA": "MIA",
         "MIN": "MIN", "NE": "NE", "NO": "NO", "NYG": "NYG",
         "NYJ": "NYJ", "PHI": "PHI", "PIT": "PIT", "SEA": "SEA",
-        "SF": "SF", "TB": "TB", "TEN": "TEN", "WAS": "WSH"
+        "SF": "SF", "TB": "TB", "TEN": "TEN", "WAS": "WAS"
     }
     
     # --- File Names ---
@@ -2855,6 +2855,7 @@ def loop_through_historical_final_data(date_str):
                 pick_pct_map = {}
                 for _, row in hist_week.iterrows():
                     team_abbr = str(row.get("Team", "")).strip()
+                    team_abbr = team_dictionary.get(team_abbr, team_abbr)  # normalize to picks-file convention
                     pick_pct  = row.get("Pick %")
                     if team_abbr and pd.notna(pick_pct):
                         pick_pct_map[team_abbr] = float(pick_pct)
