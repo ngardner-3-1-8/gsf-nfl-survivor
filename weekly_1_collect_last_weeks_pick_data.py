@@ -1712,16 +1712,16 @@ def loop_through_historical_final_data(date_str):
         scrape_circa_survivor_picks()
     
     # --- User Provided Data ---
-      team_dictionary = {
-          "ARI": "ARI", "ATL": "ATL", "BAL": "BAL", "BUF": "BUF",
-          "CAR": "CAR", "CHI": "CHI", "CIN": "CIN", "CLE": "CLE",
-          "DAL": "DAL", "DEN": "DEN", "DET": "DET", "GB": "GB",
-          "HOU": "HOU", "IND": "IND", "JAX": "JAC", "KC": "KC",
-          "LAC": "LAC", "LAR": "LA", "LV": "LV", "MIA": "MIA",
-          "MIN": "MIN", "NE": "NE", "NO": "NO", "NYG": "NYG",
-          "NYJ": "NYJ", "PHI": "PHI", "PIT": "PIT", "SEA": "SEA",
-          "SF": "SF", "TB": "TB", "TEN": "TEN", "WAS": "WAS"
-      }
+    team_dictionary = {
+        "ARI": "ARI", "ATL": "ATL", "BAL": "BAL", "BUF": "BUF",
+        "CAR": "CAR", "CHI": "CHI", "CIN": "CIN", "CLE": "CLE",
+        "DAL": "DAL", "DEN": "DEN", "DET": "DET", "GB": "GB",
+        "HOU": "HOU", "IND": "IND", "JAX": "JAC", "KC": "KC",
+        "LAC": "LAC", "LAR": "LA", "LV": "LV", "MIA": "MIA",
+        "MIN": "MIN", "NE": "NE", "NO": "NO", "NYG": "NYG",
+        "NYJ": "NYJ", "PHI": "PHI", "PIT": "PIT", "SEA": "SEA",
+        "SF": "SF", "TB": "TB", "TEN": "TEN", "WAS": "WAS"
+    }
     
     # --- File Names ---
     historical_data_file = f"contest-historical-data/Circa_historical_data_{target_year}.csv"
@@ -1790,8 +1790,7 @@ def loop_through_historical_final_data(date_str):
                 print(f"Warning: Could not parse Year/Week for row {index}. Skipping calculations for this row.")
                 continue
                 
-####            full_team_name = team_dictionary.get(team_abbr)
-            full_team_name = team_abbr
+            full_team_name = team_dictionary.get(team_abbr)
             
             pick_df = None
             if year in pick_dataframes_cache:
