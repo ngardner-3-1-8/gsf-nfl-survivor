@@ -11,6 +11,7 @@ from datetime import timedelta
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
+from sklearn.inspection import permutation_importance
 from tqdm import tqdm
 from ortools.linear_solver import pywraplp
 import itertools
@@ -31,6 +32,7 @@ import csv
 from typing import Optional
 from typing import Dict, List, Any
 from scipy.stats import percentileofscore
+from scipy.stats import spearmanr
 import warnings
 import calendar
 import importlib
@@ -4851,7 +4853,343 @@ def loop_through_simulations(date_str):
 #            final_combined_df.to_csv(f"nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv", index=False)
 #            print(f"Results saved to 'nfl-power-ratings/final_sim_results_with_variance_week_{upcoming_week}_{target_year}.csv'")
 
-
+    def compute_holiday_lookahead_features(df, year_col='Year', team_col='Team',
+                                            winpct_col='Win %', week_col=None):
+        """
+        Attaches, to every pre-holiday row, THAT SAME TEAM's Win % on its own
+        upcoming Thanksgiving / Christmas game within that season.
+     
+        Rationale: a team can look mediocre on paper in an early week and still
+        be unpopular, because sharp entries are deliberately saving it for a
+        holiday slate where it projects much stronger. The raw weekly Win %
+        can't see that -- it only shows up if the model can look ahead to the
+        team's own holiday-week matchup. This function makes that lookahead an
+        explicit, leak-safe feature (it only ever uses each team's OWN game
+        result on its OWN holiday week within the SAME season -- no future
+        weeks from other teams or other seasons leak in).
+     
+        Must be called on the training frame and the prediction frame the same
+        way -- that's the whole point of pulling it out into one function
+        instead of duplicating slightly different logic in two places.
+     
+        Requires these columns to already exist: Year, Team, Win %,
+        christmas_week, thanksgiving_week, Pre Christmas, Pre Thanksgiving
+        (all already produced earlier in the existing pipeline).
+        """
+        df = df.copy()
+        week_col = week_col or ('Date' if 'Date' in df.columns else 'Week')
+     
+        required = [year_col, team_col, winpct_col, 'christmas_week', 'thanksgiving_week',
+                    'Pre Christmas', 'Pre Thanksgiving', week_col]
+        missing = [c for c in required if c not in df.columns]
+        if missing:
+            raise KeyError(f"compute_holiday_lookahead_features is missing required "
+                            f"column(s): {missing}")
+     
+        def _lookahead_lookup(holiday_flag_col):
+            # One row per (season, team): that team's Win % on its own holiday game.
+            holiday_rows = df.loc[df[holiday_flag_col] == 1]
+            return holiday_rows.groupby([year_col, team_col])[winpct_col].mean().to_dict()
+     
+        xmas_lookup = _lookahead_lookup('christmas_week')
+        tgiving_lookup = _lookahead_lookup('thanksgiving_week')
+     
+        keys = list(zip(df[year_col], df[team_col]))
+        df['Christmas_WinPct_Lookahead'] = [xmas_lookup.get(k, 0.0) for k in keys]
+        df['Thanksgiving_WinPct_Lookahead'] = [tgiving_lookup.get(k, 0.0) for k in keys]
+     
+        # Only meaningful on the declared pre-holiday window -- zero elsewhere,
+        # so this doesn't accidentally leak a "this team is generally strong on
+        # holidays" signal into unrelated mid-season weeks.
+        pre_xmas = df['Pre Christmas'].fillna(0).astype(bool)
+        pre_tgiving = df['Pre Thanksgiving'].fillna(0).astype(bool)
+        df['Christmas_WinPct_Lookahead'] = np.where(pre_xmas, df['Christmas_WinPct_Lookahead'], 0.0)
+        df['Thanksgiving_WinPct_Lookahead'] = np.where(pre_tgiving, df['Thanksgiving_WinPct_Lookahead'], 0.0)
+     
+        # How many weeks out from that holiday game -- a separate, honest input
+        # instead of hand-baking a 1/week decay curve (see module docstring).
+        xmas_week_num = df.loc[df['christmas_week'] == 1].groupby(year_col)[week_col].first()
+        tgiving_week_num = df.loc[df['thanksgiving_week'] == 1].groupby(year_col)[week_col].first()
+     
+        df['Weeks_To_Christmas'] = (df[year_col].map(xmas_week_num) - df[week_col]).clip(lower=0)
+        df['Weeks_To_Thanksgiving'] = (df[year_col].map(tgiving_week_num) - df[week_col]).clip(lower=0)
+        df['Weeks_To_Christmas'] = np.where(pre_xmas, df['Weeks_To_Christmas'].fillna(0), 0.0)
+        df['Weeks_To_Thanksgiving'] = np.where(pre_tgiving, df['Weeks_To_Thanksgiving'].fillna(0), 0.0)
+     
+        # Convenience combined column (successor to the old 'Holiday Strength').
+        df['Holiday_Lookahead_Strength'] = df[['Christmas_WinPct_Lookahead',
+                                                'Thanksgiving_WinPct_Lookahead']].max(axis=1)
+        return df
+     
+     
+    HOLIDAY_LOOKAHEAD_COLS = [
+        'Christmas_WinPct_Lookahead', 'Thanksgiving_WinPct_Lookahead',
+        'Weeks_To_Christmas', 'Weeks_To_Thanksgiving', 'Holiday_Lookahead_Strength',
+    ]
+     
+     
+    # =====================================================================
+    # 2. Chronological (not random) validation split, by whole weeks so a
+    #    held-out week's teams all move together, matching how the model is
+    #    actually used in production (predict one full week at a time).
+    # =====================================================================
+    def _time_based_split(df, year_col='Year', week_col='Date', val_frac=0.15):
+        week_keys = (df[[year_col, week_col]]
+                     .drop_duplicates()
+                     .sort_values([year_col, week_col])
+                     .reset_index(drop=True))
+        n_weeks = len(week_keys)
+        if n_weeks < 4:
+            # Too little history for a meaningful holdout yet -- caller falls
+            # back to training on everything with no logged validation metric
+            # for this run, rather than crashing on an early week-1 run.
+            return df.index, pd.Index([])
+     
+        n_val_weeks = max(1, int(round(n_weeks * val_frac)))
+        train_weeks, val_weeks = train_test_split(week_keys, test_size=n_val_weeks, shuffle=False)
+     
+        train_keys = set(map(tuple, train_weeks[[year_col, week_col]].to_numpy()))
+        val_keys = set(map(tuple, val_weeks[[year_col, week_col]].to_numpy()))
+        row_keys = list(zip(df[year_col], df[week_col]))
+        train_mask = [k in train_keys for k in row_keys]
+        val_mask = [k in val_keys for k in row_keys]
+        return df.index[train_mask], df.index[val_mask]
+     
+     
+    # =====================================================================
+    # 3. Permutation-importance feature ranking (measured on the held-out
+    #    weeks), replacing impurity importance measured on the training data.
+    # =====================================================================
+    def _select_features_by_permutation_importance(X_train, y_train, X_val, y_val,
+                                                     top_n, random_state=42, n_repeats=8):
+        if len(X_val) == 0:
+            # No holdout yet (very first run) -- fall back to impurity
+            # importance rather than failing outright.
+            probe = RandomForestRegressor(n_estimators=200, n_jobs=-1, random_state=random_state)
+            probe.fit(X_train, y_train)
+            ranks = pd.Series(probe.feature_importances_, index=X_train.columns)
+        else:
+            probe = RandomForestRegressor(n_estimators=200, n_jobs=-1, random_state=random_state,
+                                           min_samples_leaf=5)
+            probe.fit(X_train, y_train)
+            result = permutation_importance(
+                probe, X_val, y_val, n_repeats=n_repeats,
+                random_state=random_state, scoring='neg_mean_absolute_error', n_jobs=-1,
+            )
+            ranks = pd.Series(result.importances_mean, index=X_train.columns)
+     
+        return ranks.sort_values(ascending=False).head(top_n).index.tolist()
+     
+     
+    def _log_metrics(metrics, path):
+        directory = os.path.dirname(path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        row = pd.DataFrame([metrics])
+        header = not os.path.exists(path)
+        row.to_csv(path, mode='a', header=header, index=False)
+     
+     
+    # =====================================================================
+    # 4. Train ONE model against ONE target (reused for the 9-feature and
+    #    7-feature Circa models, and for the Splash/public-pick model -- the
+    #    original script had near-duplicate copies of this block for each).
+    # =====================================================================
+    def train_relative_pick_pct_model(df_historical, target_col, feature_candidates,
+                                       mandatory_features, top_n, model_label,
+                                       year_col='Year', week_col='Date',
+                                       metrics_log_path='logs/pick_pct_model_metrics.csv',
+                                       random_state=42):
+        """
+        Trains a RandomForest to predict `target_col` RELATIVE TO that week's
+        mean (a ratio, always >= 0), which matches "picks are a relative choice
+        among that week's slate" and stays compatible with the existing
+        proportional renormalization downstream (it just rescales whatever
+        positive values it's given, so predicting a ratio instead of a raw
+        percentage requires no changes to that code).
+     
+        Returns None if there's no data for this target at all (e.g. Public
+        Pick % not populated yet), otherwise a dict:
+            {'model': fitted RandomForestRegressor,
+             'features': [feature names, in the order the model expects],
+             'metrics': {} or a dict of this run's validation metrics}
+        """
+        df_use = df_historical.dropna(subset=[target_col]).copy()
+        if df_use.empty:
+            print(f"⚠️ No rows with {target_col} available -- skipping {model_label}.")
+            return None
+     
+        week_mean = df_use.groupby([year_col, week_col])[target_col].transform('mean')
+        df_use['_relative_target'] = df_use[target_col] / week_mean.clip(lower=1e-6)
+     
+        feat_list = [f for f in feature_candidates
+                     if f in df_use.columns and pd.api.types.is_numeric_dtype(df_use[f])]
+     
+        train_idx, val_idx = _time_based_split(df_use, year_col, week_col)
+        X_all = df_use[feat_list].fillna(0)
+        y_all = df_use['_relative_target']
+        X_train, y_train = X_all.loc[train_idx], y_all.loc[train_idx]
+        X_val, y_val = X_all.loc[val_idx], y_all.loc[val_idx]
+     
+        print(f"⚙️  Ranking features for {model_label} "
+              f"({len(feat_list)} candidates, {len(X_train)} train rows / {len(X_val)} val rows)...")
+        ranked = _select_features_by_permutation_importance(
+            X_train, y_train, X_val, y_val, top_n=top_n, random_state=random_state)
+     
+        final_features = list(dict.fromkeys(ranked + [f for f in mandatory_features if f in feat_list]))
+     
+        metrics = {}
+        if len(X_val) > 0:
+            eval_model = RandomForestRegressor(n_estimators=100, random_state=random_state,
+                                                n_jobs=-1, min_samples_leaf=5)
+            eval_model.fit(X_train[final_features], y_train)
+            val_pred_ratio = eval_model.predict(X_val[final_features])
+     
+            mae_ratio = mean_absolute_error(y_val, val_pred_ratio)
+     
+            val_df = df_use.loc[val_idx, [year_col, week_col, target_col]].copy()
+            val_df['_pred_ratio'] = val_pred_ratio
+            val_week_mean = df_use.loc[val_idx].groupby([year_col, week_col])[target_col].transform('mean')
+            val_df['_pred_abs'] = val_df['_pred_ratio'] * val_week_mean.to_numpy()
+            mae_abs = mean_absolute_error(val_df[target_col], val_df['_pred_abs'])
+     
+            # Mean weekly rank-correlation: did we get the ORDERING of who's
+            # more/less popular right? That's what actually drives EV -- a
+            # model can miss the absolute percentage by a bit and still be
+            # very useful if it ranks teams correctly within each week.
+            weekly_corrs = []
+            for _, wk in val_df.groupby([year_col, week_col]):
+                if wk[target_col].nunique() > 1 and wk['_pred_abs'].nunique() > 1:
+                    corr, _ = spearmanr(wk[target_col], wk['_pred_abs'])
+                    if pd.notna(corr):
+                        weekly_corrs.append(corr)
+            mean_spearman = float(np.mean(weekly_corrs)) if weekly_corrs else float('nan')
+     
+            metrics = {
+                'timestamp': datetime.utcnow().isoformat(),
+                'model_label': model_label,
+                'target_col': target_col,
+                'n_features': len(final_features),
+                'features': ';'.join(final_features),
+                'n_train_rows': int(len(X_train)),
+                'n_val_rows': int(len(X_val)),
+                'mae_ratio_scale': round(float(mae_ratio), 5),
+                'mae_pct_points': round(float(mae_abs), 5),
+                'mean_weekly_spearman': round(mean_spearman, 4) if pd.notna(mean_spearman) else None,
+            }
+            _log_metrics(metrics, metrics_log_path)
+            spearman_str = f"{mean_spearman:.3f}" if pd.notna(mean_spearman) else "n/a"
+            print(f"✅ {model_label}: val MAE={mae_abs:.4f} pts | "
+                  f"mean weekly rank-corr={spearman_str} ({len(weekly_corrs)} weeks) | "
+                  f"features={final_features}")
+        else:
+            print(f"⚠️ {model_label}: not enough distinct weeks yet for a validation split -- "
+                  f"training on everything, no MAE logged this run.")
+     
+        # Deploy model: refit on ALL available rows (train + held-out) using the
+        # features/hyperparameters already locked in above via validation, so
+        # the model that actually makes predictions uses every bit of history
+        # rather than permanently holding 15% back.
+        final_model = RandomForestRegressor(n_estimators=100, random_state=random_state,
+                                             n_jobs=-1, min_samples_leaf=5)
+        final_model.fit(X_all[final_features], y_all)
+     
+        return {'model': final_model, 'features': final_features, 'metrics': metrics}
+     
+     
+    # =====================================================================
+    # 5. Orchestrator -- drop-in replacement for the original "DUAL MODEL
+    #    TRAINING" + "SPLASH MODEL" sections.
+    # =====================================================================
+    def train_pick_pct_models(df_historical, target_year, upcoming_week,
+                               base_feature_candidates, mandatory_features=None,
+                               metrics_log_path='logs/pick_pct_model_metrics.csv',
+                               random_state=42):
+        """
+        Returns (trained_models, splash_model, splash_features, run_metrics):
+          - trained_models: {9: {'model', 'features'}, 7: {'model', 'features'}}
+            -- same shape the rest of the original pipeline already expects,
+            so nothing after this call needs to change.
+          - splash_model, splash_features: same as the original variables.
+          - run_metrics: list of metric dicts logged this run (for printing /
+            inspecting immediately without re-reading the CSV).
+     
+        `df_historical` should be the raw df straight off
+        pd.read_csv('contest-historical-data/Circa_historical_data.csv')
+        with the Week->Date rename and Pick % NaN-fill already applied, exactly
+        as the original code did before this block.
+        """
+        mandatory_features = mandatory_features or ['Pre Thanksgiving', 'Pre Christmas',
+                                                      'christmas_week', 'thanksgiving_week']
+     
+        # --- Restore the leakage guard (this was disabled in the original
+        #     script: `df_historical = df` unconditionally overwrote the
+        #     masked version, so training saw the full dataset regardless of
+        #     upcoming_week). ---
+        past_years_mask = df_historical['Year'] < target_year
+        current_year_past_weeks_mask = ((df_historical['Year'] == target_year) &
+                                         (df_historical['Date'] < upcoming_week))
+        df_historical = df_historical.loc[past_years_mask | current_year_past_weeks_mask].copy()
+     
+        if df_historical.empty:
+            raise ValueError(f"No historical training data available prior to "
+                              f"{target_year} Week {upcoming_week}. If this is the very "
+                              f"first week of your very first historical year, you'll "
+                              f"need a fallback (e.g. skip training and use a flat/prior "
+                              f"guess) rather than calling this function.")
+     
+        # --- Holiday lookahead features (see compute_holiday_lookahead_features
+        #     docstring). Computed here on the training frame; the SAME call
+        #     must also be made on the live prediction frame -- see this
+        #     module's top-of-file integration notes, step C. ---
+        df_historical = compute_holiday_lookahead_features(df_historical)
+        mandatory_features = list(dict.fromkeys(mandatory_features + HOLIDAY_LOOKAHEAD_COLS))
+     
+        assumed_public_pick_col = 'Public Pick %'
+        clean_base = [f for f in base_feature_candidates if f != assumed_public_pick_col]
+        candidate_pool = list(dict.fromkeys(clean_base + HOLIDAY_LOOKAHEAD_COLS))
+     
+        model_configs = {
+            9: {'features': candidate_pool + [assumed_public_pick_col], 'target_n': 9},
+            7: {'features': candidate_pool, 'target_n': 7},
+        }
+     
+        trained_models = {}
+        run_metrics = []
+        for n_key, cfg in model_configs.items():
+            result = train_relative_pick_pct_model(
+                df_historical, target_col='Pick %', feature_candidates=cfg['features'],
+                mandatory_features=mandatory_features, top_n=cfg['target_n'],
+                model_label=f'circa_pick_pct_model_{n_key}',
+                metrics_log_path=metrics_log_path, random_state=random_state,
+            )
+            if result is not None:
+                trained_models[n_key] = {'model': result['model'], 'features': result['features']}
+                if result['metrics']:
+                    run_metrics.append(result['metrics'])
+            else:
+                print(f"⚠️ Model {n_key} could not be trained this run (see warning above).")
+     
+        # --- Splash (public/square pick %) model -- same treatment, same
+        #     holiday features, own validation + logging. ---
+        splash_model, splash_features = None, []
+        try:
+            splash_result = train_relative_pick_pct_model(
+                df_historical, target_col=assumed_public_pick_col, feature_candidates=clean_base,
+                mandatory_features=mandatory_features, top_n=9, model_label='splash_public_pick_pct',
+                metrics_log_path=metrics_log_path, random_state=random_state,
+            )
+            if splash_result is not None:
+                splash_model = splash_result['model']
+                splash_features = splash_result['features']
+                if splash_result['metrics']:
+                    run_metrics.append(splash_result['metrics'])
+            else:
+                print("⚠️ No Public Pick % history -- Splash pick% will be blank.")
+        except Exception as _e:
+            print(f"⚠️ Splash model training failed ({_e}); Splash pick% blank.")
+     
+        return trained_models, splash_model, splash_features, run_metrics
 
     # --- Main Function ---
     def get_predicted_pick_percentages(schedule_df):
@@ -4886,167 +5224,48 @@ def loop_through_simulations(date_str):
         # Define features related to holiday games
         holiday_cols = ['Thanksgiving Favorite', 'Thanksgiving Underdog', 'Christmas Favorite', 'Christmas Underdog', 'Pre Thanksgiving', 'Pre Christmas']
     
-    
         df = pd.read_csv('contest-historical-data/Circa_historical_data.csv')
-    
         df.rename(columns={"Week": "Date"}, inplace=True)
         df['Pick %'] = df['Pick %'].fillna(0.0)
-
-        # ============================================================
-        # 🛑 STRICT TEMPORAL FILTERING (Preventing Data Leakage)
-        # ============================================================
-        # Keep all years prior to the target_year
-        past_years_mask = df['Year'] < target_year
         
-        # For the target_year, only keep weeks strictly prior to the upcoming_week
-        current_year_past_weeks_mask = (df['Year'] == target_year) & (df['Date'] < upcoming_week)
+        base_feature_candidates = [
+           'Win %', 'Future Value (Stars)', 'Date', 'Away Team', 'Availability',
+           'Divisional Matchup?', 'Week_Mean_WinPct', 'Week_Mean_FV', 'Week_Max_WinPct',
+           'Week_Max_FV', 'Week_Min_WinPct', 'Week_Min_FV', 'Week_Std_WinPct', 'Week_Std_FV',
+           'Team_WinPct_RelativeToWeekMean', 'Team_FV_RelativeToWeekMean',
+           'Team_WinPct_RelativeToTopTeam', 'Team_FV_RelativeToTopTeam', 'Win % Rank',
+           'Star Rating Rank', 'Num_Teams_This_Week', 'Rank_Density', 'FV_Rank_Density',
+           'Future_Weeks_Top_Team', 'Future_Weeks_Over_80', 'Future_Weeks_70_80',
+           'Future_Weeks_60_70', 'Thanksgiving Underdog', 'Christmas Favorite',
+           'Thanksgiving Favorite', 'thanksgiving_week', 'christmas_week', 'Thursday_Home',
+           'Thursday_Away', 'Thursday_Underdog', 'Thursday_Favorite', 'Week_Mean_80',
+           'Week_Max_80', 'Week_Min_80', 'Week_Std_80', 'Team_80_RelativeToWeekMean',
+           'Team_80_RelativeToTopTeam', '80_Rank', '80_Rank_Density', 'Week_Mean_70_80',
+           'Week_Max_70_80', 'Week_Min_70_80', 'Week_Std_70_80',
+           'Team_70_80_RelativeToWeekMean', 'Team_70_80_RelativeToTopTeam', '70_80_Rank',
+           '70_80_Rank_Density', 'Week_Mean_60_70', 'Week_Max_60_70', 'Week_Min_60_70',
+           'Week_Std_60_70', 'Team_60_70_RelativeToWeekMean', 'Team_60_70_RelativeToTopTeam',
+           '60_70_Rank', '60_70_Rank_Density', 'Week_Mean_Top_Team', 'Week_Max_Top_Team',
+           'Week_Min_Top_Team', 'Week_Std_Top_Team', 'Team_Top_Team_RelativeToWeekMean',
+           'Team_Top_Team_RelativeToTopTeam', 'Top_Team_Rank', 'Top_Team_Rank_Density',
+           'Week_Mean_Availability', 'Week_Max_Availability', 'Week_Min_Availability',
+           'Week_Std_Availability', 'Team_Availability_RelativeToWeekMean',
+           'Team_Availability_RelativeToTopTeam', 'Availability_Rank',
+           'Availability_Rank_Density',
+           # NOTE: 'Holiday Strength' intentionally dropped from this list --
+           # it's superseded by the Holiday_Lookahead_* columns train_pick_pct_models
+           # computes itself. Leaving the stale column in df is harmless either way.
+        ]
+        base_feature_candidates.extend([c for c in holiday_cols if c in df.columns])
+        base_feature_candidates = [f for f in base_feature_candidates
+                                   if f in df.columns and pd.api.types.is_numeric_dtype(df[f])]
         
-        # Combine masks to create our valid training pool
-        valid_history_mask = past_years_mask | current_year_past_weeks_mask
-####        df_historical = df[valid_history_mask].copy()
-        df_historical = df
-        
-        if df_historical.empty:
-            print(f"⚠️ Warning: No historical training data available prior to {target_year} Week {upcoming_week}.")
-            # You may need a fallback mechanism here if running week 1 of your very first historical year
-        # ============================================================
-        
-        # 1. DEFINE CANDIDATE FEATURES (The Full List)
-        base_features = ['Win %', 'Future Value (Stars)', 'Date', 'Away Team', 'Availability', 'Divisional Matchup?', 'Week_Mean_WinPct', 'Week_Mean_FV', 'Week_Max_WinPct', 
-                         'Week_Max_FV', 'Week_Min_WinPct', 'Week_Min_FV', 'Week_Std_WinPct', 'Week_Std_FV', 'Team_WinPct_RelativeToWeekMean', 'Team_FV_RelativeToWeekMean', 
-                         'Team_WinPct_RelativeToTopTeam', 'Team_FV_RelativeToTopTeam', 'Win % Rank', 'Star Rating Rank','Num_Teams_This_Week', 'Rank_Density', 'FV_Rank_Density', 
-                         'Future_Weeks_Top_Team', 'Future_Weeks_Over_80', 'Future_Weeks_70_80', 'Future_Weeks_60_70', 'Pre Christmas', 'Pre Thanksgiving', 'Christmas Underdog', 
-                         'Christmas Favorite', 'Thanksgiving Underdog', 'Thanksgiving Favorite', 'thanksgiving_week', 'christmas_week', 'Thursday_Home', 'Thursday_Away', 
-                         'Thursday_Underdog', 'Thursday_Favorite', 'Week_Mean_80', 'Week_Max_80', 'Week_Min_80', 'Week_Std_80', 'Team_80_RelativeToWeekMean', 
-                         'Team_80_RelativeToTopTeam', '80_Rank', '80_Rank_Density', 'Week_Mean_70_80', 'Week_Max_70_80', 'Week_Min_70_80', 'Week_Std_70_80', 
-                         'Team_70_80_RelativeToWeekMean', 'Team_70_80_RelativeToTopTeam', '70_80_Rank', '70_80_Rank_Density', 'Week_Mean_60_70', 'Week_Max_60_70', 'Week_Min_60_70', 
-                         'Week_Std_60_70', 'Team_60_70_RelativeToWeekMean', 'Team_60_70_RelativeToTopTeam', '60_70_Rank', '60_70_Rank_Density', 'Week_Mean_Top_Team', 'Week_Max_Top_Team', 
-                         'Week_Min_Top_Team', 'Week_Std_Top_Team', 'Team_Top_Team_RelativeToWeekMean', 'Team_Top_Team_RelativeToTopTeam', 'Top_Team_Rank', 'Top_Team_Rank_Density', 'Week_Mean_Availability', 
-                         'Week_Max_Availability', 'Week_Min_Availability', 'Week_Std_Availability', 'Team_Availability_RelativeToWeekMean', 'Team_Availability_RelativeToTopTeam', 'Availability_Rank', 
-                         'Availability_Rank_Density', 'Holiday Strength']
-        
-        # Add holiday columns if they exist in the data
-        base_features.extend([col for col in holiday_cols if col in df.columns])
-        base_features = list(set(base_features))
-        
-        # Filter: Ensure all features actually exist in the dataframe and are numeric
-        base_features = [f for f in base_features if f in df.columns and pd.api.types.is_numeric_dtype(df[f])]
-    
-    #    # (Your existing code for other contests...)
-    #    base_features = ['Win %', 'Future Value (Stars)', 'Date', 'Away Team', 'Divisional Matchup?', 'Week_Mean_WinPct', 'Week_Mean_FV', 'Week_Max_WinPct', 
-    #                     'Week_Max_FV', 'Week_Min_WinPct', 'Week_Min_FV', 'Week_Std_WinPct', 'Week_Std_FV', 'Team_WinPct_RelativeToWeekMean', 'Team_FV_RelativeToWeekMean', 
-    #                     'Team_WinPct_RelativeToTopTeam', 'Team_FV_RelativeToTopTeam', 'Win % Rank', 'Star Rating Rank','Num_Teams_This_Week', 'Rank_Density',
-    #                     'FV_Rank_Density',  'Future_Weeks_Top_Team', 'Future_Weeks_Over_80', 'Future_Weeks_70_80', 'Future_Weeks_60_70', 'Thursday_Home', 'Thursday_Away', 
-    #                     'Thursday_Underdog', 'Thursday_Favorite', 'Week_Mean_80', 'Week_Max_80', 'Week_Min_80', 'Week_Std_80', 'Team_80_RelativeToWeekMean', 
-    #                     'Team_80_RelativeToTopTeam', '80_Rank', '80_Rank_Density', 'Week_Mean_70_80', 'Week_Max_70_80', 'Week_Min_70_80', 'Week_Std_70_80', 
-    #                     'Team_70_80_RelativeToWeekMean', 'Team_70_80_RelativeToTopTeam', '70_80_Rank', '70_80_Rank_Density', 'Week_Mean_60_70', 'Week_Max_60_70', 'Week_Min_60_70', 
-    #                     'Week_Std_60_70', 'Team_60_70_RelativeToWeekMean', 'Team_60_70_RelativeToTopTeam', '60_70_Rank', '60_70_Rank_Density', 'Week_Mean_Top_Team', 'Week_Max_Top_Team', 
-    #                     'Week_Min_Top_Team', 'Week_Std_Top_Team', 'Team_Top_Team_RelativeToWeekMean', 'Team_Top_Team_RelativeToTopTeam', 'Top_Team_Rank', 'Top_Team_Rank_Density']
-            
-    
-# ============================================================
-        # 🌟 DUAL MODEL TRAINING (Current vs Future)
-        # ============================================================
-        assumed_public_pick_col = 'Public Pick %'
-        mandatory_features = ['Pre Thanksgiving', 'Pre Christmas', 'christmas_week', 'thanksgiving_week']
-        
-        # 1. Prepare base features (strictly exclude Public Pick % here)
-        clean_base = [f for f in base_features if f != assumed_public_pick_col]
-        
-        # 2. Define our two targets
-        # Model 9: Current Week (Uses RFE to find the best 9, including Public Pick if ranked high)
-        # Model 7: Future Weeks (Uses RFE to find the best 7 fundamentals)
-        model_configs = {
-            9: {'features': clean_base + [assumed_public_pick_col], 'target_n': 9},
-            7: {'features': clean_base, 'target_n': 7}
-        }
-        
-        trained_models = {}
-
-        for n_key, config in model_configs.items():
-            feat_list = [f for f in config['features'] if f in df_historical.columns]
-            
-            # Filter historical data for this specific feature set
-            if assumed_public_pick_col in feat_list:
-                df_train = df_historical.dropna(subset=[assumed_public_pick_col])
-            else:
-                df_train = df_historical
-            
-            X_train = df_train[feat_list].fillna(0)
-            y_train = df_train['Pick %']
-            
-            print(f"⚙️ Ranking features for Model {n_key}...")
-
-            # A single RandomForest fit + feature_importances_ gives an
-            # importance ranking for this purpose without RFE's per-step
-            # refitting: RFE(step=1) eliminates one feature at a time down
-            # to 1, refitting a full forest at every step — for ~30
-            # candidate features that's ~29 forest fits just to produce a
-            # ranking, and this whole block reruns every single daily run.
-            # One larger fit here (used only for the ranking) replaces that
-            # entire elimination chain; the final model below is still
-            # fit fresh on the selected subset exactly as before.
-            importance_rf = RandomForestRegressor(n_estimators=200, n_jobs=-1, random_state=42)
-            importance_rf.fit(X_train, y_train)
-
-            # Create ranked list and select the Top N (descending importance,
-            # same "best features first" semantics as the old ranks.head())
-            ranks = pd.Series(importance_rf.feature_importances_, index=feat_list).sort_values(ascending=False)
-            top_n_list = ranks.head(config['target_n']).index.tolist()
-            
-            # Combine Top N with Mandatory features (ensuring no duplicates)
-            final_features = list(dict.fromkeys(top_n_list + mandatory_features))
-            
-            # Final training on the selected subset
-            final_rf = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1, min_samples_leaf=5)
-            final_rf.fit(X_train[final_features], y_train)
-            
-            # Store for the simulation loop
-            trained_models[n_key] = {
-                'model': final_rf,
-                'features': final_features
-            }
-            print(f"✅ Model {n_key} ready! Features: {final_features}")
-
-
-        # ============================================================
-        # 🌊 SPLASH MODEL — predicts the PUBLIC (square) pick %
-        # ============================================================
-        # Splash behavior tracks the survivorgrid "Public Pick %" (squarer than
-        # Circa's sharp Pick %). Public Pick % isn't available for FUTURE weeks,
-        # so we train a model to PREDICT it from fundamentals that ARE available
-        # (win%, future value, rankings, week context) — never using Public Pick
-        # % as a feature (it's the target). This parallels the Circa model but
-        # with a different target.
-        splash_model = None
-        splash_features = []
-        try:
-            splash_feat_candidates = [f for f in clean_base
-                                      if f in df_historical.columns]
-            df_splash = df_historical.dropna(subset=[assumed_public_pick_col]).copy()
-            if not df_splash.empty and splash_feat_candidates:
-                Xs = df_splash[splash_feat_candidates].fillna(0)
-                ys = df_splash[assumed_public_pick_col]  # ← target = public/square %
-
-                print("🌊 Ranking features for the Splash (public pick %) model...")
-                # Same swap as the Circa models above: one importance fit
-                # instead of RFE's full step=1 elimination chain.
-                s_importance_rf = RandomForestRegressor(n_estimators=200, n_jobs=-1, random_state=42)
-                s_importance_rf.fit(Xs, ys)
-                s_ranks = pd.Series(s_importance_rf.feature_importances_,
-                                     index=splash_feat_candidates).sort_values(ascending=False)
-                s_top = s_ranks.head(9).index.tolist()
-                splash_features = list(dict.fromkeys(s_top + mandatory_features))
-                splash_features = [f for f in splash_features if f in Xs.columns]
-
-                splash_model = RandomForestRegressor(
-                    n_estimators=100, random_state=42, n_jobs=-1, min_samples_leaf=5)
-                splash_model.fit(Xs[splash_features], ys)
-                print(f"✅ Splash model ready! Features: {splash_features}")
-            else:
-                print("⚠️ No Public Pick % history — Splash pick% will be blank.")
-        except Exception as _e:
-            print(f"⚠️ Splash model training failed ({_e}); Splash pick% blank.")
+        trained_models, splash_model, splash_features, run_metrics = train_pick_pct_models(
+           df_historical=df,
+           target_year=target_year,
+           upcoming_week=upcoming_week,
+           base_feature_candidates=base_feature_candidates,
+        )
 
         # ============================================================
         # End of Training Block (Proceed to your simulation/testing)
@@ -5499,23 +5718,7 @@ def loop_through_simulations(date_str):
             pick_predictions_df['Availability_Rank_Density'] = pick_predictions_df['Availability_Rank'] / pick_predictions_df['Num_Teams_This_Week']
     
     
-            # 1. Create lookup maps for the Win % on the actual holiday weeks
-            # This isolates the team's strength specifically on the day of the holiday
-            xmas_map = pick_predictions_df[pick_predictions_df['christmas_week'] == 1].set_index(['Team'])['Win %']
-            tgiving_map = pick_predictions_df[pick_predictions_df['thanksgiving_week'] == 1].set_index(['Team'])['Win %']
-            
-            # 2. Map those holiday-specific Win percentages back to every row for that team/year
-            # This allows the "Pre holiday" rows to "know" how strong the team is on the upcoming holiday
-            pick_predictions_df['christmas_win_pct'] = pick_predictions_df.set_index(['Team']).index.map(xmas_map).fillna(0)
-            pick_predictions_df['thanksgiving_win_pct'] = pick_predictions_df.set_index(['Team']).index.map(tgiving_map).fillna(0)
-            
-            # 3. Apply your interaction logic
-            # This turns the 'Pre' binary flag into a continuous "Expectation" variable
-            pick_predictions_df['Pre Christmas'] = pick_predictions_df['Pre Christmas'] * pick_predictions_df['christmas_win_pct'] * (1 / pick_predictions_df['Date'])
-            pick_predictions_df['Pre Thanksgiving'] = pick_predictions_df['Pre Thanksgiving'] * pick_predictions_df['thanksgiving_win_pct'] * (1 / pick_predictions_df['Date'])
-            
-            # 4. Create the final aggregate feature
-            pick_predictions_df['Holiday Strength'] = pick_predictions_df['Pre Thanksgiving'] + pick_predictions_df['Pre Christmas']
+            pick_predictions_df = compute_holiday_lookahead_features(pick_predictions_df)
             
             # --- LOOP THROUGH ALL 80 MODELS ---
             print("--- Predicting and normalizing across all feature configurations ---")
