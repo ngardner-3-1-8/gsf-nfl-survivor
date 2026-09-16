@@ -4462,6 +4462,8 @@ def loop_through_simulations(date_str):
         
         # Convert 'Week' to integer representing the week number
         public_pick_df['Week'] = public_pick_df['Week'].str.replace('Week ', '').astype(int)
+
+        print(public_pick_df.head)
     
         # df['Week'] = pd.to_numeric(df['Week']) # This is now redundant after astype(int)
         
@@ -4612,7 +4614,7 @@ def loop_through_simulations(date_str):
     
         condition_2026_date = (public_pick_df['Year'] == 2026) & (public_pick_df['Calendar Date'] >= pd.to_datetime('2026-11-28'))
         public_pick_df.loc[condition_2026_date, 'Week'] += 1
-        condition_2026_week = (public_pick_df['Year'] == 2026) & (public_pick_df['Calendar Date'] >= pd.to_datetime('2025-12-26'))
+        condition_2026_week = (public_pick_df['Year'] == 2026) & (public_pick_df['Calendar Date'] >= pd.to_datetime('2026-12-26'))
         public_pick_df.loc[condition_2026_week, 'Week'] += 1
         
         # For Year 2025
