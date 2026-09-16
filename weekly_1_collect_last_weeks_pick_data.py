@@ -18,6 +18,21 @@ import nflreadpy as nfl
 from datetime import datetime, timedelta
 import calendar
 
+hist = pd.read_csv("contest-historical-data/Circa_historical_data_2026.csv")
+picks = pd.read_csv("circa-pick-history/2026_survivor_picks.csv")
+
+wk1 = hist[(hist["Year"] == 2026) & (hist["Week"].astype(int) == 1)]
+print("Historical file raw Team codes, week 1:")
+print(wk1[["Team", "Pick %", "Calculated Current Week Picks", "Calculated Current Week Alive Entries"]]
+      .sort_values("Team").to_string())
+
+print("\nPicks file Week_1 value counts:")
+print(picks["Week_1"].value_counts())
+
+ABBR_TO_FULL_SAMPLE = {"LA": "Los Angeles Rams", "LAR": "Los Angeles Rams",
+                        "JAX": "Jacksonville Jaguars", "JAC": "Jacksonville Jaguars",
+                        "WAS": "Washington Commanders", "WSH": "Washington Commanders"}
+
 def loop_through_historical_final_data(date_str): 
     # 1. Get current date
     today = pd.to_datetime(date_str)
@@ -2855,7 +2870,6 @@ def loop_through_historical_final_data(date_str):
                 pick_pct_map = {}
                 for _, row in hist_week.iterrows():
                     team_abbr = str(row.get("Team", "")).strip()
-                    team_abbr = team_dictionary.get(team_abbr, team_abbr)  # normalize to picks-file convention
                     pick_pct  = row.get("Pick %")
                     if team_abbr and pd.notna(pick_pct):
                         pick_pct_map[team_abbr] = float(pick_pct)
