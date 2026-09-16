@@ -2729,7 +2729,7 @@ def loop_through_historical_final_data(date_str):
         FULL_TO_ABBR = {v: k for k, v in ABBR_TO_FULL.items()
                         if k in {"ARI","ATL","BAL","BUF","CAR","CHI","CIN","CLE",
                                  "DAL","DEN","DET","GB","HOU","IND","JAX","KC",
-                                 "LA","LAC","LV","MIA","MIN","NE","NO","NYG",
+                                 "LAR","LAC","LV","MIA","MIN","NE","NO","NYG",
                                  "NYJ","PHI","PIT","SEA","SF","TB","TEN","WAS"}}
         # ── 1. Load sim results and filter to completed week ──────────────────
         sim_file = (
