@@ -1775,7 +1775,8 @@ def loop_through_historical_final_data(date_str):
                 print(f"Warning: Could not parse Year/Week for row {index}. Skipping calculations for this row.")
                 continue
                 
-            full_team_name = team_dictionary.get(team_abbr)
+####            full_team_name = team_dictionary.get(team_abbr)
+            full_team_name = team_abbr
             
             pick_df = None
             if year in pick_dataframes_cache:
