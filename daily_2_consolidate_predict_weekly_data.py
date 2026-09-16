@@ -5746,6 +5746,8 @@ def loop_through_simulations(date_str):
                 max(thanksgiving_week - current_week, 0), 0.0)
             pick_predictions_df['Holiday_Lookahead_Strength'] = pick_predictions_df[
                 ['Christmas_WinPct_Lookahead', 'Thanksgiving_WinPct_Lookahead']].max(axis=1)
+
+            print(pick_predictions_df.loc[pick_predictions_df['Pre Christmas'] == 1, 'Christmas_WinPct_Lookahead'].describe())
             
             # --- LOOP THROUGH ALL 80 MODELS ---
             print("--- Predicting and normalizing across all feature configurations ---")
