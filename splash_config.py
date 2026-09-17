@@ -30,7 +30,7 @@ double-pick week.
 SPLASH_CONTESTS = {
     "big_splash": {
         "display_name": "The Big Splash",
-        "total_entries": 33000,          # ← update each week
+        "total_entries": 33334,          # ← update each week
         "surviving_entries": 24737,        # ← update each week
         "entry_fee": 100,
         "total_prize": 3000000,
@@ -54,7 +54,7 @@ SPLASH_CONTESTS = {
     },
     "survivor_world_championship": {
         "display_name": "The Survivor World Championship",
-        "total_entries": 21000,           # ← update each week
+        "total_entries": 20839,           # ← update each week
         "surviving_entries": 15657,         # ← update each week
         "entry_fee": 1000,
         "total_prize": 21000000,
