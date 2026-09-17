@@ -31,7 +31,7 @@ SPLASH_CONTESTS = {
     "big_splash": {
         "display_name": "The Big Splash",
         "total_entries": 33000,          # ← update each week
-        "surviving_entries": 33000,        # ← update each week
+        "surviving_entries": 24737,        # ← update each week
         "entry_fee": 100,
         "total_prize": 3000000,
         "double_pick_weeks": [3, 6, 9, 12, 13, 14, 15, 16],   # ← e.g. [10, 14, 17] as they're announced
@@ -44,8 +44,8 @@ SPLASH_CONTESTS = {
             #    },
         },
         "weekly_availability": {
-            1: {"ARI": 1.0, "ATL": 1.0, "BAL": 1.0, "BUF": 1.0, "CAR": 1.0, "CHI": 1.0, "CIN": 1.0, "CLE": 1.0, "DAL": 1.0, "DEN": 1.0, "DET": 1.0, "GB": 1.0, "HOU": 1.0, "IND": 1.0, "JAX": 1.0, "KC": 1.0, 
-                "LA": 1.0, "LAC": 1.0, "LV": 1.0, "MIA": 1.0, "MIN": 1.0, "NE": 1.0, "NO": 1.0, "NYG": 1.0, "NYJ": 1.0, "PHI": 1.0, "PIT": 1.0, "SEA": 1.0, "SF": 1.0, "TB": 1.0, "TEN": 1.0, "WAS": 1.0,
+            1: {"ARI": 1.0, "ATL": 1.0, "BAL": 0.99, "BUF": 1.0, "CAR": 1.0, "CHI": 0.99, "CIN": 0.98, "CLE": 1.0, "DAL": 1.0, "DEN": 1.0, "DET": 0.91, "GB": 1.0, "HOU": 1.0, "IND": 1.0, "JAX": 0.63, "KC": 1.0, 
+                "LA": 1.0, "LAC": 1.0, "LV": 0.89, "MIA": 1.0, "MIN": 0.99, "NE": 1.0, "NO": 1.0, "NYG": 1.0, "NYJ": 0.99, "PHI": 0.94, "PIT": 0.71, "SEA": 1.0, "SF": 1.0, "TB": 1.0, "TEN": 1.0, "WAS": 1.0,
                 },
             #2: {"ARI": 1.0, "ATL": 1.0, "BAL": 1.0, "BUF": 1.0, "CAR": 1.0, "CHI": 1.0, "CIN": 1.0, "CLE": 1.0, "DAL": 1.0, "DEN": 1.0, "DET": 1.0, "GB": 1.0, "HOU": 1.0, "IND": 1.0, "JAX": 1.0, "KC": 1.0, 
             #    "LA": 1.0, "LAC": 1.0, "LV": 1.0, "MIA": 1.0, "MIN": 1.0, "NE": 1.0, "NO": 1.0, "NYG": 1.0, "NYJ": 1.0, "PHI": 1.0, "PIT": 1.0, "SEA": 1.0, "SF": 1.0, "TB": 1.0, "TEN": 1.0, "WAS": 1.0,
@@ -55,7 +55,7 @@ SPLASH_CONTESTS = {
     "survivor_world_championship": {
         "display_name": "The Survivor World Championship",
         "total_entries": 21000,           # ← update each week
-        "surviving_entries": 21000,         # ← update each week
+        "surviving_entries": 15657,         # ← update each week
         "entry_fee": 1000,
         "total_prize": 21000000,
         "double_pick_weeks": [9, 12, 13, 14, 15, 16],   # ← e.g. [6, 12] as they're announced
