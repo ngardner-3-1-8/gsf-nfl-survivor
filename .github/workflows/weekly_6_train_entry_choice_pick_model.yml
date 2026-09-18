@@ -103,7 +103,7 @@ jobs:
       - name: Run Entry Pick Choice Model Training
         if: steps.dst_check.outputs.proceed == 'true'
         run: |
-          python entry_pick_choice_model_training.py
+          python weekly_6_entry_pick_choice_model_training.py
 
       - name: Commit and Push Model
         if: steps.dst_check.outputs.proceed == 'true'
