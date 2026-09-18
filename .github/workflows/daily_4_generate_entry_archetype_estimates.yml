@@ -103,5 +103,9 @@ jobs:
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
+          # mkdir first so `git add` never fails with "pathspec did not
+          # match any files" if a run genuinely produces zero output
+          # (e.g. no alive entries, or the sim file isn't out yet).
+          mkdir -p entry_archetype_pick_estimates
           git add entry_archetype_pick_estimates/
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update entry archetype pick estimates" && git push)
