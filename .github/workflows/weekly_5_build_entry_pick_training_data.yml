@@ -1,4 +1,4 @@
-name: Build Entry Pick Training Data
+name: Weekly 5 Build Entry Pick Training Data
 
 on:
   workflow_dispatch:
