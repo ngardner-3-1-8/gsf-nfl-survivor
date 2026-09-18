@@ -93,7 +93,7 @@ jobs:
       - name: Run Generate Entry Archetype Pick Estimates
         if: steps.dst_check.outputs.proceed == 'true'
         run: |
-          python weekly_7_generate_entry_archetype_pick_estimates.py
+          python daily_4_generate_entry_archetype_pick_estimates.py
 
       - name: Commit and Push Estimates
         if: steps.dst_check.outputs.proceed == 'true'
