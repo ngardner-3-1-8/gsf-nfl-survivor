@@ -48,6 +48,7 @@ and it's the metric that matters once scores get softmax-normalized into
 a probability split at inference time.
 """
 
+import datetime
 import json
 import os
 
@@ -73,12 +74,14 @@ MODEL_DIR = "models"
 MODEL_PATH = os.path.join(MODEL_DIR, "entry_pick_choice_model.pkl")
 FEATURE_META_PATH = os.path.join(MODEL_DIR, "entry_pick_choice_model_features.json")
 
-# Whole seasons on each side -- never split rows within a season, see
-# module docstring. Adjust as more seasons become available (e.g. once
-# 2025 has all 20 weeks instead of just Week 1).
-TRAIN_YEARS = [2020, 2021, 2022, 2023]
-VAL_YEARS = [2024]
-TEST_YEARS = [2025]
+# Train/Val/Test years are NOT hardcoded -- see split_by_year() below.
+# They're derived from whichever seasons are actually present in the
+# loaded data: newest season = Test (the live, still-accumulating
+# holdout for the in-progress season), second-newest = Val, everything
+# older = Train. Since pool behavior has been evolving season to season,
+# this also means a season doesn't sit in Val/Test forever -- the
+# moment a newer season shows up, it rolls back into Train automatically.
+# This needs zero edits at each season transition (e.g. 2026 -> 2027).
 
 GROUP_COLS = ['Year', 'Week', 'EntryName']
 LABEL_COL = 'Picked'
@@ -167,25 +170,44 @@ def load_training_data(parquet_path=DATA_PATH_PARQUET, csv_path=DATA_PATH_CSV):
 
 
 # --------------------------------------------------------------------
-# 2. Chronological split
+# 2. Chronological split -- purely a function of which seasons are
+#    actually present in the data. No year list to maintain here.
 # --------------------------------------------------------------------
+def compute_dynamic_year_splits(available_years):
+    """Newest season present = Test (the live, still-accumulating
+    holdout -- e.g. the currently in-progress season, retrained weekly
+    as more of its weeks complete). Second-newest = Val (the most
+    recently fully-completed season). Everything older = Train. Because
+    this is recomputed from whatever years actually show up in the
+    loaded table, a season transition (2026 -> 2027, 2027 -> 2028, ...)
+    requires no code change: the day a new season's picks start showing
+    up in the training data, it becomes Test, the old Test season slides
+    into Val, and the old Val season slides into Train."""
+    years = sorted(available_years)
+    if len(years) >= 3:
+        return years[:-2], years[-2:-1], years[-1:]
+    if len(years) == 2:
+        return years[:1], [], years[-1:]
+    return years, [], []  # 0 or 1 season present -- can't split meaningfully
+
+
 def split_by_year(df):
+    available_years = df['Year'].unique().tolist()
+    train_years, val_years, test_years = compute_dynamic_year_splits(available_years)
+
     def _subset(years, label):
         sub = df[df['Year'].isin(years)]
-        missing = [y for y in years if y not in df['Year'].unique()]
-        if missing:
-            print(f"   ⚠️  {label} split configured for {missing} but "
-                  f"that year isn't in the data -- continuing without it.")
         n_groups = sub.groupby(GROUP_COLS).ngroups if len(sub) else 0
         print(f"   {label}: {len(sub):,} rows, {n_groups:,} entry-week "
               f"groups, years {sorted(sub['Year'].unique().tolist())}")
         return sub
 
-    print("Splitting by season:")
-    train = _subset(TRAIN_YEARS, 'Train')
-    val = _subset(VAL_YEARS, 'Val')
-    test = _subset(TEST_YEARS, 'Test')
-    return train, val, test
+    print("Splitting by season (Test = current/newest season present, "
+          "Val = season before that, Train = everything older):")
+    train = _subset(train_years, 'Train')
+    val = _subset(val_years, 'Val')
+    test = _subset(test_years, 'Test')
+    return train, val, test, train_years, val_years, test_years
 
 
 # --------------------------------------------------------------------
@@ -291,11 +313,12 @@ def main():
             "Did build_entry_pick_training_data.py change its output schema?"
         )
 
-    train_df, val_df, test_df = split_by_year(df)
+    train_df, val_df, test_df, train_years, val_years, test_years = split_by_year(df)
     if train_df.empty or val_df.empty:
         raise ValueError(
-            "Train or Val split came back empty -- check TRAIN_YEARS/VAL_YEARS "
-            "against the years actually present in the data."
+            "Train or Val split came back empty -- this data only spans "
+            f"{sorted(df['Year'].unique().tolist())} season(s), which isn't "
+            "enough to form a 3-way split yet (need at least 2 seasons)."
         )
 
     print("\nTraining LightGBM binary classifier...")
@@ -331,9 +354,10 @@ def main():
             'categorical_features': CATEGORICAL_FEATURES,
             'group_cols': GROUP_COLS,
             'label_col': LABEL_COL,
-            'train_years': TRAIN_YEARS,
-            'val_years': VAL_YEARS,
-            'test_years': TEST_YEARS,
+            'train_years': train_years,
+            'val_years': val_years,
+            'test_years': test_years,
+            'trained_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
         }, f, indent=2)
 
     print(f"\n✅ Saved model to {MODEL_PATH}")
