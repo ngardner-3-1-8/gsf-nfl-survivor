@@ -1,11 +1,21 @@
 name: Build Entry Pick Training Data
 
 on:
-  # No schedule -- this is a manual-only workflow. Run it from the
-  # Actions tab whenever you want to (re)assemble the historical
-  # choice-set training table (e.g. after adding/fixing a season's
-  # files, or updating YEARS_TO_PROCESS in the script).
   workflow_dispatch:
+  schedule:
+    # Weekly, Tuesdays at 1pm Mountain time -- an hour ahead of Train
+    # Entry Pick Choice Model's 2pm Mountain schedule, so this always
+    # has time to finish (it took ~8 minutes for 6 seasons; even several
+    # times that comfortably fits the hour) and leave a fresh artifact
+    # for that workflow to pick up.
+    #
+    # GitHub Actions cron is UTC-only with no DST awareness, but the NFL
+    # season straddles the November US DST changeover, so "1pm Mountain"
+    # isn't one fixed UTC time year-round. Both possible UTC times are
+    # listed below; the "Check schedule matches 1pm Mountain time" step
+    # figures out which one is actually correct for today and skips the
+    # run otherwise -- so this needs no manual adjustment, ever.
+    - cron: '0 20 * * 2'  # 1pm Mountain STANDARD time (UTC-7)
 
 permissions:
   contents: read
@@ -14,23 +24,64 @@ jobs:
   build-training-data:
     runs-on: ubuntu-latest
     # This script does a full python row-by-row pass across every
-    # entry/week/candidate-team combination for every year in
-    # YEARS_TO_PROCESS (currently 2020-2025) -- with ~25k entries/year
-    # and up to 20 weeks, that's a lot of iterating, not just I/O. Give
-    # it plenty of runway rather than let a slow year get killed by a
-    # default timeout. Lower this once you've seen how long a real run
-    # actually takes.
+    # entry/week/candidate-team combination for every season on record
+    # (grows by one season a year, and by one week a week during the
+    # season) -- with ~25k entries/year and up to 20 weeks, that's a lot
+    # of iterating, not just I/O. Give it plenty of runway rather than
+    # let a slow run get killed by a default timeout. Lower this once
+    # you've seen how long a real run actually takes.
     timeout-minutes: 180
     steps:
+      - name: Check schedule matches 1pm Mountain time
+        id: dst_check
+        run: |
+          python3 - <<'PYEOF'
+          import datetime, os
+
+          def is_us_daylight_time(d):
+              # Pure US DST rule (2nd Sunday of March through the day
+              # before the 1st Sunday of November), no zoneinfo/tzdata
+              # dependency needed -- this rule hasn't changed since 2007.
+              march1 = datetime.date(d.year, 3, 1)
+              first_sun_march = march1 + datetime.timedelta(days=(6 - march1.weekday()) % 7)
+              second_sun_march = first_sun_march + datetime.timedelta(days=7)
+              nov1 = datetime.date(d.year, 11, 1)
+              first_sun_nov = nov1 + datetime.timedelta(days=(6 - nov1.weekday()) % 7)
+              return second_sun_march <= d < first_sun_nov
+
+          today = datetime.datetime.now(datetime.timezone.utc).date()
+          is_dst = is_us_daylight_time(today)
+          expected_cron = '0 19 * * 2' if is_dst else '0 20 * * 2'
+          event_name = os.environ.get('EVENT_NAME', '')
+          triggering_cron = os.environ.get('TRIGGERING_CRON', '')
+          # Manual runs always proceed; a scheduled run only proceeds if
+          # it's the one matching today's actual Mountain-time DST state
+          # -- the other cron firing that same day is a deliberate no-op.
+          proceed = (event_name != 'schedule') or (triggering_cron == expected_cron)
+
+          print(f"UTC date: {today}, Mountain DST active: {is_dst}, "
+                f"expected cron: {expected_cron!r}, "
+                f"triggering cron: {triggering_cron!r}, proceed: {proceed}")
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"proceed={'true' if proceed else 'false'}\n")
+          PYEOF
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TRIGGERING_CRON: ${{ github.event.schedule }}
+
       - name: Checkout code
+        if: steps.dst_check.outputs.proceed == 'true'
         uses: actions/checkout@v5
 
       - name: Set up Python
+        if: steps.dst_check.outputs.proceed == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Install Dependencies
+        if: steps.dst_check.outputs.proceed == 'true'
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
@@ -40,18 +91,20 @@ jobs:
           pip install pandas numpy pyarrow
 
       - name: Run Build Entry Pick Training Data
+        if: steps.dst_check.outputs.proceed == 'true'
         run: |
           python build_entry_pick_training_data.py
 
       - name: Upload Training Data Artifact
-        # The assembled table across 6 seasons came out to 673MB as a
+        if: steps.dst_check.outputs.proceed == 'true'
+        # The assembled table across all seasons came out to 673MB as a
         # CSV -- well past GitHub's 100MB per-file repo limit, and not
         # something that belongs in git history anyway since it's fully
         # regenerable by re-running this workflow. As Parquet it should
         # be much smaller, but this uploads it as a workflow artifact
         # (not a git commit) either way, so a future size increase can't
-        # break the push again. Download it from this run's summary page
-        # (Artifacts section) once the run finishes.
+        # break a push again. Train Entry Pick Choice Model downloads
+        # this artifact automatically -- no manual step needed here.
         uses: actions/upload-artifact@v4
         with:
           name: entry-pick-choice-training-data
