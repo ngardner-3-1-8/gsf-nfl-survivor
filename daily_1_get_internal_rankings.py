@@ -1097,7 +1097,7 @@ def loop_through_rankings(date):
 if __name__ == "__main__":
     formatted_date = datetime.now().strftime("%m/%d/%Y")
     week_starting_dates = [
-#        "09/15/2026",
+#        "09/08/2026",
         
 #        "09/03/2025", 
 #        "09/10/2025", 
