@@ -72,6 +72,7 @@ label (1 for exactly one candidate row per Year/Week/EntryName group,
 0 for the rest).
 """
 
+import datetime
 import os
 import re
 
@@ -81,7 +82,16 @@ import pandas as pd
 # --------------------------------------------------------------------
 # Config
 # --------------------------------------------------------------------
-YEARS_TO_PROCESS = [2020, 2021, 2022, 2023, 2024, 2025]  # completed seasons
+# EARLIEST_SEASON is the one number that ever needs to be set by hand --
+# it's the first year real historical data exists for, not something
+# that changes season to season. Everything else is derived so this
+# script needs zero edits when a season ends and the next one begins:
+# process_year() already skips a year gracefully (prints a warning, no
+# crash) if that year's picks file doesn't exist yet, so it's safe to
+# always attempt through "this calendar year" even mid-off-season before
+# the next season's file has been created.
+EARLIEST_SEASON = 2020
+YEARS_TO_PROCESS = list(range(EARLIEST_SEASON, datetime.date.today().year + 1))
 
 PICKS_PATTERN = "circa-pick-history/{year}_survivor_picks.csv"
 FINAL_DATA_PATTERN = (
