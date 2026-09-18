@@ -462,7 +462,13 @@ def run_pick_estimates(year, model, all_features, cat_lookup):
 
     # Marker-based elimination: catches anyone eliminated more than one
     # week ago -- the picks file already shows 'ELIMINATED' for them.
-    elim_mask = (picks_wide[week_cols].astype(str) == 'ELIMINATED').any(axis=1)
+    # Restricted to weeks that have actually happened -- a picks file
+    # that pre-creates every week's column for the whole season could
+    # default a not-yet-reached week to 'ELIMINATED' as a "no valid pick
+    # yet" placeholder, which would otherwise make every entry look
+    # eliminated the moment any future column exists, unfilled.
+    completed_week_cols = [c for c in week_cols if int(c.split('_')[1]) <= last_completed_week]
+    elim_mask = (picks_wide[completed_week_cols].astype(str) == 'ELIMINATED').any(axis=1)
     alive_names = set(picks_wide.loc[~elim_mask, 'EntryName'])
 
     # Cross-check the LAST completed week's real pick against the actual
