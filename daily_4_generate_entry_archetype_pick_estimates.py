@@ -78,6 +78,13 @@ entry_archetype_pick_estimates/{year}/week_{week}_entry_archetype_pick_estimates
 week, both taken from the sim file itself, not hardcoded), each with one
 row per (alive entry, candidate team) pair.
 
+entry_archetype_pick_estimates/{year}/week_{week}_team_pick_estimates.csv
+-- a companion per-TEAM summary for that same week: one row per candidate
+team with its opponent, sportsbook win %, the pool-wide Estimated_Pick_Pct
+(the per-entry Estimated_Pick_Pct values above, aggregated up to "what
+fraction of the still-alive pool is expected to pick this team"), and an
+Estimated_EV (see compute_estimated_ev below).
+
 YEAR SELECTION
 ==============
 Operates on the current/most recent season with a picks file present --
@@ -112,6 +119,7 @@ FEATURE_META_PATH = "models/entry_pick_choice_model_features.json"
 
 OUT_DIR_PATTERN = "entry_archetype_pick_estimates/{year}"
 OUT_FILE_PATTERN = "week_{week}_entry_archetype_pick_estimates.csv"
+TEAM_OUT_FILE_PATTERN = "week_{week}_team_pick_estimates.csv"
 
 TEAM_FULLNAME_TO_ABBR = {
     'Arizona Cardinals': 'ARI', 'Atlanta Falcons': 'ATL', 'Baltimore Ravens': 'BAL',
@@ -374,6 +382,9 @@ def compute_current_entry_state(pick_scores):
 #    sim file (build_entry_pick_training_data.py's load_week_candidate_
 #    table, but reading an in-memory slice instead of a per-week file).
 # --------------------------------------------------------------------
+OPPOSITE_PREFIX = {'Home': 'Away', 'Away': 'Home'}
+
+
 def build_candidate_table_from_sim(sim_df, week):
     wk_df = sim_df[sim_df['Week'] == week]
     if wk_df.empty:
@@ -381,7 +392,14 @@ def build_candidate_table_from_sim(sim_df, week):
 
     frames = []
     for prefix in ('Home', 'Away'):
-        cols = {'Team_Full': wk_df[f'{prefix} Team']}
+        opp_prefix = OPPOSITE_PREFIX[prefix]
+        cols = {
+            'Team_Full': wk_df[f'{prefix} Team'],
+            # Each team's opponent that week -- needed for the per-team
+            # summary output (week_{week}_team_pick_estimates.csv), not
+            # used as a model feature.
+            'Opponent_Full': wk_df[f'{opp_prefix} Team'],
+        }
         for out_name, tmpl in CANDIDATE_FEATURE_MAP.items():
             col = tmpl.format(prefix=prefix)
             cols[out_name] = wk_df[col] if col in wk_df.columns else np.nan
@@ -393,17 +411,37 @@ def build_candidate_table_from_sim(sim_df, week):
 
     long_df = pd.concat(frames, ignore_index=True)
     long_df['Team'] = long_df['Team_Full'].map(TEAM_FULLNAME_TO_ABBR)
+    long_df['Opponent'] = long_df['Opponent_Full'].map(TEAM_FULLNAME_TO_ABBR)
     unmapped = long_df.loc[long_df['Team'].isna(), 'Team_Full'].unique()
     if len(unmapped):
         print(f"   ⚠️  Week {week}: team name(s) didn't map to an abbreviation "
               f"and will be dropped: {list(unmapped)}.")
-    long_df = long_df.dropna(subset=['Team']).drop(columns=['Team_Full'])
+    long_df = long_df.dropna(subset=['Team']).drop(columns=['Team_Full', 'Opponent_Full'])
 
     for feat_col in ['Win_Pct', 'Sportsbook_EV', 'Future_Value']:
         if feat_col in long_df.columns:
             long_df[feat_col + '_Pctile'] = long_df[feat_col].rank(pct=True, method='average')
 
     return long_df.reset_index(drop=True)
+
+
+# --------------------------------------------------------------------
+# 4b. Estimated EV for the per-team summary output. The pipeline already
+#    has a "sportsbook_{prefix}_EV" concept elsewhere, computed from the
+#    real/observed Public Pick %, which only exists for a week that has
+#    already opened for picking. For a future week that hasn't opened
+#    yet, the only "pick %" available is this script's own simulated,
+#    pool-wide Estimated_Pick_Pct, so EV here is computed from that
+#    instead: win probability divided by how much of the still-alive
+#    pool is expected to also pick that team. This rewards exactly what
+#    makes a pick valuable in a knockout/survivor pool -- safe (high win
+#    probability) AND differentiated (few others also surviving on it) --
+#    the same intuition as the existing sportsbook EV figure, just fed
+#    with an estimated pick share instead of an observed one.
+# --------------------------------------------------------------------
+def compute_estimated_ev(win_prob, pick_pct, min_pick_pct=1e-4):
+    safe_pick_pct = np.clip(pick_pct, min_pick_pct, 1.0)
+    return win_prob / safe_pick_pct
 
 
 # --------------------------------------------------------------------
@@ -607,6 +645,42 @@ def run_pick_estimates(year, model, all_features, cat_lookup):
         out_df.to_csv(out_path, index=False)
         print(f"   ✅ Week {week}: wrote {len(out_df):,} rows "
               f"({out_df['EntryName'].nunique():,} entries) to {out_path}")
+
+        # ---- Per-team pool-wide summary for this week -----------------
+        # Aggregates the per-entry Estimated_Pick_Pct values up to "what
+        # fraction of the STILL-ALIVE pool is expected to pick this team",
+        # weighted by each entry's own Entry_Alive_Prob_Entering_Week
+        # (pool['AliveProb'] here) so an entry that's fractionally more
+        # likely to already be busted out (per the survival simulation)
+        # doesn't count as a full vote for whatever it would have picked.
+        pool['_alive_weighted_pick'] = pool['Estimated_Pick_Pct'] * pool['AliveProb']
+        team_pick_sum = pool.groupby('Team')['_alive_weighted_pick'].sum().rename('Alive_Weighted_Pick_Sum')
+        # AliveProb is one value per entry (repeated across its candidate-
+        # team rows), so de-dup by EntryName before summing it as the
+        # normalizing denominator.
+        total_alive_weight = pool.drop_duplicates('EntryName')['AliveProb'].sum()
+
+        team_summary = cand[['Team', 'Opponent', 'Win_Prob_For_Survival']].drop_duplicates('Team').copy()
+        team_summary = team_summary.merge(team_pick_sum, on='Team', how='left')
+        team_summary['Alive_Weighted_Pick_Sum'] = team_summary['Alive_Weighted_Pick_Sum'].fillna(0.0)
+        if total_alive_weight > 0:
+            team_summary['Estimated_Pick_Pct'] = team_summary['Alive_Weighted_Pick_Sum'] / total_alive_weight
+        else:
+            team_summary['Estimated_Pick_Pct'] = np.nan
+        team_summary['Estimated_EV'] = compute_estimated_ev(
+            team_summary['Win_Prob_For_Survival'], team_summary['Estimated_Pick_Pct'])
+
+        team_summary = team_summary.rename(columns={'Win_Prob_For_Survival': 'Sportsbook_Win_Pct'})
+        team_summary = team_summary[['Team', 'Opponent', 'Sportsbook_Win_Pct',
+                                      'Estimated_Pick_Pct', 'Estimated_EV']]
+        team_summary.insert(0, 'Week', int(week))
+        team_summary.insert(0, 'Year', year)
+        team_summary['Is_Upcoming_Week'] = is_upcoming
+        team_summary = team_summary.sort_values('Estimated_Pick_Pct', ascending=False)
+
+        team_out_path = os.path.join(out_dir, TEAM_OUT_FILE_PATTERN.format(week=int(week)))
+        team_summary.to_csv(team_out_path, index=False)
+        print(f"   ✅ Week {week}: wrote {len(team_summary):,} team rows to {team_out_path}")
 
         decay = pool[['EntryName', 'Team', 'Estimated_Pick_Pct']].copy()
         decay['DecayFactor'] = 1 - decay['Estimated_Pick_Pct']
