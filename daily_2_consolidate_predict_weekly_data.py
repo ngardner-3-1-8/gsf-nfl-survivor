@@ -6616,6 +6616,8 @@ def loop_through_simulations(date_str):
 if __name__ == "__main__":
     formatted_date = datetime.now().strftime("%m/%d/%Y")
     week_starting_dates = [
+#        "09/08/2026", #Leading up to Week 1
+        
 #        "09/03/2025", #Leading up to Week 1
 #        "09/10/2025", #Leading up to Week 2
 #        "09/17/2025", #Leading up to Week 3
@@ -6735,10 +6737,10 @@ if __name__ == "__main__":
 #        "11/25/2020", #Leading up to Week 12
 #        "11/28/2020", #Leading up to Week 13
 #        "12/02/2020", #Leading up to Week 14
-        "12/09/2020", #Leading up to Week 15
-        "12/16/2020", #Leading up to Week 16
-        "12/23/2020", #Leading up to Week 17
-        "12/30/2020", #Leading up to Week 18
+#        "12/09/2020", #Leading up to Week 15
+#        "12/16/2020", #Leading up to Week 16
+#        "12/23/2020", #Leading up to Week 17
+#        "12/30/2020", #Leading up to Week 18
         
 #        formatted_date
     ]
