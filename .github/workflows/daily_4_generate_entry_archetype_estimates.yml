@@ -1,4 +1,4 @@
-name: Generate Entry Archetype Pick Estimates
+name: Daily 4 Generate Entry Archetype Pick Estimates
 
 on:
   workflow_dispatch:
