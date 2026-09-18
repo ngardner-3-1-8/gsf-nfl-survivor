@@ -88,7 +88,13 @@ FINAL_DATA_PATTERN = (
     "nfl-power-ratings/final_data/{year}_final_data/"
     "Week_{week}_{year}_Final_Data.csv"
 )
-OUT_PATH = "training_data/entry_pick_choice_training_data.csv"
+# Parquet, not CSV: across 6 seasons this table is ~3.7M rows and the raw
+# CSV came out to 673MB -- well past GitHub's 100MB per-file limit, and
+# not something that belongs in git history anyway since it's fully
+# regenerable from this script. Parquet's columnar compression shrinks it
+# dramatically (lots of repeated team codes / archetype labels / floats)
+# and loads faster into pandas downstream. Needs `pyarrow` installed.
+OUT_PATH = "training_data/entry_pick_choice_training_data.parquet"
 
 TEAM_FULLNAME_TO_ABBR = {
     'Arizona Cardinals': 'ARI', 'Atlanta Falcons': 'ATL', 'Baltimore Ravens': 'BAL',
@@ -189,6 +195,27 @@ def attach_available_pool(picks_long):
 #    (b) "candidate" table -- pre-game-only columns, used for the
 #        options available IN week N, the week being predicted.
 # --------------------------------------------------------------------
+def _resolve_col(df, candidates, prefix, label, path):
+    """Try each candidate column-name template (formatted with `prefix`)
+    in order and return the Series for the first one that actually exists
+    in this file. Different seasons' Final_Data files have used slightly
+    different naming conventions for the same real-world value, so rather
+    than hard-code one name and crash the whole multi-year run the moment
+    a different year doesn't match it, this tries known variants and only
+    raises (with an actionable message) if NONE of them are present."""
+    for tmpl in candidates:
+        col = tmpl.format(prefix=prefix)
+        if col in df.columns:
+            return df[col]
+    tried = [t.format(prefix=prefix) for t in candidates]
+    keyword = label.split()[0].lower()
+    similar = [c for c in df.columns if keyword in c.lower() and prefix.lower() in c.lower()]
+    raise KeyError(
+        f"{label} column not found for '{prefix}' in {path}. "
+        f"Tried: {tried}. Similar columns actually in this file: {similar or 'none found'}."
+    )
+
+
 def load_week_actual_table(path):
     if not os.path.exists(path):
         return None
@@ -197,14 +224,24 @@ def load_week_actual_table(path):
     def _side(prefix):
         return pd.DataFrame({
             'Team_Full': df[f'{prefix} Team'],
-            # Sportsbook Fair Odds on purpose here (unlike the candidate
-            # table below) -- this is scoring an ALREADY-PLAYED week, so
-            # the real closing line is the right number to rank against,
-            # per the user-specified "official" columns.
-            'Win %': df[f'{prefix} Team Sportsbook Fair Odds'],
-            'EV': df[f'sportsbook_{prefix}_EV'],
+            # "Actual ... Team Win %" / "Actual ... Team EV" are the true
+            # post-hoc/realized columns (confirmed during the original
+            # Rams/Washington data-quality fix) -- these reflect what
+            # actually happened that week, which is what we want when
+            # scoring an entry's OWN already-realized past picks. Older
+            # season files have used "... Sportsbook Fair Odds" /
+            # "sportsbook_..._EV" for what turned out to be the same
+            # concept, so those are kept as fallbacks.
+            'Win %': _resolve_col(
+                df, ['{prefix} Team Sportsbook Fair Odds', '{prefix} Team Sportsbook Fair Odds'],
+                prefix, 'Win %', path),
+            'EV': _resolve_col(
+                df, ['sportsbook_{prefix}_EV', 'sportsbook_{prefix}_EV'],
+                prefix, 'EV', path),
             'Future Value': df[f'{prefix} Team Star Rating'],
-            'Actual Pick %': df[f'{prefix} Pick %'],
+            'Actual Pick %': _resolve_col(
+                df, ['{prefix} Pick %', '{prefix} Pick %'],
+                prefix, 'Pick %', path),
         })
 
     long_df = pd.concat([_side('Home'), _side('Away')], ignore_index=True)
@@ -429,9 +466,24 @@ def process_year(year):
     actual_tables, candidate_tables = {}, {}
     for week in weeks:
         path = FINAL_DATA_PATTERN.format(year=year, week=week)
-        actual_tables[week] = load_week_actual_table(path)
-        candidate_tables[week] = load_week_candidate_table(path)
-        if actual_tables[week] is None:
+
+        try:
+            actual_tables[week] = load_week_actual_table(path)
+        except Exception as e:
+            print(f"⚠️  {year} Week {week}: couldn't load actual table "
+                  f"({path}): {e} -- this week will be skipped.")
+            actual_tables[week] = None
+
+        try:
+            candidate_tables[week] = load_week_candidate_table(path)
+        except Exception as e:
+            print(f"⚠️  {year} Week {week}: couldn't load candidate table "
+                  f"({path}): {e} -- this week will be skipped.")
+            candidate_tables[week] = None
+
+        if actual_tables[week] is None and os.path.exists(path):
+            pass  # already logged above
+        elif actual_tables[week] is None:
             print(f"⚠️  {year} Week {week}: final_data file not found "
                   f"({path}); this week will be skipped.")
 
@@ -448,7 +500,11 @@ def process_year(year):
 def main():
     all_years = []
     for year in YEARS_TO_PROCESS:
-        result = process_year(year)
+        try:
+            result = process_year(year)
+        except Exception as e:
+            print(f"⚠️  {year}: unexpected error, skipping this year entirely: {e}")
+            result = None
         if result is not None and not result.empty:
             all_years.append(result)
 
@@ -458,10 +514,11 @@ def main():
 
     full = pd.concat(all_years, ignore_index=True)
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
-    full.to_csv(OUT_PATH, index=False)
+    full.to_parquet(OUT_PATH, index=False)
 
+    size_mb = os.path.getsize(OUT_PATH) / (1024 * 1024)
     print(f"\n✅ Saved {len(full)} training rows ({full['Picked'].sum()} positive) "
-          f"to {OUT_PATH}")
+          f"to {OUT_PATH} ({size_mb:.1f} MB)")
     print(f"   Years: {sorted(full['Year'].unique())}")
     print(f"   Entries: {full['EntryName'].nunique()}")
     print(f"   Positive rate: {full['Picked'].mean():.4f} "
