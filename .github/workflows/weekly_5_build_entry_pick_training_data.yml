@@ -93,7 +93,7 @@ jobs:
       - name: Run Build Entry Pick Training Data
         if: steps.dst_check.outputs.proceed == 'true'
         run: |
-          python build_entry_pick_training_data.py
+          python weekly_5_build_entry_pick_training_data.py
 
       - name: Upload Training Data Artifact
         if: steps.dst_check.outputs.proceed == 'true'
