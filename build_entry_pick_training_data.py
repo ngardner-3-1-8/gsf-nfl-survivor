@@ -204,7 +204,7 @@ def load_week_actual_table(path):
             'Win %': df[f'{prefix} Team Sportsbook Fair Odds'],
             'EV': df[f'sportsbook_{prefix}_EV'],
             'Future Value': df[f'{prefix} Team Star Rating'],
-            'Actual Pick %': df[f'{prefix} Actual Pick %'],
+            'Actual Pick %': df[f'{prefix} Pick %'],
         })
 
     long_df = pd.concat([_side('Home'), _side('Away')], ignore_index=True)
