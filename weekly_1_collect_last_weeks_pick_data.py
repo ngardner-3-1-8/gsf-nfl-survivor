@@ -3373,28 +3373,27 @@ if __name__ == "__main__":
     formatted_date = datetime.now().strftime("%m/%d/%Y")
     week_starting_dates = [
 
-        #"09/15/2026", #Following Week 1
+        "09/15/2026", #Following Week 1
 
-        "09/10/2025", #Following Week 1
-        "09/17/2025", #Following Week 2
-        "09/24/2025",  #Following Week 3
-        "10/01/2025", #Following Week 4
-        "10/08/2025", #Following Week 5 
-        "10/15/2025", #Following Week 6 
-        "10/22/2025", #Following Week 7 
-        "10/29/2025", #Following Week 8 
-        "11/05/2025", #Following Week 9 
-        "11/12/2025",  #Following Week 10
-        "11/19/2025",  #Following Week 11
-        "11/26/2025",  #Following Week 12
-        "11/29/2025",  #Following Week 13
-        "12/03/2025",  #Following Week 14
-        "12/10/2025",  #Following Week 15
-        "12/17/2025",  #Following Week 16
-        "12/24/2025",  #Following Week 17
-        "12/26/2025",  #Following Week 18
-        "12/31/2025", #Following Week 19
-        "01/07/2026", #Following Week 20
+#        "09/10/2025", #Following Week 1
+#        "09/17/2025", #Following Week 2
+#        "09/24/2025",  #Following Week 3
+#        "10/01/2025", #Following Week 4
+#        "10/08/2025", #Following Week 5 
+#        "10/15/2025", #Following Week 6 
+#        "10/22/2025", #Following Week 7 
+#        "10/29/2025", #Following Week 8 
+#        "11/05/2025", #Following Week 9 
+#        "11/12/2025",  #Following Week 10
+#        "11/19/2025",  #Following Week 11
+#        "11/26/2025",  #Following Week 12
+#        "11/29/2025",  #Following Week 13
+#        "12/03/2025",  #Following Week 14
+#        "12/10/2025",  #Following Week 15
+#        "12/17/2025",  #Following Week 16
+#        "12/26/2025",  #Following Week 18
+#        "12/31/2025", #Following Week 19
+#        "01/07/2026", #Following Week 20
         
 
 #        "09/11/2024",  #Following Week 1
