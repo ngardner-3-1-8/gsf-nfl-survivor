@@ -1,4 +1,4 @@
-name: Train Entry Pick Choice Model
+name: Weekly 6 Train Entry Pick Choice Model
 
 on:
   workflow_dispatch:
