@@ -224,23 +224,26 @@ def load_week_actual_table(path):
     def _side(prefix):
         return pd.DataFrame({
             'Team_Full': df[f'{prefix} Team'],
-            # "Actual ... Team Win %" / "Actual ... Team EV" are the true
-            # post-hoc/realized columns (confirmed during the original
-            # Rams/Washington data-quality fix) -- these reflect what
-            # actually happened that week, which is what we want when
-            # scoring an entry's OWN already-realized past picks. Older
-            # season files have used "... Sportsbook Fair Odds" /
-            # "sportsbook_..._EV" for what turned out to be the same
-            # concept, so those are kept as fallbacks.
+            # Confirmed against the real Week_{N}_{year}_Final_Data.csv
+            # files: "{prefix} Team Sportsbook Fair Odds" / "sportsbook_
+            # {prefix}_EV" / "{prefix} Pick %" are the correct columns in
+            # THIS file (the per-week file this script reads) -- these
+            # are listed first. The "Actual ..." variants were correct
+            # for a DIFFERENT file (Season_{year}_Through_Week_{N}_Final_
+            # Data.csv, the cumulative rollup from the original Rams/
+            # Washington fix) and are kept only as a fallback in case
+            # some other season's per-week file ends up using that
+            # naming instead -- so one mismatched year gets skipped with
+            # a clear warning rather than crashing the whole run.
             'Win %': _resolve_col(
-                df, ['{prefix} Team Sportsbook Fair Odds', '{prefix} Team Sportsbook Fair Odds'],
+                df, ['{prefix} Team Sportsbook Fair Odds', 'Actual {prefix} Team Win %'],
                 prefix, 'Win %', path),
             'EV': _resolve_col(
-                df, ['sportsbook_{prefix}_EV', 'sportsbook_{prefix}_EV'],
+                df, ['sportsbook_{prefix}_EV', 'Actual {prefix} Team EV'],
                 prefix, 'EV', path),
             'Future Value': df[f'{prefix} Team Star Rating'],
             'Actual Pick %': _resolve_col(
-                df, ['{prefix} Pick %', '{prefix} Pick %'],
+                df, ['{prefix} Pick %', '{prefix} Actual Pick %', 'Actual {prefix} Team Pick %'],
                 prefix, 'Pick %', path),
         })
 
@@ -513,6 +516,25 @@ def main():
                           "PICKS_PATTERN / FINAL_DATA_PATTERN paths above.")
 
     full = pd.concat(all_years, ignore_index=True)
+
+    # Parquet requires one consistent type per column. Some raw source
+    # columns are mostly numeric but occasionally hold a text label
+    # instead -- e.g. "Circa Week" is a week number except on holiday
+    # weeks, where it's the literal string "Thanksgiving"/"Christmas".
+    # Pandas quietly stores that mix as an "object" column; pyarrow
+    # refuses to write it. Rather than patch that one column and risk
+    # the same crash on a different column from a different year's file
+    # later, normalize every object-dtype column to a nullable string
+    # type now (this preserves real NaNs as nulls, not the text "nan").
+    # A numeric-looking column normalized this way (e.g. "11.0" instead
+    # of 11) should be re-parsed as needed by whatever reads this file.
+    object_cols = full.select_dtypes(include='object').columns
+    for col in object_cols:
+        full[col] = full[col].astype('string')
+    if len(object_cols):
+        print(f"   Normalized {len(object_cols)} mixed-type column(s) to "
+              f"string for Parquet: {list(object_cols)}")
+
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     full.to_parquet(OUT_PATH, index=False)
 
