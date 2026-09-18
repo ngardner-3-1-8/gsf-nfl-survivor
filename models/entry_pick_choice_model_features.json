@@ -1,0 +1,54 @@
+{
+  "features": [
+    "Win_Pct",
+    "Sportsbook_EV",
+    "Future_Value",
+    "Public_Pick_Pct",
+    "Predicted_Pick_Pct",
+    "Win_Pct_Pctile",
+    "Sportsbook_EV_Pctile",
+    "Future_Value_Pctile",
+    "Teams_Remaining_In_Pool",
+    "Total Remaining Entries at Start of Week",
+    "Week",
+    "Planner",
+    "Contrarian",
+    "EV Hunter",
+    "Sprinter",
+    "Hoarder",
+    "Tourist",
+    "Picks_Used_So_Far",
+    "Expected_Availability",
+    "Pre_Thanksgiving",
+    "Pre_Christmas",
+    "Divisional Matchup Boolean",
+    "Team",
+    "Primary_Archetype_AsOf",
+    "Circa Week"
+  ],
+  "categorical_features": [
+    "Team",
+    "Primary_Archetype_AsOf",
+    "Circa Week"
+  ],
+  "group_cols": [
+    "Year",
+    "Week",
+    "EntryName"
+  ],
+  "label_col": "Picked",
+  "train_years": [
+    2020,
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "val_years": [
+    2025
+  ],
+  "test_years": [
+    2026
+  ],
+  "trained_at": "2026-09-18T21:28:12.391188+00:00"
+}
