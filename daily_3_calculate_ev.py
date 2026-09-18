@@ -321,6 +321,8 @@ def loop_through_ev(date_str):
 if __name__ == "__main__":
     formatted_date = datetime.now().strftime("%m/%d/%Y")
     week_starting_dates = [
+#        "09/08/2026", #Leading up to Week 1
+        
 #        "09/03/2025", #Leading up to Week 1
 #        "09/10/2025", #Leading up to Week 2
 #        "09/17/2025", #Leading up to Week 3
