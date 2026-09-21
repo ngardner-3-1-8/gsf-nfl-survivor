@@ -5,38 +5,24 @@ import time
 import numpy as np
 from math import radians, sin, cos, sqrt, atan2
 import pytz
-from dateutil.parser import parse
 from datetime import datetime
 from datetime import timedelta
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.inspection import permutation_importance
-from tqdm import tqdm
-from ortools.linear_solver import pywraplp
-import itertools
 import re
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options # Make sure this is present!
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import undetected_chromedriver as uc
 import os
 import json
-import sqlite3
-import polars as pl 
+import polars as pl
 import nflreadpy as nfl
 import random
-import csv
 from typing import Optional
 from typing import Dict, List, Any
-from scipy.stats import percentileofscore
 from scipy.stats import spearmanr
-import warnings
 import calendar
 import importlib
-    
+
 def loop_through_simulations(date_str):   
     # 1. Get current date
     today = pd.to_datetime(date_str)
@@ -68,6 +54,43 @@ def loop_through_simulations(date_str):
     
     thanksgiving_week = int((thanksgiving_date - first_game_date).days/7) + 1 ## +1 because the first game date is technically week 1, not week 0
     christmas_week = int((christmas_day - first_game_date).days/7) + 2 ## +2 because the first game date is technically week 1, not week 0, and the addition of thanksgiving_week
+
+    # ------------------------------------------------------------------
+    # CIRCA HOLIDAY WEEKS (manually maintained -- update once per season)
+    # ------------------------------------------------------------------
+    # Circa carves Thanksgiving and Christmas into their own contest weeks,
+    # which shifts every later game up by a week. Thanksgiving is uniform
+    # every season (handled in code below). Christmas placement depends on
+    # the actual schedule, so it is listed per season here.
+    #
+    #   christmas_shift_from : games on/after this date get +1 to 'Week'
+    #                          (None = no separate Circa Christmas week that year)
+    #   christmas_label_dates: dates shown as 'Christmas' in the 'Circa Week' column
+    #
+    # To add a new season: read that year's schedule and enter the Christmas
+    # slate date(s) and the first date that should roll into the following week.
+    CIRCA_HOLIDAY_CONFIG = {
+        2020: {'christmas_shift_from': None,
+               'christmas_label_dates': []},
+        2021: {'christmas_shift_from': datetime(2021, 12, 26),
+               'christmas_label_dates': [datetime(2021, 12, 25), datetime(2021, 12, 23)]},
+        2022: {'christmas_shift_from': datetime(2022, 12, 25),
+               'christmas_label_dates': [datetime(2022, 12, 25), datetime(2022, 12, 26)]},
+        2023: {'christmas_shift_from': datetime(2023, 12, 25),
+               'christmas_label_dates': [datetime(2023, 12, 25)]},
+        2024: {'christmas_shift_from': datetime(2024, 12, 27),
+               'christmas_label_dates': [datetime(2024, 12, 25), datetime(2024, 12, 26)]},
+        2025: {'christmas_shift_from': datetime(2025, 12, 26),
+               'christmas_label_dates': [datetime(2025, 12, 25)]},
+        2026: {'christmas_shift_from': datetime(2026, 12, 26),
+               'christmas_label_dates': [datetime(2026, 12, 25), datetime(2026, 12, 24)]},
+    }
+    # Fallback for any season not listed above: mirror the common pattern
+    # (Christmas week starts on Boxing Day; label Christmas Day + Boxing Day).
+    DEFAULT_CIRCA_HOLIDAY = {
+        'christmas_shift_from': boxing_day,
+        'christmas_label_dates': [christmas_day, boxing_day],
+    }
     
     if today <= first_game_date:
         starting_week = 1
@@ -96,31 +119,15 @@ def loop_through_simulations(date_str):
             upcoming_week = starting_week
             # --- ADJUST FOR CIRCA SPECIAL WEEKS ---
             # Using your existing logic for Thanksgiving/Christmas shifts
+            # Circa holiday weeks push 'upcoming_week' forward, using the same
+            # per-season boundaries as the schedule build (see CIRCA_HOLIDAY_CONFIG
+            # above). Thanksgiving is uniform; Christmas is schedule-dependent.
             if today > black_friday:
-                starting_week += 0
                 upcoming_week += 1
-            if target_year == 2020:
-                if today >= boxing_day:
-                    starting_week += 0
-                    upcoming_week += 0
-            elif target_year == 2022:
-                if today >= christmas_day:
-                    upcoming_week += 1
-            elif target_year == 2023:
-                if today >= christmas_day:
-                    upcoming_week += 1
-            elif target_year == 2024:
-                if today > boxing_day:
-                    starting_week += 0
-                    upcoming_week += 1
-            elif target_year in [2021,2025,2026]:
-                if today >= boxing_day:
-                    starting_week += 0
-                    upcoming_week += 1
-            elif target_year >= 2027:
-                if today >= boxing_day:
-                    starting_week += 0
-                    upcoming_week += 1
+            _xmas_from = CIRCA_HOLIDAY_CONFIG.get(
+                target_year, DEFAULT_CIRCA_HOLIDAY).get('christmas_shift_from')
+            if _xmas_from is not None and today >= pd.to_datetime(_xmas_from):
+                upcoming_week += 1
             # Bound check: Cap at 19 (or your season max)
             if starting_week > 18: 
                 starting_week = 18
@@ -139,11 +146,7 @@ def loop_through_simulations(date_str):
     current_year_plus_1 = current_year + 1
     season_start_date = first_game_date - timedelta(days=1)
     
-    thanksgiving_reset_date = black_friday + timedelta(days=1) #THIS DATE IS INCLUDED IN THE RESET. SO IF THERE ARE GAMES ON THIS DATE, THEY WILL HAVE A WEEK ADDED
-    christmas_reset_date = boxing_day
     
-    NUM_WEEKS_TO_KEEP = starting_week - 1
-    current_year_plus_1 = current_year + 1 #current_year + 1
     
     # Store your entries in a dictionary mapped by year
     circa_entries = {
@@ -155,13 +158,6 @@ def loop_through_simulations(date_str):
         2025: 18718,
         2026: 25017
     }
-    circa_2020_entries = circa_entries[2020]
-    circa_2021_entries = circa_entries[2021]
-    circa_2022_entries = circa_entries[2022]
-    circa_2023_entries = circa_entries[2023]
-    circa_2024_entries = circa_entries[2024]
-    circa_2025_entries = circa_entries[2025]
-    circa_2026_entries = circa_entries[2026]
     
     # Look up the value using the target_year as the key
     circa_total_entries = circa_entries[target_year]
@@ -173,7 +169,28 @@ def loop_through_simulations(date_str):
     splash_rotowire_total_entries = 9048
     splash_walkers_25_total_entries = 36501
     splash_bloody_total_entries = 5000
-    dk_total_entries = 20000
+
+    # ------------------------------------------------------------------
+    # SPLASH SPORTS SURVIVOR CONTESTS (new in 2026)
+    # ------------------------------------------------------------------
+    # Unlike Circa, Splash contests have no extra holiday weeks, but some
+    # weeks are "multi-pick" (you must advance 2 teams instead of 1).
+    # Weeks below are NFL weeks (the 'NFL Week' column, not 'Circa Week').
+    # To add a season: add a {year: [weeks]} entry under 'multi_pick_weeks'.
+    SPLASH_CONTESTS = {
+        'Big Splash': {
+            'first_season': 2026,
+            'multi_pick_weeks': {
+                2026: [3, 6, 9, 12, 13, 14, 15, 16],
+            },
+        },
+        'Survivor World Championship': {
+            'first_season': 2026,
+            'multi_pick_weeks': {
+                2026: [9, 12, 13, 14, 15, 16],
+            },
+        },
+    }
     
     MP_PRESEASON_RANKS = {
         'Arizona Cardinals': 0.075,
@@ -615,12 +632,6 @@ def loop_through_simulations(date_str):
         game_id = row.get("Game ID") or row.get("game_id")
         location_type = str(row.get("Location", "Home")).strip()
 
-        ####print(f"\n🌍 international_games dict has {len(international_games)} entries:")
-        ####for gid, info in international_games.items():
-        ####    print(f"   {gid}: {info.get('stadium')} ({info.get('timezone')})")
-    
-        ####if location_type == "Neutral":
-        ####print(f"🏟️  Neutral game: {game_id}  {row.get('Away Team')} @ {home_team}")
         if game_id in international_games:
             intl = international_games[game_id]
             print(f"   ✅ Matched international → Game ID: {game_id}. {row.get('Away Team')} @ {home_team}. Location: {intl['stadium']}")
@@ -631,8 +642,6 @@ def loop_through_simulations(date_str):
                 "actual_timezone":  intl["timezone"],
                 "is_international": True,
             }
-####        else:
-####            print(f"DEBUG No match found in international_games — falling back to home stadium")
     
         # Default — use home team's stadium
         home_info = stadiums.get(home_team, {})
@@ -684,6 +693,9 @@ def loop_through_simulations(date_str):
                 home_adv,        # 9: Home Advantage
                 away_adj         # 10: Away Adjustment			
             ]
+        # Precomputed stadium-attribute lookups: built once here instead of a
+        # per-row lambda at every use below. Keys are the stadiums[team] indices.
+        _ATTR = {i: {t: attrs[i] for t, attrs in stadiums.items()} for i in range(11)}
         data = []
         # Initialize a variable to hold the last valid date and week
         last_date = None
@@ -806,64 +818,52 @@ def loop_through_simulations(date_str):
         df['NFL Week'] = df['Week']
         df['Date'] = pd.to_datetime(df['Date'], format='%b %d, %Y')
         df['Day of Week'] = pd.to_datetime(df['Date']).dt.day_name()
-        # Adjust January games to 2025 in the DataFrame
-        if target_year == 2020:
-            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(boxing_day), 'Week'] += 0
-        elif target_year == 2021:
-            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(boxing_day), 'Week'] += 1
-            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
-            df.loc[df['Date'] == pd.to_datetime(christmas_day - timedelta(days=2)), 'Circa Week'] = 'Christmas'
-        elif target_year == 2022:
-            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(christmas_day), 'Week'] += 1
-            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
-            df.loc[df['Date'] == pd.to_datetime(boxing_day), 'Circa Week'] = 'Christmas'
-        elif target_year == 2023:
-            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(christmas_day), 'Week'] += 1
-            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
-        elif target_year == 2024:
-            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
-            df.loc[df['Date'] > pd.to_datetime(boxing_day), 'Week'] += 1
-            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
-            df.loc[df['Date'] == pd.to_datetime(boxing_day), 'Circa Week'] = 'Christmas'            
-        elif target_year == 2025:
-            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(boxing_day), 'Week'] += 1
-            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'            
-        elif target_year == 2026:
-            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(boxing_day), 'Week'] += 1
-            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
-            df.loc[df['Date'] == pd.to_datetime(christmas_day - timedelta(days=1)), 'Circa Week'] = 'Christmas'
+        # --- Circa holiday weeks (see CIRCA_HOLIDAY_CONFIG above) ---
+        holiday_cfg = CIRCA_HOLIDAY_CONFIG.get(target_year, DEFAULT_CIRCA_HOLIDAY)
 
-        else:
-            df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
-            df.loc[df['Date'] >= pd.to_datetime(boxing_day), 'Week'] += 1
-            df.loc[df['Date'] == pd.to_datetime(christmas_day), 'Circa Week'] = 'Christmas'
-            df.loc[df['Date'] == pd.to_datetime(boxing_day), 'Circa Week'] = 'Christmas'
+        # Thanksgiving is uniform every season: the Thu/Fri slate becomes its
+        # own Circa week, so every game after Black Friday rolls up one week.
+        df.loc[df['Date'] > pd.to_datetime(black_friday), 'Week'] += 1
 
+        # Christmas is schedule-dependent, driven by the manual table above.
+        christmas_shift_from = holiday_cfg.get('christmas_shift_from')
+        if christmas_shift_from is not None:
+            df.loc[df['Date'] >= pd.to_datetime(christmas_shift_from), 'Week'] += 1
+        for label_date in holiday_cfg.get('christmas_label_dates', []):
+            df.loc[df['Date'] == pd.to_datetime(label_date), 'Circa Week'] = 'Christmas'
+
+        # Thanksgiving labels are applied last so they win over any overlap.
         df.loc[df['Date'] == pd.to_datetime(thanksgiving_date), 'Circa Week'] = 'Thanksgiving'
         df.loc[df['Date'] == pd.to_datetime(black_friday), 'Circa Week'] = 'Thanksgiving'
+
+        # --- Splash Sports contest pick requirements (per contest) ---
+        # Keyed off the true NFL week; Splash contests have no holiday weeks.
+        for _contest, _cfg in SPLASH_CONTESTS.items():
+            _active = target_year >= _cfg['first_season']
+            _mp_weeks = _cfg.get('multi_pick_weeks', {}).get(target_year, [])
+            _is_mp = df['NFL Week'].isin(_mp_weeks) & _active
+            df[f'{_contest} Active'] = _active
+            df[f'{_contest} Multi-Pick Week'] = _is_mp
+            # Picks required: 0 if the contest did not exist that season,
+            # else 2 on multi-pick weeks and 1 otherwise.
+            df[f'{_contest} Picks Required'] = np.where(_is_mp, 2, 1) if _active else 0
 
     
     
         # Convert 'Week' back to string format if needed
         df['Away Team Current Week Cumulative Rest Advantage'] = pd.to_numeric(df['Away Cumulative Rest Advantage'], errors='coerce').fillna(0)
         df['Home Team Current Week Cumulative Rest Advantage'] = pd.to_numeric(df['Home Cumulative Rest Advantage'], errors='coerce').fillna(0)
-        df['Away Team Division'] = df['Away Team'].map(lambda team: stadiums[team][4] if team in stadiums else 'NA')
-        df['Away Stadium'] = df['Away Team'].map(lambda team: stadiums[team][0] if team in stadiums else 'NA')
-        df['Away Stadium Latitude'] = df['Away Team'].map(lambda team: stadiums[team][1] if team in stadiums else 'NA')
-        df['Away Stadium Longitude'] = df['Away Team'].map(lambda team: stadiums[team][2] if team in stadiums else 'NA')
-        df['Away Stadium TimeZone'] = df['Away Team'].map(lambda team: stadiums[team][3] if team in stadiums else 'NA')
+        df['Away Team Division'] = df['Away Team'].map(_ATTR[4]).fillna('NA')
+        df['Away Stadium'] = df['Away Team'].map(_ATTR[0]).fillna('NA')
+        df['Away Stadium Latitude'] = df['Away Team'].map(_ATTR[1]).fillna('NA')
+        df['Away Stadium Longitude'] = df['Away Team'].map(_ATTR[2]).fillna('NA')
+        df['Away Stadium TimeZone'] = df['Away Team'].map(_ATTR[3]).fillna('NA')
     
-        df['Home Team Division'] = df['Home Team'].map(lambda team: stadiums[team][4] if team in stadiums else 'NA')
-        df['Home Stadium'] = df['Home Team'].map(lambda team: stadiums[team][0] if team in stadiums else 'NA')
-        df['Home Stadium Latitude'] = df['Home Team'].map(lambda team: stadiums[team][1] if team in stadiums else 'NA')
-        df['Home Stadium Longitude'] = df['Home Team'].map(lambda team: stadiums[team][2] if team in stadiums else 'NA')
-        df['Home Stadium TimeZone'] = df['Home Team'].map(lambda team: stadiums[team][3] if team in stadiums else 'NA')
+        df['Home Team Division'] = df['Home Team'].map(_ATTR[4]).fillna('NA')
+        df['Home Stadium'] = df['Home Team'].map(_ATTR[0]).fillna('NA')
+        df['Home Stadium Latitude'] = df['Home Team'].map(_ATTR[1]).fillna('NA')
+        df['Home Stadium Longitude'] = df['Home Team'].map(_ATTR[2]).fillna('NA')
+        df['Home Stadium TimeZone'] = df['Home Team'].map(_ATTR[3]).fillna('NA')
         df.loc[df['Actual Stadium'] == '', 'Actual Stadium'] = df['Home Stadium']
     
         df['Away Team Previous Opponent'] = 'BYE'
@@ -947,8 +947,6 @@ def loop_through_simulations(date_str):
         df['Home Team Next Opponent'] = next_opp_home[::-1]
         df['Away Team Next Location'] = next_loc_away[::-1]
         df['Home Team Next Location'] = next_loc_home[::-1]
-        #df['Home Team'] = df['Home Team'].str.replace(' *', '')
-        #df.to_csv('test.csv', index=False)
     
     
         # Add new columns to the DataFrame
@@ -1021,14 +1019,12 @@ def loop_through_simulations(date_str):
         df['Away Timezone Advantage'] = df.apply(lambda row: 0 if row['Adjusted Away Timezone Change'] == 0 else row['Adjusted Away Timezone Change'] - row['Adjusted Home Timezone Change'], axis=1)
         df['Home Timezone Advantage'] = df.apply(lambda row: 0 if row['Adjusted Home Timezone Change'] == 0 else row['Adjusted Home Timezone Change'] - row['Adjusted Away Timezone Change'], axis=1)
     
-        #df['Away Timezone Advantage'] = (df['Away Timezone Change'] - df['Home Timezone Change'])
-        #df['Home Timezone Advantage'] = (df['Home Timezone Change'] - df['Away Timezone Change'])
     
-        df['Away Team Massey-Peabody Preseason Rank'] = df['Away Team'].map(lambda team: stadiums[team][5] if team in stadiums else 'NA')
-        df['Home Team Massey-Peabody Preseason Rank'] = df['Home Team'].map(lambda team: stadiums[team][5] if team in stadiums else 'NA')
+        df['Away Team Massey-Peabody Preseason Rank'] = df['Away Team'].map(_ATTR[5]).fillna('NA')
+        df['Home Team Massey-Peabody Preseason Rank'] = df['Home Team'].map(_ATTR[5]).fillna('NA')
     
-        df['Away Team Generic Sports Fan Preseason Rank'] = df['Away Team'].map(lambda team: stadiums[team][7] if team in stadiums else 'NA')
-        df['Home Team Generic Sports Fan Preseason Rank'] = df['Home Team'].map(lambda team: stadiums[team][7] if team in stadiums else 'NA')
+        df['Away Team Generic Sports Fan Preseason Rank'] = df['Away Team'].map(_ATTR[7]).fillna('NA')
+        df['Home Team Generic Sports Fan Preseason Rank'] = df['Home Team'].map(_ATTR[7]).fillna('NA')
     
         df['Massey-Peabody Preseason Winner'] = df.apply(lambda row: row['Away Team'] if row['Away Team Massey-Peabody Preseason Rank'] > row['Home Team Massey-Peabody Preseason Rank'] else (row['Home Team'] if row['Away Team Massey-Peabody Preseason Rank'] < row['Home Team Massey-Peabody Preseason Rank'] else 'Tie'), axis=1)
         df['Massey-Peabody Preseason Difference'] = abs(df['Away Team Massey-Peabody Preseason Rank'] - df['Home Team Massey-Peabody Preseason Rank'])
@@ -1113,11 +1109,11 @@ def loop_through_simulations(date_str):
             'Yes', 'No'
         )
 
-        df['Away Team Massey-Peabody Current Rank'] = df['Away Team'].map(lambda team: stadiums[team][6] if team in stadiums else 'NA')
-        df['Home Team Massey-Peabody Current Rank'] = df['Home Team'].map(lambda team: stadiums[team][6] if team in stadiums else 'NA')
+        df['Away Team Massey-Peabody Current Rank'] = df['Away Team'].map(_ATTR[6]).fillna('NA')
+        df['Home Team Massey-Peabody Current Rank'] = df['Home Team'].map(_ATTR[6]).fillna('NA')
     
-        df['Away Team Generic Sports Fan Current Rank'] = df['Away Team'].map(lambda team: stadiums[team][8] if team in stadiums else 'NA')
-        df['Home Team Generic Sports Fan Current Rank'] = df['Home Team'].map(lambda team: stadiums[team][8] if team in stadiums else 'NA')
+        df['Away Team Generic Sports Fan Current Rank'] = df['Away Team'].map(_ATTR[8]).fillna('NA')
+        df['Home Team Generic Sports Fan Current Rank'] = df['Home Team'].map(_ATTR[8]).fillna('NA')
 
         df = df.copy()
 
@@ -1127,7 +1123,7 @@ def loop_through_simulations(date_str):
 
 
         df['Away Team Adjusted Massey-Peabody Preseason Rank'] = (
-            df['Away Team'].map(lambda team: stadiums[team][5])
+            df['Away Team'].map(_ATTR[5])
             + df['Away NonLinear TZ'] 
             + pd.to_numeric(df['Away Timezone Advantage'] * .075, errors='coerce').fillna(0)
             + pd.to_numeric(df['Weekly Away Rest Advantage'] * .075, errors='coerce').fillna(0)
@@ -1135,11 +1131,11 @@ def loop_through_simulations(date_str):
             + df['Away Team Current Week Cumulative Rest Advantage'] * .05
             + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
-            + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
+            + np.where((df['Away Team'].map(_ATTR[0])) != df['Home Team'].map(_ATTR[0]), df['Away Team'].map(_ATTR[10]), 0)
         )
         
         df['Home Team Adjusted Massey-Peabody Preseason Rank'] = (
-            df['Home Team'].map(lambda team: stadiums[team][5]) 
+            df['Home Team'].map(_ATTR[5]) 
             + df['Home NonLinear TZ'] 
             + pd.to_numeric(df['Home Timezone Advantage'] * .075, errors='coerce').fillna(0)
             + pd.to_numeric(df['Weekly Home Rest Advantage'] * .075, errors='coerce').fillna(0)
@@ -1147,11 +1143,11 @@ def loop_through_simulations(date_str):
             + df['Home Team Current Week Cumulative Rest Advantage'] * .05
             + np.where(df['Home Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Home Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
-            + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
+            + np.where((df['Away Team'].map(_ATTR[0])) != df['Home Team'].map(_ATTR[0]), df['Home Team'].map(_ATTR[9]), 0)
         )
         
         df['Away Team Adjusted Generic Sports Fan Preseason Rank'] = (
-            df['Away Team'].map(lambda team: stadiums[team][7])
+            df['Away Team'].map(_ATTR[7])
             + df['Away NonLinear TZ'] 
             + pd.to_numeric(df['Away Timezone Advantage'] * .075, errors='coerce').fillna(0)
             + pd.to_numeric(df['Weekly Away Rest Advantage'] * .075, errors='coerce').fillna(0)
@@ -1159,12 +1155,12 @@ def loop_through_simulations(date_str):
             + df['Away Team Current Week Cumulative Rest Advantage'] * .05
             + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
-            + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
+            + np.where((df['Away Team'].map(_ATTR[0])) != df['Home Team'].map(_ATTR[0]), df['Away Team'].map(_ATTR[10]), 0)
         )
 
 
         df['Home Team Adjusted Generic Sports Fan Preseason Rank'] = (
-            df['Home Team'].map(lambda team: stadiums[team][7]) 
+            df['Home Team'].map(_ATTR[7]) 
             + df['Home NonLinear TZ']            
             + pd.to_numeric(df['Home Timezone Advantage'] * .075, errors='coerce').fillna(0)
             + pd.to_numeric(df['Weekly Home Rest Advantage'] * .075, errors='coerce').fillna(0)
@@ -1172,7 +1168,7 @@ def loop_through_simulations(date_str):
             + df['Home Team Current Week Cumulative Rest Advantage'] * .05 
             + np.where(df['Home Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Home Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
-            + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
+            + np.where((df['Away Team'].map(_ATTR[0])) != df['Home Team'].map(_ATTR[0]), df['Home Team'].map(_ATTR[9]), 0)
         )
         
         # 5. NEW: Divisional Game Compression
@@ -1193,7 +1189,7 @@ def loop_through_simulations(date_str):
 
 
         df['Away Team Adjusted Massey-Peabody Current Rank'] = (
-            df['Away Team'].map(lambda team: stadiums[team][6]) 
+            df['Away Team'].map(_ATTR[6]) 
             + df['Away NonLinear TZ'] #+ np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -.125, 0) 
             + pd.to_numeric(df['Away Timezone Advantage'] * .075, errors='coerce').fillna(0) 
             + pd.to_numeric(df['Weekly Away Rest Advantage'] * .075, errors='coerce').fillna(0)
@@ -1201,11 +1197,11 @@ def loop_through_simulations(date_str):
             + df['Away Team Current Week Cumulative Rest Advantage'] * .05
             + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
-            + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
+            + np.where((df['Away Team'].map(_ATTR[0])) != df['Home Team'].map(_ATTR[0]), df['Away Team'].map(_ATTR[10]), 0)
         )
         
         df['Home Team Adjusted Massey-Peabody Current Rank'] = (
-            df['Home Team'].map(lambda team: stadiums[team][6]) 
+            df['Home Team'].map(_ATTR[6]) 
             + df['Home NonLinear TZ']#+ np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), .125, 0) 
             + pd.to_numeric(df['Home Timezone Advantage'] * .075, errors='coerce').fillna(0) 
             + pd.to_numeric(df['Weekly Home Rest Advantage'] * .075, errors='coerce').fillna(0)
@@ -1213,11 +1209,11 @@ def loop_through_simulations(date_str):
             + df['Home Team Current Week Cumulative Rest Advantage'] * .05
             + np.where(df['Home Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Home Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
-            + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
+            + np.where((df['Away Team'].map(_ATTR[0])) != df['Home Team'].map(_ATTR[0]), df['Home Team'].map(_ATTR[9]), 0)
         )
 
         df['Away Team Adjusted Generic Sports Fan Current Rank'] = (
-            df['Away Team'].map(lambda team: stadiums[team][8]) 
+            df['Away Team'].map(_ATTR[8]) 
             + df['Away NonLinear TZ']#+ np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), -.125, 0) 
             + pd.to_numeric(df['Away Timezone Advantage'] * .075, errors='coerce').fillna(0) 
             + pd.to_numeric(df['Weekly Away Rest Advantage'] * .075, errors='coerce').fillna(0)
@@ -1225,12 +1221,12 @@ def loop_through_simulations(date_str):
             + df['Away Team Current Week Cumulative Rest Advantage'] * .05
             + np.where(df['Away Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Away Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
-            + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Away Team'].map(lambda team: stadiums[team][10]), 0)
+            + np.where((df['Away Team'].map(_ATTR[0])) != df['Home Team'].map(_ATTR[0]), df['Away Team'].map(_ATTR[10]), 0)
         )
 
         
         df['Home Team Adjusted Generic Sports Fan Current Rank'] = (
-            df['Home Team'].map(lambda team: stadiums[team][8]) 
+            df['Home Team'].map(_ATTR[8]) 
             + df['Home NonLinear TZ']#+ np.where((df['Away Travel Advantage'] < -400) & (df['Home Stadium'] == df['Actual Stadium']), .125, 0) 
             + pd.to_numeric(df['Home Timezone Advantage'] * .075, errors='coerce').fillna(0) 
             + pd.to_numeric(df['Weekly Home Rest Advantage'] * .075, errors='coerce').fillna(0)
@@ -1238,7 +1234,7 @@ def loop_through_simulations(date_str):
             + df['Home Team Current Week Cumulative Rest Advantage'] * .05
             + np.where(df['Home Team 3 games in 10 days'] == 'Yes', THREE_IN_TEN_PENALTY, 0) # NEW 3-in-10 Penalty
             + np.where(df['Home Team 4 games in 17 days'] == 'Yes', FOUR_IN_SEVENTEEN_PENALTY, 0) # NEW 4-in-17 Penalty
-            + np.where((df['Away Team'].map(lambda team: stadiums[team][0])) != df['Home Team'].map(lambda team: stadiums[team][0]), df['Home Team'].map(lambda team: stadiums[team][9]), 0)
+            + np.where((df['Away Team'].map(_ATTR[0])) != df['Home Team'].map(_ATTR[0]), df['Home Team'].map(_ATTR[9]), 0)
         )
         
         # 5. NEW: Divisional Game Compression
@@ -1260,7 +1256,7 @@ def loop_through_simulations(date_str):
         df['Adjusted Massey-Peabody Preseason Difference'] = abs(df['Away Team Adjusted Massey-Peabody Preseason Rank'] - df['Home Team Adjusted Massey-Peabody Preseason Rank'])
     
         df['Adjusted Generic Sports Fan Preseason Winner'] = df.apply(lambda row: row['Away Team'] if row['Away Team Adjusted Generic Sports Fan Preseason Rank'] > row['Home Team Adjusted Generic Sports Fan Preseason Rank'] else (row['Home Team'] if row['Away Team Adjusted Generic Sports Fan Preseason Rank'] < row['Home Team Adjusted Generic Sports Fan Preseason Rank'] else 'Tie'), axis=1)
-        df['Adjusted Generic Sports Fan Preseason Difference'] = abs(df['Away Team Adjusted Generic Sports Fan Preseason Rank'] - df['Home Team Adjusted Massey-Peabody Preseason Rank'])
+        df['Adjusted Generic Sports Fan Preseason Difference'] = abs(df['Away Team Adjusted Generic Sports Fan Preseason Rank'] - df['Home Team Adjusted Generic Sports Fan Preseason Rank'])
     
         df['Away Team Adjusted MP + GSF Average Preseason Rank'] = (df['Away Team Adjusted Massey-Peabody Preseason Rank'] + df['Away Team Adjusted Generic Sports Fan Preseason Rank'])/2
         df['Home Team Adjusted MP + GSF Average Preseason Rank'] = (df['Home Team Adjusted Massey-Peabody Preseason Rank'] + df['Home Team Adjusted Generic Sports Fan Preseason Rank'])/2
@@ -1268,11 +1264,6 @@ def loop_through_simulations(date_str):
         df['Adjusted MP + GSF Average Preseason Difference'] = abs(df['Away Team Adjusted MP + GSF Average Preseason Rank'] - df['Home Team Adjusted MP + GSF Average Preseason Rank'])
     
     
-        df['Away Team Massey-Peabody Current Rank'] = df['Away Team'].map(lambda team: stadiums[team][6] if team in stadiums else 'NA')
-        df['Home Team Massey-Peabody Current Rank'] = df['Home Team'].map(lambda team: stadiums[team][6] if team in stadiums else 'NA')
-    
-        df['Away Team Generic Sports Fan Current Rank'] = df['Away Team'].map(lambda team: stadiums[team][8] if team in stadiums else 'NA')
-        df['Home Team Generic Sports Fan Current Rank'] = df['Home Team'].map(lambda team: stadiums[team][8] if team in stadiums else 'NA')
     
         df['Massey-Peabody Current Winner'] = df.apply(lambda row: row['Away Team'] if row['Away Team Massey-Peabody Current Rank'] > row['Home Team Massey-Peabody Current Rank'] else (row['Home Team'] if row['Away Team Massey-Peabody Current Rank'] < row['Home Team Massey-Peabody Current Rank'] else 'Tie'), axis=1)
         df['Massey-Peabody Current Difference'] = abs(df['Away Team Massey-Peabody Current Rank'] - df['Home Team Massey-Peabody Current Rank'])
@@ -1312,7 +1303,6 @@ def loop_through_simulations(date_str):
     
         df['Masey-Peabody Home Team Winner?'] = df.apply(lambda row: 'Home Team' if row['Adjusted Massey-Peabody Current Winner'] == row['Home Team'] else 'Away Team', axis=1)
         df['Generic Sports Fan Home Team Winner?'] = df.apply(lambda row: 'Home Team' if row['Adjusted Generic Sports Fan Current Winner'] == row['Home Team'] else 'Away Team', axis=1)
-        #df['Divisional Matchup?'] = df.apply(lambda row: 'Divisional' if row['Home Team Division'] == row['Away Team Division'] else 'Non-divisional', axis=1)
         
         def get_backup_nfl_odds():
             """
@@ -1776,9 +1766,6 @@ def loop_through_simulations(date_str):
             )
     		
     
-    #        st.subheader('Games with Unavailable Live Odds')
-    #        print('This dataframe contains the games where live odds from the Live Odds API were unavailable. This will likely happen for lookahead lines and future weeks')
-    #        print(overridden_games_df)
     
             csv_df['Massey-Peabody Home Team Spread'] = csv_df['Away Team Adjusted Massey-Peabody Current Rank'] - csv_df['Home Team Adjusted Massey-Peabody Current Rank']
             csv_df['Massey-Peabody Away Team Spread'] = csv_df['Home Team Adjusted Massey-Peabody Current Rank'] - csv_df['Away Team Adjusted Massey-Peabody Current Rank']
