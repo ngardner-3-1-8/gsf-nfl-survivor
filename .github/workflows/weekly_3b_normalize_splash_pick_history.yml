@@ -1,0 +1,51 @@
+name: Weekly 3b Normalize Splash Pick History
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Tuesdays at 20:00 UTC (fixed -- not DST-adjusted). weekly_3b converts
+    # the raw Splash contest exports into the canonical wide picks files
+    # (2026_big_splash_picks.csv / 2026_world_championship_picks.csv) that
+    # the Splash runs of weekly_4 / weekly_5 read, so it must land before
+    # those. Keep it at or before the earliest Splash weekly_4/5 run.
+    - cron: '0 20 * * 2'
+
+permissions:
+  contents: write   # to commit the normalized Splash picks files back
+
+jobs:
+  normalize-splash-picks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # weekly_3b only reads CSVs and writes CSVs with pandas -- no
+          # scraping, ML, or browser automation.
+          pip install pandas
+
+      - name: Run Normalize Splash Pick History
+        run: |
+          python weekly_3b_normalize_splash_pick_history.py
+
+      - name: Commit and Push Normalized Splash Picks
+        # The canonical picks files are small and are INPUTS to weekly_4/5
+        # (which check out the repo fresh), so they must be committed to the
+        # repo rather than uploaded as a workflow artifact. Only commits when
+        # something actually changed (e.g. a new week's export was added).
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add big-splash-pick-history/*_big_splash_picks.csv \
+                  splash-world-championship-pick-history/*_world_championship_picks.csv
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Normalize Splash pick history" && git push)
