@@ -76,11 +76,13 @@ circa-pick-history/{year}_survivor_picks_with_archetypes_week_{last_week}.csv
 (last_week = the most recent week that has any actual picks)
 """
 
-import os
-import re
-
 import numpy as np
 import pandas as pd
+
+from team_codes import canonical_pick_code
+from contest_config import get_contest
+
+_CFG = get_contest()
 
 # --------------------------------------------------------------------
 # Config -- adjust YEAR (or wire it up to your existing target_year
@@ -88,7 +90,9 @@ import pandas as pd
 # --------------------------------------------------------------------
 YEAR = 2026
 
-PICKS_PATH = f"circa-pick-history/{YEAR}_survivor_picks.csv"
+# Contest-driven (SURVIVOR_CONTEST env var; default 'circa').
+PICKS_PATH = _CFG['picks_pattern'].format(year=YEAR)
+
 FINAL_DATA_PATTERN = (
     f"nfl-power-ratings/final_data/{YEAR}_final_data/"
     f"Season_{YEAR}_Through_Week_{{week}}_Final_Data.csv"
