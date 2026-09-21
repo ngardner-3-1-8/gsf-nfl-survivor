@@ -79,6 +79,9 @@ circa-pick-history/{year}_survivor_picks_with_archetypes_week_{last_week}.csv
 import numpy as np
 import pandas as pd
 
+import os
+import re
+
 from team_codes import canonical_pick_code
 from contest_config import get_contest
 
