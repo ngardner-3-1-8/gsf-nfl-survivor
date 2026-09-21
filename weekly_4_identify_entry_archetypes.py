@@ -197,18 +197,22 @@ def load_picks_long(picks_path):
 
 def attach_available_pool(picks_long):
     """For every pick, the set of teams that entry had ALREADY used going
-    into that week (i.e. everything it picked in a strictly earlier
-    week) -- picks_long must already be sorted by [EntryName, Week]."""
-    used_before = []
-    seen: dict[str, set] = {}
-    for entry, team in zip(picks_long['EntryName'], picks_long['Team']):
-        prior = seen.get(entry, set())
-        used_before.append(frozenset(prior))
-        seen.setdefault(entry, set()).add(team)
-    out = picks_long.copy()
+    into that week (everything it picked in a strictly earlier week).
+    Computed per week (not per row) so a multi-pick week's two picks share
+    the same prior-weeks pool; identical to the old row-by-row version for
+    single-pick data."""
+    out = picks_long.sort_values(['EntryName', 'Week']).reset_index(drop=True)
+    used_before = [frozenset()] * len(out)
+    for _entry, g in out.groupby('EntryName', sort=False):
+        prior: set = set()
+        for wk in sorted(g['Week'].unique()):
+            wk_idx = g.index[g['Week'] == wk]
+            fs = frozenset(prior)
+            for i in wk_idx:
+                used_before[i] = fs
+            prior |= set(out.loc[wk_idx, 'Team'])
     out['Used_Before_This_Week'] = used_before
     return out
-
 
 # --------------------------------------------------------------------
 # 3. Per-pick percentiles -> per-pick archetype scores
@@ -375,7 +379,8 @@ def main():
     for c in ARCHETYPE_SCORE_COLS:
         output[c] = output[c].fillna(0.0)
 
-    out_path = f"circa-pick-history/{YEAR}_survivor_picks_with_archetypes_week_{last_week}.csv"
+    # Sits next to this contest's picks file (Circa keeps its original name).
+    out_path = PICKS_PATH.replace('.csv', f'_with_archetypes_week_{last_week}.csv')
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     output.to_csv(out_path, index=False)
 
