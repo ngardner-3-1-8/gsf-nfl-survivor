@@ -113,7 +113,7 @@ FINAL_DATA_PATTERN = (
 # regenerable from this script. Parquet's columnar compression shrinks it
 # dramatically (lots of repeated team codes / archetype labels / floats)
 # and loads faster into pandas downstream. Needs `pyarrow` installed.
-OUT_PATH = "training_data/entry_pick_choice_training_data.parquet"
+OUT_PATH = tagged("training_data/entry_pick_choice_training_data", ".parquet")
 
 TEAM_FULLNAME_TO_ABBR = {
     'Arizona Cardinals': 'ARI', 'Atlanta Falcons': 'ATL', 'Baltimore Ravens': 'BAL',
@@ -184,7 +184,13 @@ def load_picks_long(picks_path):
         week_num = int(wc.split('_')[1])
         sub = picks_wide[['EntryName', wc]].rename(columns={wc: 'Team'})
         sub = sub.dropna(subset=['Team'])
-        sub['Team'] = sub['Team'].astype(str).str.strip()
+        # Multi-pick weeks store both picks as "TEAM1;TEAM2" -- explode into
+        # one row per team so an entry that picked two teams contributes both
+        # (a no-op for single-pick data, which never contains ';'). Canonicalize
+        # each code (e.g. 'LAR' -> 'LA') so they line up with the
+        # FULLNAME_TO_ABBR-derived pool instead of silently dropping.
+        sub = sub.assign(Team=sub['Team'].str.split(';')).explode('Team')
+        sub['Team'] = sub['Team'].str.strip().map(canonical_pick_code)
         sub = sub[(sub['Team'] != '') & (sub['Team'] != 'ELIMINATED')]
         sub = sub.assign(Week=week_num)
         long_rows.append(sub)
@@ -196,13 +202,20 @@ def load_picks_long(picks_path):
 
 
 def attach_available_pool(picks_long):
-    used_before = []
-    seen = {}
-    for entry, team in zip(picks_long['EntryName'], picks_long['Team']):
-        prior = seen.get(entry, set())
-        used_before.append(frozenset(prior))
-        seen.setdefault(entry, set()).add(team)
-    out = picks_long.copy()
+    # "Used before this week" = every team the entry picked in a STRICTLY
+    # EARLIER week. Computed per week (not per row) so a multi-pick week's two
+    # picks share the same prior-weeks pool and neither counts as "used before"
+    # the other. Identical to the old row-by-row version for single-pick data.
+    out = picks_long.sort_values(['EntryName', 'Week']).reset_index(drop=True)
+    used_before = [frozenset()] * len(out)
+    for _entry, g in out.groupby('EntryName', sort=False):
+        prior = set()
+        for wk in sorted(g['Week'].unique()):
+            wk_idx = g.index[g['Week'] == wk]
+            fs = frozenset(prior)
+            for i in wk_idx:
+                used_before[i] = fs
+            prior |= set(out.loc[wk_idx, 'Team'])
     out['Used_Before_This_Week'] = used_before
     return out
 
@@ -423,19 +436,25 @@ def compute_asof_entry_states(pick_scores):
 # 5. Choice-set expansion: one row per (entry, week, candidate team)
 # --------------------------------------------------------------------
 def build_choice_rows(year, picks_long, asof_states, candidate_tables):
-    asof_lookup = asof_states.set_index(['EntryName', 'Week'])
+    # One row per (entry, week) so a multi-pick week is a single choice-set
+    # with BOTH picked teams labeled 1 (drop_duplicates is a no-op for the
+    # single-row single-pick case).
+    asof_lookup = asof_states.drop_duplicates(['EntryName', 'Week'], keep='last') \
+                             .set_index(['EntryName', 'Week'])
     rows = []
 
-    for entry, picked_team, week, used_before in zip(
-        picks_long['EntryName'], picks_long['Team'],
-        picks_long['Week'], picks_long['Used_Before_This_Week'],
-    ):
+    for (entry, week), g in picks_long.groupby(['EntryName', 'Week'], sort=False):
         cand_tbl = candidate_tables.get(week)
         if cand_tbl is None:
             continue
 
+        # Every row of this (entry, week) shares the same prior-weeks pool.
+        used_before = next(iter(g['Used_Before_This_Week']))
+        picked_set = set(g['Team'])
+
         pool = cand_tbl[~cand_tbl['Team'].isin(used_before)].copy()
-        if picked_team not in pool['Team'].values or len(pool) < 2:
+        pool_teams = set(pool['Team'].values)
+        if not picked_set.issubset(pool_teams) or len(pool) < 2:
             continue
 
         try:
@@ -444,6 +463,7 @@ def build_choice_rows(year, picks_long, asof_states, candidate_tables):
             continue  # shouldn't happen -- asof_states built from same picks_long
 
         n_pool = len(pool)
+        n_picked = len(picked_set)  # 1 normally, 2 on a Splash multi-pick week
         for feat_col in ['Win_Pct', 'Sportsbook_EV', 'Future_Value']:
             if feat_col in pool.columns:
                 pool[feat_col + '_Pctile'] = pool[feat_col].rank(pct=True, method='average')
@@ -452,7 +472,8 @@ def build_choice_rows(year, picks_long, asof_states, candidate_tables):
             row = {
                 'Year': year, 'Week': week,
                 'EntryName': entry, 'Team': cand['Team'],
-                'Picked': int(cand['Team'] == picked_team),
+                'Picked': int(cand['Team'] in picked_set),
+                'Picks_Required': n_picked,
                 'Teams_Remaining_In_Pool': n_pool,
             }
             for c in ARCHETYPE_SCORE_COLS + ['Picks_Used_So_Far', 'Primary_Archetype_AsOf']:
