@@ -102,22 +102,33 @@ import joblib
 import numpy as np
 import pandas as pd
 
+from team_codes import canonical_pick_code
+from contest_config import get_contest, tagged
+
+_CFG = get_contest()
+
 # --------------------------------------------------------------------
 # Config
 # --------------------------------------------------------------------
-EARLIEST_SEASON = 2020  # same floor as build_entry_pick_training_data.py
+# Contest-driven (SURVIVOR_CONTEST env var; default 'circa'). Splash
+# contests start in 2026, so EARLIEST_SEASON comes from the config and a run
+# for an earlier season finds no picks file and estimates nothing.
+EARLIEST_SEASON = _CFG['start_season']
 
-PICKS_PATTERN = "circa-pick-history/{year}_survivor_picks.csv"
+PICKS_PATTERN = _CFG['picks_pattern']
+MULTI_PICK_WEEKS = _CFG['multi_pick_weeks']
 FINAL_DATA_PATTERN = (
     "nfl-power-ratings/final_data/{year}_final_data/"
     "Week_{week}_{year}_Final_Data.csv"
 )
 SIM_FILE_PATTERN = "nfl-power-ratings/final_sim_results_with_variance_week_{week}_{year}.csv"
 
-MODEL_PATH = "models/entry_pick_choice_model.pkl"
-FEATURE_META_PATH = "models/entry_pick_choice_model_features.json"
+MODEL_PATH = tagged("models/entry_pick_choice_model", ".pkl")
+FEATURE_META_PATH = tagged("models/entry_pick_choice_model_features", ".json")
 
-OUT_DIR_PATTERN = "entry_archetype_pick_estimates/{year}"
+# Splash contests write to their own tagged output dir so they never collide
+# with Circa's estimates.
+OUT_DIR_PATTERN = (tagged("entry_archetype_pick_estimates", "") + "/{year}")
 OUT_FILE_PATTERN = "week_{week}_entry_archetype_pick_estimates.csv"
 TEAM_OUT_FILE_PATTERN = "week_{week}_team_pick_estimates.csv"
 
@@ -192,7 +203,11 @@ def load_picks_long(picks_path):
         week_num = int(wc.split('_')[1])
         sub = picks_wide[['EntryName', wc]].rename(columns={wc: 'Team'})
         sub = sub.dropna(subset=['Team'])
-        sub['Team'] = sub['Team'].astype(str).str.strip()
+        # Canonicalize pick codes (e.g. 'LAR' -> 'LA') so an entry's used
+        # teams and past picks line up with the model's team categories and
+        # the FULLNAME_TO_ABBR-derived pool; otherwise 'LAR' picks neither
+        # score nor get marked used.
+        sub['Team'] = sub['Team'].astype(str).str.strip().map(canonical_pick_code)
         sub = sub[(sub['Team'] != '') & (sub['Team'] != 'ELIMINATED')]
         sub = sub.assign(Week=week_num)
         long_rows.append(sub)
