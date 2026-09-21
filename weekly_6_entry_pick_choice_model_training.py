@@ -67,12 +67,18 @@ except ImportError as e:
 # --------------------------------------------------------------------
 # Config
 # --------------------------------------------------------------------
-DATA_PATH_PARQUET = "training_data/entry_pick_choice_training_data.parquet"
-DATA_PATH_CSV = "training_data/entry_pick_choice_training_data.csv"  # fallback
+from contest_config import get_contest, tagged
+
+_CFG = get_contest()
+
+# Contest-tagged so each contest keeps its own training data / model
+# (Circa's filenames are preserved unchanged; Splash contests get a suffix).
+DATA_PATH_PARQUET = tagged("training_data/entry_pick_choice_training_data", ".parquet")
+DATA_PATH_CSV = tagged("training_data/entry_pick_choice_training_data", ".csv")  # fallback
 
 MODEL_DIR = "models"
-MODEL_PATH = os.path.join(MODEL_DIR, "entry_pick_choice_model.pkl")
-FEATURE_META_PATH = os.path.join(MODEL_DIR, "entry_pick_choice_model_features.json")
+MODEL_PATH = tagged(os.path.join(MODEL_DIR, "entry_pick_choice_model"), ".pkl")
+FEATURE_META_PATH = tagged(os.path.join(MODEL_DIR, "entry_pick_choice_model_features"), ".json")
 
 # Train/Val/Test years are NOT hardcoded -- see split_by_year() below.
 # They're derived from whichever seasons are actually present in the
