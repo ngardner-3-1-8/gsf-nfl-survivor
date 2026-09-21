@@ -179,7 +179,13 @@ def load_picks_long(picks_path):
         # that regardless of which string backend pandas is using.
         sub = sub.dropna(subset=['Team'])
         sub['Team'] = sub['Team'].astype(str).str.strip()
-        sub = sub[sub['Team'] != '']
+        # Split multi-pick "TEAM1;TEAM2" cells (no-op for single-pick), then
+        # canonicalize (e.g. 'LAR' -> 'LA') BEFORE the pool-membership check
+        # downstream or those picks silently drop. Also filter 'ELIMINATED'
+        # to match weekly_5 / daily_4 (this loader previously kept it).
+        sub = sub.assign(Team=sub['Team'].str.split(';')).explode('Team')
+        sub['Team'] = sub['Team'].str.strip().map(canonical_pick_code)
+        sub = sub[(sub['Team'] != '') & (sub['Team'] != 'ELIMINATED')]
         sub = sub.assign(Week=week_num)
         long_rows.append(sub)
 
