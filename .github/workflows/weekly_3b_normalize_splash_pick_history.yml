@@ -8,7 +8,7 @@ on:
     # (2026_big_splash_picks.csv / 2026_world_championship_picks.csv) that
     # the Splash runs of weekly_4 / weekly_5 read, so it must land before
     # those. Keep it at or before the earliest Splash weekly_4/5 run.
-    - cron: '0 20 * * 2'
+    - cron: '0 19 * * 2'
 
 permissions:
   contents: write   # to commit the normalized Splash picks files back
