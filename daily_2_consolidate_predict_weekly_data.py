@@ -2288,183 +2288,183 @@ def loop_through_simulations(date_str):
                     'sack': sack_rate, 'complete': comp_rate, 'intercept': int_rate, 'fumble': p_fumble
                 }
         
-                # 5. DEFENSE MULTS (Now by Field Zone)
-                self.def_mults = {}
+            # 5. DEFENSE MULTS (Now by Field Zone)
+            self.def_mults = {}
+            
+            # A. Calculate League Averages by Zone
+            league_zone_avgs = {}
+            for zone, zone_group in eff_plays.groupby('field_zone'):
+                l_run_plays = zone_group[zone_group['play_type'] == 'run']
+                l_pass_plays = zone_group[(zone_group['play_type'] == 'pass') & (zone_group['complete_pass'] == 1)]
                 
-                # A. Calculate League Averages by Zone
-                league_zone_avgs = {}
-                for zone, zone_group in eff_plays.groupby('field_zone'):
-                    l_run_plays = zone_group[zone_group['play_type'] == 'run']
-                    l_pass_plays = zone_group[(zone_group['play_type'] == 'pass') & (zone_group['complete_pass'] == 1)]
-                    
-                    l_run_avg = np.average(l_run_plays['yards_gained'], weights=l_run_plays['time_weight']) if len(l_run_plays) > 0 else 3.5
-                    l_pass_avg = np.average(l_pass_plays['yards_gained'], weights=l_pass_plays['time_weight']) if len(l_pass_plays) > 0 else 7.0
-                    
-                    league_zone_avgs[zone] = {'run': l_run_avg, 'pass': l_pass_avg}
-                    
-                # B. Calculate Team Defensive Multipliers by Zone
-                for (team, zone), group in eff_plays.groupby(['defteam', 'field_zone']):
-                    l_run = league_zone_avgs[zone]['run']
-                    l_pass = league_zone_avgs[zone]['pass']
-                    
-                    tr = group[group['play_type'] == 'run']
-                    raw_run_mult = (np.average(tr['yards_gained'], weights=tr['time_weight']) / l_run) if len(tr) > 0 else 1.0
-                    
-                    tp = group[(group['play_type'] == 'pass') & (group['complete_pass'] == 1)]
-                    raw_pass_mult = (np.average(tp['yards_gained'], weights=tp['time_weight']) / l_pass) if len(tp) > 0 else 1.0
-                    
-                    # Regress 20% to League Avg (1.0) to stabilize small sample sizes
-                    run_mult = (raw_run_mult * 0.8) + (1.0 * 0.2)
-                    pass_mult = (raw_pass_mult * 0.8) + (1.0 * 0.2)
-                    
-                    # Store using the tuple (team, zone) as the key
-                    self.def_mults[(team, zone)] = {'run': run_mult, 'pass': pass_mult}
-        
-                # 6. PENALTIES
-                pen_dict = {}
-                for team, group in self.pbp.groupby('posteam'):
-                    off_pen = group[(group['penalty'] == 1) & (group['penalty_team'] == team)]
-                    pen_dict[(team, 'off')] = np.sum(off_pen['time_weight']) / group['time_weight'].sum()
+                l_run_avg = np.average(l_run_plays['yards_gained'], weights=l_run_plays['time_weight']) if len(l_run_plays) > 0 else 3.5
+                l_pass_avg = np.average(l_pass_plays['yards_gained'], weights=l_pass_plays['time_weight']) if len(l_pass_plays) > 0 else 7.0
                 
-                def_pen_stats = {}
-                for team, group in self.pbp.groupby('defteam'):
-                    def_pen_plays = group[(group['penalty'] == 1) & (group['penalty_team'] == team)]
-                    total_rate = np.sum(def_pen_plays['time_weight']) / group['time_weight'].sum()
-                    pen_dict[(team, 'def')] = total_rate
-                    
-                    if len(def_pen_plays) > 0:
-                        is_dpi = def_pen_plays['penalty_type'].str.contains('Pass Interference', na=False, case=False)
-                        is_major = (def_pen_plays['penalty_yards'] == 15) & (~is_dpi)
-                        w = def_pen_plays['time_weight']
-                        dpi_weight = w[is_dpi].sum()
-                        major_weight = w[is_major].sum()
-                        total_weight = w.sum()
-                        dpi_share = dpi_weight / total_weight
-                        major_share = major_weight / total_weight
-                        dpi_yards = def_pen_plays[is_dpi]['penalty_yards']
-                        if len(dpi_yards) > 0:
-                            d_mu = np.average(dpi_yards, weights=w[is_dpi])
-                            d_std = np.sqrt(np.average((dpi_yards - d_mu)**2, weights=w[is_dpi]))
-                        else:
-                            d_mu, d_std = 15.0, 10.0
-                        def_pen_stats[team] = {'dpi_share': dpi_share, 'major_share': major_share, 'dpi_mu': d_mu, 'dpi_std': d_std}
-                    else:
-                        def_pen_stats[team] = {'dpi_share': 0.1, 'major_share': 0.15, 'dpi_mu': 15.0, 'dpi_std': 10.0}
-        
-                # 7. PUNTING
-                punt_stats = {}
-                punts = self.pbp[self.pbp['play_type'] == 'punt'].copy()
-                punts['net_yards'] = punts['kick_distance'] - punts['return_yards'].fillna(0)
-                for team, group in punts.groupby('posteam'):
-                     p_mu = np.average(group['net_yards'].fillna(40), weights=group['time_weight'])
-                     p_std = np.sqrt(np.average((group['net_yards'].fillna(40) - p_mu)**2, weights=group['time_weight']))
-                     punt_stats[team] = {'mu': p_mu, 'sigma': p_std}
-                     
-                # 8. KICKING
-                kicking_stats = {}
-                fgs = self.pbp[self.pbp['play_type'] == 'field_goal'].copy()
-                for team, group in fgs.groupby('posteam'):
-                    made_fgs = group[group['field_goal_result'] == 'made']
-                    max_made = made_fgs['kick_distance'].max()
-                    if np.isnan(max_made): max_made = 50.0
-                    
-                    short_try = group[group['kick_distance'] < 40]
-                    short_acc = np.average((short_try['field_goal_result']=='made'), weights=short_try['time_weight']) if len(short_try)>0 else 0.98
-                    
-                    med_try = group[(group['kick_distance'] >= 40) & (group['kick_distance'] < 50)]
-                    med_acc = np.average((med_try['field_goal_result']=='made'), weights=med_try['time_weight']) if len(med_try)>0 else 0.85
-        
-                    long_try = group[group['kick_distance'] >= 50]
-                    long_acc = np.average((long_try['field_goal_result']=='made'), weights=long_try['time_weight']) if len(long_try)>0 else 0.65
-                    
-                    kicking_stats[team] = {'max_made': max_made, 'short_acc': short_acc, 'med_acc': med_acc, 'long_acc': long_acc}
-        
-                # 9. BREAKAWAY RUN RATES (Offense vs. Defense)
-                # Define a breakaway as a run of 15+ yards
-                run_plays = self.pbp[self.pbp['play_type'] == 'run']
-                breakaway_runs = run_plays[run_plays['yards_gained'] >= 15]
+                league_zone_avgs[zone] = {'run': l_run_avg, 'pass': l_pass_avg}
                 
-                # Calculate League Average Rate first
-                if len(run_plays) > 0:
-                    league_bk_run_rate = len(breakaway_runs) / len(run_plays)
-                else:
-                    league_bk_run_rate = 0.035 # Default fallback (3.5%)
-        
-                off_bk_run_stats = {}
-                def_bk_run_stats = {}
-        
-                # Offensive Breakaway Rates
-                for team, group in run_plays.groupby('posteam'):
-                    n_runs = len(group)
-                    n_breakaways = len(group[group['yards_gained'] >= 15])
-                    regressed_rate = (n_breakaways + (50 * league_bk_run_rate)) / (n_runs + 50)
-                    off_bk_run_stats[team] = regressed_rate
-        
-                # Defensive Breakaway Allowed Rates
-                for team, group in run_plays.groupby('defteam'):
-                    n_runs = len(group)
-                    n_breakaways = len(group[group['yards_gained'] >= 15])
-                    regressed_rate = (n_breakaways + (50 * league_bk_run_rate)) / (n_runs + 50)
-                    def_bk_run_stats[team] = regressed_rate
-        
-                # Store in profiles (Make sure to map these in your final dictionary below!)
-                self.profiles['breakaway_run_off'] = off_bk_run_stats
-                self.profiles['breakaway_run_def'] = def_bk_run_stats
-                self.profiles['league_breakaway_run'] = league_bk_run_rate
+            # B. Calculate Team Defensive Multipliers by Zone
+            for (team, zone), group in eff_plays.groupby(['defteam', 'field_zone']):
+                l_run = league_zone_avgs[zone]['run']
+                l_pass = league_zone_avgs[zone]['pass']
                 
-                # 10. BREAKAWAY PASS RATES (Offense vs. Defense)
-                # Define a breakaway pass as a completion of 20+ yards
-                pass_plays = self.pbp[(self.pbp['play_type'] == 'pass') & (self.pbp['complete_pass'] == 1)]
-                breakaway_passes = pass_plays[pass_plays['yards_gained'] >= 20]
+                tr = group[group['play_type'] == 'run']
+                raw_run_mult = (np.average(tr['yards_gained'], weights=tr['time_weight']) / l_run) if len(tr) > 0 else 1.0
                 
-                # Calculate League Average Rate (per completion)
-                if len(pass_plays) > 0:
-                    league_bk_pass_rate = len(breakaway_passes) / len(pass_plays)
-                else:
-                    league_bk_pass_rate = 0.07 # Standard fallback (7%)
-        
-                off_bk_pass_stats = {}
-                def_bk_pass_stats = {}
-        
-                # Offensive Breakaway Rates
-                for team, group in pass_plays.groupby('posteam'):
-                    n_comps = len(group)
-                    n_breakaways = len(group[group['yards_gained'] >= 20])
-                    # Regress with 50 league-average completions to prevent wild outliers
-                    regressed_rate = (n_breakaways + (50 * league_bk_pass_rate)) / (n_comps + 50)
-                    off_bk_pass_stats[team] = regressed_rate
-        
-                # Defensive Breakaway Allowed Rates
-                for team, group in pass_plays.groupby('defteam'):
-                    n_comps = len(group)
-                    n_breakaways = len(group[group['yards_gained'] >= 20])
-                    regressed_rate = (n_breakaways + (50 * league_bk_pass_rate)) / (n_comps + 50)
-                    def_bk_pass_stats[team] = regressed_rate
+                tp = group[(group['play_type'] == 'pass') & (group['complete_pass'] == 1)]
+                raw_pass_mult = (np.average(tp['yards_gained'], weights=tp['time_weight']) / l_pass) if len(tp) > 0 else 1.0
+                
+                # Regress 20% to League Avg (1.0) to stabilize small sample sizes
+                run_mult = (raw_run_mult * 0.8) + (1.0 * 0.2)
+                pass_mult = (raw_pass_mult * 0.8) + (1.0 * 0.2)
+                
+                # Store using the tuple (team, zone) as the key
+                self.def_mults[(team, zone)] = {'run': run_mult, 'pass': pass_mult}
     
-                # Store in profiles (Make sure to add these to your self.profiles dict at the end of the function)
-                self.profiles['breakaway_pass_off'] = off_bk_pass_stats
-                self.profiles['breakaway_pass_def'] = def_bk_pass_stats
-                self.profiles['league_breakaway_pass'] = league_bk_pass_rate
+            # 6. PENALTIES
+            pen_dict = {}
+            for team, group in self.pbp.groupby('posteam'):
+                off_pen = group[(group['penalty'] == 1) & (group['penalty_team'] == team)]
+                pen_dict[(team, 'off')] = np.sum(off_pen['time_weight']) / group['time_weight'].sum()
+            
+            def_pen_stats = {}
+            for team, group in self.pbp.groupby('defteam'):
+                def_pen_plays = group[(group['penalty'] == 1) & (group['penalty_team'] == team)]
+                total_rate = np.sum(def_pen_plays['time_weight']) / group['time_weight'].sum()
+                pen_dict[(team, 'def')] = total_rate
                 
+                if len(def_pen_plays) > 0:
+                    is_dpi = def_pen_plays['penalty_type'].str.contains('Pass Interference', na=False, case=False)
+                    is_major = (def_pen_plays['penalty_yards'] == 15) & (~is_dpi)
+                    w = def_pen_plays['time_weight']
+                    dpi_weight = w[is_dpi].sum()
+                    major_weight = w[is_major].sum()
+                    total_weight = w.sum()
+                    dpi_share = dpi_weight / total_weight
+                    major_share = major_weight / total_weight
+                    dpi_yards = def_pen_plays[is_dpi]['penalty_yards']
+                    if len(dpi_yards) > 0:
+                        d_mu = np.average(dpi_yards, weights=w[is_dpi])
+                        d_std = np.sqrt(np.average((dpi_yards - d_mu)**2, weights=w[is_dpi]))
+                    else:
+                        d_mu, d_std = 15.0, 10.0
+                    def_pen_stats[team] = {'dpi_share': dpi_share, 'major_share': major_share, 'dpi_mu': d_mu, 'dpi_std': d_std}
+                else:
+                    def_pen_stats[team] = {'dpi_share': 0.1, 'major_share': 0.15, 'dpi_mu': 15.0, 'dpi_std': 10.0}
+    
+            # 7. PUNTING
+            punt_stats = {}
+            punts = self.pbp[self.pbp['play_type'] == 'punt'].copy()
+            punts['net_yards'] = punts['kick_distance'] - punts['return_yards'].fillna(0)
+            for team, group in punts.groupby('posteam'):
+                 p_mu = np.average(group['net_yards'].fillna(40), weights=group['time_weight'])
+                 p_std = np.sqrt(np.average((group['net_yards'].fillna(40) - p_mu)**2, weights=group['time_weight']))
+                 punt_stats[team] = {'mu': p_mu, 'sigma': p_std}
+                 
+            # 8. KICKING
+            kicking_stats = {}
+            fgs = self.pbp[self.pbp['play_type'] == 'field_goal'].copy()
+            for team, group in fgs.groupby('posteam'):
+                made_fgs = group[group['field_goal_result'] == 'made']
+                max_made = made_fgs['kick_distance'].max()
+                if np.isnan(max_made): max_made = 50.0
                 
-                self.profiles = {
-                    'efficiency': efficiency_dict,
-                    'def_efficiency': def_efficiency_dict,
-                    'pace': pace_stats.to_dict(),
-                    'penalties': pen_dict,
-                    'penalty_details': def_pen_stats,
-                    'punting': punt_stats,
-                    'kicking': kicking_stats,
-                    'playcalling': playcalling_dict,
-                    'oob_rates': oob_rates,
-                    'play_duration': avg_play_duration,
-                    'breakaway_run_off': off_bk_run_stats,
-                    'breakaway_run_def': def_bk_run_stats,
-                    'league_breakaway_run': league_bk_run_rate,
-                    'breakaway_pass_off': off_bk_pass_stats,
-                    'breakaway_pass_def': def_bk_pass_stats,
-                    'league_breakaway_pass': league_bk_pass_rate
-                }
+                short_try = group[group['kick_distance'] < 40]
+                short_acc = np.average((short_try['field_goal_result']=='made'), weights=short_try['time_weight']) if len(short_try)>0 else 0.98
+                
+                med_try = group[(group['kick_distance'] >= 40) & (group['kick_distance'] < 50)]
+                med_acc = np.average((med_try['field_goal_result']=='made'), weights=med_try['time_weight']) if len(med_try)>0 else 0.85
+    
+                long_try = group[group['kick_distance'] >= 50]
+                long_acc = np.average((long_try['field_goal_result']=='made'), weights=long_try['time_weight']) if len(long_try)>0 else 0.65
+                
+                kicking_stats[team] = {'max_made': max_made, 'short_acc': short_acc, 'med_acc': med_acc, 'long_acc': long_acc}
+    
+            # 9. BREAKAWAY RUN RATES (Offense vs. Defense)
+            # Define a breakaway as a run of 15+ yards
+            run_plays = self.pbp[self.pbp['play_type'] == 'run']
+            breakaway_runs = run_plays[run_plays['yards_gained'] >= 15]
+            
+            # Calculate League Average Rate first
+            if len(run_plays) > 0:
+                league_bk_run_rate = len(breakaway_runs) / len(run_plays)
+            else:
+                league_bk_run_rate = 0.035 # Default fallback (3.5%)
+    
+            off_bk_run_stats = {}
+            def_bk_run_stats = {}
+    
+            # Offensive Breakaway Rates
+            for team, group in run_plays.groupby('posteam'):
+                n_runs = len(group)
+                n_breakaways = len(group[group['yards_gained'] >= 15])
+                regressed_rate = (n_breakaways + (50 * league_bk_run_rate)) / (n_runs + 50)
+                off_bk_run_stats[team] = regressed_rate
+    
+            # Defensive Breakaway Allowed Rates
+            for team, group in run_plays.groupby('defteam'):
+                n_runs = len(group)
+                n_breakaways = len(group[group['yards_gained'] >= 15])
+                regressed_rate = (n_breakaways + (50 * league_bk_run_rate)) / (n_runs + 50)
+                def_bk_run_stats[team] = regressed_rate
+    
+            # Store in profiles (Make sure to map these in your final dictionary below!)
+            self.profiles['breakaway_run_off'] = off_bk_run_stats
+            self.profiles['breakaway_run_def'] = def_bk_run_stats
+            self.profiles['league_breakaway_run'] = league_bk_run_rate
+            
+            # 10. BREAKAWAY PASS RATES (Offense vs. Defense)
+            # Define a breakaway pass as a completion of 20+ yards
+            pass_plays = self.pbp[(self.pbp['play_type'] == 'pass') & (self.pbp['complete_pass'] == 1)]
+            breakaway_passes = pass_plays[pass_plays['yards_gained'] >= 20]
+            
+            # Calculate League Average Rate (per completion)
+            if len(pass_plays) > 0:
+                league_bk_pass_rate = len(breakaway_passes) / len(pass_plays)
+            else:
+                league_bk_pass_rate = 0.07 # Standard fallback (7%)
+    
+            off_bk_pass_stats = {}
+            def_bk_pass_stats = {}
+    
+            # Offensive Breakaway Rates
+            for team, group in pass_plays.groupby('posteam'):
+                n_comps = len(group)
+                n_breakaways = len(group[group['yards_gained'] >= 20])
+                # Regress with 50 league-average completions to prevent wild outliers
+                regressed_rate = (n_breakaways + (50 * league_bk_pass_rate)) / (n_comps + 50)
+                off_bk_pass_stats[team] = regressed_rate
+    
+            # Defensive Breakaway Allowed Rates
+            for team, group in pass_plays.groupby('defteam'):
+                n_comps = len(group)
+                n_breakaways = len(group[group['yards_gained'] >= 20])
+                regressed_rate = (n_breakaways + (50 * league_bk_pass_rate)) / (n_comps + 50)
+                def_bk_pass_stats[team] = regressed_rate
+
+            # Store in profiles (Make sure to add these to your self.profiles dict at the end of the function)
+            self.profiles['breakaway_pass_off'] = off_bk_pass_stats
+            self.profiles['breakaway_pass_def'] = def_bk_pass_stats
+            self.profiles['league_breakaway_pass'] = league_bk_pass_rate
+            
+            
+            self.profiles = {
+                'efficiency': efficiency_dict,
+                'def_efficiency': def_efficiency_dict,
+                'pace': pace_stats.to_dict(),
+                'penalties': pen_dict,
+                'penalty_details': def_pen_stats,
+                'punting': punt_stats,
+                'kicking': kicking_stats,
+                'playcalling': playcalling_dict,
+                'oob_rates': oob_rates,
+                'play_duration': avg_play_duration,
+                'breakaway_run_off': off_bk_run_stats,
+                'breakaway_run_def': def_bk_run_stats,
+                'league_breakaway_run': league_bk_run_rate,
+                'breakaway_pass_off': off_bk_pass_stats,
+                'breakaway_pass_def': def_bk_pass_stats,
+                'league_breakaway_pass': league_bk_pass_rate
+            }
     
         def _resolve_play_outcome(self, off, def_, zone, ptype, stats, def_mult, hfa_impact, 
                                 wind_speed, temp, is_rain, is_snow, is_dome, verbose):
@@ -3129,9 +3129,7 @@ def loop_through_simulations(date_str):
                         stats['complete'] -= 0.03 
                         # Tipped balls and jumped routes increase
                         stats['intercept'] += 0.01
-                
-                # (Deleted the duplicate 'stats =' line that was here)
-    
+
                 # Get Defense Adjustments (Now Zone-Specific)
                 def_mult = self.def_mults.get((def_, zone), {}).get(ptype, 1.0)
                 if def_ == home: def_mult *= (1 - hfa_impact)
@@ -3141,12 +3139,7 @@ def loop_through_simulations(date_str):
                     off, def_, zone, ptype, stats, def_mult, hfa_impact, 
                     wind_speed, temp, is_rain, is_snow, is_dome, verbose
                 )
-                
-                # If verbose, append the specific tag (Deep Ball, Breakaway) to the printout later
-                if verbose and desc_tag:
-                    # We'll save this tag to print it in the verbose section below
-                    pass
-    
+
                 # --- CHECK TURNOVER ON DOWNS ---
                 if down == 4 and yards < dist:
                     is_turnover = True
@@ -3452,567 +3445,555 @@ def loop_through_simulations(date_str):
         'Tennessee Titans': 'TEN', 'Washington Commanders': 'WAS'
     }
     
-    NAME_TO_ABBR = {
-        'Arizona Cardinals': 'ARI', 'Atlanta Falcons': 'ATL', 'Baltimore Ravens': 'BAL',
-        'Buffalo Bills': 'BUF', 'Carolina Panthers': 'CAR', 'Chicago Bears': 'CHI',
-        'Cincinnati Bengals': 'CIN', 'Cleveland Browns': 'CLE', 'Dallas Cowboys': 'DAL',
-        'Denver Broncos': 'DEN', 'Detroit Lions': 'DET', 'Green Bay Packers': 'GB',
-        'Houston Texans': 'HOU', 'Indianapolis Colts': 'IND', 'Jacksonville Jaguars': 'JAX',
-        'Kansas City Chiefs': 'KC', 'Las Vegas Raiders': 'LV', 'Los Angeles Chargers': 'LAC',
-        'Los Angeles Rams': 'LAR', 'Miami Dolphins': 'MIA', 'Minnesota Vikings': 'MIN',
-        'New England Patriots': 'NE', 'New Orleans Saints': 'NO', 'New York Giants': 'NYG',
-        'New York Jets': 'NYJ', 'Philadelphia Eagles': 'PHI', 'Pittsburgh Steelers': 'PIT',
-        'San Francisco 49ers': 'SF', 'Seattle Seahawks': 'SEA', 'Tampa Bay Buccaneers': 'TB',
-        'Tennessee Titans': 'TEN', 'Washington Commanders': 'WAS'
-    }
-    
     # --- MAIN EXECUTION BLOCK ---
-    if __name__ == "__main__":
-        sim = AdvancedNFLSimulator()
-        sim.load_data()
+    sim = AdvancedNFLSimulator()
+    sim.load_data()
 
-        years_to_load = [target_year_load, target_year_load - 1, target_year_load - 2, target_year_load - 3]
-        qb_rating_map, replacement_epa = get_qb_ratings_fast(years_to_load, target_year, upcoming_week)
+    years_to_load = [target_year_load, target_year_load - 1, target_year_load - 2, target_year_load - 3]
+    qb_rating_map, replacement_epa = get_qb_ratings_fast(years_to_load, target_year, upcoming_week)
+    
+    simulation_results = []
+    print(f"\nStarting Simulations for {len(collect_schedule_travel_ranking_data_df)} games...")
+    print(f"{'Game':<30} | {'Source':<15} | {'Wind':<5} | {'Spread':<6} | {'Spread Var':<10}")
+    print("-" * 85)
+    
+    # 3. Calculate historical baselines (Cleaned up logic)
+    print("Calculating team historical QB baselines...")
+    hist_baselines = {}
+    for t in sim.pbp['posteam'].dropna().unique():
+        team_pass = sim.pbp[(sim.pbp['posteam'] == t) & (sim.pbp['play_type'] == 'pass')].copy()
+        if not team_pass.empty:
+            # Map passers to ratings and calculate weighted average
+            team_pass['qb_rating'] = team_pass['passer_player_name'].map(qb_rating_map).fillna(replacement_epa)
+            hist_baselines[t] = np.average(team_pass['qb_rating'], weights=team_pass['time_weight'])
+        else:
+            hist_baselines[t] = replacement_epa
         
-        simulation_results = []
-        print(f"\nStarting Simulations for {len(collect_schedule_travel_ranking_data_df)} games...")
-        print(f"{'Game':<30} | {'Source':<15} | {'Wind':<5} | {'Spread':<6} | {'Spread Var':<10}")
-        print("-" * 85)
-        
-        # 3. Calculate historical baselines (Cleaned up logic)
-        print("Calculating team historical QB baselines...")
-        hist_baselines = {}
-        for t in sim.pbp['posteam'].dropna().unique():
-            team_pass = sim.pbp[(sim.pbp['posteam'] == t) & (sim.pbp['play_type'] == 'pass')].copy()
-            if not team_pass.empty:
-                # Map passers to ratings and calculate weighted average
-                team_pass['qb_rating'] = team_pass['passer_player_name'].map(qb_rating_map).fillna(replacement_epa)
-                hist_baselines[t] = np.average(team_pass['qb_rating'], weights=team_pass['time_weight'])
-            else:
-                hist_baselines[t] = replacement_epa
+    def get_starter(team, week):
+        if team in MANUAL_CURRENT_STARTERS:
+            manual = MANUAL_CURRENT_STARTERS[team]
+            if week - 1 < len(manual) and manual[week - 1] is not None:
+                return manual[week - 1]
+        return TYPICAL_STARTERS.get(team, "Unknown")
+
+    # 1. UPDATED THRESHOLDS: Based on your model's actual outputs (140-210 range)
+    def get_variance_label(val, metric_type='combined'):
+        if metric_type == 'combined':
+            if val < 160: return "Low"
+            if val < 170: return "Med-Low"
+            if val < 180: return "Medium"
+            if val < 195: return "Med-High"
+            return "High"
+        else:
+            if val < 70:  return "Low"
+            if val < 85:  return "Med-Low"
+            if val < 100: return "Medium"
+            if val < 115: return "Med-High"
+            return "High"
+
+    weather_df = pd.read_csv(f'nfl-schedules/schedule_{target_year}.csv')
+    weather_lookup = weather_df[['game_id', 'Temperature', 'Wind Speed']].rename(columns={
+		'game_id': 'Game ID',
+        'Temperature': 'temp',
+        'Wind Speed': 'wind'
+    })
+	
+	# 2. Merge this into your main dataframe on the 'game_id' key
+	# Using how='left' ensures you don't lose any games even if weather is missing
+    collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data_df.merge(
+        weather_lookup, 
+        on='Game ID', 
+        how='left'
+    )
+
+    # --- NEW: Filter to only simulate the upcoming week's games ---
+    weekly_games_df = collect_schedule_travel_ranking_data_df[
+        collect_schedule_travel_ranking_data_df['Week'] >= upcoming_week
+    ].copy()
+    for index, row in weekly_games_df.iterrows():
+        try:
+            # Extract Row Data
+            away_full = row['Away Team']
+            home_full = row['Home Team']
+            away = NAME_MAP.get(away_full, away_full)
+            home = NAME_MAP.get(home_full, home_full)
+            stadium = row['Actual Stadium']
+            date = pd.to_datetime(row['Date']) 
+            lat = row['Actual Stadium Latitude']
+            lon = row['Actual Stadium Longitude']
+            sched_temp = row.get('temp') 
+            sched_wind = row.get('wind')
+            sched_desc = row.get('weather')
+
+            away_qb = get_starter(away, upcoming_week)
+            home_qb = get_starter(home, upcoming_week)
             
-        def get_starter(team, week):
-            if team in MANUAL_CURRENT_STARTERS:
-                manual = MANUAL_CURRENT_STARTERS[team]
-                if week - 1 < len(manual) and manual[week - 1] is not None:
-                    return manual[week - 1]
-            return TYPICAL_STARTERS.get(team, "Unknown")
+            away_delta = qb_rating_map.get(away_qb, replacement_epa) - hist_baselines.get(away, replacement_epa)
+            home_delta = qb_rating_map.get(home_qb, replacement_epa) - hist_baselines.get(home, replacement_epa)
+            
+            # 1. Get Weather
+            raw_wind, precip, temp, is_dome, source = get_weather_for_game(
+                lat, lon, date, stadium, 
+                row_temp=sched_temp, 
+                row_wind=sched_wind,
+                row_desc=sched_desc
+            )
+            # 2. Run Simulation
+            df_sim = sim.simulate_matchup(
+                home, away, wind_speed=raw_wind, temp=temp, precip=precip, 
+                is_dome=is_dome, home_qb_delta=home_delta, away_qb_delta=away_delta
+            )
+            if not df_sim.empty:
+                # 3. Define the Series variables
+                margin = df_sim['Margin']
+                df_sim['Total'] = df_sim['Home_Score'] + df_sim['Away_Score']
+                total = df_sim['Total']
+
+                # 1. Probability Home Team covers the spread (Margin is Away - Home)
+                prob_home_cover = (margin < row['Home Team Sportsbook Spread']).mean()
+                prob_away_cover = (margin > row['Home Team Sportsbook Spread']).mean()
+                
+                # 2. Probability of Total going Over
+                prob_over = (total > row['Total Line']).mean()
+                prob_under = (total < row['Total Line']).mean()
+                
+                # 4. Calculate Stats & Labels
+                # --- FIX: Define spread_var BEFORE using it in the function ---
+                spread_var = margin.var() 
+                vol_label = get_variance_label(spread_var, metric_type='combined')
+                
+                abs_margin = margin.abs()
+                prob_land_3 = (abs_margin == 3).mean()
+                prob_land_7 = (abs_margin == 7).mean()
+                
+                # 5. Build the Result Row
+                res = {
+                    'Matchup_ID': index,
+                    'Week': row.get('Week'),
+                    'Date': date,
+                    'Matchup': f"{away} @ {home}",
+                    'Wind': raw_wind,
+                    'Temperature': temp,
+                    'Precipitation': precip,
+                    'Sim_Weather_Source': source,
+                    'Dome': is_dome,
+                    'Away_Starting_QB': away_qb,
+                    'Home_Starting_QB': home_qb,
+                    'Sim_Spread_Mean': margin.mean(),
+                    'Sim_Spread_Median': margin.median(),
+                    'Sim_Spread_Std': margin.std(),
+                    'Sim_Spread_Variance': spread_var,
+                    'Sim_Spread_Variance_Label': vol_label,
+                    'Sim_Spread_25th': margin.quantile(0.25),
+                    'Sim_Spread_75th': margin.quantile(0.75),
+                    'Sim_Total_Mean': total.mean(),
+                    'Sim_Total_Median': total.median(),
+                    'Sim_Total_Std': total.std(),
+                    'Sim_Total_10th_Floor': total.quantile(0.10),
+                    'Sim_Total_90th_Ceiling': total.quantile(0.90),
+                    'Sim_Home_Win_Pct': (margin < 0).mean(),
+                    'Sim_Away_Win_Pct': (margin > 0).mean(),
+                    'Sim_Prob_Land_3': prob_land_3,
+                    'Sim_Prob_Land_7': prob_land_7,
+                    'Sim_Home_Cover_Prob': prob_home_cover,
+                    'Sim_Away_Cover_Prob': prob_away_cover,
+                    'Sim_Prob_Over': prob_over,
+                    'Sim_Prob_Under': prob_under
+                    
+                }
+                
+                simulation_results.append(res)
+                
+                # Progress Print
+                print(f"{away:>3} @ {home:<3} {date.strftime('%Y-%m-%d'):<10} | {source:<15} | {raw_wind:>4.1f} | {res['Sim_Spread_Mean']:>6.2f} | {spread_var:>8.2f}")
+
+        except Exception as e:
+            print(f"Error simulating {row.get('Away Team')} vs {row.get('Home Team')}: {e}")
+            continue
+
+    # --- SAVE TO DATAFRAME ---
+    monte_carlo_df = pd.DataFrame(simulation_results)
+
     
-        # 1. UPDATED THRESHOLDS: Based on your model's actual outputs (140-210 range)
-        def get_variance_label(val, metric_type='combined'):
-            if metric_type == 'combined':
-                if val < 160: return "Low"
-                if val < 170: return "Med-Low"
-                if val < 180: return "Medium"
-                if val < 195: return "Med-High"
-                return "High"
+    
+    if not monte_carlo_df.empty:
+        cols_to_round = ['Sim_Spread_Mean', 'Sim_Spread_Median', 'Sim_Total_Mean', 
+                         'Sim_Total_Median', 'Sim_Spread_Variance', 'Sim_Spread_Std']
+        monte_carlo_df[cols_to_round] = monte_carlo_df[cols_to_round].round(2)
+        final_combined_df = collect_schedule_travel_ranking_data_df.merge(monte_carlo_df, left_index=True, right_on='Matchup_ID', how='left')
+        # 1. Define the lists of columns to be averaged
+        home_columns = [
+            'Home Team Sportsbook Fair Odds',
+            'Home Team Massey-Peabody Fair Odds',
+            'Home Team Generic Sports Fan Fair Odds',
+            'Sim_Home_Win_Pct'
+        ]
+        
+        away_columns = [
+            'Away Team Sportsbook Fair Odds',
+            'Away Team Massey-Peabody Fair Odds',
+            'Away Team Generic Sports Fan Fair Odds',
+            'Sim_Away_Win_Pct'
+        ]
+        
+        # 2. Ensure all columns are numeric (converting strings/empty spaces to NaN)
+        for col in home_columns + away_columns:
+            if col in final_combined_df.columns:
+                final_combined_df[col] = pd.to_numeric(final_combined_df[col], errors='coerce')
+        
+        # 3. Calculate the averages
+        # axis=1 means "calculate across the row"
+        # skipna=True is the default, which ignores nulls in the calculation
+        final_combined_df['Consensus Home Win Pct'] = final_combined_df[home_columns].mean(axis=1)
+        final_combined_df['Consensus Away Win Pct'] = final_combined_df[away_columns].mean(axis=1)
+        
+        # Optional: Round the results for cleaner reporting
+        final_combined_df['Consensus Home Win Pct'] = final_combined_df['Consensus Home Win Pct'].round(4)
+        final_combined_df['Consensus Away Win Pct'] = final_combined_df['Consensus Away Win Pct'].round(4)
+        
+        print("✅ Averages calculated successfully and added to the DataFrame.")
+
+        def prob_to_american(p):
+            """Converts a probability (0.0 to 1.0) to American Odds string."""
+            if pd.isna(p) or p <= 0 or p >= 1:
+                return np.nan
+            
+            if p >= 0.5:
+                # Favorite: e.g., 0.75 -> -300
+                odds = -(p / (1 - p)) * 100
+                return f"{int(round(odds))}"
             else:
-                if val < 70:  return "Low"
-                if val < 85:  return "Med-Low"
-                if val < 100: return "Medium"
-                if val < 115: return "Med-High"
-                return "High"
-    
-        weather_df = pd.read_csv(f'nfl-schedules/schedule_{target_year}.csv')
-        weather_lookup = weather_df[['game_id', 'Temperature', 'Wind Speed']].rename(columns={
-    		'game_id': 'Game ID',
-            'Temperature': 'temp',
-            'Wind Speed': 'wind'
-        })
-    	
-    	# 2. Merge this into your main dataframe on the 'game_id' key
-    	# Using how='left' ensures you don't lose any games even if weather is missing
-        collect_schedule_travel_ranking_data_df = collect_schedule_travel_ranking_data_df.merge(
-            weather_lookup, 
-            on='Game ID', 
-            how='left'
+                # Underdog: e.g., 0.25 -> +300
+                odds = ((1 - p) / p) * 100
+                return f"+{int(round(odds))}"
+        
+        # 1. Apply the conversion to create the new columns
+        # Note: Using 'Consensus' as requested in your prompt
+        
+        final_combined_df['Consensus Home Team Odds'] = final_combined_df['Consensus Home Win Pct'].apply(prob_to_american)
+        final_combined_df['Consensus Away Team Odds'] = final_combined_df['Consensus Away Win Pct'].apply(prob_to_american)
+        # ============================================================
+        # 🎲 BETTING EDGE CALCULATIONS (Current Week Only)
+        # ============================================================
+        print(f"💰 Calculating Betting Edges for Week {upcoming_week}...")
+        
+        # Helper function
+        def american_to_prob(ml):
+            if pd.isna(ml): return np.nan
+            if ml < 0: return abs(ml) / (abs(ml) + 100)
+            else: return 100 / (ml + 100)
+
+        # 1. Calculate Market Implied Probabilities 
+        # (We use np.where to ONLY calculate this for the upcoming week)
+        is_upcoming = final_combined_df['Week_x'] == upcoming_week
+        
+        final_combined_df['Market Home Team Implied Odds'] = np.where(
+            is_upcoming, 
+            final_combined_df['Home Team Sportsbook Moneyline'].apply(american_to_prob), 
+            np.nan
+        )
+        final_combined_df['Market Away Team Implied Odds'] = np.where(
+            is_upcoming, 
+            final_combined_df['Away Team Sportsbook Moneyline'].apply(american_to_prob), 
+            np.nan
         )
 
-# --- NEW: Filter to only simulate the upcoming week's games ---
-        weekly_games_df = collect_schedule_travel_ranking_data_df[
-            collect_schedule_travel_ranking_data_df['Week'] >= upcoming_week
-        ].copy()
-        for index, row in weekly_games_df.iterrows():
-####        for index, row in collect_schedule_travel_ranking_data_df.iterrows():
-            try:
-                # Extract Row Data
-                away_full = row['Away Team']
-                home_full = row['Home Team']
-                away = NAME_MAP.get(away_full, away_full)
-                home = NAME_MAP.get(home_full, home_full)
-                stadium = row['Actual Stadium']
-                date = pd.to_datetime(row['Date']) 
-                lat = row['Actual Stadium Latitude']
-                lon = row['Actual Stadium Longitude']
-                sched_temp = row.get('temp') 
-                sched_wind = row.get('wind')
-                sched_desc = row.get('weather')
+        # 2. Setup Monte Carlo Spreads and Totals (Upcoming week only)
+        final_combined_df['Monte Carlo Home Team Spread'] = np.where(
+            is_upcoming, 
+            (final_combined_df['Sim_Spread_Mean'] + final_combined_df['Sim_Spread_Median']) / 2, 
+            np.nan
+        )
 
-                away_qb = get_starter(away, upcoming_week)
-                home_qb = get_starter(home, upcoming_week)
-                
-                away_delta = qb_rating_map.get(away_qb, replacement_epa) - hist_baselines.get(away, replacement_epa)
-                home_delta = qb_rating_map.get(home_qb, replacement_epa) - hist_baselines.get(home, replacement_epa)
-                
-                # 1. Get Weather
-                raw_wind, precip, temp, is_dome, source = get_weather_for_game(
-                    lat, lon, date, stadium, 
-                    row_temp=sched_temp, 
-                    row_wind=sched_wind,
-                    row_desc=sched_desc
-                )
-                # 2. Run Simulation
-                df_sim = sim.simulate_matchup(
-                    home, away, wind_speed=raw_wind, temp=temp, precip=precip, 
-                    is_dome=is_dome, home_qb_delta=home_delta, away_qb_delta=away_delta
-                )
-                if not df_sim.empty:
-                    # 3. Define the Series variables
-                    margin = df_sim['Margin']
-                    df_sim['Total'] = df_sim['Home_Score'] + df_sim['Away_Score']
-                    total = df_sim['Total']
+        # 2. Setup Monte Carlo Spreads and Totals (Upcoming week only)
+        final_combined_df['Monte Carlo Away Team Spread'] = -1 * final_combined_df['Monte Carlo Home Team Spread']
 
-                    # 1. Probability Home Team covers the spread (Margin is Away - Home)
-                    prob_home_cover = (margin < row['Home Team Sportsbook Spread']).mean()
-                    prob_away_cover = (margin > row['Home Team Sportsbook Spread']).mean()
-                    
-                    # 2. Probability of Total going Over
-                    prob_over = (total > row['Total Line']).mean()
-                    prob_under = (total < row['Total Line']).mean()
-                    
-                    # 4. Calculate Stats & Labels
-                    # --- FIX: Define spread_var BEFORE using it in the function ---
-                    spread_var = margin.var() 
-                    vol_label = get_variance_label(spread_var, metric_type='combined')
-                    
-                    abs_margin = margin.abs()
-                    prob_land_3 = (abs_margin == 3).mean()
-                    prob_land_7 = (abs_margin == 7).mean()
-                    
-                    # 5. Build the Result Row
-                    res = {
-                        'Matchup_ID': index,
-                        'Week': row.get('Week'),
-                        'Date': date,
-                        'Matchup': f"{away} @ {home}",
-                        'Wind': raw_wind,
-                        'Temperature': temp,
-                        'Precipitation': precip,
-                        'Sim_Weather_Source': source,
-                        'Dome': is_dome,
-                        'Away_Starting_QB': away_qb,
-                        'Home_Starting_QB': home_qb,
-                        'Sim_Spread_Mean': margin.mean(),
-                        'Sim_Spread_Median': margin.median(),
-                        'Sim_Spread_Std': margin.std(),
-                        'Sim_Spread_Variance': spread_var,
-                        'Sim_Spread_Variance_Label': vol_label,
-                        'Sim_Spread_25th': margin.quantile(0.25),
-                        'Sim_Spread_75th': margin.quantile(0.75),
-                        'Sim_Total_Mean': total.mean(),
-                        'Sim_Total_Median': total.median(),
-                        'Sim_Total_Std': total.std(),
-                        'Sim_Total_10th_Floor': total.quantile(0.10),
-                        'Sim_Total_90th_Ceiling': total.quantile(0.90),
-                        'Sim_Home_Win_Pct': (margin < 0).mean(),
-                        'Sim_Away_Win_Pct': (margin > 0).mean(),
-                        'Sim_Prob_Land_3': prob_land_3,
-                        'Sim_Prob_Land_7': prob_land_7,
-                        'Sim_Home_Cover_Prob': prob_home_cover,
-                        'Sim_Away_Cover_Prob': prob_away_cover,
-                        'Sim_Prob_Over': prob_over,
-                        'Sim_Prob_Under': prob_under
-                        
-                    }
-                    
-                    simulation_results.append(res)
-                    
-                    # Progress Print
-                    print(f"{away:>3} @ {home:<3} {date.strftime('%Y-%m-%d'):<10} | {source:<15} | {raw_wind:>4.1f} | {res['Sim_Spread_Mean']:>6.2f} | {spread_var:>8.2f}")
-    
-            except Exception as e:
-                print(f"Error simulating {row.get('Away Team')} vs {row.get('Home Team')}: {e}")
-                continue
-    
-        # --- SAVE TO DATAFRAME ---
-        monte_carlo_df = pd.DataFrame(simulation_results)
+        final_combined_df['Monte Carlo Total'] = np.where(
+            is_upcoming, 
+            (final_combined_df['Sim_Total_Mean'] + final_combined_df['Sim_Total_Median']) / 2, 
+            np.nan
+        )
 
+        # 3. Calculate Consensus Spread (Average of the 3 models)
+        spread_model_cols = [
+            'Generic Sports Fan Home Team Spread',
+            'Massey-Peabody Home Team Spread',
+            'Monte Carlo Home Team Spread'
+        ]
         
+        # Calculate the average spread, restricted to the upcoming week
+        final_combined_df['Consensus Home Team Spread'] = np.where(
+            final_combined_df['Week_x'] == upcoming_week,
+            final_combined_df[spread_model_cols].mean(axis=1),
+            np.nan
+        )
+
+        away_spread_model_cols = [
+            'Generic Sports Fan Away Team Spread',
+            'Massey-Peabody Away Team Spread',
+            'Monte Carlo Away Team Spread'
+        ]
         
-        if not monte_carlo_df.empty:
-            cols_to_round = ['Sim_Spread_Mean', 'Sim_Spread_Median', 'Sim_Total_Mean', 
-                             'Sim_Total_Median', 'Sim_Spread_Variance', 'Sim_Spread_Std']
-            monte_carlo_df[cols_to_round] = monte_carlo_df[cols_to_round].round(2)
-            final_combined_df = collect_schedule_travel_ranking_data_df.merge(monte_carlo_df, left_index=True, right_on='Matchup_ID', how='left')
-            final_combined_df.to_csv("nfl-power-ratings/TEST.csv", index=False)
-            # 1. Define the lists of columns to be averaged
-            home_columns = [
-                'Home Team Sportsbook Fair Odds',
-                'Home Team Massey-Peabody Fair Odds',
-                'Home Team Generic Sports Fan Fair Odds',
-                'Sim_Home_Win_Pct'
-            ]
-            
-            away_columns = [
-                'Away Team Sportsbook Fair Odds',
-                'Away Team Massey-Peabody Fair Odds',
-                'Away Team Generic Sports Fan Fair Odds',
-                'Sim_Away_Win_Pct'
-            ]
-            
-            # 2. Ensure all columns are numeric (converting strings/empty spaces to NaN)
-            for col in home_columns + away_columns:
-                if col in final_combined_df.columns:
-                    final_combined_df[col] = pd.to_numeric(final_combined_df[col], errors='coerce')
-            
-            # 3. Calculate the averages
-            # axis=1 means "calculate across the row"
-            # skipna=True is the default, which ignores nulls in the calculation
-            final_combined_df['Consensus Home Win Pct'] = final_combined_df[home_columns].mean(axis=1)
-            final_combined_df['Consensus Away Win Pct'] = final_combined_df[away_columns].mean(axis=1)
-            
-            # Optional: Round the results for cleaner reporting
-            final_combined_df['Consensus Home Win Pct'] = final_combined_df['Consensus Home Win Pct'].round(4)
-            final_combined_df['Consensus Away Win Pct'] = final_combined_df['Consensus Away Win Pct'].round(4)
-            
-            print("✅ Averages calculated successfully and added to the DataFrame.")
+        # Calculate the average spread, restricted to the upcoming week
+        final_combined_df['Consensus Away Team Spread'] = np.where(
+            final_combined_df['Week_x'] == upcoming_week,
+            final_combined_df[away_spread_model_cols].mean(axis=1),
+            np.nan
+        )
 
-            def prob_to_american(p):
-                """Converts a probability (0.0 to 1.0) to American Odds string."""
-                if pd.isna(p) or p <= 0 or p >= 1:
-                    return np.nan
+        # --------------------------------------------------------
+        # A. SPREAD BETTING LOGIC
+        # --------------------------------------------------------
+        def evaluate_spread_bet(row, model_spread_col):
+            # 🛑 GATE: Skip future weeks immediately
+            if row['Week_x'] != upcoming_week:
+                return pd.Series(["No Bet", np.nan])
                 
-                if p >= 0.5:
-                    # Favorite: e.g., 0.75 -> -300
-                    odds = -(p / (1 - p)) * 100
-                    return f"{int(round(odds))}"
-                else:
-                    # Underdog: e.g., 0.25 -> +300
-                    odds = ((1 - p) / p) * 100
-                    return f"+{int(round(odds))}"
+            if pd.isna(row[model_spread_col]) or pd.isna(row['Home Team Sportsbook Spread']):
+                return pd.Series(["No Bet", np.nan])
+                            
+            model_spread = row[model_spread_col]
+            market_spread = row['Home Team Sportsbook Spread']
+
+            diff = model_spread - market_spread
+
             
-            # 1. Apply the conversion to create the new columns
-            # Note: Using 'Consensus' as requested in your prompt
-            
-            final_combined_df['Consensus Home Team Odds'] = final_combined_df['Consensus Home Win Pct'].apply(prob_to_american)
-            final_combined_df['Consensus Away Team Odds'] = final_combined_df['Consensus Away Win Pct'].apply(prob_to_american)
-            # ============================================================
-            # 🎲 BETTING EDGE CALCULATIONS (Current Week Only)
-            # ============================================================
-            print(f"💰 Calculating Betting Edges for Week {upcoming_week}...")
-            
-            # Helper function
-            def american_to_prob(ml):
-                if pd.isna(ml): return np.nan
-                if ml < 0: return abs(ml) / (abs(ml) + 100)
-                else: return 100 / (ml + 100)
-    
-            # 1. Calculate Market Implied Probabilities 
-            # (We use np.where to ONLY calculate this for the upcoming week)
-            is_upcoming = final_combined_df['Week_x'] == upcoming_week
-            
-            final_combined_df['Market Home Team Implied Odds'] = np.where(
-                is_upcoming, 
-                final_combined_df['Home Team Sportsbook Moneyline'].apply(american_to_prob), 
-                np.nan
-            )
-            final_combined_df['Market Away Team Implied Odds'] = np.where(
-                is_upcoming, 
-                final_combined_df['Away Team Sportsbook Moneyline'].apply(american_to_prob), 
-                np.nan
-            )
-    
-            # 2. Setup Monte Carlo Spreads and Totals (Upcoming week only)
-            final_combined_df['Monte Carlo Home Team Spread'] = np.where(
-                is_upcoming, 
-                (final_combined_df['Sim_Spread_Mean'] + final_combined_df['Sim_Spread_Median']) / 2, 
-                np.nan
-            )
-
-            # 2. Setup Monte Carlo Spreads and Totals (Upcoming week only)
-            final_combined_df['Monte Carlo Away Team Spread'] = -1 * final_combined_df['Monte Carlo Home Team Spread']
-
-            final_combined_df['Monte Carlo Total'] = np.where(
-                is_upcoming, 
-                (final_combined_df['Sim_Total_Mean'] + final_combined_df['Sim_Total_Median']) / 2, 
-                np.nan
-            )
-
-            # 3. Calculate Consensus Spread (Average of the 3 models)
-            spread_model_cols = [
-                'Generic Sports Fan Home Team Spread',
-                'Massey-Peabody Home Team Spread',
-                'Monte Carlo Home Team Spread'
-            ]
-            
-            # Calculate the average spread, restricted to the upcoming week
-            final_combined_df['Consensus Home Team Spread'] = np.where(
-                final_combined_df['Week_x'] == upcoming_week,
-                final_combined_df[spread_model_cols].mean(axis=1),
-                np.nan
-            )
-
-            away_spread_model_cols = [
-                'Generic Sports Fan Away Team Spread',
-                'Massey-Peabody Away Team Spread',
-                'Monte Carlo Away Team Spread'
-            ]
-            
-            # Calculate the average spread, restricted to the upcoming week
-            final_combined_df['Consensus Away Team Spread'] = np.where(
-                final_combined_df['Week_x'] == upcoming_week,
-                final_combined_df[away_spread_model_cols].mean(axis=1),
-                np.nan
-            )
-    
-            # --------------------------------------------------------
-            # A. SPREAD BETTING LOGIC
-            # --------------------------------------------------------
-            def evaluate_spread_bet(row, model_spread_col):
-                # 🛑 GATE: Skip future weeks immediately
-                if row['Week_x'] != upcoming_week:
-                    return pd.Series(["No Bet", np.nan])
-                    
-                if pd.isna(row[model_spread_col]) or pd.isna(row['Home Team Sportsbook Spread']):
-                    return pd.Series(["No Bet", np.nan])
-                                
-                model_spread = row[model_spread_col]
-                market_spread = row['Home Team Sportsbook Spread']
-
-                diff = model_spread - market_spread
-
-                
-                if  market_spread != 0:
-                    if diff > 0:
-                        return pd.Series([row['Away Team'], abs(diff)])
-                    elif diff < 0:
-                        return pd.Series([row['Home Team'], abs(diff)])
-                    else:
-                        return pd.Series(["No Bet", 0.0])
-                else:
-                    if diff > 0:
-                        return pd.Series([row['Home Team'], abs(diff)])
-                    elif diff < 0:
-                        return pd.Series([row['Away Team'], abs(diff)])
-                    else:
-                        return pd.Series(["No Bet", 0.0])
-
-    
-            final_combined_df[['GSF Spread Bet', 'GSF Spread Edge']] = final_combined_df.apply(
-                lambda row: evaluate_spread_bet(row, 'Generic Sports Fan Home Team Spread'), axis=1
-            )
-            final_combined_df[['Massey-Peabody Spread Bet', 'Massey-Peabody Spread Edge']] = final_combined_df.apply(
-                lambda row: evaluate_spread_bet(row, 'Massey-Peabody Home Team Spread'), axis=1
-            )
-            final_combined_df[['Monte Carlo Spread Bet', 'Monte Carlo Spread Edge']] = final_combined_df.apply(
-                lambda row: evaluate_spread_bet(row, 'Monte Carlo Home Team Spread'), axis=1
-            )
-            final_combined_df[['Consensus Spread Bet', 'Consensus Spread Edge']] = final_combined_df.apply(
-                lambda row: evaluate_spread_bet(row, 'Consensus Home Team Spread'), axis=1
-            )
-    
-            # --------------------------------------------------------
-            # B. MONEYLINE BETTING LOGIC
-            # --------------------------------------------------------
-            def evaluate_ml_bet(row, model_home_prob_col, model_away_prob_col):
-                # 🛑 GATE: Skip future weeks immediately
-                if row['Week_x'] != upcoming_week:
-                    return pd.Series(["No Bet", np.nan])
-                    
-                if pd.isna(row[model_home_prob_col]) or pd.isna(row['Market Home Team Implied Odds']):
-                    return pd.Series(["No Bet", np.nan])
-                
-                if row[model_home_prob_col] > row['Market Home Team Implied Odds']:
-                    return pd.Series([row['Home Team'], row[model_home_prob_col] - row['Market Home Team Implied Odds']])
-                elif row[model_away_prob_col] > row['Market Away Team Implied Odds']:
-                    return pd.Series([row['Away Team'], row[model_away_prob_col] - row['Market Away Team Implied Odds']])
+            if  market_spread != 0:
+                if diff > 0:
+                    return pd.Series([row['Away Team'], abs(diff)])
+                elif diff < 0:
+                    return pd.Series([row['Home Team'], abs(diff)])
                 else:
                     return pd.Series(["No Bet", 0.0])
-    
-            final_combined_df[['GSF Moneyline Bet', 'GSF Moneyline Edge']] = final_combined_df.apply(
-                lambda row: evaluate_ml_bet(row, 'Home Team Generic Sports Fan Fair Odds', 'Away Team Generic Sports Fan Fair Odds'), axis=1
-            )
-            final_combined_df[['Massey-Peabody Moneyline Bet', 'Massey-Peabody Moneyline Edge']] = final_combined_df.apply(
-                lambda row: evaluate_ml_bet(row, 'Home Team Massey-Peabody Fair Odds', 'Away Team Massey-Peabody Fair Odds'), axis=1
-            )
-            final_combined_df[['Monte Carlo Moneyline Bet', 'Monte Carlo Moneyline Edge']] = final_combined_df.apply(
-                lambda row: evaluate_ml_bet(row, 'Sim_Home_Win_Pct', 'Sim_Away_Win_Pct'), axis=1
-            )
-            final_combined_df[['Consensus Moneyline Bet', 'Consensus Moneyline Edge']] = final_combined_df.apply(
-                lambda row: evaluate_ml_bet(row, 'Consensus Home Win Pct', 'Consensus Away Win Pct'), axis=1
-            )
-    
-            # --------------------------------------------------------
-            # C. TOTALS BETTING LOGIC
-            # --------------------------------------------------------
-            def determine_total_bet(row):
-                # 🛑 GATE: Skip future weeks immediately
-                if row['Week_x'] != upcoming_week:
-                    return pd.Series(["No Bet", np.nan])
-                    
-                if pd.isna(row['Monte Carlo Total']) or pd.isna(row['Total Line']):
-                    return pd.Series(["No Bet", np.nan])
-                
-                if row['Monte Carlo Total'] > row['Total Line']:
-                    return pd.Series(["Over", abs(row['Monte Carlo Total'] - row['Total Line'])])
-                elif row['Monte Carlo Total'] < row['Total Line']:
-                    return pd.Series(["Under", abs(row['Monte Carlo Total'] - row['Total Line'])])
+            else:
+                if diff > 0:
+                    return pd.Series([row['Home Team'], abs(diff)])
+                elif diff < 0:
+                    return pd.Series([row['Away Team'], abs(diff)])
                 else:
                     return pd.Series(["No Bet", 0.0])
-    
-            final_combined_df[['Monte Carlo Total Bet', 'Monte Carlo Total Edge']] = final_combined_df.apply(determine_total_bet, axis=1)
-    
-            # --------------------------------------------------------
-            # D. DYNAMIC BET SIZING & TRIPLE KELLY (MONTE CARLO BASELINE)
-            # --------------------------------------------------------
-            BANKROLL = 10000
-            FRACTIONAL_KELLY = 0.25
-            UNIT = 100 # Your 1-unit target
-
-            def calculate_bet_metrics(row):
-                # 🛑 GATE: Skip future weeks
-                if row['Week_x'] != upcoming_week:
-                    return pd.Series([np.nan] * 13)
-
-                # --- 1. DYNAMIC UNIT BET SIZE (Based on Sportsbook Odds) ---
-                # Default to risking 1 unit, then adjust if it's a favorite
-                def get_unit_wager(odds):
-                    if pd.isna(odds): return np.nan
-                    if odds < 0: # Favorite: Risk more to win 1 unit
-                        return UNIT * (abs(odds) / 100)
-                    else: # Underdog: Risk 1 unit
-                        return UNIT
-
-                # --- 2. KELLY MATH HELPER ---
-                def get_kelly_share(win_prob, odds):
-                    if pd.isna(win_prob) or pd.isna(odds) or win_prob <= 0: return 0.0
-                    b = odds / 100 if odds > 0 else 100 / abs(odds) # Profit ratio
-                    q = 1 - win_prob
-                    kelly_pct = (b * win_prob - q) / b
-                    return max(0, kelly_pct * FRACTIONAL_KELLY)
-                    
-                def get_to_win(wager, odds):
-                    if pd.isna(wager) or pd.isna(odds) or wager <= 0: return 0.0
-                    if odds > 0:
-                        return wager * (odds / 100)
-                    else:
-                        return wager * (100 / abs(odds))
 
 
-                # --- 3. DATA EXTRACTION ---
-                # Odds
-                h_ml_odds = row['Home Team Sportsbook Moneyline']
-                a_ml_odds = row['Away Team Sportsbook Moneyline']
-                # Standardizing Spread/Total to -110 if missing, otherwise use book price
-                # (Update these column names if your CSV has specific odds for spreads/totals)
-                standard_odds = -110 
+        final_combined_df[['GSF Spread Bet', 'GSF Spread Edge']] = final_combined_df.apply(
+            lambda row: evaluate_spread_bet(row, 'Generic Sports Fan Home Team Spread'), axis=1
+        )
+        final_combined_df[['Massey-Peabody Spread Bet', 'Massey-Peabody Spread Edge']] = final_combined_df.apply(
+            lambda row: evaluate_spread_bet(row, 'Massey-Peabody Home Team Spread'), axis=1
+        )
+        final_combined_df[['Monte Carlo Spread Bet', 'Monte Carlo Spread Edge']] = final_combined_df.apply(
+            lambda row: evaluate_spread_bet(row, 'Monte Carlo Home Team Spread'), axis=1
+        )
+        final_combined_df[['Consensus Spread Bet', 'Consensus Spread Edge']] = final_combined_df.apply(
+            lambda row: evaluate_spread_bet(row, 'Consensus Home Team Spread'), axis=1
+        )
 
-                # Probabilities (Monte Carlo Baseline)
-                mc_h_prob = row['Sim_Home_Win_Pct']
-                mc_a_prob = row['Sim_Away_Win_Pct']
-                mc_cover_h = row.get('Sim_Home_Cover_Prob', 0.5) # Ensure these exist in your MC sims
-                mc_cover_a = row.get('Sim_Away_Cover_Prob', 0.5)
-                mc_over_prob = row.get('Sim_Prob_Over', 0.5)
-                mc_under_prob = row.get('Sim_Prob_Under', 0.5)
-
-                # --- 4. CALCULATE WAGERS ---
+        # --------------------------------------------------------
+        # B. MONEYLINE BETTING LOGIC
+        # --------------------------------------------------------
+        def evaluate_ml_bet(row, model_home_prob_col, model_away_prob_col):
+            # 🛑 GATE: Skip future weeks immediately
+            if row['Week_x'] != upcoming_week:
+                return pd.Series(["No Bet", np.nan])
                 
-                # A. Moneyline
-                ml_bet = row['Monte Carlo Moneyline Bet']
-                ml_wager = np.nan
-                ml_unit_to_win = 0.0
-                ml_kelly = 0.0
-                ml_kelly_to_win = 0.0
-                
-                if ml_bet == row['Home Team']:
-                    ml_wager = get_unit_wager(h_ml_odds)
-                    ml_unit_to_win = get_to_win(ml_wager, h_ml_odds)
-                    ml_kelly = BANKROLL * get_kelly_share(mc_h_prob, h_ml_odds)
-                    ml_kelly_to_win = get_to_win(ml_kelly, h_ml_odds)
-                elif ml_bet == row['Away Team']:
-                    ml_wager = get_unit_wager(a_ml_odds)
-                    ml_unit_to_win = get_to_win(ml_wager, a_ml_odds)
-                    ml_kelly = BANKROLL * get_kelly_share(mc_a_prob, a_ml_odds)
-                    ml_kelly_to_win = get_to_win(ml_kelly, a_ml_odds)
-
-                # B. Spread
-                spread_bet = row['Monte Carlo Spread Bet']
-                spread_wager = np.nan
-                spread_unit_to_win = 0.0
-                spread_kelly = 0.0
-                spread_kelly_to_win = 0.0
-                    
-                if spread_bet != "No Bet":
-                    spread_wager = get_unit_wager(standard_odds)
-                    spread_unit_to_win = get_to_win(spread_wager, standard_odds)
-                    prob = mc_cover_h if spread_bet == row['Home Team'] else mc_cover_a
-                    spread_kelly = BANKROLL * get_kelly_share(prob, standard_odds)
-                    spread_kelly_to_win = get_to_win(spread_kelly, standard_odds)
-
-                # C. Total
-                total_bet = row['Monte Carlo Total Bet']
-                total_wager = np.nan
-                total_unit_to_win = 0.0
-                total_kelly = 0.0
-                total_kelly_to_win = 0.0
-                
-                if total_bet != "No Bet":
-                    total_wager = get_unit_wager(standard_odds)
-                    total_unit_to_win = get_to_win(total_wager, standard_odds)
-                    prob = mc_over_prob if total_bet == "Over" else mc_under_prob
-                    total_kelly = BANKROLL * get_kelly_share(prob, standard_odds)
-                    total_kelly_to_win = get_to_win(total_kelly, standard_odds)
-                    
-
-                return pd.Series([
-                    ml_wager, round(ml_unit_to_win, 2), round(ml_kelly, 2), round(ml_kelly_to_win, 2),
-                    spread_wager, round(spread_unit_to_win, 2), round(spread_kelly, 2), round(spread_kelly_to_win, 2),
-                    total_wager, round(total_unit_to_win, 2), round(total_kelly, 2), round(total_kelly_to_win, 2),
-                    ml_bet
-                ])
-
-            # Apply to DataFrame
-            new_cols = [
-                'MC ML Unit Wager', 'MC ML Unit to Win', 'MC ML Kelly Wager', 'MC ML Kelly To Win',
-                'MC Spread Unit Wager', 'MC Spread Unit to Win', 'MC Spread Kelly Wager', 'MC Spread Kelly To Win',
-                'MC Total Unit Wager', 'MC Total Unit to Win', 'MC Total Kelly Wager', 'MC Total Kelly To Win',
-                'MC Bet Direction'
-            ]
-            final_combined_df[new_cols] = final_combined_df.apply(calculate_bet_metrics, axis=1)
+            if pd.isna(row[model_home_prob_col]) or pd.isna(row['Market Home Team Implied Odds']):
+                return pd.Series(["No Bet", np.nan])
             
-            # 2. Reorder or display to verify
-            print("✅ American Odds columns added.")
+            if row[model_home_prob_col] > row['Market Home Team Implied Odds']:
+                return pd.Series([row['Home Team'], row[model_home_prob_col] - row['Market Home Team Implied Odds']])
+            elif row[model_away_prob_col] > row['Market Away Team Implied Odds']:
+                return pd.Series([row['Away Team'], row[model_away_prob_col] - row['Market Away Team Implied Odds']])
+            else:
+                return pd.Series(["No Bet", 0.0])
 
-            # ============================================================
-            # NEW: INTEGRATE ADVANCED PASSING METRICS
-            # ============================================================
-            print("📊 Calculating Advanced Passing Metrics (Pressure, Zone, Man)...")
-            adv_stats_dict = get_advanced_passing_stats_365(today, first_game_date)
+        final_combined_df[['GSF Moneyline Bet', 'GSF Moneyline Edge']] = final_combined_df.apply(
+            lambda row: evaluate_ml_bet(row, 'Home Team Generic Sports Fan Fair Odds', 'Away Team Generic Sports Fan Fair Odds'), axis=1
+        )
+        final_combined_df[['Massey-Peabody Moneyline Bet', 'Massey-Peabody Moneyline Edge']] = final_combined_df.apply(
+            lambda row: evaluate_ml_bet(row, 'Home Team Massey-Peabody Fair Odds', 'Away Team Massey-Peabody Fair Odds'), axis=1
+        )
+        final_combined_df[['Monte Carlo Moneyline Bet', 'Monte Carlo Moneyline Edge']] = final_combined_df.apply(
+            lambda row: evaluate_ml_bet(row, 'Sim_Home_Win_Pct', 'Sim_Away_Win_Pct'), axis=1
+        )
+        final_combined_df[['Consensus Moneyline Bet', 'Consensus Moneyline Edge']] = final_combined_df.apply(
+            lambda row: evaluate_ml_bet(row, 'Consensus Home Win Pct', 'Consensus Away Win Pct'), axis=1
+        )
+
+        # --------------------------------------------------------
+        # C. TOTALS BETTING LOGIC
+        # --------------------------------------------------------
+        def determine_total_bet(row):
+            # 🛑 GATE: Skip future weeks immediately
+            if row['Week_x'] != upcoming_week:
+                return pd.Series(["No Bet", np.nan])
+                
+            if pd.isna(row['Monte Carlo Total']) or pd.isna(row['Total Line']):
+                return pd.Series(["No Bet", np.nan])
             
-            metrics_to_add = [
-                'Offensive Pressure Allowed Rate', 'Defensive Pressure Generated Rate', 
-                'Zone Rate', 'Man Rate', 'Offensive EPA vs Pressure', 
-                'Offensive EPA vs Zone', 'Offensive EPA vs Man'
-            ]
+            if row['Monte Carlo Total'] > row['Total Line']:
+                return pd.Series(["Over", abs(row['Monte Carlo Total'] - row['Total Line'])])
+            elif row['Monte Carlo Total'] < row['Total Line']:
+                return pd.Series(["Under", abs(row['Monte Carlo Total'] - row['Total Line'])])
+            else:
+                return pd.Series(["No Bet", 0.0])
 
-            for m in metrics_to_add:
-                final_combined_df[f'Home Team {m}'] = final_combined_df['Home Team'].map(
-                    lambda x: adv_stats_dict.get(NAME_MAP.get(x, x), {}).get(m, np.nan)
-                )
-                final_combined_df[f'Away Team {m}'] = final_combined_df['Away Team'].map(
-                    lambda x: adv_stats_dict.get(NAME_MAP.get(x, x), {}).get(m, np.nan)
-                )
+        final_combined_df[['Monte Carlo Total Bet', 'Monte Carlo Total Edge']] = final_combined_df.apply(determine_total_bet, axis=1)
 
-            cols_to_round = [f'Home Team {m}' for m in metrics_to_add] + [f'Away Team {m}' for m in metrics_to_add]
-            final_combined_df[cols_to_round] = final_combined_df[cols_to_round].round(4)
-            # ============================================================
-            # ============================================================
+        # --------------------------------------------------------
+        # D. DYNAMIC BET SIZING & TRIPLE KELLY (MONTE CARLO BASELINE)
+        # --------------------------------------------------------
+        BANKROLL = 10000
+        FRACTIONAL_KELLY = 0.25
+        UNIT = 100 # Your 1-unit target
 
-            # Fall back to the Monte Carlo simulated win pct wherever a Fair Odds line is missing.
-            final_combined_df["Away Team Fair Odds"] = final_combined_df["Away Team Fair Odds"].fillna(final_combined_df["Sim_Away_Win_Pct"])
-            final_combined_df["Home Team Fair Odds"] = final_combined_df["Home Team Fair Odds"].fillna(final_combined_df["Sim_Home_Win_Pct"])
+        def calculate_bet_metrics(row):
+            # 🛑 GATE: Skip future weeks
+            if row['Week_x'] != upcoming_week:
+                return pd.Series([np.nan] * 13)
 
-            df=final_combined_df
+            # --- 1. DYNAMIC UNIT BET SIZE (Based on Sportsbook Odds) ---
+            # Default to risking 1 unit, then adjust if it's a favorite
+            def get_unit_wager(odds):
+                if pd.isna(odds): return np.nan
+                if odds < 0: # Favorite: Risk more to win 1 unit
+                    return UNIT * (abs(odds) / 100)
+                else: # Underdog: Risk 1 unit
+                    return UNIT
+
+            # --- 2. KELLY MATH HELPER ---
+            def get_kelly_share(win_prob, odds):
+                if pd.isna(win_prob) or pd.isna(odds) or win_prob <= 0: return 0.0
+                b = odds / 100 if odds > 0 else 100 / abs(odds) # Profit ratio
+                q = 1 - win_prob
+                kelly_pct = (b * win_prob - q) / b
+                return max(0, kelly_pct * FRACTIONAL_KELLY)
+                
+            def get_to_win(wager, odds):
+                if pd.isna(wager) or pd.isna(odds) or wager <= 0: return 0.0
+                if odds > 0:
+                    return wager * (odds / 100)
+                else:
+                    return wager * (100 / abs(odds))
+
+
+            # --- 3. DATA EXTRACTION ---
+            # Odds
+            h_ml_odds = row['Home Team Sportsbook Moneyline']
+            a_ml_odds = row['Away Team Sportsbook Moneyline']
+            # Standardizing Spread/Total to -110 if missing, otherwise use book price
+            # (Update these column names if your CSV has specific odds for spreads/totals)
+            standard_odds = -110 
+
+            # Probabilities (Monte Carlo Baseline)
+            mc_h_prob = row['Sim_Home_Win_Pct']
+            mc_a_prob = row['Sim_Away_Win_Pct']
+            mc_cover_h = row.get('Sim_Home_Cover_Prob', 0.5) # Ensure these exist in your MC sims
+            mc_cover_a = row.get('Sim_Away_Cover_Prob', 0.5)
+            mc_over_prob = row.get('Sim_Prob_Over', 0.5)
+            mc_under_prob = row.get('Sim_Prob_Under', 0.5)
+
+            # --- 4. CALCULATE WAGERS ---
+            
+            # A. Moneyline
+            ml_bet = row['Monte Carlo Moneyline Bet']
+            ml_wager = np.nan
+            ml_unit_to_win = 0.0
+            ml_kelly = 0.0
+            ml_kelly_to_win = 0.0
+            
+            if ml_bet == row['Home Team']:
+                ml_wager = get_unit_wager(h_ml_odds)
+                ml_unit_to_win = get_to_win(ml_wager, h_ml_odds)
+                ml_kelly = BANKROLL * get_kelly_share(mc_h_prob, h_ml_odds)
+                ml_kelly_to_win = get_to_win(ml_kelly, h_ml_odds)
+            elif ml_bet == row['Away Team']:
+                ml_wager = get_unit_wager(a_ml_odds)
+                ml_unit_to_win = get_to_win(ml_wager, a_ml_odds)
+                ml_kelly = BANKROLL * get_kelly_share(mc_a_prob, a_ml_odds)
+                ml_kelly_to_win = get_to_win(ml_kelly, a_ml_odds)
+
+            # B. Spread
+            spread_bet = row['Monte Carlo Spread Bet']
+            spread_wager = np.nan
+            spread_unit_to_win = 0.0
+            spread_kelly = 0.0
+            spread_kelly_to_win = 0.0
+                
+            if spread_bet != "No Bet":
+                spread_wager = get_unit_wager(standard_odds)
+                spread_unit_to_win = get_to_win(spread_wager, standard_odds)
+                prob = mc_cover_h if spread_bet == row['Home Team'] else mc_cover_a
+                spread_kelly = BANKROLL * get_kelly_share(prob, standard_odds)
+                spread_kelly_to_win = get_to_win(spread_kelly, standard_odds)
+
+            # C. Total
+            total_bet = row['Monte Carlo Total Bet']
+            total_wager = np.nan
+            total_unit_to_win = 0.0
+            total_kelly = 0.0
+            total_kelly_to_win = 0.0
+            
+            if total_bet != "No Bet":
+                total_wager = get_unit_wager(standard_odds)
+                total_unit_to_win = get_to_win(total_wager, standard_odds)
+                prob = mc_over_prob if total_bet == "Over" else mc_under_prob
+                total_kelly = BANKROLL * get_kelly_share(prob, standard_odds)
+                total_kelly_to_win = get_to_win(total_kelly, standard_odds)
+                
+
+            return pd.Series([
+                ml_wager, round(ml_unit_to_win, 2), round(ml_kelly, 2), round(ml_kelly_to_win, 2),
+                spread_wager, round(spread_unit_to_win, 2), round(spread_kelly, 2), round(spread_kelly_to_win, 2),
+                total_wager, round(total_unit_to_win, 2), round(total_kelly, 2), round(total_kelly_to_win, 2),
+                ml_bet
+            ])
+
+        # Apply to DataFrame
+        new_cols = [
+            'MC ML Unit Wager', 'MC ML Unit to Win', 'MC ML Kelly Wager', 'MC ML Kelly To Win',
+            'MC Spread Unit Wager', 'MC Spread Unit to Win', 'MC Spread Kelly Wager', 'MC Spread Kelly To Win',
+            'MC Total Unit Wager', 'MC Total Unit to Win', 'MC Total Kelly Wager', 'MC Total Kelly To Win',
+            'MC Bet Direction'
+        ]
+        final_combined_df[new_cols] = final_combined_df.apply(calculate_bet_metrics, axis=1)
+        
+        # 2. Reorder or display to verify
+        print("✅ American Odds columns added.")
+
+        # ============================================================
+        # NEW: INTEGRATE ADVANCED PASSING METRICS
+        # ============================================================
+        print("📊 Calculating Advanced Passing Metrics (Pressure, Zone, Man)...")
+        adv_stats_dict = get_advanced_passing_stats_365(today, first_game_date)
+        # get_advanced_passing_stats_365 returns {"team_stats": {TEAM: {...}}, "league_stats": {...}}
+        # so the per-team metrics live under ["team_stats"]; index into it here.
+        # (Previously this mapped over adv_stats_dict directly, whose only keys are
+        #  "team_stats"/"league_stats", so every column below came out as NaN.)
+        team_adv_stats = adv_stats_dict.get("team_stats", {})
+
+        metrics_to_add = [
+            'Offensive Pressure Allowed Rate', 'Defensive Pressure Generated Rate',
+            'Zone Rate', 'Man Rate', 'Offensive EPA vs Pressure',
+            'Offensive EPA vs Zone', 'Offensive EPA vs Man'
+        ]
+
+        for m in metrics_to_add:
+            final_combined_df[f'Home Team {m}'] = final_combined_df['Home Team'].map(
+                lambda x, m=m: team_adv_stats.get(NAME_MAP.get(x, x), {}).get(m, np.nan)
+            )
+            final_combined_df[f'Away Team {m}'] = final_combined_df['Away Team'].map(
+                lambda x, m=m: team_adv_stats.get(NAME_MAP.get(x, x), {}).get(m, np.nan)
+            )
+
+        cols_to_round = [f'Home Team {m}' for m in metrics_to_add] + [f'Away Team {m}' for m in metrics_to_add]
+        final_combined_df[cols_to_round] = final_combined_df[cols_to_round].round(4)
+        # ============================================================
+        # ============================================================
+
+        # Fall back to the Monte Carlo simulated win pct wherever a Fair Odds line is missing.
+        final_combined_df["Away Team Fair Odds"] = final_combined_df["Away Team Fair Odds"].fillna(final_combined_df["Sim_Away_Win_Pct"])
+        final_combined_df["Home Team Fair Odds"] = final_combined_df["Home Team Fair Odds"].fillna(final_combined_df["Sim_Home_Win_Pct"])
+
+        df=final_combined_df
 
     from entry_analytics import run_entry_analytics
 
