@@ -79,6 +79,11 @@ import re
 import numpy as np
 import pandas as pd
 
+from team_codes import canonical_pick_code
+from contest_config import get_contest, tagged
+
+_CFG = get_contest()
+
 # --------------------------------------------------------------------
 # Config
 # --------------------------------------------------------------------
@@ -90,10 +95,14 @@ import pandas as pd
 # crash) if that year's picks file doesn't exist yet, so it's safe to
 # always attempt through "this calendar year" even mid-off-season before
 # the next season's file has been created.
-EARLIEST_SEASON = 2020
+# Contest-driven (SURVIVOR_CONTEST env var; default 'circa'). The Splash
+# contests start in 2026, so EARLIEST_SEASON comes from the contest config
+# and a run for an earlier season simply finds no picks file and skips it.
+EARLIEST_SEASON = _CFG['start_season']
 YEARS_TO_PROCESS = list(range(EARLIEST_SEASON, datetime.date.today().year + 1))
 
-PICKS_PATTERN = "circa-pick-history/{year}_survivor_picks.csv"
+PICKS_PATTERN = _CFG['picks_pattern']
+MULTI_PICK_WEEKS = _CFG['multi_pick_weeks']
 FINAL_DATA_PATTERN = (
     "nfl-power-ratings/final_data/{year}_final_data/"
     "Week_{week}_{year}_Final_Data.csv"
