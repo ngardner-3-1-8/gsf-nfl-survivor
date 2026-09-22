@@ -4632,8 +4632,22 @@ def loop_through_simulations(date_str):
         """
         df = pd.read_csv(picks_data_path)
         
-        # 1. Identify who is still alive
-        alive_df = df[df['Total_Wins'] >= (upcoming_week - 1)].copy()
+        # 1. Identify who is still alive.
+        #    Circa picks files carry a precomputed 'Total_Wins' (alive means
+        #    Total_Wins >= upcoming_week - 1) -- that original path is
+        #    unchanged. The normalized Splash picks files (weekly_3b) don't
+        #    have Total_Wins; they carry a 'Status' column instead, and for the
+        #    very first week everyone is alive at the start regardless. Fall
+        #    back accordingly so the SAME availability machinery serves every
+        #    contest.
+        if 'Total_Wins' in df.columns:
+            alive_df = df[df['Total_Wins'] >= (upcoming_week - 1)].copy()
+        elif upcoming_week <= 1:
+            alive_df = df.copy()
+        elif 'Status' in df.columns:
+            alive_df = df[df['Status'].astype(str).str.strip().str.lower() == 'alive'].copy()
+        else:
+            alive_df = df.copy()
         total_alive = len(alive_df)
         
         if total_alive == 0:
@@ -5057,19 +5071,49 @@ def loop_through_simulations(date_str):
         return trained_models, splash_model, splash_features, run_metrics
 
     # --- Main Function ---
-    def get_predicted_pick_percentages(schedule_df):
+    def get_predicted_pick_percentages(schedule_df, contest='circa'):
         """
         Calculates predicted pick percentages for each team in each week,
         adjusting for team availability based on previous expected picks.
+
+        `contest` selects which survivor contest to project. It defaults to
+        'circa', in which case every path below is byte-for-byte the original
+        Circa behaviour (same picks file, same historical file, same
+        'Home Pick %' / 'Away Pick %' output columns, same
+        Circa_Predicted_pick_percent.csv). For 'big_splash' /
+        'world_championship' the SAME machinery runs against that contest's
+        own historical training file and picks file, and the projected
+        columns are renamed with the contest's prefix on the way out so the
+        contests never overwrite each other. Splash contests are 2026+ and,
+        until enough real history accrues to train on, fall back to the
+        real Public Pick % feed as the agreed cold-start proxy (see the
+        `use_public_proxy` branch in the week loop).
         """
-    
+        from contest_config import get_contest as _get_contest
+        _cc = _get_contest(contest)
+        _is_circa = (_cc['out_tag'] == 'circa')
+        contest_label = _cc['label']
+        proj_prefix = _cc.get('proj_prefix', '')
+        historical_csv = _cc['historical_csv']
+        out_csv = _cc['predicted_out']
+
 #        selected_contest = config['selected_contest'] 
 #        subcontest = config['subcontest'] 
         starting_week = upcoming_week
 #        week_requiring_two_selections = config.get('weeks_two_picks', []) 
 #        week_requiring_three_selections = config.get('weeks_three_picks', []) 
         # 1. Define the path to your current season picks
-        picks_file = f"circa-pick-history/{target_year}_survivor_picks.csv"
+        picks_file = _cc['picks_pattern'].format(year=target_year)
+        # Fallback pool size for this contest when the picks file can't tell us
+        # the alive-entry count (Circa keeps its historical constant).
+        if _is_circa:
+            contest_default_entries = circa_total_entries
+        else:
+            try:
+                contest_default_entries = int(len(pd.read_csv(picks_file))) \
+                    if os.path.exists(picks_file) else circa_total_entries
+            except Exception:
+                contest_default_entries = circa_total_entries
         
         # Wait to assign current_week_entries until AFTER you call the helper
         if os.path.exists(picks_file):
@@ -5079,7 +5123,7 @@ def loop_through_simulations(date_str):
         else:
             print(f"⚠️ Warning: {picks_file} not found. Defaulting to 100% availability.")
             team_availability = {} 
-            current_week_entries = circa_total_entries # Or whatever your default fallback is
+            current_week_entries = contest_default_entries # contest-specific fallback pool size
 #        custom_pick_percentages = config.get('pick_percentages', {})
 #        current_week_entries = total_alive 
         # NEW CONFIG OPTION: Set to True to auto-select best features
@@ -5089,10 +5133,36 @@ def loop_through_simulations(date_str):
         # Define features related to holiday games
         holiday_cols = ['Thanksgiving Favorite', 'Thanksgiving Underdog', 'Christmas Favorite', 'Christmas Underdog', 'Pre Thanksgiving', 'Pre Christmas']
     
-        df = pd.read_csv('contest-historical-data/Circa_historical_data.csv')
-        df.rename(columns={"Week": "Date"}, inplace=True)
-        df['Pick %'] = df['Pick %'].fillna(0.0)
-        
+        # --- Load this contest's historical training file (game features +
+        #     that contest's observed 'Pick %'). Circa's is always present;
+        #     a Splash contest's may be missing/thin before enough real
+        #     history exists -- in which case we cold-start off the Public
+        #     Pick % feed rather than fabricating a training set. ---
+        if os.path.exists(historical_csv):
+            df = pd.read_csv(historical_csv)
+            df.rename(columns={"Week": "Date"}, inplace=True)
+            df['Pick %'] = df['Pick %'].fillna(0.0)
+        else:
+            print(f"🧊 {contest_label}: historical file {historical_csv} not found "
+                  f"— cold-starting from the Public Pick % proxy.")
+            df = None
+
+        # Cold-start decision: replicate train_pick_pct_models' leakage guard
+        # (only past years, or earlier weeks of the current year, are legal
+        # training rows). If that leaves nothing to train on, we can't fit a
+        # model this run and use the Public Pick % feed as the agreed proxy.
+        if df is None:
+            use_public_proxy = True
+        else:
+            _guard_mask = (df['Year'] < target_year) | \
+                          ((df['Year'] == target_year) & (df['Date'] < upcoming_week))
+            _n_train = int(_guard_mask.sum())
+            use_public_proxy = (_n_train == 0)
+            if use_public_proxy:
+                print(f"🧊 {contest_label}: no legal training rows before "
+                      f"{target_year} Week {upcoming_week} (have {len(df)} total "
+                      f"row(s)) — cold-starting from the Public Pick % proxy.")
+
         base_feature_candidates = [
            'Win %', 'Future Value (Stars)', 'Date', 'Away Team', 'Availability',
            'Divisional Matchup?', 'Week_Mean_WinPct', 'Week_Mean_FV', 'Week_Max_WinPct',
@@ -5121,16 +5191,28 @@ def loop_through_simulations(date_str):
            # it's superseded by the Holiday_Lookahead_* columns train_pick_pct_models
            # computes itself. Leaving the stale column in df is harmless either way.
         ]
-        base_feature_candidates.extend([c for c in holiday_cols if c in df.columns])
-        base_feature_candidates = [f for f in base_feature_candidates
-                                   if f in df.columns and pd.api.types.is_numeric_dtype(df[f])]
-        
-        trained_models, splash_model, splash_features, run_metrics = train_pick_pct_models(
-           df_historical=df,
-           target_year=target_year,
-           upcoming_week=upcoming_week,
-           base_feature_candidates=base_feature_candidates,
-        )
+        if use_public_proxy:
+            # No model this run: the Public Pick % proxy is applied per week in
+            # the loop below. Keep the same return shape so nothing downstream
+            # has to special-case the cold-start path.
+            trained_models, splash_model, splash_features, run_metrics = {}, None, [], []
+        else:
+            base_feature_candidates.extend([c for c in holiday_cols if c in df.columns])
+            base_feature_candidates = [f for f in base_feature_candidates
+                                       if f in df.columns and pd.api.types.is_numeric_dtype(df[f])]
+
+            trained_models, splash_model, splash_features, run_metrics = train_pick_pct_models(
+               df_historical=df,
+               target_year=target_year,
+               upcoming_week=upcoming_week,
+               base_feature_candidates=base_feature_candidates,
+            )
+            # If training somehow produced no usable model, fall back to the
+            # proxy rather than crashing on trained_models[n_features] below.
+            if not trained_models:
+                print(f"🧊 {contest_label}: training produced no usable model "
+                      f"— falling back to the Public Pick % proxy.")
+                use_public_proxy = True
 
         # ============================================================
         # End of Training Block (Proceed to your simulation/testing)
@@ -5154,7 +5236,7 @@ def loop_through_simulations(date_str):
         else:
             # Handle the -1 (auto-estimate) case based on contest
     #        if selected_contest == 'Circa':
-            default_entries = circa_total_entries # Example
+        	default_entries = contest_default_entries # contest-specific fallback pool size # Example
     #        elif selected_contest == 'Splash Sports':
     #            if subcontest == "The Big Splash ($150 Entry)":
     #                default_entries = splash_big_splash_total_entries
@@ -5621,44 +5703,69 @@ def loop_through_simulations(date_str):
             pick_predictions_df['Availability'] = pick_predictions_df['Availability'].fillna(0.0)
 
             
-            # --- DYNAMIC MODEL SELECTION ---
-            # Default to the 7-feature model
-            n_features = 7
-            
-            # Logic: Use 9-feature model ONLY IF it's the current week 
-            # AND the 'Public Pick %' column actually has data.
-            if current_week == upcoming_week:
-                if 'Public Pick %' in pick_predictions_df.columns:
-                    # Check if the column is NOT entirely null and NOT all zeros
-                    has_public_data = not pick_predictions_df['Public Pick %'].isnull().all() and \
-                                      (pick_predictions_df['Public Pick %'] != 0).any()
-                    
-                    if has_public_data:
-                        n_features = 9
-                    else:
-                        print(f"⚠️ Public Pick % is empty for Week {current_week}. Falling back to 7-feature model.")
-                else:
-                    print(f"⚠️ Public Pick % column missing. Falling back to 7-feature model.")
-
-            # Load the selected model
-            model_data = trained_models[n_features]
-            model = model_data['model']
-            features_to_use = model_data['features']
-            
-            # --- VERIFICATION PRINT ---
-            print(f"🏈 Week {current_week} | Predicting using {n_features} features model...")
-            print(f"Features Being Used: {features_to_use}")
-            
-            # 1. Ensure features exist in this week's data (Optimized set logic)
-            missing_cols = list(set(features_to_use) - set(pick_predictions_df.columns))
-            if missing_cols:
-                pick_predictions_df[missing_cols] = 0.0 
-                    
-            predict_data = pick_predictions_df[features_to_use].fillna(0) 
-             
             # 2. Predict into a custom column name
             col_name = f'Predicted_Pick_Pct'
-            pick_predictions_df[col_name] = model.predict(predict_data)
+            # Defined for both branches; the later `n_features % 20` memory
+            # heuristic must never fire in cold-start mode (matches the
+            # original, where n_features is only ever 7 or 9 -> never 0 mod 20).
+            n_features = -1
+
+            if use_public_proxy:
+                # ── 🧊 COLD START ── no trained model for this contest yet
+                # (e.g. Splash Week 1 2026). Use the real Public Pick % feed as
+                # the agreed proxy. The same normalization + water-filling +
+                # leak-fix below then run on it exactly as they do on a model
+                # prediction, so the projected pick % is a valid, availability-
+                # respecting distribution. Future weeks with no public feed
+                # yet get 0 here and are spread across available teams by the
+                # water-filling step (the entry-choice pipeline in
+                # weekly_4/5/6 + daily_4 owns the richer forward estimate).
+                pick_predictions_df[col_name] = pd.to_numeric(
+                    pick_predictions_df.get('Public Pick %', 0.0),
+                    errors='coerce').fillna(0.0)
+                print(f"🧊 Week {current_week} | {contest_label}: cold-start "
+                      f"Public Pick % proxy (no trained model this run)")
+            else:
+                # --- DYNAMIC MODEL SELECTION ---
+                # Default to the 7-feature model
+                n_features = 7
+
+                # Logic: Use 9-feature model ONLY IF it's the current week
+                # AND the 'Public Pick %' column actually has data.
+                if current_week == upcoming_week:
+                    if 'Public Pick %' in pick_predictions_df.columns:
+                        # Check if the column is NOT entirely null and NOT all zeros
+                        has_public_data = not pick_predictions_df['Public Pick %'].isnull().all() and \
+                                          (pick_predictions_df['Public Pick %'] != 0).any()
+
+                        if has_public_data:
+                            n_features = 9
+                        else:
+                            print(f"⚠️ Public Pick % is empty for Week {current_week}. Falling back to 7-feature model.")
+                    else:
+                        print(f"⚠️ Public Pick % column missing. Falling back to 7-feature model.")
+
+                # Load the selected model (fall back to whichever model trained
+                # if the preferred size is unavailable this run).
+                if n_features not in trained_models:
+                    n_features = next(iter(trained_models))
+                model_data = trained_models[n_features]
+                model = model_data['model']
+                features_to_use = model_data['features']
+
+                # --- VERIFICATION PRINT ---
+                print(f"🏈 Week {current_week} | Predicting using {n_features} features model...")
+                print(f"Features Being Used: {features_to_use}")
+
+                # 1. Ensure features exist in this week's data (Optimized set logic)
+                missing_cols = list(set(features_to_use) - set(pick_predictions_df.columns))
+                if missing_cols:
+                    pick_predictions_df[missing_cols] = 0.0
+
+                predict_data = pick_predictions_df[features_to_use].fillna(0)
+
+                # 2. Predict
+                pick_predictions_df[col_name] = model.predict(predict_data)
 
             pick_predictions_df = pick_predictions_df.copy()
             
@@ -6156,16 +6263,61 @@ def loop_through_simulations(date_str):
                 # since we expect only numbers or NaNs at this point.
                 nfl_schedule_df[col] = pd.to_numeric(nfl_schedule_df[col], errors='coerce') 
     
-    #    if selected_contest == 'Circa':
-        nfl_schedule_df.to_csv("Circa_Predicted_pick_percent.csv", index=False)
-    #    elif selected_contest == 'Splash Sports':
-    #        nfl_schedule_df.to_csv("Splash_Predicted_pick_percent.csv", index=False)
-    #    else:
-    #        nfl_schedule_df.to_csv("DK_Predicted_pick_percent.csv", index=False)
-    	
+        # For a non-Circa contest, tag this contest's projected pick % columns
+        # with its prefix so the three contests never overwrite each other when
+        # merged into the shared schedule. Circa keeps its original column
+        # names untouched (proj_prefix == '').
+        if proj_prefix:
+            nfl_schedule_df = nfl_schedule_df.rename(columns={
+                'Home Pick %': f'Home {proj_prefix} Pick %',
+                'Away Pick %': f'Away {proj_prefix} Pick %',
+            })
+
+        nfl_schedule_df.to_csv(out_csv, index=False)
+        print(f"💾 {contest_label}: wrote projected pick % schedule -> {out_csv}")
+
         return nfl_schedule_df
 
     collect_schedule_travel_ranking_data_df = get_predicted_pick_percentages(final_combined_df)
+
+    # ── Per-contest projections (Splash Big Splash + Survivor World
+    #    Championship) ── the SAME machinery, each trained on its own contest's
+    #    historical pick data (or the Public Pick % cold-start proxy until
+    #    enough real history exists). Each contest's projected Home/Away pick %
+    #    columns are merged back into the shared Circa schedule under a
+    #    contest-prefixed name so downstream EV (daily_3) can read every
+    #    contest from one frame. Guarded so a pre-2026 run simply skips the
+    #    Splash contests instead of fabricating history for a year they didn't
+    #    exist.
+    from contest_config import CONTESTS as _ALL_CONTESTS
+    for _ck in ('big_splash', 'world_championship'):
+        _spec = _ALL_CONTESTS[_ck]
+        _prefix = _spec['proj_prefix']
+        if int(target_year) < int(_spec['start_season']):
+            print(f"⏭️  {_spec['label']}: contest starts {_spec['start_season']}, "
+                  f"skipping projection for {target_year}.")
+            continue
+        try:
+            _contest_df = get_predicted_pick_percentages(final_combined_df, contest=_ck)
+            _key = ['Week', 'Home Team', 'Away Team']
+            _home_col, _away_col = f'Home {_prefix} Pick %', f'Away {_prefix} Pick %'
+            if all(c in _contest_df.columns for c in _key + [_home_col, _away_col]):
+                _sub = _contest_df[_key + [_home_col, _away_col]].copy()
+                # A game key is unique per week, so this left-merge just attaches
+                # the two projected columns without changing row count.
+                _before = len(collect_schedule_travel_ranking_data_df)
+                collect_schedule_travel_ranking_data_df = \
+                    collect_schedule_travel_ranking_data_df.merge(_sub, on=_key, how='left')
+                assert len(collect_schedule_travel_ranking_data_df) == _before, \
+                    f"{_ck} merge changed row count"
+                print(f"🔗 {_spec['label']}: merged {_home_col} / {_away_col} "
+                      f"into the shared schedule.")
+            else:
+                print(f"⚠️ {_spec['label']}: expected projected columns not found "
+                      f"— skipping merge (projection still written to its own CSV).")
+        except Exception as _e:
+            print(f"⚠️ {_spec['label']}: projection failed ({_e}) — "
+                  f"continuing without it.")
 
 
     # 1. Load the preseason file safely
