@@ -199,29 +199,48 @@ def loop_through_ev(date_str):
             }
         }
 
+        # Max games we'll exact-enumerate (2**G scenarios). An NFL week is at
+        # most 16 games, so 16 -> 65,536 scenarios is the real ceiling; the
+        # cap is just a guardrail so a malformed week can't blow up memory.
+        MAX_ENUM_GAMES = 20
+
         def calculate_all_scenarios(week_df, week_num, away_prob_col, home_prob_col,
                                     home_pick_col='Home Pick %',
                                     away_pick_col='Away Pick %'):
             """
-            EV(team) = P(team wins) / E[total survivors this week]
-            E[survivors] = sum of (each team's pick% * their win probability)
+            TRUE EV via exact enumeration of every possible weekly outcome.
 
-            Teams with 0%/missing availability (pick% == 0 or NaN) are
-            excluded from the expected-survivors denominator — they're not
-            pickable so they don't affect EV for the remaining eligible
-            teams. BUT the denominator is only meaningful if pick% data
-            exists for (essentially) the whole slate — see EXPECTED_PICK_MASS
-            above — so we bail out to all-zero EV for the week rather than
-            silently compute from a partial distribution.
+            EV(team T) = E[ 1{T wins} / S ]
+                       = sum over all 2**G win/loss scenarios of
+                         P(scenario) * 1{T wins in that scenario} / S(scenario)
 
-            home_pick_col/away_pick_col let the same formula run on Circa
-            pick% ('Home/Away Pick %') or Splash pick% ('Home/Away Splash
-            Pick %').
+            where G is the number of games that week (<=16, so <=65,536
+            scenarios), P(scenario) is the product of each game's per-team
+            win probability (games treated as independent, same assumption
+            daily_2's Monte Carlo makes), and S(scenario) is the surviving
+            pick-mass in that scenario -- the sum of pick% over the teams
+            that won. An entry survives iff its picked team won, and its
+            equity that week is inversely proportional to how much of the
+            field survives alongside it, hence 1/S.
+
+            This REPLACES the old ratio-of-expectations approximation
+            EV = P(win) / E[survivors]. That form is a first-order estimate;
+            it ignores that 1/S is convex and, more importantly, that when a
+            heavily-picked favorite wins, S is LARGER (its own mass survives),
+            so 1{T wins} and 1/S are negatively correlated. Enumerating every
+            scenario prices both effects in exactly, which is why a full
+            65k-scenario pass is more accurate than the 5k-sample Monte Carlo.
+
+            Same coverage guard as before: if pick% data doesn't cover
+            (essentially) the whole slate, bail to all-zero EV rather than
+            compute from a partial distribution. home_pick_col/away_pick_col
+            let the same routine run on Circa pick% or Splash pick%.
             """
             home_probs = week_df[home_prob_col].to_numpy(dtype=float)
             away_probs = week_df[away_prob_col].to_numpy(dtype=float)
             home_picks = week_df[home_pick_col].fillna(0).to_numpy(dtype=float)
             away_picks = week_df[away_pick_col].fillna(0).to_numpy(dtype=float)
+            n = len(week_df)
 
             total_pick_mass = home_picks.sum() + away_picks.sum()
             if total_pick_mass < EXPECTED_PICK_MASS * MIN_PICK_MASS_COVERAGE:
@@ -229,25 +248,69 @@ def loop_through_ev(date_str):
                       f"coverage is only {total_pick_mass:.1%} of expected — "
                       f"treating as missing data and zeroing EV for this week "
                       f"(check upstream pick% generation).")
-                zero = np.zeros(len(week_df))
+                zero = np.zeros(n)
                 return (dict(zip(week_df['Home Team'], zero)),
                         dict(zip(week_df['Away Team'], zero)))
 
-            # Only include teams with non-zero availability in the denominator
-            home_eligible = home_picks > 0
-            away_eligible = away_picks > 0
+            # Clean per-game home-win probability. Fair-odds columns are meant
+            # to be de-vigged (home + away ~ 1), so fill a missing side from
+            # its complement; fall back to 0.5 only if both sides are missing.
+            hp = home_probs.copy()
+            ap = away_probs.copy()
+            hp = np.where(np.isnan(hp) & ~np.isnan(ap), 1.0 - ap, hp)
+            hp = np.where(np.isnan(hp), 0.5, hp)
+            hp = np.clip(hp, 0.0, 1.0)
 
-            expected_survivors = (
-                np.sum(home_probs[home_eligible] * home_picks[home_eligible]) +
-                np.sum(away_probs[away_eligible] * away_picks[away_eligible])
-            )
+            home_ev = np.zeros(n)
+            away_ev = np.zeros(n)
 
-            if expected_survivors > 0:
-                home_ev = np.where(home_eligible, home_probs / expected_survivors, 0.0)
-                away_ev = np.where(away_eligible, away_probs / expected_survivors, 0.0)
-            else:
-                home_ev = np.zeros(len(week_df))
-                away_ev = np.zeros(len(week_df))
+            # A game only affects survival if at least one side is pickable
+            # (pick% > 0). Games with no pick mass on either side can't change
+            # S no matter who wins, so drop them from the enumeration -- that
+            # keeps the scenario count at 2**(relevant games) instead of 2**16
+            # when byes/eliminations have thinned the pickable slate.
+            relevant = (home_picks > 0) | (away_picks > 0)
+            idx = np.nonzero(relevant)[0]
+            G = int(idx.size)
+            if G == 0:
+                return (dict(zip(week_df['Home Team'], home_ev)),
+                        dict(zip(week_df['Away Team'], away_ev)))
+            if G > MAX_ENUM_GAMES:
+                # Should never happen for real NFL weeks; guardrail only.
+                print(f"⚠️ Week {week_num}: {G} pickable games exceeds the "
+                      f"{MAX_ENUM_GAMES}-game enumeration cap — skipping true-EV "
+                      f"for this week/column.")
+                return (dict(zip(week_df['Home Team'], home_ev)),
+                        dict(zip(week_df['Away Team'], away_ev)))
+
+            p = hp[idx]              # home-win prob per relevant game  (G,)
+            hm = home_picks[idx]     # home pick mass                   (G,)
+            am = away_picks[idx]     # away pick mass                   (G,)
+
+            # bits[s, g] == 1  <=>  the HOME team wins game g in scenario s.
+            n_scen = 1 << G
+            scen = np.arange(n_scen, dtype=np.int64)[:, None]
+            gbit = np.arange(G, dtype=np.int64)[None, :]
+            bits = ((scen >> gbit) & 1).astype(np.float64)          # (n_scen, G)
+
+            # P(scenario) = product over games of (p if home wins else 1-p).
+            prob_per_game = bits * p + (1.0 - bits) * (1.0 - p)     # (n_scen, G)
+            p_scen = prob_per_game.prod(axis=1)                     # (n_scen,)
+
+            # S(scenario) = surviving pick mass = winners' pick% summed.
+            s_mass = bits @ hm + (1.0 - bits) @ am                  # (n_scen,)
+            with np.errstate(divide='ignore', invalid='ignore'):
+                weight = np.where(s_mass > 0, p_scen / s_mass, 0.0)  # (n_scen,)
+
+            # EV per side = sum of scenario weights over scenarios where that
+            # side won.  home wins => bit==1, away wins => bit==0.
+            home_ev_g = weight @ bits                               # (G,)
+            away_ev_g = weight @ (1.0 - bits)                       # (G,)
+
+            # A team you can't pick (pick% == 0) has no EV even though its game
+            # was enumerated (its outcome still moved S for the other side).
+            home_ev[idx] = np.where(hm > 0, home_ev_g, 0.0)
+            away_ev[idx] = np.where(am > 0, away_ev_g, 0.0)
 
             return (dict(zip(week_df['Home Team'], home_ev)),
                     dict(zip(week_df['Away Team'], away_ev)))
