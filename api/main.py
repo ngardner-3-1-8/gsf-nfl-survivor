@@ -837,29 +837,59 @@ def get_contest_charts(year: int = Query(None), through_week: int = Query(None))
 # sim file's Home/Away Pick % columns for the ACTUAL pick% (from the season
 # final-data file's "Home/Away Actual Pick %" columns) before optimizing.
 
+# Map an API / splash_config contest key to the per-contest projection's
+# column prefix + EV tag that daily_2 / daily_3 write. Note the World
+# Championship's key differs between the two configs (splash_config calls it
+# 'survivor_world_championship'; contest_config's projection prefix is
+# 'World Championship'). Any Splash sub-contest NOT in this map (4-for-4,
+# High Roller, …) has no dedicated projection and falls back to the shared
+# Splash pick%/EV columns.
+_SPLASH_PROJECTION_COLS = {
+    "big_splash": ("Big Splash", "BigSplash"),
+    "survivor_world_championship": ("World Championship", "WorldChampionship"),
+}
+
+
 def _apply_splash_pick_and_availability(sim_df, contest_key):
     """
-    Splash EV/pick% are precomputed in the sim file by the daily pipeline
-    (daily_2 caps Splash pick% by availability; daily_3 writes Splash_{prefix}_
-    Home/Away_EV). Here we simply point the optimizer's pick% and EV columns at
-    the Splash-versioned columns so it optimizes on Splash values — no live
-    recomputation (mirrors _apply_pick_source).
+    Point the optimizer's pick% and EV columns at this Splash contest's
+    precomputed values (no live recomputation; mirrors _apply_pick_source).
+
+    Big Splash and the Survivor World Championship each have their OWN
+    projected pick% and EV columns — daily_2 projects each contest's crowd and
+    daily_3 writes {Tag}_{prefix}_Home/Away_EV. Prefer those. Any other Splash
+    sub-contest, or a week where a per-contest column is missing, falls back to
+    the shared Splash pick%/EV (the public-feed proxy) exactly as before.
     """
     sim_df = sim_df.copy()
 
-    # Pick % → Splash pick %
-    if "Home Splash Pick %" in sim_df.columns:
+    proj_prefix, ev_tag = _SPLASH_PROJECTION_COLS.get(contest_key, (None, None))
+
+    # 1. Pick % → per-contest projected pick% if present, else shared Splash.
+    home_proj = f"Home {proj_prefix} Pick %" if proj_prefix else None
+    away_proj = f"Away {proj_prefix} Pick %" if proj_prefix else None
+    if home_proj and home_proj in sim_df.columns:
+        sim_df["Home Pick %"] = sim_df[home_proj].fillna(
+            sim_df.get("Home Splash Pick %", sim_df.get("Home Pick %")))
+    elif "Home Splash Pick %" in sim_df.columns:
         sim_df["Home Pick %"] = sim_df["Home Splash Pick %"].fillna(sim_df.get("Home Pick %"))
-    if "Away Splash Pick %" in sim_df.columns:
+    if away_proj and away_proj in sim_df.columns:
+        sim_df["Away Pick %"] = sim_df[away_proj].fillna(
+            sim_df.get("Away Splash Pick %", sim_df.get("Away Pick %")))
+    elif "Away Splash Pick %" in sim_df.columns:
         sim_df["Away Pick %"] = sim_df["Away Splash Pick %"].fillna(sim_df.get("Away Pick %"))
 
-    # EV columns → Splash-versioned EV (Splash_{prefix}_Home/Away_EV)
+    # 2. EV columns → per-contest EV if present, else shared Splash EV.
     for prefix in ("consensus", "sportsbook", "mp", "gsf", "sim"):
         for side in ("Home", "Away"):
             base = f"{prefix}_{side}_EV"
-            splash = f"Splash_{prefix}_{side}_EV"
-            if splash in sim_df.columns and base in sim_df.columns:
-                sim_df[base] = sim_df[splash].fillna(sim_df[base])
+            per_contest = f"{ev_tag}_{prefix}_{side}_EV" if ev_tag else None
+            shared = f"Splash_{prefix}_{side}_EV"
+            if per_contest and per_contest in sim_df.columns and base in sim_df.columns:
+                sim_df[base] = sim_df[per_contest].fillna(
+                    sim_df[shared] if shared in sim_df.columns else sim_df[base])
+            elif shared in sim_df.columns and base in sim_df.columns:
+                sim_df[base] = sim_df[shared].fillna(sim_df[base])
     return sim_df
 
 
