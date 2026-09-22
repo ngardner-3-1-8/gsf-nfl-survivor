@@ -22,122 +22,33 @@ from typing import Dict, List, Any
 from scipy.stats import spearmanr
 import calendar
 import importlib
+from season_dates import resolve_week_context, CIRCA_HOLIDAY_CONFIG, default_circa_holiday
 
 def loop_through_simulations(date_str):   
-    # 1. Get current date
-    today = pd.to_datetime(date_str)
-    current_cal_year = today.year 
-    
-    # 2. Initial Year Logic based on Month (User Rule)
-    # If Jan-May (< 6), assume we are finishing the previous season.
-    target_year = current_cal_year - 1 if today.month < 6 else current_cal_year
-    
-    schedule_df = pd.read_csv(f"nfl-schedules/schedule_{target_year}.csv")
-    
-    schedule_df['Date'] = pd.to_datetime(schedule_df['Date'])
-    
-    first_game_date = schedule_df['Date'].min()
-    
-    # 3. Calculate Important Dates Automatically
-    def get_thanksgiving(year):
-        # 4th Thursday in November
-        c = calendar.monthcalendar(year, 11)
-        thursdays = [row[calendar.THURSDAY] for row in c if row[calendar.THURSDAY] != 0]
-        return datetime(year, 11, thursdays[3])
-    
-    
-    
-    thanksgiving_date = get_thanksgiving(target_year)
-    black_friday = thanksgiving_date + timedelta(days=1)
-    christmas_day = datetime(target_year, 12, 25)
-    boxing_day = datetime(target_year, 12, 26)
-    
-    thanksgiving_week = int((thanksgiving_date - first_game_date).days/7) + 1 ## +1 because the first game date is technically week 1, not week 0
-    christmas_week = int((christmas_day - first_game_date).days/7) + 2 ## +2 because the first game date is technically week 1, not week 0, and the addition of thanksgiving_week
-
-    # ------------------------------------------------------------------
-    # CIRCA HOLIDAY WEEKS (manually maintained -- update once per season)
-    # ------------------------------------------------------------------
-    # Circa carves Thanksgiving and Christmas into their own contest weeks,
-    # which shifts every later game up by a week. Thanksgiving is uniform
-    # every season (handled in code below). Christmas placement depends on
-    # the actual schedule, so it is listed per season here.
-    #
-    #   christmas_shift_from : games on/after this date get +1 to 'Week'
-    #                          (None = no separate Circa Christmas week that year)
-    #   christmas_label_dates: dates shown as 'Christmas' in the 'Circa Week' column
-    #
-    # To add a new season: read that year's schedule and enter the Christmas
-    # slate date(s) and the first date that should roll into the following week.
-    CIRCA_HOLIDAY_CONFIG = {
-        2020: {'christmas_shift_from': None,
-               'christmas_label_dates': []},
-        2021: {'christmas_shift_from': datetime(2021, 12, 26),
-               'christmas_label_dates': [datetime(2021, 12, 25), datetime(2021, 12, 23)]},
-        2022: {'christmas_shift_from': datetime(2022, 12, 25),
-               'christmas_label_dates': [datetime(2022, 12, 25), datetime(2022, 12, 26)]},
-        2023: {'christmas_shift_from': datetime(2023, 12, 25),
-               'christmas_label_dates': [datetime(2023, 12, 25)]},
-        2024: {'christmas_shift_from': datetime(2024, 12, 27),
-               'christmas_label_dates': [datetime(2024, 12, 25), datetime(2024, 12, 26)]},
-        2025: {'christmas_shift_from': datetime(2025, 12, 26),
-               'christmas_label_dates': [datetime(2025, 12, 25)]},
-        2026: {'christmas_shift_from': datetime(2026, 12, 26),
-               'christmas_label_dates': [datetime(2026, 12, 25), datetime(2026, 12, 24)]},
-    }
-    # Fallback for any season not listed above: mirror the common pattern
-    # (Christmas week starts on Boxing Day; label Christmas Day + Boxing Day).
-    DEFAULT_CIRCA_HOLIDAY = {
-        'christmas_shift_from': boxing_day,
-        'christmas_label_dates': [christmas_day, boxing_day],
-    }
-    
-    if today <= first_game_date:
-        starting_week = 1
-        upcoming_week = starting_week
-        print(f"Today ({today.date()}) is before the first game ({first_game_date.date()}). dropping years to load by 1.")
-        # Reload schedule for the adjusted year so we can calculate the week correctly below
-        target_year_load = target_year - 1
-    else:
-        # 1. Find the final game date for every week in the season
-        # This creates a Series where index = Week, value = Latest Game Date for that week
-        target_year_load = target_year
-        week_end_dates = schedule_df.groupby('Week')['Date'].max()
-        print("WEEK END DATES")
-        print(week_end_dates)
-        # 2. Filter for weeks where the LAST game of that week has already occurred
-        completed_weeks = week_end_dates[week_end_dates < today]
-        print("COMPLETED WEEKS")
-        print(completed_weeks)
-        if not completed_weeks.empty:
-            # The "standard_nfl_week" is now the last FULLY completed week
-            standard_nfl_week = int(completed_weeks.index.max())
-            print("LAST FULLY COMPLETED NFL WEEK")
-            print(standard_nfl_week)
-            # 3. Your starting point for simulations is the next week (the one in progress or upcoming)
-            starting_week = standard_nfl_week + 1
-            upcoming_week = starting_week
-            # --- ADJUST FOR CIRCA SPECIAL WEEKS ---
-            # Using your existing logic for Thanksgiving/Christmas shifts
-            # Circa holiday weeks push 'upcoming_week' forward, using the same
-            # per-season boundaries as the schedule build (see CIRCA_HOLIDAY_CONFIG
-            # above). Thanksgiving is uniform; Christmas is schedule-dependent.
-            if today > black_friday:
-                upcoming_week += 1
-            _xmas_from = CIRCA_HOLIDAY_CONFIG.get(
-                target_year, DEFAULT_CIRCA_HOLIDAY).get('christmas_shift_from')
-            if _xmas_from is not None and today >= pd.to_datetime(_xmas_from):
-                upcoming_week += 1
-            # Bound check: Cap at 19 (or your season max)
-            if starting_week > 18: 
-                starting_week = 18
-        else:
-            # If no week is fully completed yet, we are still in Week 1
-            starting_week = 1
-            upcoming_week = 1
-
+    # --- Season / week context (single source of truth: season_dates.py) ---
+    # daily_2 now DERIVES its target year and week from resolve_week_context
+    # rather than computing them inline, so daily_2 / daily_3 / weekly_1 all
+    # agree by construction. CIRCA_HOLIDAY_CONFIG (imported at top) is still
+    # the per-season holiday table the schedule build below uses.
+    ctx = resolve_week_context(date_str)
+    today = ctx.today
+    current_cal_year = ctx.current_cal_year
+    target_year = ctx.target_year
+    target_year_load = ctx.target_year_load
+    schedule_df = ctx.schedule_df
+    first_game_date = ctx.first_game_date
+    thanksgiving_date = ctx.thanksgiving_date
+    black_friday = ctx.black_friday
+    christmas_day = ctx.christmas_day
+    boxing_day = ctx.boxing_day
+    thanksgiving_week = ctx.thanksgiving_week
+    christmas_week = ctx.christmas_week
+    starting_week = ctx.starting_week
+    upcoming_week = ctx.upcoming_week
+    DEFAULT_CIRCA_HOLIDAY = default_circa_holiday(target_year)
+ 
     print(f"Target Year: {target_year}")
-    print(f"Starting Week: {starting_week}")
+	print(f"Starting Week: {starting_week}")
     print(f"Upcoming Week: {upcoming_week}")
     # 5. Final Assignment to your variables
     current_year = target_year
