@@ -5236,7 +5236,7 @@ def loop_through_simulations(date_str):
         else:
             # Handle the -1 (auto-estimate) case based on contest
     #        if selected_contest == 'Circa':
-        	default_entries = contest_default_entries # contest-specific fallback pool size # Example
+            default_entries = contest_default_entries # contest-specific fallback pool size # Example
     #        elif selected_contest == 'Splash Sports':
     #            if subcontest == "The Big Splash ($150 Entry)":
     #                default_entries = splash_big_splash_total_entries
