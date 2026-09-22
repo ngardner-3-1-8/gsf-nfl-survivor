@@ -16,7 +16,7 @@ on:
     #      pick-% projection trains on.
     # Both must land before daily_2 and the Splash weekly_4/5 runs, so keep
     # this at or before the earliest of those.
-    - cron: '30 6 * * 2'
+    - cron: '30 14 * * 2'
 
 permissions:
   contents: write   # to commit the normalized picks + contest historical files back
