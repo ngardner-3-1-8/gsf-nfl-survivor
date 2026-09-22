@@ -48,7 +48,7 @@ def loop_through_simulations(date_str):
     DEFAULT_CIRCA_HOLIDAY = default_circa_holiday(target_year)
  
     print(f"Target Year: {target_year}")
-	print(f"Starting Week: {starting_week}")
+    print(f"Starting Week: {starting_week}")
     print(f"Upcoming Week: {upcoming_week}")
     # 5. Final Assignment to your variables
     current_year = target_year
@@ -469,7 +469,7 @@ def loop_through_simulations(date_str):
             "HOU": "Houston Texans",
             "IND": "Indianapolis Colts",
             "JAX": "Jacksonville Jaguars",
-    		"JAC": "Jacksonville Jaguars",
+            "JAC": "Jacksonville Jaguars",
             "KC": "Kansas City Chiefs",
             "LV": "Las Vegas Raiders",
             "LAC": "Los Angeles Chargers",
@@ -624,23 +624,23 @@ def loop_through_simulations(date_str):
     
         def haversine(lat1, lon1, lat2, lon2):
     	    # Convert degrees to radians
-    	    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
-    	    # Differences
-    	    dlat = lat2 - lat1
-    	    dlon = lon2 - lon1
-    	    # Haversine formula
-    	    a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
-    	    c = 2 * atan2(sqrt(a), sqrt(1 - a))
-    	    r = 3956 # Radius in miles
-    	    return c * r
+            lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+            # Differences
+            dlat = lat2 - lat1
+            dlon = lon2 - lon1
+            # Haversine formula
+            a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+            c = 2 * atan2(sqrt(a), sqrt(1 - a))
+            r = 3956 # Radius in miles
+            return c * r
     	
         def calculate_hours_difference(tz1, tz2):
-    	    try:
-    	        tz1_offset = pytz.timezone(tz1).utcoffset(pd.to_datetime(date_str)).total_seconds() / 3600
-    	        tz2_offset = pytz.timezone(tz2).utcoffset(pd.to_datetime(date_str)).total_seconds() / 3600
-    	        return tz1_offset - tz2_offset
-    	    except:
-    	        return 0
+            try:
+                tz1_offset = pytz.timezone(tz1).utcoffset(pd.to_datetime(date_str)).total_seconds() / 3600
+                tz2_offset = pytz.timezone(tz2).utcoffset(pd.to_datetime(date_str)).total_seconds() / 3600
+                return tz1_offset - tz2_offset
+            except:
+                return 0
     			
         df = schedule_df
     	
@@ -5348,12 +5348,12 @@ def loop_through_simulations(date_str):
                 'Away Team Star Rating', 'Home Team Star Rating', 'Divisional Matchup Boolean', 
                 'Away Team Public Pick %', 'Home Team Public Pick %', 
                 'Away Team Expected Availability', 'Home Team Expected Availability', 
-    			'Away Team Thanksgiving Favorite', 'Away Team Thanksgiving Underdog', 
-    			'Home Team Thanksgiving Favorite', 'Home Team Thanksgiving Underdog', 
-    			'Away Team Christmas Favorite', 'Away Team Christmas Underdog',
-    			'Home Team Christmas Favorite', 'Home Team Christmas Underdog',
-    			'Away Team Pre Thanksgiving', 'Away Team Pre Christmas',
-    			'Home Team Pre Thanksgiving', 'Home Team Pre Christmas', 'Date'
+                'Away Team Thanksgiving Favorite', 'Away Team Thanksgiving Underdog', 
+                'Home Team Thanksgiving Favorite', 'Home Team Thanksgiving Underdog', 
+                'Away Team Christmas Favorite', 'Away Team Christmas Underdog',
+                'Home Team Christmas Favorite', 'Home Team Christmas Underdog',
+                'Away Team Pre Thanksgiving', 'Away Team Pre Christmas',
+                'Home Team Pre Thanksgiving', 'Home Team Pre Christmas', 'Date'
             ]
             
             # Ensure only valid columns are selected
@@ -5378,12 +5378,12 @@ def loop_through_simulations(date_str):
                     'Divisional Matchup Boolean': 'Divisional Matchup?',
                     f'{team_type} Expected Availability': 'Availability', 
                     f'{team_type} Public Pick %': 'Public Pick %',
-    				f'{team_type} Thanksgiving Favorite': 'Thanksgiving Favorite',
-    				f'{team_type} Thanksgiving Underdog': 'Thanksgiving Underdog',
-    				f'{team_type} Christmas Favorite': 'Christmas Favorite',
-    				f'{team_type} Christmas Underdog': 'Christmas Underdog',
-    				f'{team_type} Pre Thanksgiving': 'Pre Thanksgiving',
-    				f'{team_type} Pre Christmas': 'Pre Christmas',
+                    f'{team_type} Thanksgiving Favorite': 'Thanksgiving Favorite',
+                    f'{team_type} Thanksgiving Underdog': 'Thanksgiving Underdog',
+                    f'{team_type} Christmas Favorite': 'Christmas Favorite',
+                    f'{team_type} Christmas Underdog': 'Christmas Underdog',
+                    f'{team_type} Pre Thanksgiving': 'Pre Thanksgiving',
+                    f'{team_type} Pre Christmas': 'Pre Christmas',
                 }).drop(columns=[f'{opponent_type_1} Fair Odds', f'{opponent_type_1} Star Rating', f'{opponent_type_1} Public Pick %', f'{opponent_type_1} Expected Availability'])
                 
                 df_out['Home/Away'] = 'Away' if is_away else 'Home'
