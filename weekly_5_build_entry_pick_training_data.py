@@ -83,6 +83,10 @@ from team_codes import canonical_pick_code
 from contest_config import get_contest, tagged
 
 _CFG = get_contest()
+_IS_CIRCA = (_CFG['out_tag'] == 'circa')
+
+# --------------------------------------------------------------------
+# Config
 
 # --------------------------------------------------------------------
 # Config
@@ -248,7 +252,7 @@ def _resolve_col(df, candidates, prefix, label, path):
     )
 
 
-def load_week_actual_table(path):
+def load_week_actual_table(path, actual_pick_override=None):
     if not os.path.exists(path):
         return None
     df = pd.read_csv(path, low_memory=False)
@@ -282,6 +286,14 @@ def load_week_actual_table(path):
     long_df = pd.concat([_side('Home'), _side('Away')], ignore_index=True)
     long_df['Team'] = long_df['Team_Full'].map(TEAM_FULLNAME_TO_ABBR)
     long_df = long_df.dropna(subset=['Team']).drop(columns=['Team_Full'])
+
+    # 'Actual Pick %' drives the Contrarian/unpopularity dimension and is
+    # contest SPECIFIC. Circa uses final_data's own pick %; a Splash contest
+    # overrides it with its own crowd (see process_year), so an entry's
+    # contrarian-ness is measured against the field it actually played in.
+    if actual_pick_override is not None:
+        long_df['Actual Pick %'] = long_df['Team'].map(actual_pick_override).fillna(0.0)
+
     long_df = long_df.dropna(subset=['Win %', 'EV', 'Future Value', 'Actual Pick %'])
     return long_df.reset_index(drop=True)
 
@@ -493,6 +505,19 @@ def build_choice_rows(year, picks_long, asof_states, candidate_tables):
 # --------------------------------------------------------------------
 # 6. Orchestration
 # --------------------------------------------------------------------
+def contest_actual_pick_pct(picks_long):
+    """{week: {TEAM: observed_pick_pct}} for THIS contest, from its own
+    canonicalized picks -- the crowd a Splash entry's Contrarian dimension is
+    scored against (Circa keeps final_data's pick %)."""
+    out = {}
+    for week, g in picks_long.groupby('Week'):
+        counts = g['Team'].value_counts()
+        total = int(counts.sum())
+        if total > 0:
+            out[int(week)] = (counts / total).to_dict()
+    return out
+
+
 def process_year(year):
     picks_path = PICKS_PATTERN.format(year=year)
     if not os.path.exists(picks_path):
@@ -505,13 +530,18 @@ def process_year(year):
         return None
     picks_long = attach_available_pool(picks_long)
 
+    # Splash contests score unpopularity against their own crowd; Circa uses
+    # final_data's pick % (override stays None).
+    contest_pick_pct = None if _IS_CIRCA else contest_actual_pick_pct(picks_long)
+
     weeks = sorted(picks_long['Week'].unique())
     actual_tables, candidate_tables = {}, {}
     for week in weeks:
         path = FINAL_DATA_PATTERN.format(year=year, week=week)
+        override = None if contest_pick_pct is None else contest_pick_pct.get(week, {})
 
         try:
-            actual_tables[week] = load_week_actual_table(path)
+            actual_tables[week] = load_week_actual_table(path, actual_pick_override=override)
         except Exception as e:
             print(f"⚠️  {year} Week {week}: couldn't load actual table "
                   f"({path}): {e} -- this week will be skipped.")
