@@ -36,89 +36,27 @@ from sklearn.feature_selection import RFE
 from scipy.stats import percentileofscore
 import warnings
 import calendar
+from season_dates import resolve_week_context
     
 def loop_through_ev(date_str):   
     # 1. Get current date
-    today = pd.to_datetime(date_str)  
-    # 1. Get current date
-    current_cal_year = today.year 
-    
-    # 2. Initial Year Logic based on Month (User Rule)
-    # If Jan-May (< 6), assume we are finishing the previous season.
-    target_year = current_cal_year - 1 if today.month < 6 else current_cal_year
-    
-    schedule_df = pd.read_csv(f"nfl-schedules/schedule_{target_year}.csv")
-    
-    schedule_df['Date'] = pd.to_datetime(schedule_df['Date'])
-    
-    first_game_date = schedule_df['Date'].min()
-    
-    # 3. Calculate Important Dates Automatically
-    def get_thanksgiving(year):
-        # 4th Thursday in November
-        c = calendar.monthcalendar(year, 11)
-        thursdays = [row[calendar.THURSDAY] for row in c if row[calendar.THURSDAY] != 0]
-        return datetime(year, 11, thursdays[3])
-    
-    
-    
-    thanksgiving_date = get_thanksgiving(target_year)
-    black_friday = thanksgiving_date + timedelta(days=1)
-    christmas_day = datetime(target_year, 12, 25)
-    boxing_day = datetime(target_year, 12, 26)
-    
-    thanksgiving_week = int((thanksgiving_date - first_game_date).days/7) + 1 ## +1 because the first game date is technically week 1, not week 0
-    christmas_week = int((christmas_day - first_game_date).days/7) + 2 ## +2 because the first game date is technically week 1, not week 0, and the addition of thanksgiving_week
-    
-    if today <= first_game_date:
-        starting_week = 1
-        upcoming_week = starting_week
-    else:
-        # 1. Find the final game date for every week in the season
-        # This creates a Series where index = Week, value = Latest Game Date for that week
-        week_end_dates = schedule_df.groupby('Week')['Date'].max()
-        # 2. Filter for weeks where the LAST game of that week has already occurred
-        completed_weeks = week_end_dates[week_end_dates < today]
-        if not completed_weeks.empty:
-            # The "standard_nfl_week" is now the last FULLY completed week
-            standard_nfl_week = int(completed_weeks.index.max())           
-            # 3. Your starting point for simulations is the next week (the one in progress or upcoming)
-            starting_week = standard_nfl_week + 1
-            upcoming_week = starting_week
-            # --- ADJUST FOR CIRCA SPECIAL WEEKS ---
-            # Using your existing logic for Thanksgiving/Christmas shifts
-            if today > black_friday:
-                starting_week += 0
-                upcoming_week += 1
-            if target_year == 2020:
-                if today >= boxing_day:
-                    starting_week += 0
-                    upcoming_week += 0
-            elif target_year == 2022:
-                if today >= christmas_day:
-                    upcoming_week += 1
-            elif target_year == 2023:
-                if today >= christmas_day:
-                    upcoming_week += 1
-            elif target_year == 2024:
-                if today > boxing_day:
-                    starting_week += 0
-                    upcoming_week += 1
-            elif target_year in [2021,2025,2026]:
-                if today >= boxing_day:
-                    starting_week += 0
-                    upcoming_week += 1
-            elif target_year >= 2027:
-                if today >= boxing_day:
-                    starting_week += 0
-                    upcoming_week += 1
-            # Bound check: Cap at 19 (or your season max)
-            if starting_week > 18: 
-                starting_week = 18
-        else:
-            # If no week is fully completed yet, we are still in Week 1
-            starting_week = 1
-            upcoming_week = 1
+    # --- Season / week context (shared with daily_2 via season_dates.py) ---
+    # Replaces the old inline target_year + hardcoded per-year Christmas
+    # if/elif; resolve_week_context reproduces daily_2's numbers exactly.
+    ctx = resolve_week_context(date_str)
+    today = ctx.today
+    current_cal_year = ctx.current_cal_year
+    target_year = ctx.target_year
+    schedule_df = ctx.schedule_df
+    first_game_date = ctx.first_game_date
+    thanksgiving_date = ctx.thanksgiving_date
+    black_friday = ctx.black_friday
+    christmas_day = ctx.christmas_day
+    boxing_day = ctx.boxing_day
+    thanksgiving_week = ctx.thanksgiving_week
+    christmas_week = ctx.christmas_week
+    starting_week = ctx.starting_week
+    upcoming_week = ctx.upcoming_week
     
     
     # 5. Final Assignment to your variables
