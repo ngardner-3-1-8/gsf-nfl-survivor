@@ -86,6 +86,7 @@ from team_codes import canonical_pick_code
 from contest_config import get_contest
 
 _CFG = get_contest()
+_IS_CIRCA = (_CFG['out_tag'] == 'circa')
 
 # --------------------------------------------------------------------
 # Config -- adjust YEAR (or wire it up to your existing target_year
@@ -122,11 +123,19 @@ ARCHETYPE_SCORE_COLS = ['Planner', 'Contrarian', 'EV Hunter', 'Sprinter', 'Hoard
 # --------------------------------------------------------------------
 # 1. Weekly team-level stats table (one row per team per week)
 # --------------------------------------------------------------------
-def load_week_team_table(week):
+def load_week_team_table(week, actual_pick_override=None):
     """Melts one week's final_data file (one row per GAME) into one row
     per TEAM with the four stats archetype scoring needs, joined onto the
     team abbreviations the picks file uses. Returns None if that week's
-    file doesn't exist yet (future/not-yet-run weeks)."""
+    file doesn't exist yet (future/not-yet-run weeks).
+
+    The game stats (Win %, EV, Future Value) are contest-agnostic and always
+    come from final_data. 'Actual Pick %' -- the crowd behaviour the
+    Contrarian/unpopularity dimension is scored against -- is contest
+    SPECIFIC: for Circa it's the final_data column (Circa's observed pick %);
+    for a Splash contest `actual_pick_override` supplies {TEAM: pick_pct}
+    computed from THAT contest's own picks, so a Splash entry is judged
+    contrarian relative to the Splash field, not to Circa's."""
     path = FINAL_DATA_PATTERN.format(week=week)
     if not os.path.exists(path):
         return None
@@ -144,6 +153,13 @@ def load_week_team_table(week):
 
     long_df = pd.concat([_side('Home'), _side('Away')], ignore_index=True)
     long_df['Team'] = long_df['Team_Full'].map(TEAM_FULLNAME_TO_ABBR)
+
+    if actual_pick_override is not None:
+        # Replace Circa's observed pick % with THIS contest's, keyed by the
+        # same team abbreviations. A team nobody in this contest picked that
+        # week is genuinely maximally unpopular here -> 0.0 (and, being
+        # non-NaN, it survives the dropna below and stays in the pool).
+        long_df['Actual Pick %'] = long_df['Team'].map(actual_pick_override).fillna(0.0)
 
     unmapped = long_df.loc[long_df['Team'].isna(), 'Team_Full'].unique()
     if len(unmapped):
@@ -344,6 +360,20 @@ def aggregate_entry_archetypes(pick_scores):
 # --------------------------------------------------------------------
 # 5. Orchestration
 # --------------------------------------------------------------------
+def contest_actual_pick_pct(picks_long):
+    """{week: {TEAM: observed_pick_pct}} for THIS contest, from its own
+    canonicalized picks. pct = picks for team / total picks that week, so a
+    multi-pick week still yields a valid within-week popularity ranking
+    (which is all the unpopularity percentile needs)."""
+    out = {}
+    for week, g in picks_long.groupby('Week'):
+        counts = g['Team'].value_counts()
+        total = int(counts.sum())
+        if total > 0:
+            out[int(week)] = (counts / total).to_dict()
+    return out
+
+
 def main():
     picks_wide, picks_long, week_cols = load_picks_long(PICKS_PATH)
     weeks_with_picks = sorted(picks_long['Week'].unique())
@@ -353,9 +383,17 @@ def main():
 
     picks_long = attach_available_pool(picks_long)
 
+    # Circa is scored against its own final_data pick %; a Splash contest is
+    # scored against its own crowd (computed here from its picks).
+    contest_pick_pct = None if _IS_CIRCA else contest_actual_pick_pct(picks_long)
+    if not _IS_CIRCA:
+        print(f"🎯 {_CFG['label']}: scoring unpopularity against this contest's "
+              f"own pick % ({len(contest_pick_pct)} week(s) of picks).")
+
     week_team_tables = {}
     for week in weeks_with_picks:
-        tbl = load_week_team_table(week)
+        override = None if contest_pick_pct is None else contest_pick_pct.get(week, {})
+        tbl = load_week_team_table(week, actual_pick_override=override)
         if tbl is None:
             print(f"⚠️ No final_data file found for Week {week} "
                   f"({FINAL_DATA_PATTERN.format(week=week)}); picks made that "
