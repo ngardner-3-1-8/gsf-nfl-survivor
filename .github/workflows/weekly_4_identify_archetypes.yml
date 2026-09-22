@@ -14,7 +14,7 @@ on:
     # year-round (the NFL season spans both the MDT and MST periods), say so
     # and this can be split into two cron entries with a guard step that
     # skips whichever one doesn't match the current Denver-local time.
-    - cron: '30 19 * * 2'
+    - cron: '0 15 * * 2'
   # Allows you to run this workflow manually from the Actions tab for testing
   workflow_dispatch:
 permissions:
