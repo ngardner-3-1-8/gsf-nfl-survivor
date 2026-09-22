@@ -35,6 +35,16 @@ CONTESTS = {
     'circa': {
         'label': 'Circa Survivor',
         'picks_pattern': 'circa-pick-history/{year}_survivor_picks.csv',
+        # Per-contest historical training file for daily_2's pick-% projection
+        # (game features + that contest's observed 'Pick %'). Built by
+        # build_contest_historical_data.py; Circa's is maintained directly.
+        'historical_csv': 'contest-historical-data/Circa_historical_data.csv',
+        # Basename daily_2 writes its projected pick-% schedule to, and the
+        # short prefix used for this contest's projected columns when they are
+        # merged into the shared schedule ('' keeps Circa's original
+        # 'Home Pick %' / 'Away Pick %' names untouched).
+        'predicted_out': 'Circa_Predicted_pick_percent.csv',
+        'proj_prefix': '',
         'start_season': 2020,
         'multi_pick_weeks': set(),
         'out_tag': 'circa',
@@ -42,6 +52,9 @@ CONTESTS = {
     'big_splash': {
         'label': 'Splash Big Splash',
         'picks_pattern': 'big-splash-pick-history/{year}_big_splash_picks.csv',
+        'historical_csv': 'contest-historical-data/BigSplash_historical_data.csv',
+        'predicted_out': 'BigSplash_Predicted_pick_percent.csv',
+        'proj_prefix': 'Big Splash',
         'start_season': 2026,
         'multi_pick_weeks': {3, 6, 9, 12, 13, 14, 15, 16},
         'out_tag': 'big_splash',
@@ -49,6 +62,9 @@ CONTESTS = {
     'world_championship': {
         'label': 'Splash Survivor World Championship',
         'picks_pattern': 'splash-world-championship-pick-history/{year}_world_championship_picks.csv',
+        'historical_csv': 'contest-historical-data/WorldChampionship_historical_data.csv',
+        'predicted_out': 'WorldChampionship_Predicted_pick_percent.csv',
+        'proj_prefix': 'World Championship',
         'start_season': 2026,
         'multi_pick_weeks': {9, 12, 13, 14, 15, 16},
         'out_tag': 'world_championship',
