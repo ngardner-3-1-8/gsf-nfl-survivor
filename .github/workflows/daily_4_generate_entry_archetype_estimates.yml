@@ -18,16 +18,11 @@ on:
     # listed below for each day; the "Check schedule matches 3pm Mountain
     # time" step figures out which one is actually correct for today and
     # skips the run otherwise -- so this needs no manual adjustment, ever.
-    - cron: '0 21 * * 2'  # Tue 3pm Mountain DAYLIGHT time (UTC-6)
-    - cron: '0 22 * * 2'  # Tue 3pm Mountain STANDARD time (UTC-7)
-    - cron: '0 21 * * 3'  # Wed
-    - cron: '0 22 * * 3'  # Wed
-    - cron: '0 21 * * 4'  # Thu
-    - cron: '0 22 * * 4'  # Thu
-    - cron: '0 21 * * 5'  # Fri
-    - cron: '0 22 * * 5'  # Fri
-    - cron: '0 21 * * 6'  # Sat
-    - cron: '0 22 * * 6'  # Sat
+    - cron: '30 17 * * 2'  # Tue 3pm Mountain DAYLIGHT time (UTC-6)
+    - cron: '30 17 * * 3'  # Wed
+    - cron: '30 17 * * 4'  # Thu
+    - cron: '30 17 * * 5'  # Fri
+    - cron: '30 17 * * 6'  # Sat
 
 permissions:
   contents: write   # to commit the output CSVs back
