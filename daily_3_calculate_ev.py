@@ -448,7 +448,7 @@ if __name__ == "__main__":
 #        "12/23/2020", #Leading up to Week 17
 #        "12/30/2020", #Leading up to Week 18
         
-        formatted_date
+#        formatted_date
     ]
 
     for date in week_starting_dates:
