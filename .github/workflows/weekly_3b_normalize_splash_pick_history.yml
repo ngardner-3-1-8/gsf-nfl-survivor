@@ -1,17 +1,25 @@
-name: Weekly 3b Normalize Splash Pick History
+name: Weekly 3b Normalize Splash Pick History + Build Contest Historical Data
 
 on:
   workflow_dispatch:
   schedule:
-    # Tuesdays at 20:00 UTC (fixed -- not DST-adjusted). weekly_3b converts
-    # the raw Splash contest exports into the canonical wide picks files
-    # (2026_big_splash_picks.csv / 2026_world_championship_picks.csv) that
-    # the Splash runs of weekly_4 / weekly_5 read, so it must land before
-    # those. Keep it at or before the earliest Splash weekly_4/5 run.
-    - cron: '0 19 * * 2'
+    # Tuesdays at 20:00 UTC (fixed -- not DST-adjusted). This job does two
+    # things, in order:
+    #   1. weekly_3b converts the raw Splash contest exports into the canonical
+    #      wide picks files (2026_big_splash_picks.csv /
+    #      2026_world_championship_picks.csv) that the Splash runs of
+    #      weekly_4 / weekly_5 read.
+    #   2. build_contest_historical_data.py turns those picks (plus Circa's
+    #      contest-agnostic game features) into each contest's historical
+    #      training file (BigSplash_historical_data.csv /
+    #      WorldChampionship_historical_data.csv) that daily_2's per-contest
+    #      pick-% projection trains on.
+    # Both must land before daily_2 and the Splash weekly_4/5 runs, so keep
+    # this at or before the earliest of those.
+    - cron: '0 20 * * 2'
 
 permissions:
-  contents: write   # to commit the normalized Splash picks files back
+  contents: write   # to commit the normalized picks + contest historical files back
 
 jobs:
   normalize-splash-picks:
@@ -30,16 +38,24 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          # weekly_3b only reads CSVs and writes CSVs with pandas -- no
-          # scraping, ML, or browser automation.
+          # Both scripts only read/write CSVs with pandas -- no scraping, ML,
+          # or browser automation.
           pip install pandas
 
       - name: Run Normalize Splash Pick History
         run: |
           python weekly_3b_normalize_splash_pick_history.py
 
-      - name: Commit and Push Normalized Splash Picks
-        # The canonical picks files are small and are INPUTS to weekly_4/5
+      - name: Build Per-Contest Historical Training Data
+        # Depends on the normalized picks written by the previous step, so it
+        # must run after weekly_3b. Rebuilds BigSplash_/WorldChampionship_
+        # historical_data.csv (+ per-year splits) from those picks plus Circa's
+        # game features -- the training input daily_2's projection reads.
+        run: |
+          python build_contest_historical_data.py
+
+      - name: Commit and Push Normalized Picks + Contest Historical Data
+        # These files are small and are INPUTS to daily_2 / weekly_4 / weekly_5
         # (which check out the repo fresh), so they must be committed to the
         # repo rather than uploaded as a workflow artifact. Only commits when
         # something actually changed (e.g. a new week's export was added).
@@ -47,5 +63,7 @@ jobs:
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
           git add big-splash-pick-history/*_big_splash_picks.csv \
-                  splash-world-championship-pick-history/*_world_championship_picks.csv
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Normalize Splash pick history" && git push)
+                  splash-world-championship-pick-history/*_world_championship_picks.csv \
+                  contest-historical-data/BigSplash_historical_data*.csv \
+                  contest-historical-data/WorldChampionship_historical_data*.csv
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Normalize Splash picks + rebuild per-contest historical data" && git push)
