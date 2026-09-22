@@ -106,6 +106,7 @@ from team_codes import canonical_pick_code
 from contest_config import get_contest, tagged
 
 _CFG = get_contest()
+_IS_CIRCA = (_CFG['out_tag'] == 'circa')
 
 # --------------------------------------------------------------------
 # Config
