@@ -17,6 +17,7 @@ import polars as pl
 import nflreadpy as nfl
 from datetime import datetime, timedelta
 import calendar
+from season_dates import resolve_week_context, CIRCA_HOLIDAY_CONFIG, default_circa_holiday
 
 hist = pd.read_csv("contest-historical-data/Circa_historical_data_2026.csv")
 picks = pd.read_csv("circa-pick-history/2026_survivor_picks.csv")
@@ -35,158 +36,21 @@ ABBR_TO_FULL_SAMPLE = {"LA": "Los Angeles Rams", "LAR": "Los Angeles Rams",
 
 def loop_through_historical_final_data(date_str): 
     # 1. Get current date
-    today = pd.to_datetime(date_str)
-    
-    current_cal_year = today.year 
-    
-    # 2. Initial Year Logic based on Month (User Rule)
-    # If Jan-May (< 6), assume we are finishing the previous season.
-    if today < datetime(current_cal_year, 5, 15, 0, 0):
-        target_year = current_cal_year - 1
-    
-        # 3. Pre-Season Check (User Rule)
-        # We need to see if the season has actually started yet.
-        try:
-            # Load the schedule for the target year
-            schedule = nfl.load_schedules([target_year])
-            print("schedule Loaded successfully")
-            schedule = schedule.to_pandas() # Convert here!
-            print("schedule converted successfully")
-            # Now all the standard Pandas filtering works:
-            reg_season_games = schedule[schedule['game_type'] == 'REG']
-            print("reg season games filtered successfully")
-            if not reg_season_games.empty:
-                # Find the very first game date of the season
-                first_game_date = pd.to_datetime(reg_season_games['gameday'].min())
-                print(f"first game date: {first_game_date}")
-                # Check if today is BEFORE the first game
-                if pd.to_datetime(today) < first_game_date:
-                    print(f"Today ({today.date()}) is before the first game ({first_game_date.date()}). dropping year by 1.")
-                    # Reload schedule for the adjusted year so we can calculate the week correctly below
-                    schedule = nfl.load_schedules([target_year])
-                    reg_season_games = schedule[schedule['game_type'] == 'REG']
-                    print("reg season games filtered successfully")
-                    if not reg_season_games.empty:
-                        # Find the very first game date of the season
-                        first_game_date = pd.to_datetime(reg_season_games['gameday'].min())
-                        print(f"first game date: {first_game_date}")
-
-            reg_season_games['gameday'] = pd.to_datetime(reg_season_games['gameday'])
-            # 1. Get the latest date for each week
-            week_end_dates = reg_season_games.groupby('week')['gameday'].max()
-            
-            # 2. Filter for weeks where the end date is today or in the past
-            nfl_completed_weeks = week_end_dates[week_end_dates <= today]
-            
-            # 3. Safely get the last played week number, defaulting to 0 if the season hasn't started
-            if not nfl_completed_weeks.empty:
-                nfl_last_played_week = nfl_completed_weeks.idxmax()
-            else:
-                nfl_last_played_week = 0  # Or None, depending on how you want to handle it
-
-            print(f"NFL Last Played Week: {nfl_last_played_week}")
-                
-            # 4. Calculate the Current Week
-            # We find the latest game that has happened to determine "current" week
-            games_played = reg_season_games[
-                pd.to_datetime(schedule['gameday']) <= pd.to_datetime(today)
-            ]
-            
-            if not games_played.empty:
-                # If games have been played, the "starting_week" for your script 
-                # (which usually scrapes the *upcoming* week) should be the last played week + 1.
-                last_played_week = int(nfl_last_played_week)
-                starting_week = last_played_week + 1
-                print("last_played_week")
-                # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
-                if starting_week > 19: 
-                    starting_week = 19 
-            else:
-                # If we fell back a year but that season is fully over, or if no games played yet
-                starting_week = 1
-                last_played_week = 0
-        
-        except Exception as e:
-            print(f"⚠️ Error in dynamic detection: {e}. Falling back to defaults.")
-            # Fallback defaults to prevent crash
-            target_year = 2025
-            starting_week = 19
-    else:
-        target_year = current_cal_year
-    
-        # 3. Pre-Season Check (User Rule)
-        # We need to see if the season has actually started yet.
-        try:
-            # Load the schedule for the target year
-            schedule = nfl.load_schedules([target_year])
-            print("schedule Loaded successfully")
-            schedule = schedule.to_pandas() # Convert here!
-            print("schedule converted successfully")
-            # Now all the standard Pandas filtering works:
-            reg_season_games = schedule[schedule['game_type'] == 'REG']
-            print("reg season games filtered successfully")
-            if not reg_season_games.empty:
-                # Find the very first game date of the season
-                first_game_date = pd.to_datetime(reg_season_games['gameday'].min())
-                print(f"first game date: {first_game_date}")                
-                # Check if today is BEFORE the first game
-                if pd.to_datetime(today) < first_game_date:
-                    print(f"Today ({today.date()}) is before the first game ({first_game_date.date()}). dropping year by 1.")
-                    target_year -= 1
-                    # Reload schedule for the adjusted year so we can calculate the week correctly below
-                    schedule = nfl.load_schedules([target_year])
-                    reg_season_games = schedule[schedule['game_type'] == 'REG']
-                    print("reg season games filtered successfully")
-                    if not reg_season_games.empty:
-                        # Find the very first game date of the season
-                        first_game_date = pd.to_datetime(reg_season_games['gameday'].min())
-                        print(f"first game date: {first_game_date}")
-            
-            reg_season_games['gameday'] = pd.to_datetime(reg_season_games['gameday'])
-            # 1. Get the latest date for each week
-            week_end_dates = reg_season_games.groupby('week')['gameday'].max()
-            
-            # 2. Filter for weeks where the end date is today or in the past
-            nfl_completed_weeks = week_end_dates[week_end_dates <= today]
-            
-            # 3. Safely get the last played week number, defaulting to 0 if the season hasn't started
-            if not nfl_completed_weeks.empty:
-                nfl_last_played_week = nfl_completed_weeks.idxmax()
-            else:
-                nfl_last_played_week = 0  # Or None, depending on how you want to handle it
-
-            print(f"NFL Last Played Week: {nfl_last_played_week}")
-            
-            # 4. Calculate the Current Week
-            # We find the latest game that has happened to determine "current" week
-            games_played = reg_season_games[
-                pd.to_datetime(schedule['gameday']) <= pd.to_datetime(today)
-            ]
-            
-            if not games_played.empty:
-                # If games have been played, the "starting_week" for your script 
-                # (which usually scrapes the *upcoming* week) should be the last played week + 1.
-                last_played_week = int(nfl_last_played_week)
-                starting_week = last_played_week + 1
-                
-                # Bound check: If season is over (e.g. Week 22), cap it or handle as needed
-                if starting_week > 18: 
-                    starting_week = 18
-                    last_played_week = 17
-            else:
-                # If we fell back a year but that season is fully over, or if no games played yet
-                starting_week = 1 
-                last_played_week = 0
-
-            print(starting_week)
-            print(last_played_week)
-        
-        except Exception as e:
-            print(f"⚠️ Error in dynamic detection: {e}. Falling back to defaults.")
-            # Fallback defaults to prevent crash
-            target_year = 2025
-            starting_week = 18
-            last_played_week = 17
+    # --- Season / week context (shared with daily_2 via season_dates.py) ---
+    # Replaces weekly_1's old two-branch nflreadpy derivation (hardcoded
+    # target_year/starting_week fallbacks, a May-15 cutoff, and a '<=' rule).
+    # resolve_week_context uses daily_2's month rule + schedule CSV + strict
+    # '<' completed-week test, so weekly_1 now agrees with daily_2 / daily_3.
+    # weekly_1 collects LAST week's results, so it takes the RAW NFL week here;
+    # the Circa holiday shifts below advance the contest-week counters, exactly
+    # as daily_2 advances upcoming_week.
+    ctx = resolve_week_context(date_str)
+    today = ctx.today
+    target_year = ctx.target_year
+    first_game_date = ctx.first_game_date
+    nfl_last_played_week = ctx.last_completed_week
+    last_played_week = ctx.last_completed_week
+    starting_week = ctx.starting_week
     # 5. Final Assignment to your variables
     current_year = target_year
     starting_year = target_year
@@ -295,43 +159,20 @@ def loop_through_historical_final_data(date_str):
         last_played_week += 1
         _holiday_bump(f"date is after {current_year} Black Friday")
 
-    # Christmas shift — the exact cutoff differs by year (Circa split the holiday
-    # slate differently each season), so daily_2 encodes each one explicitly.
-    if target_year == 2020:
-        if today >= boxing_day:
-            pass  # 2020: no additional Christmas shift (handled by TG bump only)
-    elif target_year == 2022:
-        if today >= christmas_day:
-            NUM_WEEKS_TO_KEEP += 1
-            starting_week += 1
-            last_played_week += 1
-            if today < christmas_day + timedelta(days=1):
-                nfl_last_played_week += 1
-            _holiday_bump(f"date is on/after {current_year} Christmas (2022 rule)")
-    elif target_year == 2023:
-        if today >= christmas_day:
-            NUM_WEEKS_TO_KEEP += 1
-            starting_week += 1
-            last_played_week += 1
-            if today < christmas_day + timedelta(days=1):
-                nfl_last_played_week += 1
-            _holiday_bump(f"date is on/after {current_year} Christmas (2023 rule)")
-    elif target_year == 2024:
-        if today > boxing_day:
-            NUM_WEEKS_TO_KEEP += 1
-            starting_week += 1
-            last_played_week += 1
-            if today < boxing_day + timedelta(days=1):
-                nfl_last_played_week += 1
-            _holiday_bump(f"date is after {current_year} Boxing Day (2024 rule)")
-    elif target_year in (2021, 2025, 2026) or target_year >= 2027:
-        if today >= boxing_day:
-            NUM_WEEKS_TO_KEEP += 1
-            starting_week += 1
-            last_played_week += 1
-            if today < boxing_day + timedelta(days=1):
-                nfl_last_played_week += 1
-            _holiday_bump(f"date is on/after {current_year} Boxing Day")
+    # Christmas shift — config-driven via season_dates.CIRCA_HOLIDAY_CONFIG
+    # (the same per-season cutoff daily_2 uses). Replaces the old hardcoded
+    # per-year if/elif chain.
+    if ctx.christmas_shift_applied:
+        NUM_WEEKS_TO_KEEP += 1
+        starting_week += 1
+        last_played_week += 1
+        _xmas_from = CIRCA_HOLIDAY_CONFIG.get(
+            target_year, default_circa_holiday(target_year)).get('christmas_shift_from')
+        # On the Circa Christmas cutoff day itself, the raw NFL week hasn't
+        # advanced yet, so bump it too so the results-fetch stays aligned.
+        if _xmas_from is not None and today < pd.to_datetime(_xmas_from) + timedelta(days=1):
+            nfl_last_played_week += 1
+        _holiday_bump(f"date is on/after {current_year} Circa Christmas cutoff")
     print("THIS IS THE TEST")
     print(f"Last Played Week: {last_played_week}")
     print(f"Starting Week: {starting_week}")
