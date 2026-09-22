@@ -10,6 +10,11 @@ on:
     - cron: '30 8 * * 4'
     - cron: '30 8 * * 5'
     - cron: '30 8 * * 6'
+    - cron: '0 19 * * 2'
+    - cron: '0 19 * * 3'
+    - cron: '0 19 * * 4'
+    - cron: '0 19 * * 5'
+    - cron: '0 19 * * 6'
   # Allows you to run this workflow manually from the Actions tab for testing
   workflow_dispatch:
 
