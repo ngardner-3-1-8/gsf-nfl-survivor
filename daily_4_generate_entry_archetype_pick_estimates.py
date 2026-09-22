@@ -225,7 +225,20 @@ def _resolve_col(df, candidates, prefix, label, path):
     raise KeyError(f"{label} column not found for '{prefix}' in {path}. Tried: {tried}.")
 
 
-def load_week_actual_table(path):
+def contest_actual_pick_pct(picks_long):
+    """{week: {TEAM: observed_pick_pct}} for THIS contest, from its own
+    canonicalized picks -- the crowd a Splash entry's past picks are scored
+    against for the Contrarian dimension (Circa keeps final_data's pick %)."""
+    out = {}
+    for week, g in picks_long.groupby('Week'):
+        counts = g['Team'].value_counts()
+        total = int(counts.sum())
+        if total > 0:
+            out[int(week)] = (counts / total).to_dict()
+    return out
+
+
+def load_week_actual_table(path, actual_pick_override=None):
     if not os.path.exists(path):
         return None
     df = pd.read_csv(path, low_memory=False)
@@ -248,6 +261,12 @@ def load_week_actual_table(path):
     long_df = pd.concat([_side('Home'), _side('Away')], ignore_index=True)
     long_df['Team'] = long_df['Team_Full'].map(TEAM_FULLNAME_TO_ABBR)
     long_df = long_df.dropna(subset=['Team']).drop(columns=['Team_Full'])
+
+    # Contest-specific crowd for the Contrarian/unpopularity dimension: Circa
+    # uses final_data's pick %; a Splash contest overrides with its own.
+    if actual_pick_override is not None:
+        long_df['Actual Pick %'] = long_df['Team'].map(actual_pick_override).fillna(0.0)
+
     long_df = long_df.dropna(subset=['Win %', 'EV', 'Future Value', 'Actual Pick %'])
     return long_df.reset_index(drop=True)
 
@@ -563,11 +582,17 @@ def run_pick_estimates(year, model, all_features, cat_lookup):
 
     used_teams = picks_long_alive.groupby('EntryName')['Team'].apply(set).to_dict()
 
+    # Score past picks' unpopularity against this contest's own full field
+    # (all entries that week, not just the currently-alive subset) -- Circa
+    # keeps final_data's pick % (override stays None).
+    contest_pick_pct = None if _IS_CIRCA else contest_actual_pick_pct(picks_long)
+
     actual_tables = {}
     for week in sorted(picks_long_alive['Week'].unique()):
         path = FINAL_DATA_PATTERN.format(year=year, week=week)
+        override = None if contest_pick_pct is None else contest_pick_pct.get(week, {})
         try:
-            actual_tables[week] = load_week_actual_table(path)
+            actual_tables[week] = load_week_actual_table(path, actual_pick_override=override)
         except Exception as e:
             print(f"   ⚠️  {year} Week {week}: couldn't load actual table ({path}): {e}")
             actual_tables[week] = None
