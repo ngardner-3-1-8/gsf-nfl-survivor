@@ -2,7 +2,7 @@ name: Weekly 2 Collect Transactions
 on:
   schedule:
     # Runs at 14:00 UTC every Tuesday (after weekly_1 at 13:30)
-    - cron: '0 14 * * 2'
+    - cron: '0 6 * * 2'
   workflow_dispatch: # manual trigger for testing
 jobs:
   collect-transactions:
