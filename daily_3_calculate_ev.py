@@ -295,8 +295,14 @@ def loop_through_ev(date_str):
             )
 
         # ── 🌊 SPLASH EV — same 5 scenarios, using the Splash pick% columns ──
+        # ── 🌊 SHARED SPLASH EV — same 5 scenarios, using the shared Splash
+        #    pick% columns (the public-feed proxy daily_2 writes for the
+        #    upcoming week). This still serves any Splash sub-contest that does
+        #    NOT have its own dedicated projection (e.g. 4-for-4, High Roller,
+        #    …). The two first-class contests (Big Splash, World Championship)
+        #    additionally get their own per-contest EV columns below.
         if 'Home Splash Pick %' in df.columns and 'Away Splash Pick %' in df.columns:
-            print("Computing Splash EV from Splash pick% columns...")
+            print("Computing shared Splash EV from Splash pick% columns...")
             for scenario_name, scenario_config in probability_scenarios.items():
                 away_prob_col = scenario_config["away_col"]
                 home_prob_col = scenario_config["home_col"]
@@ -311,7 +317,41 @@ def loop_through_ev(date_str):
                     desc=f"Processing SPLASH {prefix.upper()} EV",
                 )
         else:
-            print("(No Splash pick% columns — skipping Splash EV)")
+            print("(No shared Splash pick% columns — skipping shared Splash EV)")
+
+        # ── 🌊 PER-CONTEST SPLASH EV — Big Splash + Survivor World Championship
+        #    each have their OWN projected pick% columns (daily_2 merges
+        #    'Home/Away {Contest} Pick %' from that contest's model into this
+        #    file). Run the exact same true-EV enumeration on each contest's
+        #    own pick% so its EV reflects its own crowd, and write clearly
+        #    namespaced EV columns ({Tag}_{prefix}_Home/Away_EV, e.g.
+        #    BigSplash_sportsbook_Home_EV) that never collide with Circa's or
+        #    the shared Splash EV. The API points each contest's optimizer at
+        #    its own columns; sub-contests without a projection keep using the
+        #    shared Splash EV above.
+        from contest_config import CONTESTS as _ALL_CONTESTS
+        for _ck in ('big_splash', 'world_championship'):
+            _prefix_name = _ALL_CONTESTS[_ck]['proj_prefix']      # e.g. 'Big Splash'
+            _tag = _prefix_name.replace(' ', '')                  # e.g. 'BigSplash'
+            _home_pick = f'Home {_prefix_name} Pick %'
+            _away_pick = f'Away {_prefix_name} Pick %'
+            if _home_pick in df.columns and _away_pick in df.columns:
+                print(f"Computing {_prefix_name} EV from its projected pick% columns...")
+                for scenario_name, scenario_config in probability_scenarios.items():
+                    away_prob_col = scenario_config["away_col"]
+                    home_prob_col = scenario_config["home_col"]
+                    prefix = scenario_config["prefix"]
+
+                    compute_and_write_ev(
+                        home_prob_col, away_prob_col,
+                        home_ev_col=f"{_tag}_{prefix}_Home_EV",
+                        away_ev_col=f"{_tag}_{prefix}_Away_EV",
+                        home_pick_col=_home_pick,
+                        away_pick_col=_away_pick,
+                        desc=f"Processing {_tag.upper()} {prefix.upper()} EV",
+                    )
+            else:
+                print(f"(No {_prefix_name} pick% columns — skipping {_prefix_name} EV)")
 
         # Save the updated main dataframe overwriting the original input file
         df.to_csv(main_file_path, index=False)
