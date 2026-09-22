@@ -5,7 +5,11 @@ on:
     # Runs at 7:30 AM UTC Daily
     #12:30 AM Mountain Standard Time
     #1:30 AM Mountain Daylight Time
-    - cron: '30 7 * * *'
+    - cron: '30 7 * * 2'
+    - cron: '30 7 * * 3'
+    - cron: '30 7 * * 4'
+    - cron: '30 7 * * 5'
+    - cron: '30 7 * * 6'
   workflow_dispatch: # Manual run button
 
 jobs:
