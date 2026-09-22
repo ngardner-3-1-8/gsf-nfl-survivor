@@ -112,12 +112,13 @@ def resolve_week_context(date_str, schedule_df=None):
 
     thanksgiving_date = get_thanksgiving(target_year)
     black_friday = thanksgiving_date + timedelta(days=1)
+    black_wednesday = thanksgiving_date - timedelta(days=1)
     christmas_day = datetime(target_year, 12, 25)
     boxing_day = datetime(target_year, 12, 26)
 
     # +1 because the first game date is week 1, not week 0; +2 for Christmas
-    # additionally accounts for the separate Thanksgiving contest week.
-    thanksgiving_week = int((thanksgiving_date - first_game_date).days / 7) + 1
+    # additionally accounts for the separate Thanksgiving contest week.#################Might change this back to thanksgiving_date instead of black_wednesday
+    thanksgiving_week = int((black_wednesday - first_game_date).days / 7) + 1
     christmas_week = int((christmas_day - first_game_date).days / 7) + 2
 
     thanksgiving_shift_applied = False
