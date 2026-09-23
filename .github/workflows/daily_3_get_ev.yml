@@ -13,11 +13,11 @@ on:
     - cron: '30 10 * * 4'
     - cron: '30 10 * * 5'
     - cron: '30 10 * * 6'
-    - cron: '0 20 * * 2'
-    - cron: '0 20 * * 3'
-    - cron: '0 20 * * 4'
-    - cron: '0 20 * * 5'
-    - cron: '0 20 * * 6'
+    - cron: '0 19 * * 2'
+    - cron: '0 19 * * 3'
+    - cron: '0 19 * * 4'
+    - cron: '0 19 * * 5'
+    - cron: '0 19 * * 6'
 
 permissions:
   contents: write # Required to push the new CSVs back to the repo
