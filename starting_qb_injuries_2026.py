@@ -38,11 +38,11 @@ TYPICAL_STARTERS = {
 # True = Backup is starting, False = Typical Starter is playing
 MANUAL_CURRENT_STARTERS = {
     'ARI': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'ATL': ['C.Rush', 'C.Rush', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+    'ATL': ['C.Rush', 'C.Rush', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix'],
     'BAL': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'BUF': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'CAR': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'CHI': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+    'CHI': [None, None, 'C.Keenum', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'CIN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'CLE': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'DAL': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
@@ -60,13 +60,13 @@ MANUAL_CURRENT_STARTERS = {
     'MIN': [None, 'C.Wentz', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'NE': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'NO': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'NYG': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+    'NYG': [None, None, 'J.Winston', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'NYJ': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'PHI': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'PIT': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'SEA': [None, 'D.Lock', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+    'SEA': [None, 'D.Lock', 'D.Lock', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'SF': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'TB': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'TEN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'WAS': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]
+    'WAS': [None, None, 'M.Mariota', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]
 }
