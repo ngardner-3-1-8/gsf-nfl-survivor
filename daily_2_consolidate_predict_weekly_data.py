@@ -744,6 +744,7 @@ def loop_through_simulations(date_str):
             df.loc[df['Date'] == pd.to_datetime(label_date), 'Circa Week'] = 'Christmas'
 
         # Thanksgiving labels are applied last so they win over any overlap.
+        df.loc[df['Date'] == (pd.to_datetime(thanksgiving_date) - pd.Timedelta(days=1)), 'Circa Week'] = 'Thanksgiving'
         df.loc[df['Date'] == pd.to_datetime(thanksgiving_date), 'Circa Week'] = 'Thanksgiving'
         df.loc[df['Date'] == pd.to_datetime(black_friday), 'Circa Week'] = 'Thanksgiving'
 
