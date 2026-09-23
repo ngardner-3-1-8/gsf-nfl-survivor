@@ -1098,7 +1098,7 @@ if __name__ == "__main__":
     formatted_date = datetime.now().strftime("%m/%d/%Y")
     week_starting_dates = [
 #        "09/08/2026",
-        "09/15/2026",
+#        "09/15/2026",
         
 #        "09/03/2025", 
 #        "09/10/2025", 
@@ -1224,7 +1224,7 @@ if __name__ == "__main__":
 #        "12/23/2020", 
 #        "12/30/2020"
         
-#        formatted_date
+        formatted_date
     ]
 
     for date in week_starting_dates:
