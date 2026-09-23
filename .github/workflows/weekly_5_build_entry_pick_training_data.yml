@@ -32,10 +32,6 @@ jobs:
     # you've seen how long a real run actually takes.
     timeout-minutes: 180
     steps:
-      - name: Checkout code
-        if: steps.dst_check.outputs.proceed == 'true'
-        uses: actions/checkout@v5
-
       - name: Set up Python
         if: steps.dst_check.outputs.proceed == 'true'
         uses: actions/setup-python@v5
