@@ -14,7 +14,7 @@ on:
     # listed below; the "Check schedule matches 2pm Mountain time" step
     # figures out which one is actually correct for today and skips the
     # run otherwise -- so this needs no manual adjustment, ever.
-    - cron: '0 17 * * 2'  # 2pm Mountain STANDARD time (UTC-7)
+    - cron: '0 16 * * 2'  # 2pm Mountain STANDARD time (UTC-7)
 
 permissions:
   contents: write   # to commit the trained model back
