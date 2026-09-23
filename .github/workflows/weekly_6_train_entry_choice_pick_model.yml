@@ -1,55 +1,60 @@
 name: Weekly 6 Train Entry Pick Choice Model
 
 on:
+  # Manual runs from the Actions tab (trains the full per-contest set).
   workflow_dispatch:
-  schedule:
-    # Weekly, Tuesdays at 2pm Mountain time -- an hour after Build Entry
-    # Pick Training Data's 1pm Mountain schedule, so a fresh training-
-    # data artifact (through the latest completed week of the current
-    # season) is always ready before this pulls it.
-    #
-    # GitHub Actions cron is UTC-only with no DST awareness, but the NFL
-    # season straddles the November US DST changeover, so "2pm Mountain"
-    # isn't one fixed UTC time year-round. Both possible UTC times are
-    # listed below; the "Check schedule matches 2pm Mountain time" step
-    # figures out which one is actually correct for today and skips the
-    # run otherwise -- so this needs no manual adjustment, ever.
-    - cron: '0 16 * * 2'  # 2pm Mountain STANDARD time (UTC-7)
+  # Chained: runs after weekly_5 finishes, so a fresh per-contest training-data
+  # artifact is always ready before this trains on it.
+  workflow_run:
+    workflows: ["Weekly 5 Build Entry Pick Training Data"]
+    types: [completed]
 
 permissions:
-  contents: write   # to commit the trained model back
-  actions: read      # to list/download the training-data workflow's artifact
+  contents: write   # to commit the trained models back
+  actions: read     # to download the training-data workflow's artifact
 
 jobs:
   train-model:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    
+    # Only proceed on a successful upstream run (or a manual dispatch).
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    timeout-minutes: 90
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
       - name: Set up Python
-        if: steps.dst_check.outputs.proceed == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Install Dependencies
-        if: steps.dst_check.outputs.proceed == 'true'
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install pandas numpy pyarrow lightgbm scikit-learn joblib
 
       - name: Download latest training data artifact
-        if: steps.dst_check.outputs.proceed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+        # When chained, pull the artifact straight from the weekly_5 run that
+        # triggered us (github.event.workflow_run.id) -- exact, no guessing.
+        # On a manual dispatch there's no triggering run, so fall back to the
+        # most recent successful weekly_5 run, referenced by its correct
+        # workflow FILE name (the previous value pointed at a file that doesn't
+        # exist, so the lookup always came back empty).
         run: |
-          run_id=$(gh run list \
-            --workflow=build_entry_pick_training_data.yml \
-            --status=success --limit=1 \
-            --json databaseId --jq '.[0].databaseId')
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            run_id="${{ github.event.workflow_run.id }}"
+          else
+            run_id=$(gh run list \
+              --workflow=weekly_5_build_entry_pick_training_data.yml \
+              --status=success --limit=1 \
+              --json databaseId --jq '.[0].databaseId')
+          fi
 
           if [ -z "$run_id" ]; then
-            echo "No successful 'Build Entry Pick Training Data' run found. Run that workflow first."
+            echo "No successful 'Weekly 5 Build Entry Pick Training Data' run found. Run that workflow first."
             exit 1
           fi
 
@@ -58,18 +63,26 @@ jobs:
           gh run download "$run_id" -n entry-pick-choice-training-data -D training_data/
           ls -la training_data/
 
-      - name: Run Entry Pick Choice Model Training
-        if: steps.dst_check.outputs.proceed == 'true'
+      - name: Run Entry Pick Choice Model Training (all contests)
+        # One run per contest via SURVIVOR_CONTEST -> one tagged model + feature
+        # file each. Circa is authoritative; Splash contests are best-effort
+        # (skip cleanly if their training parquet wasn't produced).
         run: |
+          echo "=== weekly_6: circa ==="
           python weekly_6_entry_pick_choice_model_training.py
+          for contest in big_splash world_championship; do
+            echo "=== weekly_6: $contest ==="
+            SURVIVOR_CONTEST=$contest python weekly_6_entry_pick_choice_model_training.py \
+              || echo "⚠️ weekly_6 $contest did not train (no training data?) — continuing"
+          done
 
-      - name: Commit and Push Model
-        if: steps.dst_check.outputs.proceed == 'true'
-        # The trained model (.pkl) and its feature metadata (.json) are
-        # small compared to the training data, so these get committed
-        # directly rather than uploaded as a workflow artifact.
+      - name: Commit and Push Models (all contests)
+        # Trained models (.pkl) + feature metadata (.json) are small, so they
+        # commit directly. The globs catch the untagged Circa files plus the
+        # tagged Splash ones.
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
-          git add models/entry_pick_choice_model.pkl models/entry_pick_choice_model_features.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Retrain entry pick choice model" && git push)
+          git add models/entry_pick_choice_model*.pkl \
+                  models/entry_pick_choice_model_features*.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Retrain entry pick choice model (all contests)" && git push)
