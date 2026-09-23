@@ -1,21 +1,14 @@
 name: Weekly 5 Build Entry Pick Training Data
 
 on:
+  # Manual runs from the Actions tab (builds the full per-contest set).
   workflow_dispatch:
-  schedule:
-    # Weekly, Tuesdays at 1pm Mountain time -- an hour ahead of Train
-    # Entry Pick Choice Model's 2pm Mountain schedule, so this always
-    # has time to finish (it took ~8 minutes for 6 seasons; even several
-    # times that comfortably fits the hour) and leave a fresh artifact
-    # for that workflow to pick up.
-    #
-    # GitHub Actions cron is UTC-only with no DST awareness, but the NFL
-    # season straddles the November US DST changeover, so "1pm Mountain"
-    # isn't one fixed UTC time year-round. Both possible UTC times are
-    # listed below; the "Check schedule matches 1pm Mountain time" step
-    # figures out which one is actually correct for today and skips the
-    # run otherwise -- so this needs no manual adjustment, ever.
-    - cron: '30 15 * * 2'  # 1pm Mountain STANDARD time (UTC-7)
+  # Chained: runs after weekly_4 finishes. weekly_5 reads each contest's picks
+  # (normalized by weekly_3b) and final_data; chaining off weekly_4 keeps the
+  # whole Splash pipeline in order without any DST-aware cron juggling.
+  workflow_run:
+    workflows: ["Weekly 4 Identify Entry Archetypes"]
+    types: [completed]
 
 permissions:
   contents: read
@@ -23,49 +16,49 @@ permissions:
 jobs:
   build-training-data:
     runs-on: ubuntu-latest
-    # This script does a full python row-by-row pass across every
-    # entry/week/candidate-team combination for every season on record
-    # (grows by one season a year, and by one week a week during the
-    # season) -- with ~25k entries/year and up to 20 weeks, that's a lot
-    # of iterating, not just I/O. Give it plenty of runway rather than
-    # let a slow run get killed by a default timeout. Lower this once
-    # you've seen how long a real run actually takes.
+    # Only proceed on a successful upstream run (or a manual dispatch).
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # A full row-by-row pass across every entry/week/candidate-team for every
+    # season on record, done once PER CONTEST -- give it plenty of runway.
     timeout-minutes: 180
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
       - name: Set up Python
-        if: steps.dst_check.outputs.proceed == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Install Dependencies
-        if: steps.dst_check.outputs.proceed == 'true'
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          # build_entry_pick_training_data.py reads CSVs and writes a
-          # Parquet file with pandas/numpy -- no scraping, no ML, no
-          # browser automation. pyarrow is pandas' Parquet engine.
+          # Reads CSVs, writes a Parquet file with pandas/numpy; pyarrow is
+          # pandas' Parquet engine. No scraping/ML/browser automation.
           pip install pandas numpy pyarrow
 
-      - name: Run Build Entry Pick Training Data
-        if: steps.dst_check.outputs.proceed == 'true'
+      - name: Run Build Entry Pick Training Data (all contests)
+        # One run per contest via SURVIVOR_CONTEST -> one tagged parquet each
+        # (entry_pick_choice_training_data[_big_splash|_world_championship]
+        # .parquet). Circa is authoritative; Splash contests are best-effort.
         run: |
+          echo "=== weekly_5: circa ==="
           python weekly_5_build_entry_pick_training_data.py
+          for contest in big_splash world_championship; do
+            echo "=== weekly_5: $contest ==="
+            SURVIVOR_CONTEST=$contest python weekly_5_build_entry_pick_training_data.py \
+              || echo "⚠️ weekly_5 $contest produced no training data (no picks yet?) — continuing"
+          done
 
-      - name: Upload Training Data Artifact
-        if: steps.dst_check.outputs.proceed == 'true'
-        # The assembled table across all seasons came out to 673MB as a
-        # CSV -- well past GitHub's 100MB per-file repo limit, and not
-        # something that belongs in git history anyway since it's fully
-        # regenerable by re-running this workflow. As Parquet it should
-        # be much smaller, but this uploads it as a workflow artifact
-        # (not a git commit) either way, so a future size increase can't
-        # break a push again. Train Entry Pick Choice Model downloads
-        # this artifact automatically -- no manual step needed here.
+      - name: Upload Training Data Artifact (all contests)
+        # Uploads every contest's parquet as ONE artifact (the glob catches the
+        # untagged Circa file plus the tagged Splash files). weekly_6 downloads
+        # this artifact and trains one model per contest. Regenerable, so it's
+        # an artifact rather than a git commit -- and never a repo-size risk.
         uses: actions/upload-artifact@v4
         with:
           name: entry-pick-choice-training-data
-          path: training_data/entry_pick_choice_training_data.parquet
+          path: training_data/entry_pick_choice_training_data*.parquet
           retention-days: 90
           if-no-files-found: error
