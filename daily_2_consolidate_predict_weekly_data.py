@@ -6303,15 +6303,28 @@ def loop_through_simulations(date_str):
             _key = ['Week', 'Home Team', 'Away Team']
             _home_col, _away_col = f'Home {_prefix} Pick %', f'Away {_prefix} Pick %'
             if all(c in _contest_df.columns for c in _key + [_home_col, _away_col]):
-                _sub = _contest_df[_key + [_home_col, _away_col]].copy()
+                # Also carry this contest's own pool size and team availability
+                # (prefixed so they don't collide with Circa's). daily_3 and the
+                # schedule API surface these per contest alongside the pick %.
+                _extra = {
+                    'Total Remaining Entries at Start of Week':
+                        f'{_prefix} Total Remaining Entries at Start of Week',
+                    'Home Team Expected Availability':
+                        f'{_prefix} Home Team Expected Availability',
+                    'Away Team Expected Availability':
+                        f'{_prefix} Away Team Expected Availability',
+                }
+                _extra = {s: d for s, d in _extra.items() if s in _contest_df.columns}
+                _sub = _contest_df[_key + [_home_col, _away_col] + list(_extra)].copy()
+                _sub = _sub.rename(columns=_extra)
                 # A game key is unique per week, so this left-merge just attaches
-                # the two projected columns without changing row count.
+                # the contest's columns without changing row count.
                 _before = len(collect_schedule_travel_ranking_data_df)
                 collect_schedule_travel_ranking_data_df = \
                     collect_schedule_travel_ranking_data_df.merge(_sub, on=_key, how='left')
                 assert len(collect_schedule_travel_ranking_data_df) == _before, \
                     f"{_ck} merge changed row count"
-                print(f"🔗 {_spec['label']}: merged {_home_col} / {_away_col} "
+                print(f"🔗 {_spec['label']}: merged pick % + entries/availability "
                       f"into the shared schedule.")
             else:
                 print(f"⚠️ {_spec['label']}: expected projected columns not found "
