@@ -491,5 +491,6 @@ if __name__ == "__main__":
         formatted_date
     ]
 
-    for date in week_starting_dates:
+    from run_config import get_run_dates
+    for date in get_run_dates():
         loop_through_ev(date)
