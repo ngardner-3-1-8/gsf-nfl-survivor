@@ -756,6 +756,18 @@ def main():
     year = current_season_year()
     print(f"Running entry archetype pick estimates for the {year} season.")
 
+    # Early replay years have no trained choice model (weekly_6 needs 2+
+    # seasons and skips before then). Skip gracefully instead of crashing on
+    # the missing file so the daily chain completes; downstream falls back to
+    # the base projection.
+    if not (os.path.exists(MODEL_PATH) and os.path.exists(FEATURE_META_PATH)):
+        print(
+            f"⏭️  No trained choice model at {MODEL_PATH} -- skipping archetype "
+            f"pick estimates for {year}. Expected for early replay years where "
+            "weekly_6 couldn't train yet (needs 2+ seasons)."
+        )
+        return
+
     model = joblib.load(MODEL_PATH)
     with open(FEATURE_META_PATH) as f:
         meta = json.load(f)
