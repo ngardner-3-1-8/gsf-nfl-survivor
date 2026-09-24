@@ -179,7 +179,8 @@ DIM_COLS = ['win_pct_pctile', 'ev_pctile', 'fv_pctile', 'unpopularity_pctile']
 # --------------------------------------------------------------------
 def current_season_year():
     candidates = []
-    for year in range(EARLIEST_SEASON, datetime.date.today().year + 2):
+    from run_config import as_of_year
+    for year in range(EARLIEST_SEASON, as_of_year() + 2):
         if os.path.exists(PICKS_PATTERN.format(year=year)):
             candidates.append(year)
     if not candidates:
