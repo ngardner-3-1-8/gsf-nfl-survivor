@@ -52,7 +52,10 @@ import pandas as pd
 
 from team_codes import NICKNAME_TO_ABBR, canonical_pick_code
 
-YEAR = 2026
+from run_config import as_of_year
+# Season to normalize: the central as-of year (PIPELINE_AS_OF_DATE env when the
+# orchestrator drives us, else run_config.HISTORICAL_DATES[0], else today).
+YEAR = as_of_year()
 
 # contest key -> (raw export directory, raw filename glob, canonical output path)
 CONTESTS = {
