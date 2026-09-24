@@ -32,10 +32,11 @@ export async function fetchLastUpdated() {
   return res.json()
 }
 
-export async function fetchSchedule(week = null, year = null) {
+export async function fetchSchedule(week = null, year = null, contest = null) {
   const params = new URLSearchParams()
   if (week != null) params.set('week', week)
   if (year != null) params.set('year', year)
+  if (contest != null) params.set('contest', contest)
   const query = params.toString()
   const url = `${API_URL}/api/schedule${query ? '?' + query : ''}`
   const res = await fetch(url)
