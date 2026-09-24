@@ -92,7 +92,8 @@ _IS_CIRCA = (_CFG['out_tag'] == 'circa')
 # Config -- adjust YEAR (or wire it up to your existing target_year
 # logic elsewhere in the pipeline) each season.
 # --------------------------------------------------------------------
-YEAR = 2026
+from run_config import as_of_year
+YEAR = as_of_year()
 
 # Contest-driven (SURVIVOR_CONTEST env var; default 'circa').
 PICKS_PATH = _CFG['picks_pattern'].format(year=YEAR)
