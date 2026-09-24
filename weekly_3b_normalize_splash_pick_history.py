@@ -184,6 +184,16 @@ def normalize_contest(contest_key, year=YEAR):
 
 
 def main():
+    # Splash contests are 2026+. In a historical replay of an earlier season
+    # the contests didn't exist, so normalize nothing rather than mislabel the
+    # real (2026) raw exports -- which aren't year-stamped -- as that year.
+    from contest_config import CONTESTS as _CC
+    splash_start = min(_CC[c]['start_season']
+                       for c in ('big_splash', 'world_championship'))
+    if YEAR < splash_start:
+        print(f"ℹ️  Splash contests start {splash_start}; nothing to normalize "
+              f"for {YEAR} (historical replay before the contests existed).")
+        return
     for contest_key in CONTESTS:
         normalize_contest(contest_key, YEAR)
 
