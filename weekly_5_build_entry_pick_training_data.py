@@ -591,6 +591,15 @@ def process_year(year):
 
 
 def main():
+    # This contest didn't exist by the as-of year (empty year range) -> no
+    # training data to build. Skip cleanly (exit 0) instead of raising, so a
+    # pre-start Splash replay is a clean no-op like weekly_3b/weekly_4.
+    if not YEARS_TO_PROCESS:
+        print(
+            f"⏭️  {_CFG['label']}: contest starts {_CFG['start_season']}; no "
+            f"seasons to process through {as_of_year()}. Skipping."
+        )
+        return
     all_years = []
     for year in YEARS_TO_PROCESS:
         try:
