@@ -60,7 +60,7 @@ MANUAL_CURRENT_STARTERS = {
     'MIN': [None, 'C.Wentz', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'NE': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'NO': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'NYG': [None, None, 'J.Winston', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+    'NYG': [None, None, 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston'],
     'NYJ': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'PHI': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'PIT': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
