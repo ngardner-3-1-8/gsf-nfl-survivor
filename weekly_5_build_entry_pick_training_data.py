@@ -104,7 +104,13 @@ _IS_CIRCA = (_CFG['out_tag'] == 'circa')
 # and a run for an earlier season simply finds no picks file and skips it.
 EARLIEST_SEASON = _CFG['start_season']
 from run_config import as_of_year
+from season_dates import resolve_week_context
+# Through the central as-of year (PIPELINE_AS_OF_DATE env when the orchestrator
+# drives us, else run_config.HISTORICAL_DATES[0], else today).
 YEARS_TO_PROCESS = list(range(EARLIEST_SEASON, as_of_year() + 1))
+# The as-of season/week context, used to cut the replayed season off at the
+# upcoming week so it never trains on its own future weeks.
+_ASOF_CTX = resolve_week_context()
 
 PICKS_PATTERN = _CFG['picks_pattern']
 MULTI_PICK_WEEKS = _CFG['multi_pick_weeks']
@@ -529,6 +535,19 @@ def process_year(year):
     if picks_long.empty:
         print(f"⚠️  {year}: no real picks found, skipping.")
         return None
+
+    # As-of-week cutoff: in a historical replay, the season currently being
+    # replayed must not train on its OWN future weeks (point-in-time honesty).
+    # Prior seasons are used in full. _ASOF_CTX honors PIPELINE_AS_OF_DATE.
+    if year == _ASOF_CTX.target_year:
+        _before = len(picks_long)
+        picks_long = picks_long[picks_long['Week'] < _ASOF_CTX.upcoming_week].copy()
+        if len(picks_long) < _before:
+            print(f"   ⏳ as-of cutoff: {year} limited to weeks < "
+                  f"{_ASOF_CTX.upcoming_week} ({_before} -> {len(picks_long)} picks).")
+        if picks_long.empty:
+            print(f"⚠️  {year}: no completed weeks before the as-of week, skipping.")
+            return None
     picks_long = attach_available_pool(picks_long)
 
     # Splash contests score unpopularity against their own crowd; Circa uses
