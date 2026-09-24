@@ -6609,15 +6609,12 @@ def loop_through_simulations(date_str):
         print(f"   ⚠️  Entry analytics / blend step failed (non-fatal): {_e}")
         traceback.print_exc()
 
-    # ── Per-contest, all-weeks top-down × behavioral blend ──────────────────
-    # The entry-analytics step above blends only Circa's UPCOMING week. This
-    # step blends daily_2's projection with daily_4's archetype/behavioral
-    # estimate for EVERY remaining week and EVERY contest (Circa future weeks +
-    # all Big Splash / World Championship weeks), so the whole-season pick-%
-    # surface -- and the EV daily_3 computes from it -- reflects both signals.
-    # It reads daily_4's most recent per-contest output; a contest/week with no
-    # daily_4 file yet keeps its pure top-down projection (no-op). Circa's
-    # upcoming week keeps the live-crowd blend applied just above.
+    # NOTE: the per-contest top-down × behavioral blend (folding daily_4's
+    # archetype estimates into the pick %) now lives in daily_5, which runs
+    # after daily_4 so it uses THIS cycle's estimates -- rather than re-running
+    # this whole (heavy) script. daily_2 just produces the top-down projection
+    # (plus the Circa upcoming-week live-crowd blend above); daily_5 owns the
+    # daily_4 blend and the EV recompute.
     try:
         from blend_pick_estimates import blend_all_contests
         blend_all_contests(target_year=target_year, upcoming_week=upcoming_week)
