@@ -1,0 +1,88 @@
+name: Historical Backfill (manual)
+
+# Manual, one-shot runner for run_pipeline.py: rebuilds the whole pipeline for
+# one or more as-of dates, running every stage in order for each date before
+# moving to the next (weekly_1 -> ... -> daily_5). Unlike the scheduled/chained
+# workflows, this runs everything in ONE job (so weekly_5's parquet is on disk
+# for weekly_6 with no artifact handoff) and commits all outputs at the end.
+on:
+  workflow_dispatch:
+    inputs:
+      dates:
+        description: 'Space-separated MM/DD/YYYY as-of dates. Blank = run_config.HISTORICAL_DATES (or today).'
+        required: false
+        default: ''
+      only:
+        description: 'Optional: only these stages (space-separated short names, e.g. "daily_2 daily_3 daily_5").'
+        required: false
+        default: ''
+      skip:
+        description: 'Optional: skip these stages (space-separated short names).'
+        required: false
+        default: ''
+      keep_going:
+        description: "Don't abort a date when an authoritative stage fails."
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    # The pipeline really runs daily_2 (scrape + simulate) once per date, so a
+    # multi-date backfill can be long. GitHub caps a job at 360 minutes.
+    timeout-minutes: 350
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # Union of every stage's deps (daily_2/3 scraping+sim, weekly_5/6 +
+          # daily_4 ML, etc.) since run_pipeline runs them all in one job.
+          pip install pandas numpy requests beautifulsoup4 scikit-learn tqdm \
+                      ortools selenium undetected-chromedriver nflreadpy pytz \
+                      polars lxml pyarrow lightgbm joblib scipy python-dateutil
+
+      - name: Install Chrome (for Selenium in daily_2 / daily_3)
+        uses: browser-actions/setup-chrome@latest
+
+      - name: Run historical pipeline
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.dates }}" ]; then ARGS="$ARGS --dates ${{ inputs.dates }}"; fi
+          if [ -n "${{ inputs.only }}" ];  then ARGS="$ARGS --only ${{ inputs.only }}"; fi
+          if [ -n "${{ inputs.skip }}" ];  then ARGS="$ARGS --skip ${{ inputs.skip }}"; fi
+          if [ "${{ inputs.keep_going }}" = "true" ]; then ARGS="$ARGS --keep-going"; fi
+          echo "run_pipeline.py $ARGS"
+          python run_pipeline.py $ARGS
+
+      - name: Commit and Push Outputs
+        # Stage everything the run produced (respecting .gitignore, which
+        # already excludes __pycache__/ and logs/), then UNSTAGE the large
+        # training_data parquets -- those are regenerable and are handled as
+        # workflow artifacts elsewhere, never committed. Only commit if there's
+        # something to commit.
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add -A
+          git reset -q HEAD training_data 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No output changes to commit."
+          else
+            git commit -m "Historical backfill via run_pipeline (${{ inputs.dates }})"
+            git push
+          fi
