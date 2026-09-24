@@ -1,23 +1,15 @@
 name: Daily 3 Update Circa Survivor EVs
 
 on:
-  # Allows you to trigger the workflow manually from the GitHub Actions tab
+  # Manual run button.
   workflow_dispatch:
-  
-  # Runs at 12:30 PM UTC Daily
-  #5:30 AM Mountain Standard Time
-  #6:30 AM Mountain Daylight Time
-  schedule:
-    - cron: '30 10 * * 2'
-    - cron: '30 10 * * 3'
-    - cron: '30 10 * * 4'
-    - cron: '30 10 * * 5'
-    - cron: '30 10 * * 6'
-    - cron: '0 19 * * 2'
-    - cron: '0 19 * * 3'
-    - cron: '0 19 * * 4'
-    - cron: '0 19 * * 5'
-    - cron: '0 19 * * 6'
+
+  # Chain: run right after Daily 2 finishes, so EV is computed from Daily 2's
+  # just-written pick %. No schedule of its own -- it rides whichever Daily 2
+  # cascade fired it (the Daily 1 chain, or the 9 AM Mountain run).
+  workflow_run:
+    workflows: ["Daily 2 Consolidate and Predict Upcoming Weekly Data"]
+    types: [completed]
 
 permissions:
   contents: write # Required to push the new CSVs back to the repo
@@ -25,7 +17,9 @@ permissions:
 jobs:
   run-ev-script:
     runs-on: ubuntu-latest
-
+    # workflow_run fires on completion regardless of outcome, so only proceed
+    # when Daily 2 actually SUCCEEDED (or when triggered manually).
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
