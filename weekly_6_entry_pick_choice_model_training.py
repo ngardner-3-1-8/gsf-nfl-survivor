@@ -321,11 +321,16 @@ def main():
 
     train_df, val_df, test_df, train_years, val_years, test_years = split_by_year(df)
     if train_df.empty or val_df.empty:
-        raise ValueError(
-            "Train or Val split came back empty -- this data only spans "
-            f"{sorted(df['Year'].unique().tolist())} season(s), which isn't "
-            "enough to form a 3-way split yet (need at least 2 seasons)."
+        seasons = sorted(df['Year'].unique().tolist())
+        print(
+            "\n⏭️  Skipping choice-model training: the data only spans "
+            f"{seasons} season(s), which isn't enough for a 3-way "
+            "train/val/test split (need at least 2 seasons). This is expected "
+            "for the earliest replay year(s); the model will train once more "
+            "seasons have accumulated. No model written -- daily_4 will fall "
+            "back to the base projection."
         )
+        return
 
     print("\nTraining LightGBM binary classifier...")
     model = train_model(train_df, val_df)
