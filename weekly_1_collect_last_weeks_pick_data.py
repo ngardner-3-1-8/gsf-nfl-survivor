@@ -18,17 +18,25 @@ import nflreadpy as nfl
 from datetime import datetime, timedelta
 import calendar
 from season_dates import resolve_week_context, CIRCA_HOLIDAY_CONFIG, default_circa_holiday
+from run_config import as_of_year, is_replay
 
-hist = pd.read_csv("contest-historical-data/Circa_historical_data_2026.csv")
-picks = pd.read_csv("circa-pick-history/2026_survivor_picks.csv")
+# Diagnostic week-1 sanity print, scoped to the as-of year so a historical
+# replay looks at that year's files instead of hardcoded 2026 (and never
+# crashes the import if those files are not present for the replay year).
+_diag_year = as_of_year()
+try:
+    hist = pd.read_csv(f"contest-historical-data/Circa_historical_data_{_diag_year}.csv")
+    picks = pd.read_csv(f"circa-pick-history/{_diag_year}_survivor_picks.csv")
 
-wk1 = hist[(hist["Year"] == 2026) & (hist["Week"].astype(int) == 1)]
-print("Historical file raw Team codes, week 1:")
-print(wk1[["Team", "Pick %", "Calculated Current Week Picks", "Calculated Current Week Alive Entries"]]
-      .sort_values("Team").to_string())
+    wk1 = hist[(hist["Year"] == _diag_year) & (hist["Week"].astype(int) == 1)]
+    print(f"Historical file raw Team codes, week 1 ({_diag_year}):")
+    print(wk1[["Team", "Pick %", "Calculated Current Week Picks", "Calculated Current Week Alive Entries"]]
+          .sort_values("Team").to_string())
 
-print("\nPicks file Week_1 value counts:")
-print(picks["Week_1"].value_counts())
+    print("\nPicks file Week_1 value counts:")
+    print(picks["Week_1"].value_counts())
+except (FileNotFoundError, KeyError) as _diag_err:
+    print(f"[diag] skipped week-1 sanity print for {_diag_year}: {_diag_err}")
 
 ABBR_TO_FULL_SAMPLE = {"LA": "Los Angeles Rams", "LAR": "Los Angeles Rams",
                         "JAX": "Jacksonville Jaguars", "JAC": "Jacksonville Jaguars",
@@ -1088,6 +1096,7 @@ def loop_through_historical_final_data(date_str):
                             (df['Team'].isin(pre_teams)) & \
                             (df['Week'] < holiday_week)
             df.loc[condition_pre, 'Pre Christmas'] = 1
+    current_year = target_year
     print(F"CURRENT YEAR = {current_year}")
     print(F"TARGET YEAR = {target_year}")
     # 1. Create lookup maps for the Win % on the actual holiday weeks
@@ -1375,7 +1384,8 @@ def loop_through_historical_final_data(date_str):
     
     df = df.drop_duplicates()
     
-    df.to_csv("contest-historical-data/Circa_historical_data.csv", index=False)    
+    if not is_replay():
+        df.to_csv("contest-historical-data/Circa_historical_data.csv", index=False)
     
     def scrape_circa_survivor_picks():
         """
@@ -2173,7 +2183,8 @@ def loop_through_historical_final_data(date_str):
     df_combined = pd.concat([df_filtered, df_current_year], ignore_index=True)
     
     # --- Step 4: Save the result (Optional, but recommended) ---
-    df_combined.to_csv("contest-historical-data/Circa_historical_data.csv", index=False)
+    if not is_replay():
+        df_combined.to_csv("contest-historical-data/Circa_historical_data.csv", index=False)
             
     print(df_combined)
         
@@ -2315,9 +2326,13 @@ def loop_through_historical_final_data(date_str):
     # --- Main Execution Block ---
     
     # Define the file paths as provided by the user
-    historical_file = "contest-historical-data/Circa_historical_data.csv"
+    if is_replay():
+        historical_file = f"contest-historical-data/Circa_historical_data_{target_year}.csv"
+        output_file = f"contest-historical-data/Circa_historical_data_{target_year}.csv"
+    else:
+        historical_file = "contest-historical-data/Circa_historical_data.csv"
+        output_file = "contest-historical-data/Circa_historical_data.csv" # New output file name
     picks_file = f"circa-pick-history/{current_year}_survivor_picks.csv"
-    output_file = "contest-historical-data/Circa_historical_data.csv" # New output file name
     
     # Run the calculation
     results_df = calculate_team_availability(historical_file, picks_file)
