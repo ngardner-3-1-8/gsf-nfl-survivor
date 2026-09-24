@@ -99,6 +99,9 @@ def resolve_week_context(date_str, schedule_df=None):
     SCHEDULE_PATTERN. Access fields by attribute, e.g. ctx.target_year,
     ctx.upcoming_week, ctx.starting_week, ctx.last_completed_week.
     """
+    if date_str is None:
+        from run_config import as_of_date_str
+        date_str = as_of_date_str()
     today = pd.to_datetime(date_str)
     current_cal_year = today.year
     target_year = resolve_target_year(today)
