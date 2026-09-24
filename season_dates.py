@@ -90,9 +90,14 @@ def resolve_target_year(today):
     return today.year - 1 if today.month < 6 else today.year
 
 
-def resolve_week_context(date_str, schedule_df=None):
+def resolve_week_context(date_str=None, schedule_df=None):
     """Return a SimpleNamespace describing the season/week for `date_str`,
     computed exactly the way daily_2 does it.
+
+    `date_str` defaults to the pipeline's as-of date (run_config.as_of_date_str
+    -- the PIPELINE_AS_OF_DATE env var the historical orchestrator sets, else
+    the real today), so a script that just calls resolve_week_context() with no
+    argument automatically respects a historical replay.
 
     Pass `schedule_df` to reuse an already-loaded schedule (must have 'Date'
     and 'Week' columns); otherwise the season's schedule CSV is loaded from
