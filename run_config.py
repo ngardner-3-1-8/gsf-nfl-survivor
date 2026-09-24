@@ -35,7 +35,7 @@ from datetime import datetime
 # ── EDIT THIS ────────────────────────────────────────────────────────────────
 # Empty = run for the real today. Add "MM/DD/YYYY" strings to replay history.
 HISTORICAL_DATES = [
-#        "09/09/2020", #Leading up to Week 1
+        "09/09/2020", #Leading up to Week 1
 #        "09/16/2020", #Leading up to Week 2
 #        "09/23/2020", #Leading up to Week 3
 #        "09/30/2020", #Leading up to Week 4
