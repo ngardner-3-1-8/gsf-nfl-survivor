@@ -2237,8 +2237,12 @@ def loop_through_historical_final_data(date_str):
         print(f"Last completed pick week (W_max): {W_max}")
         print(f"Calculating availability for Week: {W_next}")
     
-        # Define the columns that represent the picks made up to the last completed week
-        pick_cols = [f'Week_{i}' for i in range(1, W_max)]
+        # Define the columns that represent the picks made up to the last completed week.
+        # range() is exclusive, so use W_max + 1 to INCLUDE the last completed week
+        # (Week_{W_max}); the picks-file column count still caps W_max below. Without
+        # the +1, the earliest replay week (per-year file whose max week == W_max)
+        # yields an empty pick_cols and the "No Week_X columns" error.
+        pick_cols = [f'Week_{i}' for i in range(1, W_max + 1)]
         
         # Check for missing pick columns and adjust W_max if necessary
         available_pick_cols = [col for col in pick_cols if col in df_picks.columns]
