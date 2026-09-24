@@ -95,8 +95,58 @@ def root():
     return {"status": "ok", "message": "Circa Survivor API is running"}
 
 
+# Which columns feed the schedule tab for each contest. The sim file carries
+# every contest's projected pick % (daily_2) and per-model EV (daily_3); this
+# maps the SELECTED contest's columns onto the canonical names the schedule
+# table reads ('Home/Away Pick %', 'Home/Away Team EV'), so switching contests
+# swaps the whole schedule's pick % and EV. ev_tag '' = Circa's own EV columns.
+_CONTEST_SCHEDULE = {
+    "circa": ("Home Pick %", "Away Pick %", ""),
+    "big_splash": ("Home Big Splash Pick %", "Away Big Splash Pick %", "BigSplash"),
+    "world_championship": ("Home World Championship Pick %",
+                           "Away World Championship Pick %", "WorldChampionship"),
+}
+
+
+def _apply_contest_to_schedule(df, contest, ev_model="consensus"):
+    """Surface the selected contest's pick % and EV under the canonical column
+    names the schedule table reads ('Home/Away Pick %', 'Home/Away Team EV').
+
+    Degrades gracefully: if a contest's columns aren't in this file (e.g. a
+    pre-2026 historical file has no Splash columns), the existing (Circa)
+    values are left in place. EV shows one model (consensus by default),
+    preferring the contest's own EV then the shared Splash EV."""
+    key = (contest or "circa").strip().lower()
+    if key not in _CONTEST_SCHEDULE:
+        key = "circa"
+    home_pick, away_pick, ev_tag = _CONTEST_SCHEDULE[key]
+    df = df.copy()
+
+    # Pick % -> canonical Home/Away Pick %
+    if home_pick != "Home Pick %" and home_pick in df.columns:
+        df["Home Pick %"] = df[home_pick]
+    if away_pick != "Away Pick %" and away_pick in df.columns:
+        df["Away Pick %"] = df[away_pick]
+
+    # EV (single model) -> Home/Away Team EV, with sensible fallbacks.
+    if ev_tag:
+        home_candidates = [f"{ev_tag}_{ev_model}_Home_EV", f"Splash_{ev_model}_Home_EV"]
+        away_candidates = [f"{ev_tag}_{ev_model}_Away_EV", f"Splash_{ev_model}_Away_EV"]
+    else:
+        home_candidates = [f"{ev_model}_Home_EV"]
+        away_candidates = [f"{ev_model}_Away_EV"]
+    for target, candidates in (("Home Team EV", home_candidates),
+                               ("Away Team EV", away_candidates)):
+        for c in candidates:
+            if c in df.columns:
+                df[target] = df[c]
+                break
+    return df
+
+
 @app.get("/api/schedule")
-def get_schedule(week: int = Query(None), year: int = Query(None)):
+def get_schedule(week: int = Query(None), year: int = Query(None),
+                 contest: str = Query("circa")):
     try:
         data = load_current_data(DATA_DIR)
         current_year = data["target_year"]
@@ -106,6 +156,7 @@ def get_schedule(week: int = Query(None), year: int = Query(None)):
             week_col = "Week_x" if "Week_x" in df.columns else "Week"
             if week is not None:
                 df = df[df[week_col] == week]
+            df = _apply_contest_to_schedule(df, contest)
             # Build week options from the data
             circa_col = "Circa Week" if "Circa Week" in df.columns else None
             weeks_df = df[[week_col] + ([circa_col] if circa_col else [])].drop_duplicates()
@@ -119,6 +170,7 @@ def get_schedule(week: int = Query(None), year: int = Query(None)):
                 "upcoming_week": latest_week,
                 "target_year": year,
                 "source_file": source_file,
+                "contest": (contest or "circa").strip().lower(),
                 "weeks": sorted(df[week_col].dropna().unique().tolist()),
                 "total_games": len(df),
                 "games": df.to_dict(orient="records"),
@@ -126,14 +178,16 @@ def get_schedule(week: int = Query(None), year: int = Query(None)):
             }
             return JSONResponse(content=sanitize(result))
 
-        # Existing live logic unchanged
+        # Live logic. Surface the selected contest's pick % / EV before slicing.
         df = clean_df(data["sim_df"])
+        df = _apply_contest_to_schedule(df, contest)
         if week is not None:
             df = df[df["Week_x"] == week]
         result = {
             "upcoming_week": data["upcoming_week"],
             "target_year": current_year,
             "source_file": data["sim_file"],
+            "contest": (contest or "circa").strip().lower(),
             "weeks": sorted(df["Week_x"].dropna().unique().tolist()),
             "total_games": len(df),
             "games": df.to_dict(orient="records"),
