@@ -376,6 +376,15 @@ def contest_actual_pick_pct(picks_long):
 
 
 def main():
+    # This contest didn't exist yet in the as-of year -> no picks to score.
+    # Skip cleanly (exit 0) instead of crashing on the missing picks file,
+    # mirroring weekly_3b's pre-start guard.
+    if YEAR < _CFG['start_season']:
+        print(
+            f"⏭️  {_CFG['label']}: contest starts {_CFG['start_season']}; "
+            f"nothing to score for {YEAR}. Skipping."
+        )
+        return
     picks_wide, picks_long, week_cols = load_picks_long(PICKS_PATH)
     # As-of-week cutoff: in a historical replay, score archetypes only on
     # completed weeks (< the upcoming week) so we don't use the season's future
