@@ -1,22 +1,25 @@
 name: Weekly 3b Normalize Splash Pick History + Build Contest Historical Data
 
 on:
+  # Manual run button.
   workflow_dispatch:
-  schedule:
-    # Tuesdays at 20:00 UTC (fixed -- not DST-adjusted). This job does two
-    # things, in order:
-    #   1. weekly_3b converts the raw Splash contest exports into the canonical
-    #      wide picks files (2026_big_splash_picks.csv /
-    #      2026_world_championship_picks.csv) that the Splash runs of
-    #      weekly_4 / weekly_5 read.
-    #   2. build_contest_historical_data.py turns those picks (plus Circa's
-    #      contest-agnostic game features) into each contest's historical
-    #      training file (BigSplash_historical_data.csv /
-    #      WorldChampionship_historical_data.csv) that daily_2's per-contest
-    #      pick-% projection trains on.
-    # Both must land before daily_2 and the Splash weekly_4/5 runs, so keep
-    # this at or before the earliest of those.
-    - cron: '30 14 * * 2'
+  # Chain: run right after Weekly 2 finishes. This job does two things, in
+  # order:
+  #   1. weekly_3b converts the raw Splash contest exports into the canonical
+  #      wide picks files (2026_big_splash_picks.csv /
+  #      2026_world_championship_picks.csv) that the Splash runs of
+  #      weekly_4 / weekly_5 read.
+  #   2. build_contest_historical_data.py turns those picks (plus Circa's
+  #      contest-agnostic game features) into each contest's historical
+  #      training file (BigSplash_historical_data.csv /
+  #      WorldChampionship_historical_data.csv) that daily_2's per-contest
+  #      pick-% projection trains on.
+  # It's the middle of the weekly chain (Weekly 1 -> 2 -> 3b -> 4 -> 5 -> 6),
+  # so it no longer needs its own cron -- completion order guarantees it lands
+  # before weekly_4/5, and its outputs are ready for the next daily_2 run.
+  workflow_run:
+    workflows: ["Weekly 2 Collect Transactions"]
+    types: [completed]
 
 permissions:
   contents: write   # to commit the normalized picks + contest historical files back
@@ -25,6 +28,9 @@ jobs:
   normalize-splash-picks:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # workflow_run fires on completion regardless of outcome, so only proceed
+    # when Weekly 2 actually SUCCEEDED (or when triggered manually).
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
