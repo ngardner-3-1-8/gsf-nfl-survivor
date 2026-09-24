@@ -1,0 +1,52 @@
+name: Daily 5 Apply Archetype Blend and EV
+
+on:
+  # Manual run button.
+  workflow_dispatch:
+
+  # Chain: run right after Daily 4 finishes -- the lean tail of the daily
+  # cascade. It folds Daily 4's per-contest archetype estimates into Daily 2's
+  # projection (the blend) and recomputes true EV on the blended pick %, so we
+  # get the Daily 4-informed pick % / EV without re-running Daily 2.
+  workflow_run:
+    workflows: ["Daily 4 Generate Entry Archetype Pick Estimates"]
+    types: [completed]
+
+permissions:
+  contents: write   # to commit the reblended sim file / EV back
+
+jobs:
+  apply-blend-and-ev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Only proceed on a successful upstream run (or a manual dispatch).
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # daily_5 imports daily_3_calculate_ev (for the true-EV engine), so it
+          # needs daily_3's import-time deps even though it does no scraping/sim.
+          pip install requests beautifulsoup4 pandas numpy pytz python-dateutil \
+                      scikit-learn tqdm ortools selenium undetected-chromedriver \
+                      polars nflreadpy scipy
+
+      - name: Run Daily 5 Apply Archetype Blend and EV
+        run: |
+          python daily_5_apply_archetype_blend_and_ev.py
+
+      - name: Commit and Push Reblended Sim + EV
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add nfl-power-ratings/*.csv circa-survivor-ev/*_team_ev_week_*.csv
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Apply archetype blend + recompute EV (daily_5)" && git push)
