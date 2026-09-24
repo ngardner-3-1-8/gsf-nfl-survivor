@@ -101,17 +101,24 @@ def root():
 # maps the SELECTED contest's columns onto the canonical names the schedule
 # table reads ('Home/Away Pick %', 'Home/Away Team EV'), so switching contests
 # swaps the whole schedule's pick % and EV. ev_tag '' = Circa's own EV columns.
+# (home_pick_col, away_pick_col, ev_tag, projection_prefix). The projection
+# prefix is what daily_2 uses to namespace a contest's own pool size and team
+# availability columns ('' = Circa's un-prefixed canonical columns).
 _CONTEST_SCHEDULE = {
-    "circa": ("Home Pick %", "Away Pick %", ""),
-    "big_splash": ("Home Big Splash Pick %", "Away Big Splash Pick %", "BigSplash"),
+    "circa": ("Home Pick %", "Away Pick %", "", ""),
+    "big_splash": ("Home Big Splash Pick %", "Away Big Splash Pick %",
+                   "BigSplash", "Big Splash"),
     "world_championship": ("Home World Championship Pick %",
-                           "Away World Championship Pick %", "WorldChampionship"),
+                           "Away World Championship Pick %",
+                           "WorldChampionship", "World Championship"),
 }
 
 
 def _apply_contest_to_schedule(df, contest, ev_model="consensus"):
-    """Surface the selected contest's pick % and EV under the canonical column
-    names the schedule table reads ('Home/Away Pick %', 'Home/Away Team EV').
+    """Surface the selected contest's pick %, EV, pool size and team
+    availability under the canonical column names the schedule table reads
+    ('Home/Away Pick %', 'Home/Away Team EV', 'Total Remaining Entries at
+    Start of Week', 'Home/Away Team Expected Availability').
 
     Degrades gracefully: if a contest's columns aren't in this file (e.g. a
     pre-2026 historical file has no Splash columns), the existing (Circa)
@@ -120,7 +127,7 @@ def _apply_contest_to_schedule(df, contest, ev_model="consensus"):
     key = (contest or "circa").strip().lower()
     if key not in _CONTEST_SCHEDULE:
         key = "circa"
-    home_pick, away_pick, ev_tag = _CONTEST_SCHEDULE[key]
+    home_pick, away_pick, ev_tag, prefix = _CONTEST_SCHEDULE[key]
     df = df.copy()
 
     # Pick % -> canonical Home/Away Pick %
@@ -142,6 +149,21 @@ def _apply_contest_to_schedule(df, contest, ev_model="consensus"):
             if c in df.columns:
                 df[target] = df[c]
                 break
+
+    # Pool size + team availability -> canonical columns. daily_2 namespaces a
+    # Splash contest's versions with its projection prefix; Circa's are already
+    # the canonical names (prefix == '').
+    if prefix:
+        for src, dst in (
+            (f"{prefix} Total Remaining Entries at Start of Week",
+             "Total Remaining Entries at Start of Week"),
+            (f"{prefix} Home Team Expected Availability",
+             "Home Team Expected Availability"),
+            (f"{prefix} Away Team Expected Availability",
+             "Away Team Expected Availability"),
+        ):
+            if src in df.columns:
+                df[dst] = df[src]
     return df
 
 
