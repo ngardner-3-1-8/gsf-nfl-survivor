@@ -97,7 +97,11 @@ def normalize_team(abbr):
 
 
 def get_target_year(today=None):
-    today = today or datetime.now()
+    if today is None:
+        # Central as-of date (PIPELINE_AS_OF_DATE env when the orchestrator
+        # drives us, else run_config.HISTORICAL_DATES[0], else real today).
+        from run_config import as_of_datetime
+        today = as_of_datetime()
     return today.year - 1 if today.month < 6 else today.year
 
 
