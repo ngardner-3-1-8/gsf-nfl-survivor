@@ -377,6 +377,17 @@ def contest_actual_pick_pct(picks_long):
 
 def main():
     picks_wide, picks_long, week_cols = load_picks_long(PICKS_PATH)
+    # As-of-week cutoff: in a historical replay, score archetypes only on
+    # completed weeks (< the upcoming week) so we don't use the season's future
+    # picks. No-op live (picks only exist for completed weeks anyway).
+    from season_dates import resolve_week_context
+    _asof = resolve_week_context()
+    if YEAR == _asof.target_year:
+        _before = len(picks_long)
+        picks_long = picks_long[picks_long['Week'] < _asof.upcoming_week].copy()
+        if len(picks_long) < _before:
+            print(f"⏳ as-of cutoff: archetype scoring limited to weeks < "
+                  f"{_asof.upcoming_week} ({_before} → {len(picks_long)} picks).")
     weeks_with_picks = sorted(picks_long['Week'].unique())
     if not weeks_with_picks:
         raise ValueError(f"No picks found in {PICKS_PATH}.")
