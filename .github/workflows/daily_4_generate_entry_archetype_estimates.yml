@@ -1,33 +1,15 @@
 name: Daily 4 Generate Entry Archetype Pick Estimates
 
 on:
+  # Manual run button.
   workflow_dispatch:
-  schedule:
-    # Tuesday through Saturday, 3pm Mountain time -- an hour after Train
-    # Entry Pick Choice Model's Tuesday 2pm slot, so Tuesday's run always
-    # has a freshly-retrained model to work from; Wed-Sat reuse whatever
-    # model is currently committed and pick up the week's evolving
-    # Public Pick % (Circa's live crowd consensus) as more people submit
-    # picks through the week. No time was specified for this one, so
-    # 3pm Mountain is a default -- easy to change if you'd rather a
-    # different time.
-    #
-    # GitHub Actions cron is UTC-only with no DST awareness, but the NFL
-    # season straddles the November US DST changeover, so "3pm Mountain"
-    # isn't one fixed UTC time year-round. Both possible UTC times are
-    # listed below for each day; the "Check schedule matches 3pm Mountain
-    # time" step figures out which one is actually correct for today and
-    # skips the run otherwise -- so this needs no manual adjustment, ever.
-    - cron: '0 21 * * 2'  # Tue 3pm Mountain DAYLIGHT time (UTC-6)
-    - cron: '0 22 * * 2'  # Tue 3pm Mountain STANDARD time (UTC-7)
-    - cron: '0 21 * * 3'  # Wed
-    - cron: '0 22 * * 3'  # Wed
-    - cron: '0 21 * * 4'  # Thu
-    - cron: '0 22 * * 4'  # Thu
-    - cron: '0 21 * * 5'  # Fri
-    - cron: '0 22 * * 5'  # Fri
-    - cron: '0 21 * * 6'  # Sat
-    - cron: '0 22 * * 6'  # Sat
+
+  # Chain: run right after Daily 3 finishes -- the tail of both daily cascades
+  # (the Daily 1 chain, and the 9 AM Mountain run that starts at Daily 2). No
+  # schedule of its own; it rides whichever Daily 3 run fired it.
+  workflow_run:
+    workflows: ["Daily 3 Update Circa Survivor EVs"]
+    types: [completed]
 
 permissions:
   contents: write   # to commit the output CSVs back
@@ -36,62 +18,25 @@ jobs:
   generate-estimates:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # workflow_run fires on completion regardless of outcome, so only proceed
+    # when Daily 3 actually SUCCEEDED (or when triggered manually).
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - name: Check schedule matches 3pm Mountain time
-        id: dst_check
-        run: |
-          python3 - <<'PYEOF'
-          import datetime, os
-
-          def is_us_daylight_time(d):
-              # Pure US DST rule (2nd Sunday of March through the day
-              # before the 1st Sunday of November), no zoneinfo/tzdata
-              # dependency needed -- this rule hasn't changed since 2007.
-              march1 = datetime.date(d.year, 3, 1)
-              first_sun_march = march1 + datetime.timedelta(days=(6 - march1.weekday()) % 7)
-              second_sun_march = first_sun_march + datetime.timedelta(days=7)
-              nov1 = datetime.date(d.year, 11, 1)
-              first_sun_nov = nov1 + datetime.timedelta(days=(6 - nov1.weekday()) % 7)
-              return second_sun_march <= d < first_sun_nov
-
-          today = datetime.datetime.now(datetime.timezone.utc).date()
-          is_dst = is_us_daylight_time(today)
-          dow = today.isoweekday() % 7  # cron day-of-week: Sun=0..Sat=6; isoweekday Mon=1..Sun=7
-          expected_cron = f"0 {'21' if is_dst else '22'} * * {dow}"
-          event_name = os.environ.get('EVENT_NAME', '')
-          triggering_cron = os.environ.get('TRIGGERING_CRON', '')
-          proceed = (event_name != 'schedule') or (triggering_cron == expected_cron)
-
-          print(f"UTC date: {today}, Mountain DST active: {is_dst}, "
-                f"expected cron: {expected_cron!r}, "
-                f"triggering cron: {triggering_cron!r}, proceed: {proceed}")
-
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-              f.write(f"proceed={'true' if proceed else 'false'}\n")
-          PYEOF
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          TRIGGERING_CRON: ${{ github.event.schedule }}
-
       - name: Checkout code
-        if: steps.dst_check.outputs.proceed == 'true'
         uses: actions/checkout@v5
 
       - name: Set up Python
-        if: steps.dst_check.outputs.proceed == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Install Dependencies
-        if: steps.dst_check.outputs.proceed == 'true'
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install pandas numpy lightgbm joblib
 
       - name: Run Generate Entry Archetype Pick Estimates (all contests)
-        if: steps.dst_check.outputs.proceed == 'true'
         # One run per contest via SURVIVOR_CONTEST -> each writes to its own
         # tagged output dir (entry_archetype_pick_estimates[_big_splash|
         # _world_championship]/{year}/...). daily_2's per-contest blend reads
@@ -108,7 +53,6 @@ jobs:
           done
 
       - name: Commit and Push Estimates
-        if: steps.dst_check.outputs.proceed == 'true'
         # Output CSVs are small (one row per alive entry x candidate
         # team, per week), so these get committed directly rather than
         # uploaded as a workflow artifact.
