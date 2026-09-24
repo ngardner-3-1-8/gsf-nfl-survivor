@@ -196,6 +196,18 @@ def as_of_year():
     return as_of_datetime().year
 
 
+def is_replay():
+    """True when the pipeline is replaying a historical as-of date rather than
+    running live.
+
+    A replay is active when the orchestrator pins a date (PIPELINE_AS_OF_DATE)
+    or when HISTORICAL_DATES is non-empty. Stages use this to avoid writing
+    shared, all-years artifacts (e.g. the master Circa_historical_data.csv)
+    with truncated point-in-time data during a backfill.
+    """
+    return bool(os.environ.get(_ENV_KEY)) or bool(HISTORICAL_DATES)
+
+
 def get_run_dates():
     """The list of dates a DATE-DRIVEN script should iterate in its __main__.
 
