@@ -50,6 +50,7 @@ STAGES = [
     ("daily_2", "daily_2_consolidate_predict_weekly_data.py", False),
     ("daily_3", "daily_3_calculate_ev.py", False),
     ("daily_4", "daily_4_generate_entry_archetype_pick_estimates.py", True),
+    ("daily_5", "daily_5_apply_archetype_blend_and_ev.py", False),
 ]
 
 
