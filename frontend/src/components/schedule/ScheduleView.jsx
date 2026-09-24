@@ -7,6 +7,14 @@ import YearSelector from '../ui/YearSelector'
 
 const COLUMN_VIEWS = ['Overview', 'Odds & Win%', 'Situational', 'Contest', 'Betting', 'Bayesian']
 
+// Contests the schedule can show pick % / EV for. The API remaps the selected
+// contest's columns onto the canonical pick %/EV columns the table reads.
+const CONTESTS = [
+  { value: 'circa', label: 'Circa' },
+  { value: 'big_splash', label: 'Big Splash' },
+  { value: 'world_championship', label: 'World Championship' },
+]
+
 export default function ScheduleView() {
   const [games, setGames] = useState([])
   const [loading, setLoading] = useState(true)
@@ -16,16 +24,17 @@ export default function ScheduleView() {
   const [teamSearch, setTeamSearch] = useState('')
   const [showFilter, setShowFilter] = useState('all')
   const [availableWeeks, setAvailableWeeks] = useState([])
+  const [contest, setContest] = useState('circa')
 
   const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
 
-  // Reload schedule when year changes
+  // Reload schedule when the year or the selected contest changes
   useEffect(() => {
     if (!selectedYear) return
     setLoading(true)
     setError(null)
     setSelectedWeeks([])
-    fetchSchedule(null, selectedYear)
+    fetchSchedule(null, selectedYear, contest)
       .then(data => {
         const g = data.games || []
         setGames(g)
@@ -35,8 +44,29 @@ export default function ScheduleView() {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
-  }, [selectedYear])
+  }, [selectedYear, contest])
 
+  // Compact pill selector for the contest (Circa / Big Splash / World Champ).
+  const contestSelector = (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-xs text-gray-500 uppercase tracking-wide">Contest</span>
+      <div className="flex gap-1 flex-wrap">
+        {CONTESTS.map(c => (
+          <button
+            key={c.value}
+            onClick={() => setContest(c.value)}
+            className={`text-xs px-3 py-1.5 rounded-full border transition-colors font-medium ${
+              contest === c.value
+                ? 'bg-green-600 text-white border-green-600'
+                : 'border-gray-700 text-gray-400 hover:text-white'
+            }`}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
   // Apply filters
   const filtered = useMemo(() => {
     let rows = [...games]
@@ -82,8 +112,9 @@ export default function ScheduleView() {
   if (loading) {
     return (
       <div className="flex flex-col gap-4">
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-4">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-4 flex-wrap">
           <YearSelector years={years} selectedYear={selectedYear} onChange={setSelectedYear} />
+          {contestSelector}
         </div>
         <div className="flex items-center justify-center h-64 gap-3">
           <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
@@ -121,6 +152,7 @@ export default function ScheduleView() {
             setSelectedYear(year)
           }}
         />
+        {contestSelector}
         {isHistorical && (
           <span className="text-xs text-amber-400">
             📋 {selectedYear} season — showing actual results
