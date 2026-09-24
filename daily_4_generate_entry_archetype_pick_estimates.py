@@ -530,6 +530,18 @@ def run_pick_estimates(year, model, all_features, cat_lookup):
         return
 
     last_completed_week = int(picks_long['Week'].max())
+    # As-of-week cutoff: in a historical replay, cap "completed" at the as-of
+    # week and drop later weeks from the picks used for state/availability, so
+    # the current replay season never sees its own future picks. No-op live.
+    from season_dates import resolve_week_context
+    _asof = resolve_week_context()
+    if year == _asof.target_year:
+        last_completed_week = min(last_completed_week, _asof.upcoming_week - 1)
+        picks_long = picks_long[picks_long['Week'] <= last_completed_week].copy()
+        if picks_long.empty:
+            print(f"⚠️  {year}: no completed weeks before the as-of week, "
+                  f"nothing to estimate.")
+            return
     upcoming_week = last_completed_week + 1
     print(f"{year}: last completed week {last_completed_week} -> "
           f"estimating from week {upcoming_week} through season end.")
