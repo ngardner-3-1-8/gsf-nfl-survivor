@@ -107,6 +107,9 @@ def resolve_week_context(date_str=None, schedule_df=None):
     if date_str is None:
         from run_config import as_of_date_str
         date_str = as_of_date_str()
+    if date_str is None:
+        from run_config import as_of_date_str
+        date_str = as_of_date_str()
     today = pd.to_datetime(date_str)
     current_cal_year = today.year
     target_year = resolve_target_year(today)
