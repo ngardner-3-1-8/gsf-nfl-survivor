@@ -18,11 +18,16 @@ on:
     # listed below for each day; the "Check schedule matches 3pm Mountain
     # time" step figures out which one is actually correct for today and
     # skips the run otherwise -- so this needs no manual adjustment, ever.
-    - cron: '30 16 * * 2'  # Tue 3pm Mountain DAYLIGHT time (UTC-6)
-    - cron: '30 16 * * 3'  # Wed
-    - cron: '30 16 * * 4'  # Thu
-    - cron: '30 16 * * 5'  # Fri
-    - cron: '30 16 * * 6'  # Sat
+    - cron: '0 21 * * 2'  # Tue 3pm Mountain DAYLIGHT time (UTC-6)
+    - cron: '0 22 * * 2'  # Tue 3pm Mountain STANDARD time (UTC-7)
+    - cron: '0 21 * * 3'  # Wed
+    - cron: '0 22 * * 3'  # Wed
+    - cron: '0 21 * * 4'  # Thu
+    - cron: '0 22 * * 4'  # Thu
+    - cron: '0 21 * * 5'  # Fri
+    - cron: '0 22 * * 5'  # Fri
+    - cron: '0 21 * * 6'  # Sat
+    - cron: '0 22 * * 6'  # Sat
 
 permissions:
   contents: write   # to commit the output CSVs back
@@ -32,6 +37,46 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - name: Check schedule matches 3pm Mountain time
+        id: dst_check
+        run: |
+          python3 - <<'PYEOF'
+          import datetime, os
+
+          def is_us_daylight_time(d):
+              # Pure US DST rule (2nd Sunday of March through the day
+              # before the 1st Sunday of November), no zoneinfo/tzdata
+              # dependency needed -- this rule hasn't changed since 2007.
+              march1 = datetime.date(d.year, 3, 1)
+              first_sun_march = march1 + datetime.timedelta(days=(6 - march1.weekday()) % 7)
+              second_sun_march = first_sun_march + datetime.timedelta(days=7)
+              nov1 = datetime.date(d.year, 11, 1)
+              first_sun_nov = nov1 + datetime.timedelta(days=(6 - nov1.weekday()) % 7)
+              return second_sun_march <= d < first_sun_nov
+
+          today = datetime.datetime.now(datetime.timezone.utc).date()
+          is_dst = is_us_daylight_time(today)
+          dow = today.isoweekday() % 7  # cron day-of-week: Sun=0..Sat=6; isoweekday Mon=1..Sun=7
+          expected_cron = f"0 {'21' if is_dst else '22'} * * {dow}"
+          event_name = os.environ.get('EVENT_NAME', '')
+          triggering_cron = os.environ.get('TRIGGERING_CRON', '')
+          proceed = (event_name != 'schedule') or (triggering_cron == expected_cron)
+
+          print(f"UTC date: {today}, Mountain DST active: {is_dst}, "
+                f"expected cron: {expected_cron!r}, "
+                f"triggering cron: {triggering_cron!r}, proceed: {proceed}")
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"proceed={'true' if proceed else 'false'}\n")
+          PYEOF
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TRIGGERING_CRON: ${{ github.event.schedule }}
+
+      - name: Checkout code
+        if: steps.dst_check.outputs.proceed == 'true'
+        uses: actions/checkout@v5
+
       - name: Set up Python
         if: steps.dst_check.outputs.proceed == 'true'
         uses: actions/setup-python@v5
@@ -45,10 +90,22 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install pandas numpy lightgbm joblib
 
-      - name: Run Generate Entry Archetype Pick Estimates
+      - name: Run Generate Entry Archetype Pick Estimates (all contests)
         if: steps.dst_check.outputs.proceed == 'true'
+        # One run per contest via SURVIVOR_CONTEST -> each writes to its own
+        # tagged output dir (entry_archetype_pick_estimates[_big_splash|
+        # _world_championship]/{year}/...). daily_2's per-contest blend reads
+        # these, so all three must run here. Circa is authoritative; the Splash
+        # contests are best-effort so a not-yet-trained per-contest model or a
+        # missing picks file doesn't block Circa.
         run: |
+          echo "=== daily_4: circa ==="
           python daily_4_generate_entry_archetype_pick_estimates.py
+          for contest in big_splash world_championship; do
+            echo "=== daily_4: $contest ==="
+            SURVIVOR_CONTEST=$contest python daily_4_generate_entry_archetype_pick_estimates.py \
+              || echo "⚠️ daily_4 $contest produced no estimates (no model/picks yet?) — continuing"
+          done
 
       - name: Commit and Push Estimates
         if: steps.dst_check.outputs.proceed == 'true'
@@ -59,8 +116,13 @@ jobs:
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
           # mkdir first so `git add` never fails with "pathspec did not
-          # match any files" if a run genuinely produces zero output
-          # (e.g. no alive entries, or the sim file isn't out yet).
-          mkdir -p entry_archetype_pick_estimates
-          git add entry_archetype_pick_estimates/
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update entry archetype pick estimates" && git push)
+          # match any files" if a run genuinely produces zero output for a
+          # contest (e.g. no alive entries, no per-contest model yet, or the
+          # sim file isn't out yet). One dir per contest.
+          mkdir -p entry_archetype_pick_estimates \
+                   entry_archetype_pick_estimates_big_splash \
+                   entry_archetype_pick_estimates_world_championship
+          git add entry_archetype_pick_estimates/ \
+                  entry_archetype_pick_estimates_big_splash/ \
+                  entry_archetype_pick_estimates_world_championship/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update entry archetype pick estimates (all contests)" && git push)
