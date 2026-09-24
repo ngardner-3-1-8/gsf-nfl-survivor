@@ -103,7 +103,8 @@ _IS_CIRCA = (_CFG['out_tag'] == 'circa')
 # contests start in 2026, so EARLIEST_SEASON comes from the contest config
 # and a run for an earlier season simply finds no picks file and skips it.
 EARLIEST_SEASON = _CFG['start_season']
-YEARS_TO_PROCESS = list(range(EARLIEST_SEASON, datetime.date.today().year + 1))
+from run_config import as_of_year
+YEARS_TO_PROCESS = list(range(EARLIEST_SEASON, as_of_year() + 1))
 
 PICKS_PATTERN = _CFG['picks_pattern']
 MULTI_PICK_WEEKS = _CFG['multi_pick_weeks']
