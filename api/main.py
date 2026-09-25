@@ -375,7 +375,8 @@ def optimize(request: OptimizeRequest):
             # Highest-week cumulative file = the full season
             sim_df = pd.read_csv(max(files, key=wk))
 
-        sim_df = _apply_pick_source(sim_df, target_year, request.pick_source)
+        sim_df = _apply_pick_source(sim_df, target_year, request.pick_source,
+                                    contest=request.contest)
 
         # ── Splash contest: NFL weeks (strip Circa holiday-week rows) ──
         if request.contest and request.contest != "circa":
@@ -1000,10 +1001,26 @@ def _apply_pick_source(sim_df, year, pick_source, contest=None):
             return 0
     actual_df = pd.read_csv(max(fd, key=wk))
 
-    # Match on team + week; overwrite pick% where an actual exists
+    # Match on team + week; overwrite pick% where an actual exists.
     wcol = "Week_x" if "Week_x" in sim_df.columns else "Week"
-    if "Home Actual Pick %" not in actual_df.columns:
-        return sim_df
+    # Prefer the selected contest's Actual flavor columns; fall back to the
+    # legacy generic 'Home/Away Actual Pick %'. (splash_config's world-champ key
+    # differs from contest_config's, so normalize it before the lookup.)
+    from contest_config import flavor_cols as _flavor_cols
+    _CC_KEY = {"survivor_world_championship": "world_championship"}
+    _ah_col = _aa_col = None
+    if contest:
+        try:
+            _ch, _ca = _flavor_cols("Actual", _CC_KEY.get(
+                str(contest).strip().lower(), contest))
+            if _ch in actual_df.columns and _ca in actual_df.columns:
+                _ah_col, _aa_col = _ch, _ca
+        except Exception:
+            pass
+    if _ah_col is None:
+        if "Home Actual Pick %" not in actual_df.columns:
+            return sim_df
+        _ah_col, _aa_col = "Home Actual Pick %", "Away Actual Pick %"
 
     # Actual EV column names as written by the backfill / weekly_1
     actual_home_ev = next((c for c in ("Actual Home Team EV", "Home Actual EV")
@@ -1019,8 +1036,8 @@ def _apply_pick_source(sim_df, year, pick_source, contest=None):
         except (KeyError, ValueError, TypeError):
             continue
         key[k] = {
-            "hp": r.get("Home Actual Pick %"),
-            "ap": r.get("Away Actual Pick %"),
+            "hp": r.get(_ah_col),
+            "ap": r.get(_aa_col),
             "hev": r.get(actual_home_ev) if actual_home_ev else None,
             "aev": r.get(actual_away_ev) if actual_away_ev else None,
         }
