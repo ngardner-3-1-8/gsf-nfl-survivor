@@ -34,6 +34,10 @@ CONTEST = os.environ.get('SURVIVOR_CONTEST', 'circa').strip().lower()
 CONTESTS = {
     'circa': {
         'label': 'Circa Survivor',
+        # Short tag used in the per-contest, per-flavor pick-% column names
+        # ('Predicted Circa Home Pick %', 'Actual Circa Away Pick %', ...).
+        # Note this is NOT proj_prefix (which is '' for Circa's legacy columns).
+        'col_tag': 'Circa',
         'picks_pattern': 'circa-pick-history/{year}_survivor_picks.csv',
         # Per-contest historical training file for daily_2's pick-% projection
         # (game features + that contest's observed 'Pick %'). Built by
@@ -51,6 +55,7 @@ CONTESTS = {
     },
     'big_splash': {
         'label': 'Splash Big Splash',
+        'col_tag': 'Big Splash',
         'picks_pattern': 'big-splash-pick-history/{year}_big_splash_picks.csv',
         'historical_csv': 'contest-historical-data/BigSplash_historical_data.csv',
         'predicted_out': 'BigSplash_Predicted_pick_percent.csv',
@@ -61,6 +66,7 @@ CONTESTS = {
     },
     'world_championship': {
         'label': 'Splash Survivor World Championship',
+        'col_tag': 'World Championship',
         'picks_pattern': 'splash-world-championship-pick-history/{year}_world_championship_picks.csv',
         'historical_csv': 'contest-historical-data/WorldChampionship_historical_data.csv',
         'predicted_out': 'WorldChampionship_Predicted_pick_percent.csv',
@@ -70,6 +76,27 @@ CONTESTS = {
         'out_tag': 'world_championship',
     },
 }
+
+
+# The pick-% "flavors" recorded per contest so a later regression/MAE study can
+# compare which projection tracks the live crowd best. 'Predicted' is the
+# blended working value the live pipeline uses; 'Top Down' is daily_2's pure
+# market projection; 'Archetype' is daily_4's behavioral estimate; 'Actual' is
+# the realized live pick % (weekly_1 for Circa, Splash historical for Splash).
+PICK_FLAVORS = ("Predicted", "Actual", "Archetype", "Top Down")
+
+
+def flavor_col(flavor, side, contest=None):
+    """Column name for one pick-% flavor: '{flavor} {contest tag} {side} Pick %'
+    e.g. flavor_col('Predicted', 'Home', 'circa') -> 'Predicted Circa Home Pick %'.
+    `side` is 'Home' or 'Away'."""
+    cfg = get_contest(contest)
+    return f"{flavor} {cfg['col_tag']} {side} Pick %"
+
+
+def flavor_cols(flavor, contest=None):
+    """(home_col, away_col) names for a flavor/contest."""
+    return flavor_col(flavor, "Home", contest), flavor_col(flavor, "Away", contest)
 
 
 def get_contest(name=None):
