@@ -146,6 +146,18 @@ def backfill_week_file(year, week):
     df.loc[home_pcts.notna(), "Home Actual Pick %"] = home_pcts[home_pcts.notna()]
     df.loc[away_pcts.notna(), "Away Actual Pick %"] = away_pcts[away_pcts.notna()]
 
+    # Also write the new per-contest flavor names (matches weekly_1 Phase 1b) so
+    # historical Final_Data files carry 'Actual Circa Home/Away Pick %' too and
+    # the pick-% accuracy study sees a consistent actual column across all years.
+    from contest_config import flavor_cols as _flavor_cols
+    _ac_h, _ac_a = _flavor_cols("Actual", "circa")
+    if _ac_h not in df.columns:
+        df[_ac_h] = np.nan
+    if _ac_a not in df.columns:
+        df[_ac_a] = np.nan
+    df.loc[home_pcts.notna(), _ac_h] = home_pcts[home_pcts.notna()]
+    df.loc[away_pcts.notna(), _ac_a] = away_pcts[away_pcts.notna()]
+
     hcol = _first_present(df, HOME_PROB_COL_CANDIDATES)
     acol = _first_present(df, AWAY_PROB_COL_CANDIDATES)
     if hcol and acol:
