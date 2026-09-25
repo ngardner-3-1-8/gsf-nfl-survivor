@@ -72,4 +72,4 @@ jobs:
                   splash-world-championship-pick-history/*_world_championship_picks.csv \
                   contest-historical-data/BigSplash_historical_data*.csv \
                   contest-historical-data/WorldChampionship_historical_data*.csv
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Normalize Splash picks + rebuild per-contest historical data" && git push)
+          git diff --cached --quiet || (git commit -m "Normalize Splash picks + rebuild per-contest historical data" && git push)
