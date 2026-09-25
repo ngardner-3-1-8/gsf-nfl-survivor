@@ -167,16 +167,24 @@ def run_backtest(year, test_weeks=None):
                 actual[TEAM_IDX[t]] += 1
         actual = actual / max(1, len(actual_picks))
 
-        # ── Model B: your existing top-down prediction (from sim file wk W) ──
+        # ── Model B: the pipeline's headline prediction (from sim file wk W) ──
+        # Sourced from the per-contest 'Predicted Circa' blended flavor, falling
+        # back to the legacy 'Home/Away Pick %' for sim files that predate the
+        # flavor columns. The pure 'Top Down Circa …' and 'Archetype Circa …'
+        # columns are also present now if you want to score those flavors here.
+        _hb = ("Predicted Circa Home Pick %"
+               if "Predicted Circa Home Pick %" in sim.columns else "Home Pick %")
+        _ab = ("Predicted Circa Away Pick %"
+               if "Predicted Circa Away Pick %" in sim.columns else "Away Pick %")
         model_b = np.zeros(32)
         week_col = "Week_x" if "Week_x" in sim.columns else "Week"
         for _, row in sim[sim[week_col] == W].iterrows():
             h = FULL_TO_ABBR.get(row.get("Home Team"), norm_abbr(row.get("Home Team")))
             a = FULL_TO_ABBR.get(row.get("Away Team"), norm_abbr(row.get("Away Team")))
             if h in TEAM_IDX:
-                model_b[TEAM_IDX[h]] = float(row.get("Home Pick %", 0) or 0)
+                model_b[TEAM_IDX[h]] = float(row.get(_hb, 0) or 0)
             if a in TEAM_IDX:
-                model_b[TEAM_IDX[a]] = float(row.get("Away Pick %", 0) or 0)
+                model_b[TEAM_IDX[a]] = float(row.get(_ab, 0) or 0)
 
         # Per-team rows for teams playing this week
         playing = feats[W]["plays"].astype(bool)
