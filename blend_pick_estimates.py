@@ -48,7 +48,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from contest_config import CONTESTS, tagged
+from contest_config import CONTESTS, tagged, flavor_cols
 from team_codes import canonical_pick_code, FULLNAME_TO_ABBR
 
 BLEND_MODEL_PATH = os.path.join("entry-analytics", "blend_model.json")
@@ -155,9 +155,24 @@ def blend_all_contests(target_year, upcoming_week, sim_path=None, verbose=True):
         # output columns with blended values. (Circa's Topdown columns were
         # already created by the upcoming-week entry_analytics step; create
         # them here too if that step didn't run.)
+        # Preserve the pure top-down projection once, before we overwrite the
+        # output columns with blended values. (Circa's Topdown columns were
+        # already created by the upcoming-week entry_analytics step; create
+        # them here too if that step didn't run.)
         for out_col, td_col in ((home_out, home_td), (away_out, away_td)):
             if td_col not in sim.columns:
                 sim[td_col] = sim[out_col]
+
+        # Per-contest, per-flavor comparison columns for the pick-% accuracy
+        # study. Predicted == the blended working value; Top Down == daily_2's
+        # pure market projection; Archetype == daily_4's behavioral estimate.
+        # Recorded for every remaining week, whether or not it gets re-blended.
+        pred_home, pred_away = flavor_cols("Predicted", contest_key)
+        tdf_home, tdf_away = flavor_cols("Top Down", contest_key)
+        arch_home, arch_away = flavor_cols("Archetype", contest_key)
+        for _c in (pred_home, pred_away, tdf_home, tdf_away, arch_home, arch_away):
+            if _c not in sim.columns:
+                sim[_c] = np.nan
 
         d4_dir = _daily4_dir(contest_key, target_year)
         weeks = sorted(int(w) for w in sim[week_col].dropna().unique()
@@ -165,10 +180,23 @@ def blend_all_contests(target_year, upcoming_week, sim_path=None, verbose=True):
         n_blended = 0
 
         for week in weeks:
-            # Circa: keep the live-crowd upcoming-week blend already applied.
-            if not blend_from_upcoming and week == upcoming_week:
+            wk_mask = sim[week_col] == week
+            wk = sim.loc[wk_mask]
+            if wk.empty:
                 continue
 
+            # Record Top Down (pure projection) and the current Predicted value
+            # for every row this week. Predicted == the working column: Circa's
+            # upcoming week already holds the live-crowd blend; every other week
+            # holds pure top-down until it is re-blended just below.
+            sim.loc[wk_mask, tdf_home] = pd.to_numeric(sim.loc[wk_mask, home_td], errors="coerce")
+            sim.loc[wk_mask, tdf_away] = pd.to_numeric(sim.loc[wk_mask, away_td], errors="coerce")
+            sim.loc[wk_mask, pred_home] = pd.to_numeric(sim.loc[wk_mask, home_out], errors="coerce")
+            sim.loc[wk_mask, pred_away] = pd.to_numeric(sim.loc[wk_mask, away_out], errors="coerce")
+
+            # Behavioral (archetype) estimate for this week, if daily_4 produced
+            # one. Used to record the Archetype flavor and (where allowed) to
+            # re-blend the working / Predicted columns.
             d4_path = os.path.join(d4_dir, DAILY4_FILE.format(week=week))
             if not os.path.exists(d4_path):
                 continue  # no behavioral estimate yet -> leave pure top-down
@@ -177,11 +205,6 @@ def blend_all_contests(target_year, upcoming_week, sim_path=None, verbose=True):
                 continue
             beh_map = {canonical_pick_code(t): p for t, p in
                        zip(beh["Team"], beh["Estimated_Pick_Pct"])}
-
-            wk_mask = sim[week_col] == week
-            wk = sim.loc[wk_mask]
-            if wk.empty:
-                continue
 
             # Flatten this week's games into one row per playing team, carrying
             # each team's own top-down value and its row index + side so we can
@@ -196,12 +219,26 @@ def blend_all_contests(target_year, upcoming_week, sim_path=None, verbose=True):
             rec_df["topdown"] = pd.to_numeric(rec_df["topdown"], errors="coerce").fillna(0.0)
             rec_df["behavioral"] = rec_df["abbr"].map(beh_map)
 
+            # Record the Archetype (behavioral) flavor wherever daily_4 placed a
+            # team, regardless of whether this week is re-blended below.
+            for _, r in rec_df.iterrows():
+                if pd.notna(r["behavioral"]):
+                    col = arch_home if r["side"] == "home" else arch_away
+                    sim.at[r["idx"], col] = float(r["behavioral"])
+
             # If daily_4 has no behavioral estimate for ANY team this week, the
             # blend has nothing to add -> keep pure top-down for the week.
             if rec_df["behavioral"].notna().sum() == 0:
                 continue
-            rec_df["behavioral"] = rec_df["behavioral"].fillna(0.0)
 
+            # Circa keeps its live-crowd upcoming-week blend already applied, so
+            # re-blend only weeks strictly after the upcoming one; Splash
+            # contests re-blend every remaining week. (Flavors above are still
+            # recorded for the skipped upcoming week.)
+            if not blend_from_upcoming and week == upcoming_week:
+                continue
+
+            rec_df["behavioral"] = rec_df["behavioral"].fillna(0.0)
             alive = wk[pool_col].iloc[0] if pool_col in wk.columns else None
             blended = _ridge_blend(rec_df["behavioral"].to_numpy(dtype=float),
                                    rec_df["topdown"].to_numpy(dtype=float),
@@ -209,8 +246,10 @@ def blend_all_contests(target_year, upcoming_week, sim_path=None, verbose=True):
             rec_df["blended"] = blended
 
             for _, r in rec_df.iterrows():
-                col = home_out if r["side"] == "home" else away_out
-                sim.at[r["idx"], col] = r["blended"]
+                out_c = home_out if r["side"] == "home" else away_out
+                pred_c = pred_home if r["side"] == "home" else pred_away
+                sim.at[r["idx"], out_c] = r["blended"]
+                sim.at[r["idx"], pred_c] = r["blended"]
             n_blended += 1
 
         result[contest_key] = n_blended
@@ -218,7 +257,8 @@ def blend_all_contests(target_year, upcoming_week, sim_path=None, verbose=True):
             span = "all remaining weeks" if blend_from_upcoming else "weeks after the upcoming one"
             print(f"🔀 {CONTESTS[contest_key]['label']}: blended top-down × behavioral "
                   f"for {n_blended} week(s) ({span}); pure projection kept in "
-                  f"'{home_td}' / '{away_td}'.")
+                  f"'{home_td}' / '{away_td}'; flavors recorded in "
+                  f"'{pred_home}' / '{tdf_home}' / '{arch_home}'.")
 
     sim.to_csv(sim_path, index=False)
     if verbose:
