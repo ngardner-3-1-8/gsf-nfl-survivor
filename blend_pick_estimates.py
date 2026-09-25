@@ -125,11 +125,13 @@ def blend_all_contests(target_year, upcoming_week, sim_path=None, verbose=True):
     every remaining week, writing the result into the sim file's per-contest
     pick-% columns. Returns a dict of {contest_key: n_weeks_blended}."""
     model = _load_blend_model()
-    if model is None:
-        if verbose:
-            print(f"ℹ️  No {BLEND_MODEL_PATH}; skipping the top-down/behavioral "
-                  f"blend (pick % stays pure top-down).")
-        return {}
+    if model is None and verbose:
+        # No model → we still record the Predicted / Top Down / Archetype flavor
+        # columns (Predicted stays pure top-down), and only skip the ridge
+        # re-blend. This keeps the accuracy-study columns populated even in a
+        # fresh checkout or a contest with no fitted blend model.
+        print(f"ℹ️  No {BLEND_MODEL_PATH}; recording flavor columns but skipping "
+              f"the ridge re-blend (Predicted stays pure top-down).")
 
     sim_path = sim_path or SIM_FILE_PATTERN.format(week=upcoming_week, year=target_year)
     if not os.path.exists(sim_path):
@@ -225,6 +227,11 @@ def blend_all_contests(target_year, upcoming_week, sim_path=None, verbose=True):
                 if pd.notna(r["behavioral"]):
                     col = arch_home if r["side"] == "home" else arch_away
                     sim.at[r["idx"], col] = float(r["behavioral"])
+
+            # No fitted blend model → flavors are recorded above; skip the ridge
+            # re-blend (Predicted keeps the pure top-down value already written).
+            if model is None:
+                continue
 
             # If daily_4 has no behavioral estimate for ANY team this week, the
             # blend has nothing to add -> keep pure top-down for the week.
