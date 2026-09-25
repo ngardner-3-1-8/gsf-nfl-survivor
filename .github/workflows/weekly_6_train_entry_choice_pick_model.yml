@@ -85,4 +85,4 @@ jobs:
           git config --global user.email 'action@github.com'
           git add models/entry_pick_choice_model*.pkl \
                   models/entry_pick_choice_model_features*.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Retrain entry pick choice model (all contests)" && git push)
+          git diff --cached --quiet || (git commit -m "Retrain entry pick choice model (all contests)" && git push)
