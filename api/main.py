@@ -103,12 +103,17 @@ def root():
 # (home_pick_col, away_pick_col, ev_tag, projection_prefix). The projection
 # prefix is what daily_2 uses to namespace a contest's own pool size and team
 # availability columns ('' = Circa's un-prefixed canonical columns).
+# Repointed to the per-contest 'Predicted {tag}' pick-% columns (the blended
+# working value daily_5 writes). _apply_contest_to_schedule copies the selected
+# contest's Predicted column onto the canonical 'Home/Away Pick %' the schedule
+# table reads; if a file predates these columns (older historical files) the
+# copy is skipped and the file's existing values stand.
 _CONTEST_SCHEDULE = {
-    "circa": ("Home Pick %", "Away Pick %", "", ""),
-    "big_splash": ("Home Big Splash Pick %", "Away Big Splash Pick %",
+    "circa": ("Predicted Circa Home Pick %", "Predicted Circa Away Pick %", "", ""),
+    "big_splash": ("Predicted Big Splash Home Pick %", "Predicted Big Splash Away Pick %",
                    "BigSplash", "Big Splash"),
-    "world_championship": ("Home World Championship Pick %",
-                           "Away World Championship Pick %",
+    "world_championship": ("Predicted World Championship Home Pick %",
+                           "Predicted World Championship Away Pick %",
                            "WorldChampionship", "World Championship"),
 }
 
@@ -941,8 +946,8 @@ def _apply_splash_pick_and_availability(sim_df, contest_key):
     proj_prefix, ev_tag = _SPLASH_PROJECTION_COLS.get(contest_key, (None, None))
 
     # 1. Pick % → per-contest projected pick% if present, else shared Splash.
-    home_proj = f"Home {proj_prefix} Pick %" if proj_prefix else None
-    away_proj = f"Away {proj_prefix} Pick %" if proj_prefix else None
+    home_proj = f"Predicted {proj_prefix} Home Pick %" if proj_prefix else None
+    away_proj = f"Predicted {proj_prefix} Away Pick %" if proj_prefix else None
     if home_proj and home_proj in sim_df.columns:
         sim_df["Home Pick %"] = sim_df[home_proj].fillna(
             sim_df.get("Home Splash Pick %", sim_df.get("Home Pick %")))
