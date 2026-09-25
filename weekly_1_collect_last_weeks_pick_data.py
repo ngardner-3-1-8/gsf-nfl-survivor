@@ -2769,6 +2769,47 @@ def loop_through_historical_final_data(date_str):
         else:
             print(f"   ⚠️  Historical data file not found: {hist_file}")
 
+        # ── 3b. Splash actual pick % from each Splash contest's historical file ─
+        # Splash contests (2026+) record their observed pick % in
+        # {Base}_historical_data_{year}.csv (same shape as Circa's — a 'Pick %'
+        # per team/week). Map it onto the schedule's Home/Away as the
+        # per-contest 'Actual {tag} Home/Away Pick %' flavor. No-op for a year a
+        # contest didn't run (file or week rows absent), so pre-2026 replays and
+        # Circa-only runs are unaffected.
+        from contest_config import CONTESTS as _ALL_CONTESTS, flavor_cols as _flavor_cols
+        _splash_hist = {
+            'big_splash': 'contest-historical-data/BigSplash_historical_data_{year}.csv',
+            'world_championship': 'contest-historical-data/WorldChampionship_historical_data_{year}.csv',
+        }
+        for _ck, _pat in _splash_hist.items():
+            _hf = _pat.format(year=target_year)
+            if not os.path.exists(_hf):
+                continue
+            _hdf = pd.read_csv(_hf)
+            _hw = _hdf[(_hdf["Year"] == target_year) &
+                       (_hdf["Week"].astype(int) == last_played_week)]
+            if _hw.empty:
+                continue
+            _pick_map = {}
+            for _, _r in _hw.iterrows():
+                _t = str(_r.get("Team", "")).strip()
+                _p = _r.get("Pick %")
+                if _t and pd.notna(_p):
+                    _pick_map[_t] = float(_p)
+            if not _pick_map:
+                continue
+            _act_h, _act_a = _flavor_cols("Actual", _ck)
+            _away = actual_data["Away Team"].apply(
+                lambda n: _pick_map.get(FULL_TO_ABBR.get(n, n)))
+            _home = actual_data["Home Team"].apply(
+                lambda n: _pick_map.get(FULL_TO_ABBR.get(n, n)))
+            actual_data.loc[_away.notna(), _act_a] = _away[_away.notna()]
+            actual_data.loc[_home.notna(), _act_h] = _home[_home.notna()]
+            print(f"   ✅ {_ALL_CONTESTS[_ck]['label']}: actual pick% mapped "
+                  f"({int(_away.notna().sum())} away, {int(_home.notna().sum())} home)")
+
+        # ── 4. Calculate actual EV using real pick% and real sportsbook odds ───
+
         # ── 4. Calculate actual EV using real pick% and real sportsbook odds ───
         # Group by Circa Week to keep holiday games (Thanksgiving, Christmas)
         # separate from regular week games that share the same numeric Week_x.
