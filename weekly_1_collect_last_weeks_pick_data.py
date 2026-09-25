@@ -2746,6 +2746,17 @@ def loop_through_historical_final_data(date_str):
                     actual_data.loc[home_pcts.notna(), "Home Actual Pick %"] = \
                         home_pcts[home_pcts.notna()]
 
+                    # Also record the realized Circa pick % under the new
+                    # per-contest, per-flavor names used by the pick-% accuracy
+                    # study ('Actual Circa Home/Away Pick %'). Kept alongside the
+                    # legacy 'Home/Away Actual Pick %' during the migration.
+                    from contest_config import flavor_cols as _flavor_cols
+                    _act_home, _act_away = _flavor_cols("Actual", "circa")
+                    actual_data.loc[away_pcts.notna(), _act_away] = \
+                        away_pcts[away_pcts.notna()]
+                    actual_data.loc[home_pcts.notna(), _act_home] = \
+                        home_pcts[home_pcts.notna()]
+
                     print(
                         f"   ✅ Replaced pick%: "
                         f"{away_pcts.notna().sum()} away, "
