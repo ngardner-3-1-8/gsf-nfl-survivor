@@ -973,12 +973,15 @@ def _apply_splash_pick_and_availability(sim_df, contest_key):
     return sim_df
 
 
-def _apply_pick_source(sim_df, year, pick_source):
+def _apply_pick_source(sim_df, year, pick_source, contest=None):
     """
     pick_source: "model" (default) uses the blended model pick% already in the
     sim file; "actual" overwrites it with the realized pick% from the season
     final-data file (only meaningful for completed weeks — future weeks have no
     actual, so they fall back to the model value).
+
+    contest: when given, prefer that contest's 'Actual {tag} Home/Away Pick %'
+    flavor columns; falls back to the legacy generic 'Home/Away Actual Pick %'.
     """
     if pick_source != "actual":
         return sim_df
