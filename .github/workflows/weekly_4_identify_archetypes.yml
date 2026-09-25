@@ -75,4 +75,4 @@ jobs:
                   big-splash-pick-history/*_with_archetypes_week_*.csv \
                   splash-world-championship-pick-history/*_with_archetypes_week_*.csv \
                   entry_archetypes_last_updated.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update entry archetypes (all contests)" && git push)
+          git diff --cached --quiet || (git commit -m "Auto-update entry archetypes (all contests)" && git push)
