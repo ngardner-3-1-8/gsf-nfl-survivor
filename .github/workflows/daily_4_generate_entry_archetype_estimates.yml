@@ -69,4 +69,4 @@ jobs:
           git add entry_archetype_pick_estimates/ \
                   entry_archetype_pick_estimates_big_splash/ \
                   entry_archetype_pick_estimates_world_championship/
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update entry archetype pick estimates (all contests)" && git push)
+          git diff --cached --quiet || (git commit -m "Update entry archetype pick estimates (all contests)" && git push)
