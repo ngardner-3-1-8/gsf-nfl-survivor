@@ -1,0 +1,39 @@
+name: Verify Flavor Columns (manual)
+
+# Read-only sanity check: loads a season's latest Season Final_Data file and
+# asserts the per-contest pick-% flavor columns (Predicted / Actual / Archetype
+# / Top Down) x (Circa / Big Splash / World Championship) x (Home / Away) are
+# present and in range. Fails the run if a required column is missing, so it can
+# be used as a post-migration gate. Commits nothing.
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: 'Season year to verify (e.g. 2026). Uses that year''s latest Season Final_Data file.'
+        required: true
+        default: '2026'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy
+
+      - name: Verify flavor columns
+        run: |
+          python verify_flavor_columns.py "${{ inputs.year }}"
