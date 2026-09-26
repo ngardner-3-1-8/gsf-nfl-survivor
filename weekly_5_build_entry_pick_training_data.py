@@ -611,6 +611,16 @@ def main():
             all_years.append(result)
 
     if not all_years:
+        # During a historical replay, an empty result is expected at an early
+        # as-of date -- e.g. a Week-1 replay, where the as-of cutoff leaves no
+        # completed weeks to build training rows from. Skip cleanly so the
+        # pipeline continues to the daily stages instead of aborting. On a LIVE
+        # run, empty means a real path/data problem, so keep raising there.
+        from run_config import is_replay as _is_replay
+        if _is_replay():
+            print("ℹ️  No training rows for this as-of date (e.g. a Week-1 replay "
+                  "with no completed weeks yet); nothing to build, skipping.")
+            return
         raise ValueError("No training rows produced for any year -- check "
                           "PICKS_PATTERN / FINAL_DATA_PATTERN paths above.")
 
