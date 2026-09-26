@@ -399,7 +399,14 @@ def main():
                   f"{_asof.upcoming_week} ({_before} → {len(picks_long)} picks).")
     weeks_with_picks = sorted(picks_long['Week'].unique())
     if not weeks_with_picks:
-        raise ValueError(f"No picks found in {PICKS_PATH}.")
+        # No completed weeks to score as of the upcoming week -- e.g. a Week-1
+        # replay date, where the as-of cutoff removes every pick. There's nothing
+        # to archetype yet, so skip cleanly (exit 0) instead of aborting the
+        # pipeline; the daily stages for this date still run. (A genuinely
+        # missing/empty picks file lands here too and is likewise a no-op.)
+        print(f"ℹ️  {_CFG['label']}: no completed weeks to score as of the "
+              f"upcoming week for {YEAR} ({PICKS_PATH}); nothing to do, skipping.")
+        return
     last_week = int(max(weeks_with_picks))
 
     picks_long = attach_available_pool(picks_long)
