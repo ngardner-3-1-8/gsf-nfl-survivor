@@ -310,7 +310,19 @@ def permutation_importance(model, val_df, n_repeats=5, random_state=42):
 # 6. Orchestration
 # --------------------------------------------------------------------
 def main():
-    df = load_training_data()
+    try:
+        df = load_training_data()
+    except FileNotFoundError as _e:
+        # weekly_5 produced no training data for this as-of date (e.g. a Week-1
+        # replay with no completed weeks), so the parquet was never written.
+        # During a replay that's expected -- skip model training cleanly instead
+        # of aborting. On a LIVE run a missing file is a real problem, so re-raise.
+        from run_config import is_replay as _is_replay
+        if _is_replay():
+            print(f"ℹ️  No training data for this as-of date "
+                  f"(weekly_5 skipped); skipping model training.")
+            return
+        raise
 
     missing_feature_cols = [c for c in ALL_FEATURES + GROUP_COLS + [LABEL_COL] if c not in df.columns]
     if missing_feature_cols:
