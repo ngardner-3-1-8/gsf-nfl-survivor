@@ -187,7 +187,19 @@ def loop_through_historical_final_data(date_str):
     print(f"Num Weeks to Keep: {NUM_WEEKS_TO_KEEP}") 
     
     print(f"Final NUM_WEEKS_TO_KEEP: {NUM_WEEKS_TO_KEEP}")
-    
+
+    # weekly_1 collects the PRIOR (completed) week's results. Before Week 1 has
+    # been played there is no completed week to collect and survivorgrid returns
+    # nothing (the scrape loop range(1, starting_week) is empty), which would
+    # otherwise crash on an empty DataFrame at df['Team']. Skip this date
+    # cleanly. If you see this on a LIVE run partway through the season, it means
+    # the as-of date resolved to preseason -- check run_config.HISTORICAL_DATES
+    # is empty (a leftover replay date makes every script run for that date).
+    if starting_week <= 1:
+        print(f"ℹ️  weekly_1: upcoming week is {starting_week} for {target_year} "
+              f"— no completed week to collect yet; nothing to do, skipping.")
+        return
+
     def scrape_data(url):
         response = requests.get(url)
         soup = BeautifulSoup(response.content, "lxml")
