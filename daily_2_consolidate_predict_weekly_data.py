@@ -1760,7 +1760,7 @@ def loop_through_simulations(date_str):
     
     
     # --- CONFIGURATION ---
-    SIMULATIONS = 50 #Usually set to 50000
+    SIMULATIONS = 50000 #Usually set to 50000
     HISTORY_DAYS = 840
     CURRENT_SEASON = target_year_load
     DECAY_RATE = 0.00475
