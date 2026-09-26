@@ -160,7 +160,7 @@ HISTORICAL_DATES = [
 #        "12/31/2025", #Leading up to Week 20
 
 #        "09/08/2026", #Leading up to Week 1
-#		"09/15/2026", #Leading up to Week 2
+#		 "09/15/2026", #Leading up to Week 2
 #        "09/22/2026", #Leading up to Week 3
 ]
 # ─────────────────────────────────────────────────────────────────────────────
