@@ -3419,11 +3419,76 @@ def loop_through_simulations(date_str):
     )
 
     # --- NEW: Filter to only simulate the upcoming week's games ---
-    weekly_games_df = collect_schedule_travel_ranking_data_df[
-        collect_schedule_travel_ranking_data_df['Week'] >= upcoming_week
-    ].copy()
-    for index, row in weekly_games_df.iterrows():
-        try:
+        weekly_games_df = collect_schedule_travel_ranking_data_df[
+            collect_schedule_travel_ranking_data_df['Week'] >= upcoming_week
+        ].copy()
+
+        # ── Historical reuse of per-game sims ────────────────────────────────
+        # The per-game Monte Carlo (simulate_matchup x SIMULATIONS) is by far the
+        # slowest step. During a historical replay we don't need to re-run it:
+        # this week's committed sim file already holds full-fidelity Sim_* win
+        # probabilities from the original run. Reuse them (matched by the raw
+        # (Week, Home Team, Away Team) matchup, so holiday-week renumbering can't
+        # misalign), and only fall back to a live simulation for any matchup the
+        # cache doesn't cover. Enabled ONLY when run_config.is_replay() is true
+        # AND the cached file exists; live runs always re-simulate.
+        from run_config import is_replay as _is_replay
+        _reuse_cols = [
+            'Wind', 'Temperature', 'Precipitation', 'Sim_Weather_Source', 'Dome',
+            'Away_Starting_QB', 'Home_Starting_QB',
+            'Sim_Spread_Mean', 'Sim_Spread_Median', 'Sim_Spread_Std',
+            'Sim_Spread_Variance', 'Sim_Spread_Variance_Label',
+            'Sim_Spread_25th', 'Sim_Spread_75th',
+            'Sim_Total_Mean', 'Sim_Total_Median', 'Sim_Total_Std',
+            'Sim_Total_10th_Floor', 'Sim_Total_90th_Ceiling',
+            'Sim_Home_Win_Pct', 'Sim_Away_Win_Pct',
+            'Sim_Prob_Land_3', 'Sim_Prob_Land_7',
+            'Sim_Home_Cover_Prob', 'Sim_Away_Cover_Prob',
+            'Sim_Prob_Over', 'Sim_Prob_Under',
+        ]
+        _reuse_sim_lookup = {}
+        _reuse_sims = False
+        _cache_path = (f"nfl-power-ratings/final_sim_results_with_variance_week_"
+                       f"{upcoming_week}_{target_year}.csv")
+        if _is_replay() and os.path.exists(_cache_path):
+            try:
+                _cache_df = pd.read_csv(_cache_path, low_memory=False)
+                if {'Week', 'Home Team', 'Away Team', 'Sim_Home_Win_Pct'}.issubset(_cache_df.columns):
+                    _have = [c for c in _reuse_cols if c in _cache_df.columns]
+                    for _, _cr in _cache_df.iterrows():
+                        try:
+                            _k = (int(_cr['Week']), str(_cr['Home Team']).strip(),
+                                  str(_cr['Away Team']).strip())
+                        except (ValueError, TypeError):
+                            continue
+                        _reuse_sim_lookup[_k] = {c: _cr[c] for c in _have}
+                    _reuse_sims = True
+                    print(f"♻️  Reusing cached per-game sims from {_cache_path} "
+                          f"({len(_reuse_sim_lookup)} matchups); re-simulating only "
+                          f"matchups not present in the cache.")
+                else:
+                    print(f"⚠️  {_cache_path} has no Sim_* columns — running full sims.")
+            except Exception as _e:
+                print(f"⚠️  Could not read sim cache {_cache_path} ({_e}) — running full sims.")
+
+        for index, row in weekly_games_df.iterrows():
+####        for index, row in collect_schedule_travel_ranking_data_df.iterrows():
+            # Reuse this matchup's cached sim if available (historical replay);
+            # otherwise fall through to the live simulation below.
+            if _reuse_sims:
+                try:
+                    _k = (int(row['Week']), str(row['Home Team']).strip(),
+                          str(row['Away Team']).strip())
+                except (ValueError, TypeError, KeyError):
+                    _k = None
+                _cv = _reuse_sim_lookup.get(_k) if _k is not None else None
+                if _cv is not None:
+                    _res = {'Matchup_ID': index}
+                    _res.update(_cv)
+                    _res.setdefault('Week', row.get('Week'))
+                    simulation_results.append(_res)
+                    continue
+            try:
             # Extract Row Data
             away_full = row['Away Team']
             home_full = row['Home Team']
@@ -6238,7 +6303,34 @@ def loop_through_simulations(date_str):
         ###################################################################################################
     
         # --- OPTIONAL: Run Monte Carlo after predictions ---
-        monte_summary = run_monte_carlo_simulation(nfl_schedule_df, num_trials=1)
+        # Season survivor MC is charting-only (Avg Survivors / Avg Eliminations);
+        # the EV-relevant Expected Survivors are computed directly above. Keep it
+        # at 1 trial during a historical replay so the backfill stays fast. The
+        # else branch is the LIVE trial count -- restore it to your usual value
+        # (e.g. 1000) when you turn full sims back on for live runs.
+        from run_config import is_replay as _is_replay
+        monte_summary = None
+        _season_cache = (f"nfl-power-ratings/final_sim_results_with_variance_week_"
+                         f"{upcoming_week}_{target_year}.csv")
+        if _is_replay():
+            if os.path.exists(_season_cache):
+                try:
+                    _sc = pd.read_csv(_season_cache, low_memory=False)
+                    if {'Week', 'Avg Survivors', 'Avg Eliminations'}.issubset(_sc.columns):
+                        monte_summary = (_sc[['Week', 'Avg Survivors', 'Avg Eliminations']]
+                                         .dropna(subset=['Week'])
+                                         .drop_duplicates('Week')
+                                         .copy())
+                        print(f"♻️  Reusing cached season survivor summary from "
+                              f"{_season_cache}; skipping the season Monte Carlo.")
+                except Exception as _e:
+                    print(f"⚠️  Could not read season cache {_season_cache} ({_e}).")
+            if monte_summary is None:
+                # Replay but no cached summary -> one cheap trial (keeps it fast
+                # and still produces the charting columns for the merge below).
+                monte_summary = run_monte_carlo_simulation(nfl_schedule_df, num_trials=1)
+        else:
+            monte_summary = run_monte_carlo_simulation(nfl_schedule_df, num_trials=1000)
         
         # Merge back into main dataframe for charting
         nfl_schedule_df = nfl_schedule_df.merge(
