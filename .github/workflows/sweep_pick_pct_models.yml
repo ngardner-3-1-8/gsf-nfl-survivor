@@ -1,0 +1,81 @@
+name: Sweep Pick % Feature Counts
+
+# Manual study run. Trains the pick-% model at several feature counts
+# (top_n = 9, 15, 30, 50, all) for every contest, logs the validation metrics,
+# then prints and commits a ranked comparison so you can choose PRIMARY_TOP_N
+# empirically. This does NOT change the deployed model — the sweep only logs
+# extra rows; the live model is always PRIMARY_TOP_N (see daily_2).
+#
+# Tip: set `as_of_date` to a historical Wednesday that already has a cached
+# sim file — the run then replays and REUSES the cached Monte Carlo sims, so
+# it finishes fast instead of re-simulating. Leave it blank to sweep the
+# current live week (slower: full sims run).
+
+on:
+  workflow_dispatch:
+    inputs:
+      as_of_date:
+        description: 'Replay date YYYY-MM-DD (blank = live current week)'
+        required: false
+        default: ''
+      min_runs:
+        description: 'Ignore configs logged fewer than this many times'
+        required: false
+        default: '1'
+
+permissions:
+  contents: write
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pandas numpy requests beautifulsoup4 scikit-learn tqdm ortools selenium undetected-chromedriver nflreadpy pytz polars lxml
+
+      - name: Install Chrome (for Selenium)
+        uses: browser-actions/setup-chrome@latest
+
+      - name: Run Daily 2 with the feature-count sweep enabled
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          SWEEP_PICK_PCT_MODELS: '1'
+          PIPELINE_AS_OF_DATE: ${{ github.event.inputs.as_of_date }}
+        run: |
+          echo "as_of_date='${PIPELINE_AS_OF_DATE}' (blank = live)"
+          python daily_2_consolidate_predict_weekly_data.py
+
+      - name: Analyze the sweep and write the ranked report
+        run: |
+          mkdir -p logs
+          python analyze_pick_pct_sweep.py \
+            --metrics logs/pick_pct_model_metrics.csv \
+            --min-runs "${{ github.event.inputs.min_runs }}" \
+            | tee logs/pick_pct_sweep_report.txt
+
+      - name: Commit the metrics and report
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          # Stage ONLY the study outputs — not the projection CSVs a study run
+          # would otherwise overwrite.
+          git add logs/pick_pct_model_metrics.csv logs/pick_pct_sweep_report.txt 2>/dev/null || true
+          # Staged-only guard: commit only if something is actually staged, so
+          # an unchanged run doesn't fail the step.
+          git diff --cached --quiet || git commit -m "Pick % feature-count sweep results
+
+          Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+          Claude-Session: https://claude.ai/code/session_01UP4LjqY5SmZynhBYgsPMyG"
+          git push || echo "Nothing to push"
