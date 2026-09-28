@@ -58,20 +58,22 @@ jobs:
           python daily_2_consolidate_predict_weekly_data.py
 
       - name: Analyze the sweep and write the ranked report
+        # The report goes to the repo ROOT (not logs/, which is gitignored) so
+        # it can be committed and read in the GitHub web UI. It's also printed
+        # to the Actions log via tee.
         run: |
-          mkdir -p logs
           python analyze_pick_pct_sweep.py \
             --metrics logs/pick_pct_model_metrics.csv \
             --min-runs "${{ github.event.inputs.min_runs }}" \
-            | tee logs/pick_pct_sweep_report.txt
+            | tee pick_pct_sweep_report.txt
 
-      - name: Commit the metrics and report
+      - name: Commit the report
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          # Stage ONLY the study outputs — not the projection CSVs a study run
-          # would otherwise overwrite.
-          git add logs/pick_pct_model_metrics.csv logs/pick_pct_sweep_report.txt 2>/dev/null || true
+          # Only the committed report — logs/ (the raw metrics CSV) is
+          # gitignored by design and regenerated each run.
+          git add pick_pct_sweep_report.txt 2>/dev/null || true
           # Staged-only guard: commit only if something is actually staged, so
           # an unchanged run doesn't fail the step.
           git diff --cached --quiet || git commit -m "Pick % feature-count sweep results
