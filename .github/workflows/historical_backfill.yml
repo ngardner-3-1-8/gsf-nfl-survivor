@@ -25,6 +25,11 @@ on:
         type: boolean
         required: false
         default: false
+      sweep:
+        description: 'Log the pick-% feature-count sweep (9/15/30/50/all) for every week, then print a ranked report.'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -60,6 +65,10 @@ jobs:
       - name: Run historical pipeline
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          # When 'sweep' is on, daily_2 also trains the pick-% model at
+          # top_n=9/15/30/50/all per contest and logs the metrics (does NOT
+          # change the deployed model). Empty string = off.
+          SWEEP_PICK_PCT_MODELS: ${{ inputs.sweep && '1' || '' }}
         run: |
           ARGS=""
           if [ -n "${{ inputs.dates }}" ]; then ARGS="$ARGS --dates ${{ inputs.dates }}"; fi
@@ -68,6 +77,18 @@ jobs:
           if [ "${{ inputs.keep_going }}" = "true" ]; then ARGS="$ARGS --keep-going"; fi
           echo "run_pipeline.py $ARGS"
           python run_pipeline.py $ARGS
+
+      - name: Analyze the pick-% sweep
+        if: ${{ inputs.sweep }}
+        # logs/pick_pct_model_metrics.csv accumulated across every date in this
+        # single job (logs/ is gitignored, so it's never committed -- the
+        # analysis runs HERE while the file is still present in the runner).
+        # The ranked report is written to the repo ROOT so the commit step
+        # below (git add -A) picks it up and you can read it in the web UI.
+        run: |
+          python analyze_pick_pct_sweep.py \
+            --metrics logs/pick_pct_model_metrics.csv \
+            | tee pick_pct_sweep_report.txt
 
       - name: Commit and Push Outputs
         # Stage everything the run produced (respecting .gitignore, which
