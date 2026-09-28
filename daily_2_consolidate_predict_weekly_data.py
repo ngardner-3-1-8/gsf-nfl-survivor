@@ -3486,6 +3486,14 @@ def loop_through_simulations(date_str):
                 _res = {'Matchup_ID': index}
                 _res.update(_cv)
                 _res.setdefault('Week', row.get('Week'))
+				# Carry Date + Matchup like the full-sim path so the merge
+				# that follows still creates the 'Date_x' column the
+				# downstream projection relies on (new_df['Date_x']).
+                try:
+                    _res['Date'] = pd.to_datetime(row['Date'])
+                except Exception:
+                    _res['Date'] = row.get('Date')
+                _res['Matchup'] = f"{row.get('Away Team')} @ {row.get('Home Team')}"
                 simulation_results.append(_res)
                 continue
         try:
