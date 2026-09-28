@@ -180,7 +180,7 @@ DIM_COLS = ['win_pct_pctile', 'ev_pctile', 'fv_pctile', 'unpopularity_pctile']
 def current_season_year():
     candidates = []
     from run_config import as_of_year
-    for year in range(EARLIEST_SEASON, as_of_year() + 2):
+    for year in range(EARLIEST_SEASON, as_of_year() + 1):
         if os.path.exists(PICKS_PATTERN.format(year=year)):
             candidates.append(year)
     if not candidates:
@@ -753,6 +753,16 @@ def run_pick_estimates(year, model, all_features, cat_lookup):
 
 
 def main():
+    from run_config import as_of_year, is_replay
+    # This contest didn't exist yet as of the replay date -> nothing to
+    # estimate. Skip cleanly (exit 0) instead of raising in current_season_year,
+    # mirroring weekly_4/5/6's pre-start guard. (Fixes the Splash FileNotFoundError
+    # crashes during pre-2026 replays.)
+    if as_of_year() < EARLIEST_SEASON:
+        print(f"⏭️  {_CFG['label']}: contest starts {EARLIEST_SEASON}; "
+              f"nothing to estimate for {as_of_year()}. Skipping.")
+        return
+
     year = current_season_year()
     print(f"Running entry archetype pick estimates for the {year} season.")
 
@@ -772,6 +782,18 @@ def main():
     with open(FEATURE_META_PATH) as f:
         meta = json.load(f)
     all_features = meta['features']
+
+    # Point-in-time guard: during a replay, don't use a model trained on seasons
+    # AFTER the replay year -- that would leak future information into the
+    # archetype estimates. weekly_6 records its training years in the metadata;
+    # if the model on disk is newer than this replay year, skip (Archetype stays
+    # empty for that year, which is correct until a point-in-time model exists).
+    _train_years = [int(y) for y in (meta.get('train_years') or [])]
+    if is_replay() and _train_years and max(_train_years) > year:
+        print(f"⏭️  Model was trained through {max(_train_years)} (> replay year "
+              f"{year}); skipping to avoid leaking future data into the {year} "
+              f"archetype estimates.")
+        return
 
     cat_lookup = model.booster_.pandas_categorical
     if not cat_lookup or len(cat_lookup) != 3:
