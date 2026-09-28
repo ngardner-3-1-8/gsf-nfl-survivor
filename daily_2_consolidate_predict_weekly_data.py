@@ -5090,9 +5090,9 @@ def loop_through_simulations(date_str):
     #                       metrics; the deployed model is always PRIMARY_TOP_N.
     #                       'all' = use every candidate feature.
     # ─────────────────────────────────────────────────────────────────
-    PRIMARY_TOP_N = 15
+    PRIMARY_TOP_N = 20
     STRONG_MANDATORY = ['Public Pick %', 'Win %', 'Future Value (Stars)', 'Availability']
-    SWEEP_TOP_N = [9, 15, 30, 50, 'all']
+    SWEEP_TOP_N = [20, 30, 40, 50, 60, 'all']
 
     def train_pick_pct_models(df_historical, target_year, upcoming_week,
                                base_feature_candidates, contest='circa',
