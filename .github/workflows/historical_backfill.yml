@@ -30,6 +30,11 @@ on:
         type: boolean
         required: false
         default: false
+      force_resim:
+        description: 'Re-run per-game AND season Monte Carlo sims at full fidelity (ignore cached sims). Slow — use only for the specific dates you pass.'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -69,6 +74,10 @@ jobs:
           # top_n=9/15/30/50/all per contest and logs the metrics (does NOT
           # change the deployed model). Empty string = off.
           SWEEP_PICK_PCT_MODELS: ${{ inputs.sweep && '1' || '' }}
+          # When 'force_resim' is on, sim_reuse ignores the cached sims and
+          # re-runs the per-game + season Monte Carlo at full fidelity for the
+          # dates in this run. Empty string = off (reuse cached sims as usual).
+          FORCE_RESIM: ${{ inputs.force_resim && '1' || '' }}
         run: |
           ARGS=""
           if [ -n "${{ inputs.dates }}" ]; then ARGS="$ARGS --dates ${{ inputs.dates }}"; fi
