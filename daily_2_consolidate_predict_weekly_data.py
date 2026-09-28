@@ -5978,6 +5978,15 @@ def loop_through_simulations(date_str):
                     n_total = int(2 * current_week_mask.sum())
                     print(f"🌊 Week {current_week}: Splash pick % from real public feed "
                           f"({n_real}/{n_total} team-slots)")
+                    # Name WHICH slots came back empty, so a name mismatch (e.g.
+                    # LA/LAR, JAX/JAC, WAS/WSH) is easy to tell from a team the
+                    # feed simply omitted (typically near-0% picks).
+                    if n_real < n_total:
+                        _wk_rows = nfl_schedule_df.loc[current_week_mask]
+                        _miss_home = _wk_rows.loc[_wk_rows['Home Team Public Pick %'].isna(), 'Home Team'].tolist()
+                        _miss_away = _wk_rows.loc[_wk_rows['Away Team Public Pick %'].isna(), 'Away Team'].tolist()
+                        print(f"   ↳ no public-feed value for {len(_miss_home) + len(_miss_away)} "
+                              f"slot(s): home={_miss_home} away={_miss_away}")
 
                 # Renormalize the week back to target_pick_sum — the same
                 # invariant the Circa Pick % columns guarantee — so a
