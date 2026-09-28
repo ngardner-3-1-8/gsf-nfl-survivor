@@ -5120,9 +5120,33 @@ def loop_through_simulations(date_str):
         # little Splash holiday history yet, and forcing them has no basis, so
         # this deliberately has no mandatory effect on the Splash models.
         _is_circa = (str(contest).lower() == 'circa')
+        # Holiday / Thursday behavioral flags forced MANDATORY for CIRCA ONLY.
+        # Circa runs 8-team holiday bottlenecks, which drives specific behavior:
+        #   • Sharp entries SAVE teams expected to win on a holiday slate, so
+        #     those teams are picked heavily ON the holiday week and suppressed
+        #     before it  -> Thanksgiving/Christmas Favorite (+ the already-
+        #     mandatory *_WinPct_Lookahead for "how strong is their holiday game").
+        #   • Players AVOID any team on a holiday slate earlier in the season
+        #     (the team may outperform, or its opponent may get hurt), which
+        #     applies to underdogs too  -> Thanksgiving/Christmas Underdog, and
+        #     the already-mandatory Pre Thanksgiving / Pre Christmas timing flags.
+        #   • Players avoid Thursday games (earlier pick lock, higher variance
+        #     from short rest); a Thursday FAVORITE is an otherwise-attractive
+        #     pick people pass on  -> Thursday_Favorite / Thursday_Underdog
+        #     (together these mark every Thursday participant, split by role).
+        # Venue flags (Thursday_Home/Away) and the redundant 'Thursday Night
+        # Game' stay selectable. Splash keeps ALL of these as candidates only --
+        # different contest, little holiday history, so nothing is forced there.
+        _is_circa = (str(contest).lower() == 'circa')
+        _circa_holiday_mandatory = [
+            'thanksgiving_week', 'christmas_week',
+            'Pre Thanksgiving', 'Pre Christmas',
+            'Thanksgiving Favorite', 'Christmas Favorite',
+            'Thanksgiving Underdog', 'Christmas Underdog',
+            'Thursday_Favorite', 'Thursday_Underdog',
+        ]
         if mandatory_features is None:
-            mandatory_features = (['Pre Thanksgiving', 'Pre Christmas',
-                                   'christmas_week', 'thanksgiving_week'] if _is_circa else [])
+            mandatory_features = list(_circa_holiday_mandatory) if _is_circa else []
      
         # --- Restore the leakage guard (this was disabled in the original
         #     script: `df_historical = df` unconditionally overwrote the
