@@ -5070,8 +5070,33 @@ def loop_through_simulations(date_str):
     # 5. Orchestrator -- drop-in replacement for the original "DUAL MODEL
     #    TRAINING" + "SPLASH MODEL" sections.
     # =====================================================================
+    # ─────────────────────────────────────────────────────────────────
+    #  Pick-% model feature-selection knobs (tune these).
+    #    PRIMARY_TOP_N    – how many permutation-ranked features the DEPLOYED
+    #                       model keeps (was 9). The mandatory features below
+    #                       are ALWAYS added on top, whatever their rank, so
+    #                       the deployed feature count is PRIMARY_TOP_N + any
+    #                       mandatory feature not already in that top-N.
+    #    STRONG_MANDATORY – known-strong features forced in regardless of
+    #                       permutation rank, because permutation importance
+    #                       keeps dropping them as "redundant" (Public Pick %
+    #                       correlates ~0.71 with actual Pick % yet gets
+    #                       ranked out). 'Public Pick %' is forced only into
+    #                       the primary (public-feed) model, never the
+    #                       no-public fallback.
+    #    SWEEP_TOP_N      – when SWEEP_PICK_PCT_MODELS=1 is set in the
+    #                       environment, the primary config is ALSO trained at
+    #                       each of these top_n values purely to log comparison
+    #                       metrics; the deployed model is always PRIMARY_TOP_N.
+    #                       'all' = use every candidate feature.
+    # ─────────────────────────────────────────────────────────────────
+    PRIMARY_TOP_N = 15
+    STRONG_MANDATORY = ['Public Pick %', 'Win %', 'Future Value (Stars)', 'Availability']
+    SWEEP_TOP_N = [9, 15, 30, 50, 'all']
+
     def train_pick_pct_models(df_historical, target_year, upcoming_week,
-                               base_feature_candidates, mandatory_features=None,
+                               base_feature_candidates, contest='circa',
+                               mandatory_features=None,
                                metrics_log_path='logs/pick_pct_model_metrics.csv',
                                random_state=42):
         """
@@ -5088,8 +5113,16 @@ def loop_through_simulations(date_str):
         with the Week->Date rename and Pick % NaN-fill already applied, exactly
         as the original code did before this block.
         """
-        mandatory_features = mandatory_features or ['Pre Thanksgiving', 'Pre Christmas',
-                                                      'christmas_week', 'thanksgiving_week']
+        # Holiday features are forced MANDATORY for CIRCA ONLY. Circa players
+        # visibly key off Thanksgiving/Christmas slates, so those flags must
+        # always be in the model. Splash contests (2026+) keep the holiday
+        # columns as selectable candidates but don't force them -- there's
+        # little Splash holiday history yet, and forcing them has no basis, so
+        # this deliberately has no mandatory effect on the Splash models.
+        _is_circa = (str(contest).lower() == 'circa')
+        if mandatory_features is None:
+            mandatory_features = (['Pre Thanksgiving', 'Pre Christmas',
+                                   'christmas_week', 'thanksgiving_week'] if _is_circa else [])
      
         # --- Restore the leakage guard (this was disabled in the original
         #     script: `df_historical = df` unconditionally overwrote the
@@ -5112,24 +5145,39 @@ def loop_through_simulations(date_str):
         #     must also be made on the live prediction frame -- see this
         #     module's top-of-file integration notes, step C. ---
         df_historical = compute_holiday_lookahead_features(df_historical)
-        mandatory_features = list(dict.fromkeys(mandatory_features + HOLIDAY_LOOKAHEAD_COLS))
+        # HOLIDAY_LOOKAHEAD_COLS stay in the candidate pool for every contest
+        # (see candidate_pool below), but are only FORCED for Circa.
+        if _is_circa:
+            mandatory_features = list(dict.fromkeys(mandatory_features + HOLIDAY_LOOKAHEAD_COLS))
      
         assumed_public_pick_col = 'Public Pick %'
         clean_base = [f for f in base_feature_candidates if f != assumed_public_pick_col]
         candidate_pool = list(dict.fromkeys(clean_base + HOLIDAY_LOOKAHEAD_COLS))
      
+        # Force the known-strong features in as MANDATORY (see STRONG_MANDATORY
+        # note above). 'Public Pick %' goes only into the primary model (the one
+        # used for the upcoming week, when the live public feed is present); the
+        # fallback model deliberately excludes it, since it's the path for weeks
+        # with no public feed. The dict keys stay 9 (primary) / 7 (fallback)
+        # only because the prediction code selects the deployed model on them;
+        # the real feature count is now PRIMARY_TOP_N + forced mandatory.
+        strong_with_public = list(STRONG_MANDATORY)
+        strong_no_public = [f for f in STRONG_MANDATORY if f != assumed_public_pick_col]
         model_configs = {
-            9: {'features': candidate_pool + [assumed_public_pick_col], 'target_n': 9},
-            7: {'features': candidate_pool, 'target_n': 7},
+            9: {'features': candidate_pool + [assumed_public_pick_col], 'top_n': PRIMARY_TOP_N,
+                'label': 'primary', 'mandatory_extra': strong_with_public},
+            7: {'features': candidate_pool, 'top_n': PRIMARY_TOP_N,
+                'label': 'nopublic', 'mandatory_extra': strong_no_public},
         }
-     
+
         trained_models = {}
         run_metrics = []
         for n_key, cfg in model_configs.items():
             result = train_relative_pick_pct_model(
                 df_historical, target_col='Pick %', feature_candidates=cfg['features'],
-                mandatory_features=mandatory_features, top_n=cfg['target_n'],
-                model_label=f'circa_pick_pct_model_{n_key}',
+                mandatory_features=mandatory_features + cfg['mandatory_extra'],
+                top_n=cfg['top_n'],
+                model_label=f"{contest}_pick_pct_model_{cfg['label']}",
                 metrics_log_path=metrics_log_path, random_state=random_state,
             )
             if result is not None:
@@ -5137,7 +5185,29 @@ def loop_through_simulations(date_str):
                 if result['metrics']:
                     run_metrics.append(result['metrics'])
             else:
-                print(f"⚠️ Model {n_key} could not be trained this run (see warning above).")
+                print(f"⚠️ Model '{cfg['label']}' could not be trained this run (see warning above).")
+
+        # --- Optional feature-count sweep (STUDY ONLY; does NOT change the
+        #     deployed model). Enable with SWEEP_PICK_PCT_MODELS=1. Trains the
+        #     PRIMARY (public) config at each top_n in SWEEP_TOP_N and logs its
+        #     validation metrics so you can compare mae_pct_points /
+        #     mean_weekly_spearman across configs in the metrics CSV. Runs once
+        #     per contest, labelled '<contest>_pick_pct_sweep_top<N>'. ---
+        if os.environ.get('SWEEP_PICK_PCT_MODELS'):
+            sweep_pool = candidate_pool + [assumed_public_pick_col]
+            for _n in SWEEP_TOP_N:
+                _top = len(sweep_pool) if _n == 'all' else int(_n)
+                _label = f"{contest}_pick_pct_sweep_top{_n}"
+                print(f"🔬 [sweep] {_label}: training primary config at top_n={_top} "
+                      f"({len(sweep_pool)} candidates)...")
+                _res = train_relative_pick_pct_model(
+                    df_historical, target_col='Pick %', feature_candidates=sweep_pool,
+                    mandatory_features=mandatory_features + strong_with_public,
+                    top_n=_top, model_label=_label,
+                    metrics_log_path=metrics_log_path, random_state=random_state,
+                )
+                if _res is not None and _res['metrics']:
+                    run_metrics.append(_res['metrics'])
      
         # --- Splash (public/square pick %) model -- same treatment, same
         #     holiday features, own validation + logging. ---
@@ -5280,6 +5350,7 @@ def loop_through_simulations(date_str):
                target_year=target_year,
                upcoming_week=upcoming_week,
                base_feature_candidates=base_feature_candidates,
+               contest=contest,
             )
             # If training somehow produced no usable model, fall back to the
             # proxy rather than crashing on trained_models[n_features] below.
@@ -5828,7 +5899,9 @@ def loop_through_simulations(date_str):
                 features_to_use = model_data['features']
 
                 # --- VERIFICATION PRINT ---
-                print(f"🏈 Week {current_week} | Predicting using {n_features} features model...")
+                print(f"🏈 Week {current_week} | Predicting using the "
+                      f"{'primary (public)' if n_features == 9 else 'no-public fallback'} "
+                      f"model ({len(features_to_use)} features)...")
                 print(f"Features Being Used: {features_to_use}")
 
                 # 1. Ensure features exist in this week's data (Optimized set logic)
