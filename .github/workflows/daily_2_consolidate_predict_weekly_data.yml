@@ -16,9 +16,6 @@ on:
   # UTC-only with no DST awareness and the NFL season straddles the November US
   # DST change, so both 9 AM Mountain UTC times are listed; the gate job below
   # runs only the one that matches today.
-  schedule:
-    - cron: '0 15 * * *'  # 9 AM Mountain DAYLIGHT time (UTC-6)
-    - cron: '0 16 * * *'  # 9 AM Mountain STANDARD time (UTC-7)
 
 permissions:
   contents: write
