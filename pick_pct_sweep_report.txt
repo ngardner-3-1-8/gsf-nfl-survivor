@@ -4,18 +4,18 @@
 ====================================================================
   config        runs   avg spearman   avg MAE pts   ~features
   --------------------------------------------------------------
-  top20           14         0.7780        0.0199     35.6000
-  top30           14         0.7782        0.0202     45.0000
-  top40           14         0.7780        0.0203     52.7000
-  top50           14         0.7787        0.0204     58.0000
-  top60           14         0.7786        0.0203     64.6000
-  topall          14         0.7770        0.0206     85.0000
+  top20           39         0.7847        0.0196     36.0000
+  top30           39         0.7827        0.0198     45.4000
+  top40           39         0.7849        0.0199     53.0000
+  top50           39         0.7838        0.0199     58.1000
+  top60           39         0.7848        0.0198     64.1000
+  topall          39         0.7846        0.0203     85.0000
   7                1         0.6287        0.0008     16.0000  (deployed)
   9                1         0.2844        0.0020     17.0000  (deployed)
-  nopublic        17         0.7390        0.0202     35.3000  (deployed)
-  primary         17         0.7572        0.0165     35.5000  (deployed)
+  nopublic        42         0.7572        0.0228     35.4000  (deployed)
+  primary         42         0.7763        0.0182     36.0000  (deployed)
   --------------------------------------------------------------
-  🏆 best config: top50 (spearman 0.7787, MAE 0.0204 pts over 14 run(s))
+  🏆 best config: top40 (spearman 0.7849, MAE 0.0199 pts over 39 run(s))
      ↳ within 0.005 spearman of top60 — prefer the smaller/simpler config.
 
 Read: higher spearman = better ranking of who's popular (drives EV); lower MAE = closer absolute pick %.
