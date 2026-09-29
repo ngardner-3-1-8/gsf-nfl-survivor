@@ -1,0 +1,23 @@
+
+====================================================================
+  CIRCA  —  pick-% feature-count comparison
+====================================================================
+  config        runs   avg spearman   avg MAE pts   ~features
+  --------------------------------------------------------------
+  top20           14         0.7780        0.0199     35.6000
+  top30           14         0.7782        0.0202     45.0000
+  top40           14         0.7780        0.0203     52.7000
+  top50           14         0.7787        0.0204     58.0000
+  top60           14         0.7786        0.0203     64.6000
+  topall          14         0.7770        0.0206     85.0000
+  7                1         0.6287        0.0008     16.0000  (deployed)
+  9                1         0.2844        0.0020     17.0000  (deployed)
+  nopublic        17         0.7390        0.0202     35.3000  (deployed)
+  primary         17         0.7572        0.0165     35.5000  (deployed)
+  --------------------------------------------------------------
+  🏆 best config: top50 (spearman 0.7787, MAE 0.0204 pts over 14 run(s))
+     ↳ within 0.005 spearman of top60 — prefer the smaller/simpler config.
+
+Read: higher spearman = better ranking of who's popular (drives EV); lower MAE = closer absolute pick %.
+If top15 ties or beats the larger configs, 15 is the sweet spot. If a larger config clearly wins, raise PRIMARY_TOP_N in daily_2.
+
