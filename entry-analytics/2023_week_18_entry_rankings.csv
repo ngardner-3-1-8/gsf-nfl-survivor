@@ -1,0 +1,5 @@
+rank,entry,contestant,wins,teams_remaining,optimal_win_path_prob,optimal_ev_path_score,survival_prob,fair_value,predicted_next_picks
+1,CIRCUS MASTER-2,CIRCUS MASTER,17,15,0.252267,0.0,0.23056,1190670.78,PHI 100%
+2,IndianaJet-4,IndianaJet,17,15,0.257836,0.0,0.23672,1084488.39,PHI 100%
+3,LAJONESER-4,LAJONESER,17,15,0.257836,0.0,0.248,1027261.24,PHI 100%
+4,JAX JAGS-1,JAX JAGS,17,15,0.257836,0.0,0.24808,941582.72,PHI 100%
