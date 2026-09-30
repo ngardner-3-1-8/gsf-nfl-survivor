@@ -109,20 +109,20 @@ HISTORICAL_DATES = [
         "11/15/2023", #Leading up to Week 11
         "11/22/2023", #Leading up to Week 12
         "11/25/2023", #Leading up to Week 13
-        "11/29/2023", #Leading up to Week 14
-        "12/06/2023", #Leading up to Week 15
-        "12/13/2023", #Leading up to Week 16
-        "12/20/2023", #Leading up to Week 17
-        "12/25/2023",  #Leading up to Week 18
-        "12/27/2023", #Leading up to Week 19
-        "01/03/2024", #Leading up to Week 20
+#        "11/29/2023", #Leading up to Week 14
+#        "12/06/2023", #Leading up to Week 15
+#        "12/13/2023", #Leading up to Week 16
+#        "12/20/2023", #Leading up to Week 17
+#        "12/25/2023",  #Leading up to Week 18
+#        "12/27/2023", #Leading up to Week 19
+#        "01/03/2024", #Leading up to Week 20
 
-        "09/04/2024", #Leading up to Week 1
-        "09/11/2024", #Leading up to Week 2
-        "09/18/2024", #Leading up to Week 3
-        "09/25/2024", #Leading up to Week 4
-        "10/02/2024", #Leading up to Week 5
-        "10/09/2024", #Leading up to Week 6
+#        "09/04/2024", #Leading up to Week 1
+#        "09/11/2024", #Leading up to Week 2
+#        "09/18/2024", #Leading up to Week 3
+#        "09/25/2024", #Leading up to Week 4
+#        "10/02/2024", #Leading up to Week 5
+#        "10/09/2024", #Leading up to Week 6
 #        "10/16/2024", #Leading up to Week 7
 #        "10/23/2024", #Leading up to Week 8
 #        "10/30/2024", #Leading up to Week 9
