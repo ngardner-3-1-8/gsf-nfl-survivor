@@ -1,0 +1,5 @@
+rank,entry,contestant,wins,teams_remaining,optimal_win_path_prob,optimal_ev_path_score,survival_prob,fair_value,predicted_next_picks
+1,Maddog-2,Maddog,17,15,0.252052,0.0,0.2212,985237.29,MIA 86%; LAC 10%; IND 3%
+2,JED-4,JED,17,15,0.254218,0.0,0.20712,936554.12,TB 56%; MIA 30%; LA 12%
+3,BROWNA-1,BROWNA,17,15,0.239061,0.0,0.23072,893530.71,TB 92%; LAC 6%; IND 2%
+4,THE ENEMY WITHIN-2,THE ENEMY WITHIN,17,15,0.222501,0.0,0.19816,868794.04,LA 72%; LAC 21%; IND 6%

@@ -1,0 +1,4 @@
+rank,entry,contestant,wins,teams_remaining,optimal_win_path_prob,optimal_ev_path_score,survival_prob,fair_value,predicted_next_picks
+1,JED-4,JED,18,14,0.419928,0.0,0.36896,1421365.24,DET 79%; JAX 12%; NE 3%
+2,THE ENEMY WITHIN-2,THE ENEMY WITHIN,18,14,0.40407,0.0,0.35504,1268625.47,DET 75%; JAX 12%; NYG 5%
+3,BROWNA-1,BROWNA,18,14,0.40407,0.0,0.35352,1235434.58,DET 71%; JAX 11%; NYG 5%

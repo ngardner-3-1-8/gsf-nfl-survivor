@@ -1,0 +1,1411 @@
+type,player,position,from_team,to_team,value,epa,season,date,description
+Free Agent Signing,Trevon Coley,DL,CHI,TEN,0.0,,2023,,Trevon Coley CHI→TEN
+Free Agent Signing,Jake Gervase,LB,LA,MIN,0.0,2.62,2023,,Jake Gervase LA→MIN
+Free Agent Signing,Gary Jennings,WR,KC,CAR,0.0,,2023,,Gary Jennings KC→CAR
+Free Agent Signing,Garrett McGhin,OL,NYG,BUF,0.0,,2023,,Garrett McGhin NYG→BUF
+Free Agent Signing,Isaiah Mack,DT,SEA,WAS,0.0,0.0,2023,,Isaiah Mack SEA→WAS
+Free Agent Signing,Nate Brooks,DB,TEN,SF,0.0,,2023,,Nate Brooks TEN→SF
+Free Agent Signing,Jace Sternberger,TE,PIT,BUF,0.0,,2023,,Jace Sternberger PIT→BUF
+Free Agent Signing,Bobby Evans,G,MIN,JAX,0.0,0.0,2023,,Bobby Evans MIN→JAX
+Free Agent Signing,Blessuan Austin,DB,DEN,ATL,0.0,,2023,,Blessuan Austin DEN→ATL
+Free Agent Signing,Darrel Williams,RB,ARI,NO,0.0,-1.16,2023,,Darrel Williams ARI→NO
+Free Agent Signing,Derrick Kelly,OL,NO,CLE,0.0,,2023,,Derrick Kelly NO→CLE
+Free Agent Signing,Tanner Vallejo,ILB,ARI,MIN,0.0,0.0,2023,,Tanner Vallejo ARI→MIN
+Free Agent Signing,Ladarius Hamilton,LB,GB,SF,0.0,,2023,,Ladarius Hamilton GB→SF
+Free Agent Signing,Myles Dorn,SAF,MIN,MIA,0.0,0.0,2023,,Myles Dorn MIN→MIA
+Free Agent Signing,Jake Bargas,RB,MIA,NO,0.0,,2023,,Jake Bargas MIA→NO
+Free Agent Signing,Delontae Scott,DL,CAR,ATL,0.0,,2023,,Delontae Scott CAR→ATL
+Free Agent Signing,Myles Hartsfield,FS,CAR,SF,0.88,,2023,,Myles Hartsfield CAR→SF
+Free Agent Signing,J.J. Koski,WR,LA,DEN,0.0,,2023,,J.J. Koski LA→DEN
+Free Agent Signing,Ricky Seals-Jones,TE,NYG,IND,0.0,,2023,,Ricky Seals-Jones NYG→IND
+Free Agent Signing,Lavert Hill,DB,CLE,PIT,0.0,,2023,,Lavert Hill CLE→PIT
+Free Agent Signing,Caeveon Patton,DL,IND,ATL,0.0,,2023,,Caeveon Patton IND→ATL
+Free Agent Signing,Greg Mabin,CB,TEN,CAR,0.0,0.0,2023,,Greg Mabin TEN→CAR
+Free Agent Signing,Marcus Kemp,WR,KC,WAS,0.0,1.23,2023,,Marcus Kemp KC→WAS
+Free Agent Signing,Alize Mack,TE,GB,TEN,0.0,,2023,,Alize Mack GB→TEN
+Free Agent Signing,Josh Hammond,WR,NE,DEN,0.0,,2023,,Josh Hammond NE→DEN
+Free Agent Signing,Ray Wilborn,LB,DEN,NYG,0.0,,2023,,Ray Wilborn DEN→NYG
+Free Agent Signing,Jared Pinkney,TE,LA,CHI,0.0,0.0,2023,,Jared Pinkney LA→CHI
+Free Agent Signing,Juwan Green,WR,TEN,KC,0.0,,2023,,Juwan Green TEN→KC
+Free Agent Signing,Malik Turner,WR,HOU,IND,0.0,0.0,2023,,Malik Turner HOU→IND
+Free Agent Signing,James Washington,WR,NYG,IND,0.0,-0.32,2023,,James Washington NYG→IND
+Free Agent Signing,Jacob Hollister,TE,SEA,LV,0.0,,2023,,Jacob Hollister SEA→LV
+Free Agent Signing,Travin Howard,LB,LA,BUF,0.0,0.0,2023,,Travin Howard LA→BUF
+Free Agent Signing,Darrius Shepherd,WR,DEN,LAC,0.0,,2023,,Darrius Shepherd DEN→LAC
+Free Agent Signing,Darwin Thompson,RB,SEA,LV,0.0,,2023,,Darwin Thompson SEA→LV
+Free Agent Signing,Wes Martin,OL,WAS,CLE,0.0,,2023,,Wes Martin WAS→CLE
+Free Agent Signing,J.J. Arcega-Whiteside,WR,SEA,ATL,0.0,,2023,,J.J. Arcega-Whiteside SEA→ATL
+Free Agent Signing,Benny Snell,RB,PIT,DET,0.0,5.89,2023,,Benny Snell PIT→DET
+Free Agent Signing,Nick Kwiatkoski,ILB,ATL,PIT,0.0,0.0,2023,,Nick Kwiatkoski ATL→PIT
+Free Agent Signing,Christian DiLauro,OL,DEN,MIN,0.0,,2023,,Christian DiLauro DEN→MIN
+Free Agent Signing,Tarvarius Moore,DB,SF,GB,0.0,0.0,2023,,Tarvarius Moore SF→GB
+Free Agent Signing,Ben Banogu,DE,IND,DAL,0.0,0.0,2023,,Ben Banogu IND→DAL
+Free Agent Signing,Keke Coutee,WR,IND,MIA,0.0,-3.8,2023,,Keke Coutee IND→MIA
+Free Agent Signing,Javon Wims,WR,ARI,CAR,0.0,,2023,,Javon Wims ARI→CAR
+Free Agent Signing,Antoine Wesley,WR,ARI,LV,0.0,,2023,,Antoine Wesley ARI→LV
+Free Agent Signing,Marquez Stevenson,WR,CLE,CAR,0.0,,2023,,Marquez Stevenson CLE→CAR
+Free Agent Signing,Rodarius Williams,CB,NYG,TB,0.0,0.0,2023,,Rodarius Williams NYG→TB
+Free Agent Signing,Barrington Wade,LB,DEN,CHI,0.0,,2023,,Barrington Wade DEN→CHI
+Free Agent Signing,Donovan Jeter,DE,WAS,NYG,0.0,0.0,2023,,Donovan Jeter WAS→NYG
+Free Agent Signing,Benjie Franklin,DB,GB,SEA,0.0,,2023,,Benjie Franklin GB→SEA
+Free Agent Signing,Darren Evans,DB,LV,NYG,0.0,,2023,,Darren Evans LV→NYG
+Free Agent Signing,Sal Cannella,TE,GB,SEA,0.0,,2023,,Sal Cannella GB→SEA
+Free Agent Signing,Grant Hermanns,OL,TB,NYJ,0.0,,2023,,Grant Hermanns TB→NYJ
+Free Agent Signing,Dre Miller,WR,NYG,GB,0.0,,2023,,Dre Miller NYG→GB
+Free Agent Signing,Carson Wells,LB,CIN,NE,0.0,,2023,,Carson Wells CIN→NE
+Free Agent Signing,Justin Rigg,TE,PIT,TEN,0.0,,2023,,Justin Rigg PIT→TEN
+Free Agent Signing,Forrest Rhyne,LB,IND,PIT,0.0,0.0,2023,,Forrest Rhyne IND→PIT
+Free Agent Signing,Slade Bolden,WR,BAL,ATL,0.0,,2023,,Slade Bolden BAL→ATL
+Free Agent Signing,Nick Eubanks,TE,HOU,IND,0.0,,2023,,Nick Eubanks HOU→IND
+Free Agent Signing,Tyler Shelvin,DL,CIN,TEN,0.0,,2023,,Tyler Shelvin CIN→TEN
+Free Agent Signing,Roderick Perry,DL,CLE,SEA,0.0,,2023,,Roderick Perry CLE→SEA
+Free Agent Signing,Michal Menet,OL,GB,ATL,0.0,,2023,,Michal Menet GB→ATL
+Free Agent Signing,Bryce Thompson,CB,NO,MIA,0.0,0.0,2023,,Bryce Thompson NO→MIA
+Free Agent Signing,Brandon Smith,LB,DAL,ARI,0.0,0.0,2023,,Brandon Smith DAL→ARI
+Free Agent Signing,Braylon Jones,OL,DAL,ARI,0.0,,2023,,Braylon Jones DAL→ARI
+Free Agent Signing,Jarrid Williams,OL,PHI,MIN,0.0,,2023,,Jarrid Williams PHI→MIN
+Free Agent Signing,Diego Fagot,LB,BAL,NE,0.0,,2023,,Diego Fagot BAL→NE
+Free Agent Signing,Colin Thompson,TE,CAR,MIN,0.0,,2023,,Colin Thompson CAR→MIN
+Free Agent Signing,Rashaad Coward,OL,ARI,HOU,0.0,,2023,,Rashaad Coward ARI→HOU
+Free Agent Signing,Elijah Hamilton,DB,MIA,GB,0.0,,2023,,Elijah Hamilton MIA→GB
+Free Agent Signing,Kenny Robinson,DB,CAR,PIT,0.0,,2023,,Kenny Robinson CAR→PIT
+Free Agent Signing,Aaron Shampklin,RB,IND,LAC,0.0,,2023,,Aaron Shampklin IND→LAC
+Free Agent Signing,David Anenih,LB,ATL,ARI,0.0,,2023,,David Anenih ATL→ARI
+Free Agent Signing,Kuony Deng,LB,CHI,PIT,0.0,,2023,,Kuony Deng CHI→PIT
+Free Agent Signing,Abram Smith,RB,NO,MIN,0.0,,2023,,Abram Smith NO→MIN
+Free Agent Signing,Josh Thomas,DB,ARI,CAR,0.0,0.0,2023,,Josh Thomas ARI→CAR
+Free Agent Signing,Kevin Atkins,DL,SF,NYG,0.0,,2023,,Kevin Atkins SF→NYG
+Free Agent Signing,Madre Harper,DB,CAR,PIT,0.0,,2023,,Madre Harper CAR→PIT
+Free Agent Signing,Gavin Heslop,DB,CAR,CLE,0.0,,2023,,Gavin Heslop CAR→CLE
+Free Agent Signing,Kobe Smith,DL,ATL,NYG,0.0,,2023,,Kobe Smith ATL→NYG
+Free Agent Signing,Jameson Houston,DB,SEA,MIN,0.0,,2023,,Jameson Houston SEA→MIN
+Free Agent Signing,Breshad Perriman,WR,TB,IND,0.0,-6.01,2023,,Breshad Perriman TB→IND
+Free Agent Signing,Zane Gonzalez,K,CAR,SF,0.0,,2023,,Zane Gonzalez CAR→SF
+Free Agent Signing,Jack Snyder,OL,LA,MIN,0.0,,2023,,Jack Snyder LA→MIN
+Free Agent Signing,Duron Lowe,DB,TB,KC,0.0,,2023,,Duron Lowe TB→KC
+Free Agent Signing,Dominique Dafney,TE,IND,TB,0.0,,2023,,Dominique Dafney IND→TB
+Free Agent Signing,Forrest Merrill,DL,LAC,DEN,0.0,,2023,,Forrest Merrill LAC→DEN
+Free Agent Signing,Scott Nelson,DB,PIT,HOU,0.0,,2023,,Scott Nelson PIT→HOU
+Free Agent Signing,Charleston Rambo,WR,CAR,PHI,0.0,,2023,,Charleston Rambo CAR→PHI
+Free Agent Signing,Ronald Jones,RB,KC,DAL,0.0,2.37,2023,,Ronald Jones KC→DAL
+Free Agent Signing,Jason Huntley,RB,PIT,IND,0.0,,2023,,Jason Huntley PIT→IND
+Free Agent Signing,Dezmon Patmon,WR,BUF,CAR,0.0,-7.64,2023,,Dezmon Patmon BUF→CAR
+Free Agent Signing,Larry Rountree,RB,LAC,HOU,0.0,,2023,,Larry Rountree LAC→HOU
+Free Agent Signing,Kemoko Turay,DE,SF,ATL,0.0,0.0,2023,,Kemoko Turay SF→ATL
+Free Agent Signing,Mac McCain,DB,PHI,CAR,0.0,,2023,,Mac McCain PHI→CAR
+Free Agent Signing,Christian Kirksey,OLB,HOU,BUF,1.26,,2023,,Christian Kirksey HOU→BUF
+Free Agent Signing,Jovante Moffatt,DB,ATL,ARI,0.0,,2023,,Jovante Moffatt ATL→ARI
+Free Agent Signing,Matt Corral,QB,CAR,NE,0.0,,2023,,Matt Corral CAR→NE
+Free Agent Signing,Thakarius Keyes,DB,BAL,CLE,0.0,,2023,,Thakarius Keyes BAL→CLE
+Free Agent Signing,Isaiah Prince,OL,CIN,ATL,0.0,,2023,,Isaiah Prince CIN→ATL
+Free Agent Signing,Kyle Fuller,CB,SEA,BAL,0.0,0.0,2023,,Kyle Fuller SEA→BAL
+Free Agent Signing,Reid Sinnett,QB,MIA,CIN,0.0,,2023,,Reid Sinnett MIA→CIN
+Free Agent Signing,Terrell Lewis,LB,CHI,NO,0.0,0.0,2023,,Terrell Lewis CHI→NO
+Free Agent Signing,Ra'Shaun Henry,WR,ATL,SEA,0.0,,2023,,Ra'Shaun Henry ATL→SEA
+Free Agent Signing,Penny Hart,WR,SEA,ATL,0.0,-1.83,2023,,Penny Hart SEA→ATL
+Free Agent Signing,Greg Bell,RB,DET,PIT,0.0,,2023,,Greg Bell DET→PIT
+Free Agent Signing,Corliss Waitman,P,DEN,NE,0.0,0.0,2023,,Corliss Waitman DEN→NE
+Free Agent Signing,Taiwan Jones,RB,BUF,NYG,0.0,0.0,2023,,Taiwan Jones BUF→NYG
+Free Agent Signing,C.J. Saunders,WR,CAR,ATL,0.0,,2023,,C.J. Saunders CAR→ATL
+Free Agent Signing,Trey Quinn,WR,DEN,DET,0.0,,2023,,Trey Quinn DEN→DET
+Free Agent Signing,John Parker Romo,K,NO,CHI,0.0,,2023,,John Parker Romo NO→CHI
+Free Agent Signing,Amari Rodgers,WR,HOU,IND,0.0,3.31,2023,,Amari Rodgers HOU→IND
+Free Agent Signing,Darrell Daniels,TE,IND,DET,0.0,,2023,,Darrell Daniels IND→DET
+Free Agent Signing,Cole Beasley,WR,BUF,NYG,0.0,-2.82,2023,,Cole Beasley BUF→NYG
+Free Agent Signing,Chase Winovich,DE,CLE,MIA,0.0,0.0,2023,,Chase Winovich CLE→MIA
+Free Agent Signing,Trey Flowers,LB,MIA,NE,0.0,0.0,2023,,Trey Flowers MIA→NE
+Free Agent Signing,Marvin Jones,WR,JAX,DET,0.89,16.04,2023,,Marvin Jones JAX→DET
+Free Agent Signing,James McCourt,K,JAX,LV,0.0,,2023,,James McCourt JAX→LV
+Free Agent Signing,Jordan Wilkins,RB,IND,CLE,0.0,-4.06,2023,,Jordan Wilkins IND→CLE
+Free Agent Signing,Jason Poe,OL,SF,NYJ,0.0,,2023,,Jason Poe SF→NYJ
+Free Agent Signing,Nate McCrary,RB,CAR,CLE,0.0,,2023,,Nate McCrary CAR→CLE
+Free Agent Signing,Jordan Willis,DE,SF,NO,0.0,0.0,2023,,Jordan Willis SF→NO
+Free Agent Signing,Damien Williams,RB,ATL,ARI,0.0,-1.13,2023,,Damien Williams ATL→ARI
+Free Agent Signing,Dane Cruikshank,DB,CHI,TEN,0.0,0.0,2023,,Dane Cruikshank CHI→TEN
+Free Agent Signing,Devine Ozigbo,RB,DEN,DET,0.0,-1.68,2023,,Devine Ozigbo DEN→DET
+Free Agent Signing,Anthony Averett,CB,LV,DET,0.0,0.0,2023,,Anthony Averett LV→DET
+Free Agent Signing,Michael Dogbe,DE,ARI,MIN,0.0,0.0,2023,,Michael Dogbe ARI→MIN
+Free Agent Signing,Trinity Benson,WR,DET,CLE,0.0,0.0,2023,,Trinity Benson DET→CLE
+Free Agent Signing,Dennis Kelly,OT,IND,NYJ,0.0,0.0,2023,,Dennis Kelly IND→NYJ
+Free Agent Signing,Tommy Sweeney,TE,BUF,NYG,0.0,0.8,2023,,Tommy Sweeney BUF→NYG
+Free Agent Signing,Jaquan Johnson,DB,BUF,TB,0.0,0.0,2023,,Jaquan Johnson BUF→TB
+Free Agent Signing,Jesse James,TE,CLE,LV,0.0,,2023,,Jesse James CLE→LV
+Free Agent Signing,Marcus Peters,CB,BAL,LV,0.0,0.0,2023,,Marcus Peters BAL→LV
+Free Agent Signing,Cory Littleton,ILB,CAR,HOU,0.0,0.0,2023,,Cory Littleton CAR→HOU
+Free Agent Signing,Mathew Sexton,WR,KC,NE,0.0,,2023,,Mathew Sexton KC→NE
+Free Agent Signing,Qadree Ollison,RB,DAL,PIT,0.0,0.0,2023,,Qadree Ollison DAL→PIT
+Free Agent Signing,Ross Pierschbacher,OL,DET,PHI,0.0,,2023,,Ross Pierschbacher DET→PHI
+Free Agent Signing,Brandon Wilson,DB,CIN,IND,0.0,,2023,,Brandon Wilson CIN→IND
+Free Agent Signing,Daylen Baldwin,WR,CLE,MIN,0.0,1.79,2023,,Daylen Baldwin CLE→MIN
+Free Agent Signing,Tariq Carpenter,SAF,GB,PIT,0.0,0.0,2023,,Tariq Carpenter GB→PIT
+Free Agent Signing,Matt Ammendola,K,GB,HOU,0.0,0.0,2023,,Matt Ammendola GB→HOU
+Free Agent Signing,Bobby McCain,CB,WAS,NYG,1.3,,2023,,Bobby McCain WAS→NYG
+Free Agent Signing,Jason Pierre-Paul,DE,BAL,MIA,0.0,0.0,2023,,Jason Pierre-Paul BAL→MIA
+Free Agent Signing,Jake Luton,QB,NO,CAR,0.0,,2023,,Jake Luton NO→CAR
+Free Agent Signing,Lewis Kidd,OL,NO,IND,0.0,,2023,,Lewis Kidd NO→IND
+Free Agent Signing,Dallin Leavitt,DB,GB,DEN,0.0,-3.24,2023,,Dallin Leavitt GB→DEN
+Free Agent Signing,Pat O'Donnell,P,GB,ATL,0.0,0.0,2023,,Pat O'Donnell GB→ATL
+Free Agent Signing,Darrell Henderson,RB,JAX,LA,0.0,-0.82,2023,,Darrell Henderson JAX→LA
+Free Agent Signing,Taylor Stallworth,DT,HOU,SF,0.0,0.0,2023,,Taylor Stallworth HOU→SF
+Free Agent Signing,Herb Miller,CB,CLE,BUF,0.0,0.0,2023,,Herb Miller CLE→BUF
+Free Agent Signing,Tre Norwood,CB,PIT,BUF,0.0,0.0,2023,,Tre Norwood PIT→BUF
+Free Agent Signing,Rashaan Evans,ILB,ATL,DAL,0.98,,2023,,Rashaan Evans ATL→DAL
+Free Agent Signing,Andy Dalton,QB,NO,CAR,0.0,10.31,2023,,Andy Dalton NO→CAR
+Free Agent Signing,Randall Cobb,WR,GB,NYJ,0.0,22.56,2023,,Randall Cobb GB→NYJ
+Free Agent Signing,Randy Bullock,K,TEN,NYG,0.0,0.0,2023,,Randy Bullock TEN→NYG
+Free Agent Signing,Bobby Wagner,MLB,LA,SEA,1.09,,2023,,Bobby Wagner LA→SEA
+Free Agent Signing,Calais Campbell,DE,BAL,ATL,0.0,0.0,2023,,Calais Campbell BAL→ATL
+Free Agent Signing,Brian Hoyer,QB,NE,LV,0.0,-2.13,2023,,Brian Hoyer NE→LV
+Free Agent Signing,Jason Peters,OL,DAL,SEA,0.0,,2023,,Jason Peters DAL→SEA
+Free Agent Signing,Aaron Rodgers,QB,GB,NYJ,0.53,-12.97,2023,,Aaron Rodgers GB→NYJ
+Free Agent Signing,Marcedes Lewis,TE,GB,CHI,0.0,8.02,2023,,Marcedes Lewis GB→CHI
+Free Agent Signing,Nick Folk,K,NE,TEN,0.0,0.0,2023,,Nick Folk NE→TEN
+Free Agent Signing,Mason Crosby,K,GB,NYG,0.0,0.0,2023,,Mason Crosby GB→NYG
+Free Agent Signing,Dylan Cole,LB,TEN,CHI,0.0,0.0,2023,,Dylan Cole TEN→CHI
+Free Agent Signing,DeMarcus Walker,DE,TEN,CHI,0.0,0.0,2023,,DeMarcus Walker TEN→CHI
+Free Agent Signing,Andrew Wylie,G,KC,WAS,0.86,,2023,,Andrew Wylie KC→WAS
+Free Agent Signing,Storm Norton,OT,LAC,ATL,0.0,0.0,2023,,Storm Norton LAC→ATL
+Free Agent Signing,Robert Tonyan,TE,GB,CHI,0.0,3.86,2023,,Robert Tonyan GB→CHI
+Free Agent Signing,Elijah Wilkinson,OT,ATL,ARI,0.0,0.0,2023,,Elijah Wilkinson ATL→ARI
+Free Agent Signing,JuJu Smith-Schuster,WR,KC,NE,2.77,52.54,2023,,JuJu Smith-Schuster KC→NE
+Free Agent Signing,Jonnu Smith,TE,NE,ATL,0.0,1.24,2023,,Jonnu Smith NE→ATL
+Free Agent Signing,Samson Ebukam,DE,SF,IND,0.0,0.0,2023,,Samson Ebukam SF→IND
+Free Agent Signing,David Sharpe,OL,BAL,CAR,0.0,,2023,,David Sharpe BAL→CAR
+Free Agent Signing,Jamaal Williams,RB,DET,NO,0.0,-26.95,2023,,Jamaal Williams DET→NO
+Free Agent Signing,Joshua Dobbs,QB,TEN,MIN,0.0,-7.19,2023,,Joshua Dobbs TEN→MIN
+Free Agent Signing,Marlon Mack,RB,DEN,ARI,0.0,2.55,2023,,Marlon Mack DEN→ARI
+Free Agent Signing,Fabian Moreau,CB,NYG,DEN,1.14,,2023,,Fabian Moreau NYG→DEN
+Free Agent Signing,Derek Rivers,DL,HOU,IND,0.0,,2023,,Derek Rivers HOU→IND
+Free Agent Signing,D'Onta Foreman,RB,CAR,CHI,0.0,-6.9,2023,,D'Onta Foreman CAR→CHI
+Free Agent Signing,Shaquill Griffin,CB,JAX,CAR,0.0,0.0,2023,,Shaquill Griffin JAX→CAR
+Free Agent Signing,Jaleel Johnson,DT,ATL,TEN,0.0,0.0,2023,,Jaleel Johnson ATL→TEN
+Free Agent Signing,Pat Elflein,C,CAR,ARI,0.0,0.0,2023,,Pat Elflein CAR→ARI
+Free Agent Signing,Dan Feeney,OL,NYJ,CHI,0.0,,2023,,Dan Feeney NYJ→CHI
+Free Agent Signing,Chris Wormley,NT,PIT,CAR,0.0,0.0,2023,,Chris Wormley PIT→CAR
+Free Agent Signing,Sidney Jones,CB,LV,CIN,0.0,0.0,2023,,Sidney Jones LV→CIN
+Free Agent Signing,Mack Hollins,WR,LV,ATL,1.98,33.64,2023,,Mack Hollins LV→ATL
+Free Agent Signing,Carlos Watkins,DE,DAL,ARI,0.0,0.0,2023,,Carlos Watkins DAL→ARI
+Free Agent Signing,Cameron Tom,OL,PHI,LAC,0.0,,2023,,Cameron Tom PHI→LAC
+Free Agent Signing,Sean Harlow,C,ARI,NYG,0.0,0.0,2023,,Sean Harlow ARI→NYG
+Free Agent Signing,Samaje Perine,RB,CIN,DEN,0.0,-0.86,2023,,Samaje Perine CIN→DEN
+Free Agent Signing,Breon Borders,DB,CHI,NE,0.0,,2023,,Breon Borders CHI→NE
+Free Agent Signing,Pharaoh Brown,TE,CLE,NE,0.0,-2.49,2023,,Pharaoh Brown CLE→NE
+Free Agent Signing,Isaiah McKenzie,WR,BUF,IND,0.0,13.3,2023,,Isaiah McKenzie BUF→IND
+Free Agent Signing,Kendal Vickers,DE,BUF,ARI,0.0,0.0,2023,,Kendal Vickers BUF→ARI
+Free Agent Signing,J.C. Hassenauer,C,PIT,NYG,0.0,0.0,2023,,J.C. Hassenauer PIT→NYG
+Free Agent Signing,Chris Lammons,DB,KC,IND,0.0,0.0,2023,,Chris Lammons KC→IND
+Free Agent Signing,Al-Quadin Muhammad,LB,CHI,IND,0.0,0.0,2023,,Al-Quadin Muhammad CHI→IND
+Free Agent Signing,Ifeadi Odenigbo,DE,TB,NYJ,0.0,0.0,2023,,Ifeadi Odenigbo TB→NYJ
+Free Agent Signing,Cam Sims,WR,WAS,CAR,0.0,-8.6,2023,,Cam Sims WAS→CAR
+Free Agent Signing,Byron Pringle,WR,CHI,WAS,0.0,8.89,2023,,Byron Pringle CHI→WAS
+Free Agent Signing,Henry Mondeaux,DT,NYG,JAX,0.0,0.0,2023,,Henry Mondeaux NYG→JAX
+Free Agent Signing,Kentavius Street,DE,NO,ATL,0.0,0.0,2023,,Kentavius Street NO→ATL
+Free Agent Signing,Tremon Smith,CB,HOU,DEN,0.0,0.0,2023,,Tremon Smith HOU→DEN
+Free Agent Signing,Ben Niemann,LB,ARI,DEN,0.0,0.0,2023,,Ben Niemann ARI→DEN
+Free Agent Signing,Mike Boone,RB,DEN,CAR,0.0,-10.84,2023,,Mike Boone DEN→CAR
+Free Agent Signing,Jalyn Holmes,DT,CHI,NYJ,0.0,0.0,2023,,Jalyn Holmes CHI→NYJ
+Free Agent Signing,Jake Martin,DL,DEN,IND,0.0,,2023,,Jake Martin DEN→IND
+Free Agent Signing,Colby Gossett,G,ATL,NO,0.0,0.0,2023,,Colby Gossett ATL→NO
+Free Agent Signing,Tyler Lancaster,DL,LV,DEN,0.0,,2023,,Tyler Lancaster LV→DEN
+Free Agent Signing,Marcus Davenport,DE,NO,MIN,0.0,0.0,2023,,Marcus Davenport NO→MIN
+Free Agent Signing,Nick Gates,G,NYG,WAS,0.0,0.0,2023,,Nick Gates NYG→WAS
+Free Agent Signing,Bruce Hector,DL,DET,NYJ,0.0,,2023,,Bruce Hector DET→NYJ
+Free Agent Signing,Andre Smith,LB,TEN,ATL,0.0,0.0,2023,,Andre Smith TEN→ATL
+Free Agent Signing,Kyzir White,OLB,PHI,ARI,0.99,,2023,,Kyzir White PHI→ARI
+Free Agent Signing,Troy Fumagalli,TE,SF,MIN,0.0,,2023,,Troy Fumagalli SF→MIN
+Free Agent Signing,Sean Chandler,DB,CAR,WAS,0.0,2.17,2023,,Sean Chandler CAR→WAS
+Free Agent Signing,Tae Davis,LB,CLE,CAR,0.0,0.0,2023,,Tae Davis CLE→CAR
+Free Agent Signing,Ike Boettger,OL,BUF,IND,0.0,,2023,,Ike Boettger BUF→IND
+Free Agent Signing,Allen Lazard,WR,GB,NYJ,0.49,7.31,2023,,Allen Lazard GB→NYJ
+Free Agent Signing,Brandon Facyson,DB,IND,LV,0.0,0.0,2023,,Brandon Facyson IND→LV
+Free Agent Signing,Trenton Scott,OL,PIT,WAS,0.0,,2023,,Trenton Scott PIT→WAS
+Free Agent Signing,Evan Brown,C,DET,SEA,0.0,0.0,2023,,Evan Brown DET→SEA
+Free Agent Signing,Joshua Kalu,DB,TEN,WAS,0.0,0.0,2023,,Joshua Kalu TEN→WAS
+Free Agent Signing,Tremaine Edmunds,MLB,BUF,CHI,1.03,,2023,,Tremaine Edmunds BUF→CHI
+Free Agent Signing,Brandon Powell,WR,LA,MIN,0.0,1.68,2023,,Brandon Powell LA→MIN
+Free Agent Signing,Abdullah Anderson,DT,ATL,WAS,0.0,0.0,2023,,Abdullah Anderson ATL→WAS
+Free Agent Signing,J.C. Jackson,DB,LAC,NE,0.0,0.0,2023,,J.C. Jackson LAC→NE
+Free Agent Signing,Demone Harris,DE,HOU,ATL,0.0,0.0,2023,,Demone Harris HOU→ATL
+Free Agent Signing,Andre Chachere,DB,PHI,ARI,0.0,0.0,2023,,Andre Chachere PHI→ARI
+Free Agent Signing,Jaryd Jones-Smith,OL,BAL,WAS,0.0,,2023,,Jaryd Jones-Smith BAL→WAS
+Free Agent Signing,Aviante Collins,OL,DAL,CHI,0.0,,2023,,Aviante Collins DAL→CHI
+Free Agent Signing,Adam Pankey,OL,NYJ,DAL,0.0,,2023,,Adam Pankey NYJ→DAL
+Free Agent Signing,Adam Butler,DL,MIA,LV,0.0,,2023,,Adam Butler MIA→LV
+Free Agent Signing,Trent Taylor,WR,CIN,CHI,0.0,-2.5,2023,,Trent Taylor CIN→CHI
+Free Agent Signing,Chuck Clark,SAF,BAL,NYJ,0.5,,2023,,Chuck Clark BAL→NYJ
+Free Agent Signing,Chris Board,LB,DET,NE,0.0,0.0,2023,,Chris Board DET→NE
+Free Agent Signing,Cornell Armstrong,DB,ATL,LV,0.0,0.0,2023,,Cornell Armstrong ATL→LV
+Free Agent Signing,Josh Woods,LB,DET,ARI,0.0,0.0,2023,,Josh Woods DET→ARI
+Free Agent Signing,Tre'Quan Smith,WR,NO,DEN,0.0,7.39,2023,,Tre'Quan Smith NO→DEN
+Free Agent Signing,D.J. Chark,WR,DET,CAR,0.0,,2023,,D.J. Chark DET→CAR
+Free Agent Signing,Ronnie Harrison,LB,CLE,IND,0.0,0.0,2023,,Ronnie Harrison CLE→IND
+Free Agent Signing,Orlando Brown,OT,KC,CIN,0.0,0.0,2023,,Orlando Brown KC→CIN
+Free Agent Signing,Tre Flowers,CB,CIN,ATL,0.0,0.0,2023,,Tre Flowers CIN→ATL
+Free Agent Signing,Nathan Shepherd,DE,NYJ,NO,0.0,0.0,2023,,Nathan Shepherd NYJ→NO
+Free Agent Signing,Jessie Bates,FS,CIN,ATL,0.0,0.0,2023,,Jessie Bates CIN→ATL
+Free Agent Signing,Genard Avery,DE,TB,IND,0.0,0.0,2023,,Genard Avery TB→IND
+Free Agent Signing,Darius Phillips,CB,DEN,TEN,0.0,0.0,2023,,Darius Phillips DEN→TEN
+Free Agent Signing,Robert Spillane,LB,PIT,LV,0.0,0.0,2023,,Robert Spillane PIT→LV
+Free Agent Signing,Nick Thurman,DL,JAX,CAR,0.0,,2023,,Nick Thurman JAX→CAR
+Free Agent Signing,Zach Pascal,WR,PHI,ARI,0.0,-2.66,2023,,Zach Pascal PHI→ARI
+Free Agent Signing,Jacoby Brissett,QB,CLE,WAS,0.0,38.58,2023,,Jacoby Brissett CLE→WAS
+Free Agent Signing,Yannick Ngakoue,DE,IND,CHI,0.0,0.0,2023,,Yannick Ngakoue IND→CHI
+Free Agent Signing,Daniel Brunskill,OT,SF,TEN,0.0,0.0,2023,,Daniel Brunskill SF→TEN
+Free Agent Signing,Arden Key,DE,JAX,TEN,0.0,0.0,2023,,Arden Key JAX→TEN
+Free Agent Signing,D.J. Moore,WR,CAR,CHI,0.0,,2023,,D.J. Moore CAR→CHI
+Free Agent Signing,Mike Gesicki,TE,MIA,NE,0.0,0.17,2023,,Mike Gesicki MIA→NE
+Free Agent Signing,Hayden Hurst,TE,CIN,CAR,0.0,25.55,2023,,Hayden Hurst CIN→CAR
+Free Agent Signing,Rasheem Green,DE,HOU,CHI,0.0,0.0,2023,,Rasheem Green HOU→CHI
+Free Agent Signing,Terrell Edmunds,S,PIT,TEN,1.02,,2023,,Terrell Edmunds PIT→TEN
+Free Agent Signing,Taven Bryan,DT,CLE,IND,0.0,0.0,2023,,Taven Bryan CLE→IND
+Free Agent Signing,Mike Hughes,CB,DET,ATL,0.0,0.0,2023,,Mike Hughes DET→ATL
+Free Agent Signing,Mike McGlinchey,OT,SF,DEN,1.14,,2023,,Mike McGlinchey SF→DEN
+Free Agent Signing,Jackson Barton,OL,LV,ARI,0.0,,2023,,Jackson Barton LV→ARI
+Free Agent Signing,D.J. Montgomery,WR,HOU,IND,0.0,,2023,,D.J. Montgomery HOU→IND
+Free Agent Signing,Julian Love,SAF,NYG,SEA,0.48,,2023,,Julian Love NYG→SEA
+Free Agent Signing,Ben Powers,G,BAL,DEN,0.9,,2023,,Ben Powers BAL→DEN
+Free Agent Signing,Foster Moreau,TE,LV,NO,0.0,8.42,2023,,Foster Moreau LV→NO
+Free Agent Signing,Marcus Epps,SAF,PHI,LV,0.49,,2023,,Marcus Epps PHI→LV
+Free Agent Signing,Calvin Anderson,OT,DEN,NE,0.0,0.0,2023,,Calvin Anderson DEN→NE
+Free Agent Signing,Jakobi Meyers,WR,NE,LV,0.0,38.08,2023,,Jakobi Meyers NE→LV
+Free Agent Signing,Irv Smith,TE,MIN,CIN,0.0,-4.13,2023,,Irv Smith MIN→CIN
+Free Agent Signing,Sam Eguavoen,LB,MIA,NYJ,0.0,0.0,2023,,Sam Eguavoen MIA→NYJ
+Free Agent Signing,John Leglue,OL,PIT,ATL,0.0,,2023,,John Leglue PIT→ATL
+Free Agent Signing,Brett Rypien,QB,DEN,NYJ,0.0,-29.77,2023,,Brett Rypien DEN→NYJ
+Free Agent Signing,Ezekiel Elliott,RB,DAL,NE,0.0,-22.36,2023,,Ezekiel Elliott DAL→NE
+Free Agent Signing,Anthony Brown,CB,DAL,NYJ,1.08,,2023,,Anthony Brown DAL→NYJ
+Free Agent Signing,David Onyemata,DT,NO,ATL,0.0,0.0,2023,,David Onyemata NO→ATL
+Free Agent Signing,Andrew Billings,DT,LV,CHI,0.0,0.0,2023,,Andrew Billings LV→CHI
+Free Agent Signing,Ugochukwu Amadi,DB,KC,NO,0.0,,2023,,Ugochukwu Amadi KC→NO
+Free Agent Signing,Davion Davis,WR,HOU,WAS,0.0,,2023,,Davion Davis HOU→WAS
+Free Agent Signing,Matthew Wright,K,KC,CAR,0.0,0.0,2023,,Matthew Wright KC→CAR
+Free Agent Signing,Austin Seibert,K,DET,NYJ,0.0,0.0,2023,,Austin Seibert DET→NYJ
+Free Agent Signing,Rashad Fenton,CB,ATL,ARI,0.0,0.0,2023,,Rashad Fenton ATL→ARI
+Free Agent Signing,Azeez Al-Shaair,LB,SF,TEN,0.0,0.0,2023,,Azeez Al-Shaair SF→TEN
+Free Agent Signing,Zach Allen,DE,ARI,DEN,0.0,0.0,2023,,Zach Allen ARI→DEN
+Free Agent Signing,Josh Oliver,TE,BAL,MIN,0.0,7.01,2023,,Josh Oliver BAL→MIN
+Free Agent Signing,Will Grier,QB,DAL,LAC,0.0,,2023,,Will Grier DAL→LAC
+Free Agent Signing,Yodny Cajuste,OT,NE,NYG,0.0,0.0,2023,,Yodny Cajuste NE→NYG
+Free Agent Signing,Kendall Sheffield,DB,DAL,TEN,0.0,,2023,,Kendall Sheffield DAL→TEN
+Free Agent Signing,Hjalte Froholdt,G,CLE,ARI,0.0,0.0,2023,,Hjalte Froholdt CLE→ARI
+Free Agent Signing,Trevon Wesco,TE,CHI,TEN,0.0,0.73,2023,,Trevon Wesco CHI→TEN
+Free Agent Signing,Joejuan Williams,DB,NE,MIN,0.0,,2023,,Joejuan Williams NE→MIN
+Free Agent Signing,Miles Sanders,RB,PHI,CAR,0.0,-0.16,2023,,Miles Sanders PHI→CAR
+Free Agent Signing,Lonnie Johnson,SAF,TEN,NO,0.0,0.0,2023,,Lonnie Johnson TEN→NO
+Free Agent Signing,Trysten Hill,DT,ARI,NE,0.0,0.0,2023,,Trysten Hill ARI→NE
+Free Agent Signing,Andre Dillard,OL,PHI,TEN,0.0,,2023,,Andre Dillard PHI→TEN
+Free Agent Signing,Byron Murphy,CB,ARI,MIN,0.0,0.0,2023,,Byron Murphy ARI→MIN
+Free Agent Signing,Cody Ford,OT,ARI,CIN,0.0,0.0,2023,,Cody Ford ARI→CIN
+Free Agent Signing,Sean Murphy-Bunting,CB,TB,TEN,0.0,0.0,2023,,Sean Murphy-Bunting TB→TEN
+Free Agent Signing,Zach Gentry,TE,PIT,LV,0.0,-1.44,2023,,Zach Gentry PIT→LV
+Free Agent Signing,Jaydon Mickens,WR,NYG,IND,0.0,,2023,,Jaydon Mickens NYG→IND
+Free Agent Signing,A'Shawn Robinson,DT,LA,NYG,0.0,0.0,2023,,A'Shawn Robinson LA→NYG
+Free Agent Signing,Nick Vigil,OLB,ARI,MIN,0.0,0.0,2023,,Nick Vigil ARI→MIN
+Free Agent Signing,Vonn Bell,S,CIN,CAR,1.09,,2023,,Vonn Bell CIN→CAR
+Free Agent Signing,Riley Dixon,P,LA,DEN,0.0,5.39,2023,,Riley Dixon LA→DEN
+Free Agent Signing,Stephen Anderson,TE,ARI,LAC,0.0,-3.3,2023,,Stephen Anderson ARI→LAC
+Free Agent Signing,Wil Lutz,K,NO,DEN,0.0,0.0,2023,,Wil Lutz NO→DEN
+Free Agent Signing,Tyree Jackson,TE,PHI,NYG,0.0,0.0,2023,,Tyree Jackson PHI→NYG
+Free Agent Signing,David Sills,WR,NYG,DEN,0.0,4.9,2023,,David Sills NYG→DEN
+Free Agent Signing,Joe Giles-Harris,LB,BUF,NE,0.0,0.0,2023,,Joe Giles-Harris BUF→NE
+Free Agent Signing,Myles Gaskin,RB,MIA,MIN,0.0,-9.26,2023,,Myles Gaskin MIA→MIN
+Free Agent Signing,Kaden Elliss,LB,NO,ATL,0.0,0.0,2023,,Kaden Elliss NO→ATL
+Free Agent Signing,Joshua Miles,OL,ARI,NYG,0.0,,2023,,Joshua Miles ARI→NYG
+Free Agent Signing,Kevin Strong,DT,TEN,ARI,0.0,0.0,2023,,Kevin Strong TEN→ARI
+Free Agent Signing,Gardner Minshew,QB,PHI,IND,0.0,-8.4,2023,,Gardner Minshew PHI→IND
+Free Agent Signing,Scott Miller,WR,TB,ATL,0.0,0.35,2023,,Scott Miller TB→ATL
+Free Agent Signing,Dennis Daley,OT,TEN,ARI,1.1,,2023,,Dennis Daley TEN→ARI
+Free Agent Signing,Jarrett Stidham,QB,LV,DEN,0.0,-0.31,2023,,Jarrett Stidham LV→DEN
+Free Agent Signing,Matt Gay,K,LA,IND,0.0,0.0,2023,,Matt Gay LA→IND
+Free Agent Signing,Amani Oruwariye,CB,DET,JAX,0.0,0.0,2023,,Amani Oruwariye DET→JAX
+Free Agent Signing,Keaton Sutherland,OL,WAS,JAX,0.0,,2023,,Keaton Sutherland WAS→JAX
+Free Agent Signing,Ethan Greenidge,OL,NO,ATL,0.0,,2023,,Ethan Greenidge NO→ATL
+Free Agent Signing,Lil'Jordan Humphrey,WR,NE,DEN,0.0,0.32,2023,,Lil'Jordan Humphrey NE→DEN
+Free Agent Signing,Shy Tuttle,DT,NO,CAR,0.0,0.0,2023,,Shy Tuttle NO→CAR
+Free Agent Signing,Luke Gifford,LB,DAL,TEN,0.0,0.0,2023,,Luke Gifford DAL→TEN
+Free Agent Signing,Tae Hayes,DB,NE,NYJ,0.0,0.0,2023,,Tae Hayes NE→NYJ
+Free Agent Signing,T.J. Edwards,LB,PHI,CHI,1.03,,2023,,T.J. Edwards PHI→CHI
+Free Agent Signing,Dwayne Washington,RB,NO,DEN,0.0,-2.8,2023,,Dwayne Washington NO→DEN
+Free Agent Signing,Kyle Peko,NT,LV,TEN,0.0,0.0,2023,,Kyle Peko LV→TEN
+Free Agent Signing,Matthias Farley,DB,LV,CAR,0.0,-4.08,2023,,Matthias Farley LV→CAR
+Free Agent Signing,Alex Erickson,WR,WAS,LAC,0.0,0.0,2023,,Alex Erickson WAS→LAC
+Free Agent Signing,Justin Hollins,LB,GB,LAC,0.0,0.0,2023,,Justin Hollins GB→LAC
+Free Agent Signing,Juwann Winfree,WR,GB,IND,0.0,-1.0,2023,,Juwann Winfree GB→IND
+Free Agent Signing,Travis Homer,RB,SEA,CHI,0.0,-7.83,2023,,Travis Homer SEA→CHI
+Free Agent Signing,Devin Bush,LB,PIT,SEA,0.0,0.0,2023,,Devin Bush PIT→SEA
+Free Agent Signing,Ryan Connelly,ILB,MIN,NO,0.0,0.0,2023,,Ryan Connelly MIN→NO
+Free Agent Signing,Jeff Smith,WR,NYJ,ARI,0.0,6.64,2023,,Jeff Smith NYJ→ARI
+Free Agent Signing,Albert Huggins,DL,NO,ATL,0.0,,2023,,Albert Huggins NO→ATL
+Free Agent Signing,Tyron Johnson,WR,CIN,DAL,0.0,0.63,2023,,Tyron Johnson CIN→DAL
+Free Agent Signing,Perrion Winfrey,DT,CLE,NYJ,0.0,0.0,2023,,Perrion Winfrey CLE→NYJ
+Free Agent Signing,Chandler Brewer,OT,LA,JAX,0.0,0.0,2023,,Chandler Brewer LA→JAX
+Free Agent Signing,N'Keal Harry,TE,CHI,MIN,0.0,8.58,2023,,N'Keal Harry CHI→MIN
+Free Agent Signing,D'Ernest Johnson,RB,CLE,JAX,0.0,-1.03,2023,,D'Ernest Johnson CLE→JAX
+Free Agent Signing,Bobby Okereke,ILB,IND,NYG,0.84,,2023,,Bobby Okereke IND→NYG
+Free Agent Signing,Johnathan Abram,DB,SEA,NO,0.0,0.0,2023,,Johnathan Abram SEA→NO
+Free Agent Signing,Dalton Risner,G,DEN,MIN,0.87,,2023,,Dalton Risner DEN→MIN
+Free Agent Signing,Nick Scott,SAF,LA,CIN,0.48,,2023,,Nick Scott LA→CIN
+Free Agent Signing,Cody Barton,LB,SEA,WAS,0.87,,2023,,Cody Barton SEA→WAS
+Free Agent Signing,Dre'Mont Jones,LB,DEN,SEA,0.0,0.0,2023,,Dre'Mont Jones DEN→SEA
+Free Agent Signing,Gunner Olszewski,WR,PIT,NYG,0.0,2.52,2023,,Gunner Olszewski PIT→NYG
+Free Agent Signing,Montez Sweat,DE,WAS,CHI,0.0,0.0,2023,,Montez Sweat WAS→CHI
+Free Agent Signing,Nate Davis,G,TEN,CHI,0.0,0.0,2023,,Nate Davis TEN→CHI
+Free Agent Signing,Khalen Saunders,DT,KC,NO,0.0,0.0,2023,,Khalen Saunders KC→NO
+Free Agent Signing,L.J. Collier,DE,SEA,ARI,0.0,0.0,2023,,L.J. Collier SEA→ARI
+Free Agent Signing,Parris Campbell,WR,IND,NYG,0.22,-5.7,2023,,Parris Campbell IND→NYG
+Free Agent Signing,Jacob Bobenmoyer,LS,DEN,LV,0.0,0.0,2023,,Jacob Bobenmoyer DEN→LV
+Free Agent Signing,Jacques Patrick,RB,CIN,NYJ,0.0,,2023,,Jacques Patrick CIN→NYJ
+Free Agent Signing,Cade York,K,CLE,NYG,0.0,0.0,2023,,Cade York CLE→NYG
+Free Agent Signing,Derrick Gore,RB,NO,WAS,0.0,,2023,,Derrick Gore NO→WAS
+Free Agent Signing,Nick Vannett,TE,NYG,LAC,0.0,1.29,2023,,Nick Vannett NYG→LAC
+Free Agent Signing,Chris Moore,WR,HOU,TEN,0.0,5.18,2023,,Chris Moore HOU→TEN
+Free Agent Signing,Dean Lowry,DE,GB,MIN,0.0,0.0,2023,,Dean Lowry GB→MIN
+Free Agent Signing,Quinton Jefferson,DE,SEA,NYJ,0.0,0.0,2023,,Quinton Jefferson SEA→NYJ
+Free Agent Signing,Wes Schweitzer,G,WAS,NYJ,0.0,0.0,2023,,Wes Schweitzer WAS→NYJ
+Free Agent Signing,Kamu Grugier-Hill,OLB,ARI,CAR,0.0,2.86,2023,,Kamu Grugier-Hill ARI→CAR
+Free Agent Signing,Mario Edwards,DE,TEN,SEA,0.0,0.0,2023,,Mario Edwards TEN→SEA
+Free Agent Signing,Jarran Reed,DT,GB,SEA,0.0,0.0,2023,,Jarran Reed GB→SEA
+Free Agent Signing,Deion Jones,LB,CLE,CAR,0.0,0.0,2023,,Deion Jones CLE→CAR
+Free Agent Signing,Austin Hooper,TE,TEN,LV,0.0,26.15,2023,,Austin Hooper TEN→LV
+Free Agent Signing,Phillip Dorsett,WR,HOU,DEN,0.0,-4.25,2023,,Phillip Dorsett HOU→DEN
+Free Agent Signing,Frank Clark,LB,KC,SEA,0.79,,2023,,Frank Clark KC→SEA
+Free Agent Signing,Cody White,WR,PIT,SEA,0.0,-0.42,2023,,Cody White PIT→SEA
+Free Agent Signing,Joe Gaziano,DE,LAC,ATL,0.0,0.0,2023,,Joe Gaziano LAC→ATL
+Free Agent Signing,James Robinson,RB,NYJ,NO,0.0,-13.09,2023,,James Robinson NYJ→NO
+Free Agent Signing,Carter O'Donnell,OL,IND,ARI,0.0,,2023,,Carter O'Donnell IND→ARI
+Free Agent Signing,Blake Gillikin,P,NO,ARI,0.0,0.0,2023,,Blake Gillikin NO→ARI
+Free Agent Signing,Tony Jones,RB,SEA,ARI,0.0,-9.05,2023,,Tony Jones SEA→ARI
+Free Agent Signing,Essang Bassey,DB,DEN,LAC,0.0,0.0,2023,,Essang Bassey DEN→LAC
+Free Agent Signing,Calvin Throckmorton,OT,NO,TEN,0.0,0.0,2023,,Calvin Throckmorton NO→TEN
+Free Agent Signing,Jamycal Hasty,RB,JAX,NE,0.0,-0.93,2023,,Jamycal Hasty JAX→NE
+Free Agent Signing,Max Garcia,G,ARI,NO,0.0,0.0,2023,,Max Garcia ARI→NO
+Free Agent Signing,Geoff Swaim,TE,TEN,ARI,0.0,-1.83,2023,,Geoff Swaim TEN→ARI
+Free Agent Signing,Cameron Erving,G,CAR,NO,0.0,0.0,2023,,Cameron Erving CAR→NO
+Free Agent Signing,Bud Dupree,OLB,TEN,ATL,0.0,0.0,2023,,Bud Dupree TEN→ATL
+Free Agent Signing,Trevor Siemian,QB,CHI,NYJ,0.0,-8.02,2023,,Trevor Siemian CHI→NYJ
+Free Agent Signing,Bobby Price,DB,DET,ARI,0.0,0.0,2023,,Bobby Price DET→ARI
+Free Agent Signing,Jace Whittaker,CB,ARI,WAS,0.0,0.0,2023,,Jace Whittaker ARI→WAS
+Free Agent Signing,Blake Lynch,LB,ARI,LAC,0.0,,2023,,Blake Lynch ARI→LAC
+Free Agent Signing,David Moa,DT,LAC,TEN,0.0,0.0,2023,,David Moa LAC→TEN
+Free Agent Signing,Trystan Colon,OL,BAL,ARI,0.0,,2023,,Trystan Colon BAL→ARI
+Free Agent Signing,Julian Good-Jones,OL,PHI,WAS,0.0,,2023,,Julian Good-Jones PHI→WAS
+Free Agent Signing,Krys Barnes,LB,GB,ARI,0.0,0.0,2023,,Krys Barnes GB→ARI
+Free Agent Signing,Willington Previlon,DL,TB,DAL,0.0,,2023,,Willington Previlon TB→DAL
+Free Agent Signing,Daniel Hardy,DE,LA,CHI,0.0,0.0,2023,,Daniel Hardy LA→CHI
+Free Agent Signing,Jack Jones,CB,NE,LV,0.0,0.0,2023,,Jack Jones NE→LV
+Free Agent Signing,Tae Crowder,LB,PIT,TEN,0.0,0.0,2023,,Tae Crowder PIT→TEN
+Free Agent Signing,Tommy Hudson,TE,TEN,NO,0.0,,2023,,Tommy Hudson TEN→NO
+Free Agent Signing,Javelin Guidry,DB,ATL,NYJ,0.0,,2023,,Javelin Guidry ATL→NYJ
+Free Agent Signing,Lamar Jackson,QB,DEN,CAR,0.0,50.25,2023,,Lamar Jackson DEN→CAR
+Free Agent Signing,Bill Murray,OL,NE,CHI,0.0,,2023,,Bill Murray NE→CHI
+Free Agent Signing,Angelo Blackson,DE,CHI,JAX,0.0,0.0,2023,,Angelo Blackson CHI→JAX
+Free Agent Signing,DeShawn Williams,DE,DEN,CAR,0.0,0.0,2023,,DeShawn Williams DEN→CAR
+Free Agent Signing,Taylor Heinicke,QB,WAS,ATL,0.0,-17.1,2023,,Taylor Heinicke WAS→ATL
+Free Agent Signing,Dean Marlowe,S,BUF,LAC,0.0,0.0,2023,,Dean Marlowe BUF→LAC
+Free Agent Signing,Leonard Williams,DE,NYG,SEA,0.0,0.0,2023,,Leonard Williams NYG→SEA
+Free Agent Signing,Jamison Crowder,WR,BUF,WAS,0.0,-1.1,2023,,Jamison Crowder BUF→WAS
+Free Agent Signing,Rakeem Nunez-Roches,DT,TB,NYG,0.0,0.0,2023,,Rakeem Nunez-Roches TB→NYG
+Free Agent Signing,Darren Waller,TE,LV,NYG,0.0,4.9,2023,,Darren Waller LV→NYG
+Free Agent Signing,Eric Tomlinson,TE,DEN,IND,0.0,7.26,2023,,Eric Tomlinson DEN→IND
+Free Agent Signing,DeAndre Carter,WR,LAC,LV,0.0,11.16,2023,,DeAndre Carter LAC→LV
+Free Agent Signing,Troy Hill,CB,LA,CAR,0.0,0.0,2023,,Troy Hill LA→CAR
+Free Agent Signing,Michael Burton,FB,KC,DEN,0.0,-2.18,2023,,Michael Burton KC→DEN
+Free Agent Signing,Tucker Addington,LS,NE,WAS,0.0,,2023,,Tucker Addington NE→WAS
+Free Agent Signing,Vitaliy Gurman,OL,LV,NYJ,0.0,,2023,,Vitaliy Gurman LV→NYJ
+Free Agent Signing,Benton Whitley,LB,MIN,NYG,0.0,,2023,,Benton Whitley MIN→NYG
+Free Agent Signing,Lacale London,DL,CHI,ATL,0.0,,2023,,Lacale London CHI→ATL
+Free Agent Signing,Badara Traore,OL,ARI,CAR,0.0,,2023,,Badara Traore ARI→CAR
+Free Agent Signing,Kristian Wilkerson,WR,NE,LV,0.0,,2023,,Kristian Wilkerson NE→LV
+Free Agent Signing,Devin Asiasi,TE,CIN,TEN,0.0,-1.46,2023,,Devin Asiasi CIN→TEN
+Free Agent Signing,Ross Blacklock,DT,MIN,TEN,0.0,0.0,2023,,Ross Blacklock MIN→TEN
+Free Agent Signing,Marlon Davidson,DL,ATL,TEN,0.0,,2023,,Marlon Davidson ATL→TEN
+Free Agent Signing,Dennis Houston,WR,DAL,NYG,0.0,-5.05,2023,,Dennis Houston DAL→NYG
+Free Agent Signing,Jake Hanson,OL,GB,NYJ,0.0,,2023,,Jake Hanson GB→NYJ
+Free Agent Signing,Jeff Okudah,CB,DET,ATL,0.0,0.0,2023,,Jeff Okudah DET→ATL
+Free Agent Signing,John Penisini,DL,DET,NO,0.0,,2023,,John Penisini DET→NO
+Free Agent Signing,Collin Johnson,WR,NYG,CHI,0.0,,2023,,Collin Johnson NYG→CHI
+Free Agent Signing,Jacob Eason,QB,SF,NYG,0.0,-2.26,2023,,Jacob Eason SF→NYG
+Free Agent Signing,Jaylinn Hawkins,SAF,ATL,LAC,0.46,,2023,,Jaylinn Hawkins ATL→LAC
+Free Agent Signing,Trevis Gipson,LB,CHI,TEN,0.0,0.0,2023,,Trevis Gipson CHI→TEN
+Free Agent Signing,Jayden Peevy,DL,TEN,CAR,0.0,,2023,,Jayden Peevy TEN→CAR
+Free Agent Signing,Hayden Howerton,OL,NE,ARI,0.0,,2023,,Hayden Howerton NE→ARI
+Free Agent Signing,Jalen McKenzie,OL,SEA,LV,0.0,,2023,,Jalen McKenzie SEA→LV
+Free Agent Signing,Xavier Newman-Johnson,OL,TEN,NYJ,0.0,,2023,,Xavier Newman-Johnson TEN→NYJ
+Free Agent Signing,Isaac Taylor-Stuart,DB,DAL,IND,0.0,,2023,,Isaac Taylor-Stuart DAL→IND
+Free Agent Signing,Matt Hankins,DB,ATL,LAC,0.0,,2023,,Matt Hankins ATL→LAC
+Free Agent Signing,Timmy Horne,DT,ATL,NYG,0.0,0.0,2023,,Timmy Horne ATL→NYG
+Free Agent Signing,Stephen Jones,DE,ARI,NYJ,0.0,0.0,2023,,Stephen Jones ARI→NYJ
+Free Agent Signing,Jontre Kirklin,WR,ARI,NO,0.0,,2023,,Jontre Kirklin ARI→NO
+Free Agent Signing,Chris Pierce,TE,ARI,CAR,0.0,,2023,,Chris Pierce ARI→CAR
+Free Agent Signing,Marcelino McCrary-Ball,LB,SF,NYJ,0.0,,2023,,Marcelino McCrary-Ball SF→NYJ
+Free Agent Signing,Lucas Krull,TE,NO,DEN,0.0,,2023,,Lucas Krull NO→DEN
+Free Agent Signing,Ezra Cleveland,G,MIN,JAX,0.88,,2023,,Ezra Cleveland MIN→JAX
+Free Agent Signing,Cameron Dantzler,CB,MIN,NO,0.0,0.0,2023,,Cameron Dantzler MIN→NO
+Free Agent Signing,Qwuantrezz Knight,DB,SF,ARI,0.0,,2023,,Qwuantrezz Knight SF→ARI
+Free Agent Signing,Hakeem Adeniji,OT,CIN,MIN,0.0,0.0,2023,,Hakeem Adeniji CIN→MIN
+Free Agent Signing,Stantley Thomas-Oliver,CB,CAR,NYG,0.0,0.0,2023,,Stantley Thomas-Oliver CAR→NYG
+Free Agent Signing,Lachavious Simmons,OL,ARI,TEN,0.0,,2023,,Lachavious Simmons ARI→TEN
+Free Agent Signing,Joe Reed,WR,LAC,CHI,0.0,,2023,,Joe Reed LAC→CHI
+Free Agent Signing,Ben DiNucci,QB,DAL,DEN,0.0,,2023,,Ben DiNucci DAL→DEN
+Free Agent Signing,Jalen Reagor,WR,MIN,NE,0.0,2.61,2023,,Jalen Reagor MIN→NE
+Free Agent Signing,Kyle Hinton,OL,MIN,ATL,0.0,,2023,,Kyle Hinton MIN→ATL
+Free Agent Signing,Isaiah Simmons,SAF,ARI,NYG,0.4,,2023,,Isaiah Simmons ARI→NYG
+Free Agent Signing,Lynn Bowden,WR,NE,NO,0.0,,2023,,Lynn Bowden NE→NO
+Free Agent Signing,Tanner Muse,LB,SEA,LAC,0.0,0.0,2023,,Tanner Muse SEA→LAC
+Free Agent Signing,Keith Ismael,OL,SF,ARI,0.0,,2023,,Keith Ismael SF→ARI
+Free Agent Signing,Carlos Davis,DT,PIT,ATL,0.0,0.0,2023,,Carlos Davis PIT→ATL
+Free Agent Signing,James Empey,OL,MIA,TEN,0.0,,2023,,James Empey MIA→TEN
+Free Agent Signing,Khalid Kareem,LB,IND,CHI,0.0,0.0,2023,,Khalid Kareem IND→CHI
+Free Agent Signing,Eric Kendricks,MLB,MIN,LAC,1.03,,2023,,Eric Kendricks MIN→LAC
+Free Agent Signing,Bryant Koback,RB,MIN,SEA,0.0,,2023,,Bryant Koback MIN→SEA
+Free Agent Signing,Zach McCloud,DL,TEN,IND,0.0,,2023,,Zach McCloud TEN→IND
+Free Agent Signing,Luiji Vilain,LB,MIN,CAR,0.0,0.0,2023,,Luiji Vilain MIN→CAR
+Free Agent Signing,Kyler McMichael,DB,BUF,ARI,0.0,,2023,,Kyler McMichael BUF→ARI
+Free Agent Signing,Tyreek Maddox-Williams,LB,LAC,ARI,0.0,,2023,,Tyreek Maddox-Williams LAC→ARI
+Free Agent Signing,Davion Taylor,LB,PHI,ARI,0.0,,2023,,Davion Taylor PHI→ARI
+Free Agent Signing,K'Von Wallace,SAF,PHI,TEN,0.0,0.0,2023,,K'Von Wallace PHI→TEN
+Free Agent Signing,Ke'Shawn Vaughn,RB,TB,NE,0.0,-3.36,2023,,Ke'Shawn Vaughn TB→NE
+Free Agent Signing,Adam Trautman,TE,NO,DEN,0.0,8.53,2023,,Adam Trautman NO→DEN
+Free Agent Signing,Tyrie Cleveland,WR,PHI,IND,0.0,-4.33,2023,,Tyrie Cleveland PHI→IND
+Free Agent Signing,Cam Akers,RB,LA,MIN,0.0,-9.13,2023,,Cam Akers LA→MIN
+Free Agent Signing,Van Jefferson,WR,LA,ATL,0.0,11.8,2023,,Van Jefferson LA→ATL
+Free Agent Signing,Terrell Burgess,SAF,NYG,WAS,0.0,0.0,2023,,Terrell Burgess NYG→WAS
+Free Agent Signing,Gabe Jackson,OL,SEA,CAR,0.0,,2023,,Gabe Jackson SEA→CAR
+Free Agent Signing,Billy Turner,OT,DEN,NYJ,0.0,0.0,2023,,Billy Turner DEN→NYJ
+Free Agent Signing,Chris Manhertz,TE,JAX,DEN,0.0,-0.69,2023,,Chris Manhertz JAX→DEN
+Free Agent Signing,Trai Turner,G,WAS,NO,0.0,0.0,2023,,Trai Turner WAS→NO
+Free Agent Signing,Carlos Basham,LB,BUF,NYG,0.0,0.0,2023,,Carlos Basham BUF→NYG
+Free Agent Signing,Milo Eifler,LB,WAS,ATL,0.0,0.0,2023,,Milo Eifler WAS→ATL
+Free Agent Signing,Hamilcar Rashed,DL,TB,SEA,0.0,,2023,,Hamilcar Rashed TB→SEA
+Free Agent Signing,Michael Dwumfour,DT,SF,CHI,0.0,0.0,2023,,Michael Dwumfour SF→CHI
+Free Agent Signing,Sammis Reyes,TE,CHI,JAX,0.0,,2023,,Sammis Reyes CHI→JAX
+Free Agent Signing,Mike Strachan,WR,IND,CAR,0.0,-2.67,2023,,Mike Strachan IND→CAR
+Free Agent Signing,Deon Jackson,RB,IND,NYG,0.0,-24.16,2023,,Deon Jackson IND→NYG
+Free Agent Signing,Obinna Eze,OL,DET,NYJ,0.0,,2023,,Obinna Eze DET→NYJ
+Free Agent Signing,Ben Brown,OL,CIN,ARI,0.0,,2023,,Ben Brown CIN→ARI
+Free Agent Signing,Kendric Pryor,WR,JAX,CIN,0.0,,2023,,Kendric Pryor JAX→CIN
+Free Agent Signing,JoJo Domann,LB,IND,TEN,0.0,0.0,2023,,JoJo Domann IND→TEN
+Free Agent Signing,Roy Lopez,DT,HOU,ARI,0.0,0.0,2023,,Roy Lopez HOU→ARI
+Free Agent Signing,Phil Hoskins,DT,KC,ARI,0.0,0.0,2023,,Phil Hoskins KC→ARI
+Free Agent Signing,Jack Anderson,G,NYG,IND,0.0,0.0,2023,,Jack Anderson NYG→IND
+Free Agent Signing,Shemar Jean-Charles,CB,GB,NO,0.0,0.0,2023,,Shemar Jean-Charles GB→NO
+Free Agent Signing,Simi Fehoko,WR,DAL,LAC,0.0,-1.15,2023,,Simi Fehoko DAL→LAC
+Free Agent Signing,Quinton Bohanna,DT,DAL,TEN,0.0,0.0,2023,,Quinton Bohanna DAL→TEN
+Free Agent Signing,Demetric Felton,RB,CLE,CIN,0.0,-2.75,2023,,Demetric Felton CLE→CIN
+Free Agent Signing,Ihmir Smith-Marsette,WR,KC,CAR,0.0,-8.93,2023,,Ihmir Smith-Marsette KC→CAR
+Free Agent Signing,Derek Carr,QB,LV,NO,1.88,28.19,2023,,Derek Carr LV→NO
+Free Agent Signing,Jordan Matthews,TE,SF,CAR,0.0,,2023,,Jordan Matthews SF→CAR
+Free Agent Signing,Jimmy Garoppolo,QB,SF,LV,0.0,72.44,2023,,Jimmy Garoppolo SF→LV
+Free Agent Signing,Anthony Barr,OLB,DAL,MIN,0.0,0.0,2023,,Anthony Barr DAL→MIN
+Free Agent Signing,Justin McCray,G,HOU,CAR,0.0,0.0,2023,,Justin McCray HOU→CAR
+Free Agent Signing,Matt Barkley,QB,BUF,JAX,0.0,,2023,,Matt Barkley BUF→JAX
+Free Agent Signing,DeAndre Hopkins,WR,ARI,TEN,0.0,6.77,2023,,DeAndre Hopkins ARI→TEN
+Free Agent Signing,Justin Pugh,OL,ARI,NYG,0.0,,2023,,Justin Pugh ARI→NYG
+Free Agent Signing,Chris Wilcox,DB,ARI,LAC,0.0,,2023,,Chris Wilcox ARI→LAC
+Free Agent Signing,Dicaprio Bootle,CB,KC,CAR,0.0,0.0,2023,,Dicaprio Bootle KC→CAR
+Free Agent Signing,Kaden Davis,WR,DEN,ARI,0.0,,2023,,Kaden Davis DEN→ARI
+Free Agent Signing,Verone McKinley,DB,MIA,ARI,0.0,,2023,,Verone McKinley MIA→ARI
+Free Agent Signing,Ben Stille,DE,CLE,ARI,0.0,0.0,2023,,Ben Stille CLE→ARI
+Free Agent Signing,Marquan McCall,DT,CAR,LV,0.0,0.0,2023,,Marquan McCall CAR→LV
+Free Agent Signing,William Bradley-King,DL,WAS,NE,0.0,,2023,,William Bradley-King WAS→NE
+Free Agent Signing,Austin Faoliu,DL,DAL,SEA,0.0,,2023,,Austin Faoliu DAL→SEA
+Free Agent Signing,Curtis Brooks,DL,TEN,WAS,0.0,,2023,,Curtis Brooks TEN→WAS
+Free Agent Signing,Faion Hicks,DB,DEN,NO,0.0,,2023,,Faion Hicks DEN→NO
+Free Agent Signing,Tommy Kraemer,OL,DET,NO,0.0,,2023,,Tommy Kraemer DET→NO
+Free Agent Signing,A.J. Parker,DB,SF,CAR,0.0,,2023,,A.J. Parker SF→CAR
+Free Agent Signing,Austin Deculus,OT,HOU,NYJ,0.0,0.0,2023,,Austin Deculus HOU→NYJ
+Free Agent Signing,Naquan Jones,DT,TEN,ARI,0.0,0.0,2023,,Naquan Jones TEN→ARI
+Free Agent Signing,Charles Snowden,LB,TB,LV,0.0,,2023,,Charles Snowden TB→LV
+Free Agent Signing,Tyree Gillespie,DB,JAX,KC,0.0,,2023,,Tyree Gillespie JAX→KC
+Free Agent Signing,Jalen Camp,WR,HOU,CAR,0.0,0.51,2023,,Jalen Camp HOU→CAR
+Free Agent Signing,Garret Wallow,LB,HOU,TEN,0.0,0.0,2023,,Garret Wallow HOU→TEN
+Free Agent Signing,Quincy Roche,LB,NYG,MIN,0.0,0.0,2023,,Quincy Roche NYG→MIN
+Free Agent Signing,Christian Elliss,LB,PHI,NE,0.0,0.0,2023,,Christian Elliss PHI→NE
+Free Agent Signing,Coy Cronk,OL,JAX,MIN,0.0,,2023,,Coy Cronk JAX→MIN
+Free Agent Signing,Jack Heflin,DL,NYG,NO,0.0,,2023,,Jack Heflin NYG→NO
+Free Agent Signing,Devin Harper,LB,DAL,CIN,0.0,0.0,2023,,Devin Harper DAL→CIN
+Free Agent Signing,Jordan Jackson,DL,NO,DEN,0.0,,2023,,Jordan Jackson NO→DEN
+Free Agent Signing,Vederian Lowe,OT,MIN,NE,0.0,0.0,2023,,Vederian Lowe MIN→NE
+Free Agent Signing,Jabril Cox,LB,DAL,WAS,0.0,0.0,2023,,Jabril Cox DAL→WAS
+Free Agent Signing,Tommy Togiai,DT,CLE,ATL,0.0,0.0,2023,,Tommy Togiai CLE→ATL
+Free Agent Signing,Marco Wilson,CB,ARI,NE,0.0,0.0,2023,,Marco Wilson ARI→NE
+Free Agent Signing,Esezi Otomewo,DT,MIN,JAX,0.0,0.0,2023,,Esezi Otomewo MIN→JAX
+Free Agent Signing,Janarius Robinson,DL,PHI,LV,0.0,,2023,,Janarius Robinson PHI→LV
+Free Agent Signing,Nicholas Williams,DL,NYG,LAC,0.0,,2023,,Nicholas Williams NYG→LAC
+Free Agent Signing,Brandon McManus,K,DEN,JAX,0.0,0.0,2023,,Brandon McManus DEN→JAX
+Free Agent Signing,Christopher Hubbard,OL,CLE,TEN,0.0,,2023,,Christopher Hubbard CLE→TEN
+Free Agent Signing,Adam Thielen,WR,MIN,CAR,0.8,14.46,2023,,Adam Thielen MIN→CAR
+Free Agent Signing,John Jenkins,DT,MIA,LV,0.0,0.0,2023,,John Jenkins MIA→LV
+Free Agent Signing,David Quessenberry,OT,BUF,MIN,0.0,0.0,2023,,David Quessenberry BUF→MIN
+Free Agent Signing,Kellen Mond,QB,CLE,IND,0.0,,2023,,Kellen Mond CLE→IND
+Free Agent Signing,Jalen Mayfield,OL,ATL,NYG,0.0,,2023,,Jalen Mayfield ATL→NYG
+Free Agent Signing,Michael Carter,RB,NYJ,ARI,0.0,-26.18,2023,,Michael Carter NYJ→ARI
+Free Agent Signing,Jacob Harris,WR,LA,JAX,0.0,2.77,2023,,Jacob Harris LA→JAX
+Free Agent Signing,Elerson Smith,LB,NYG,LV,0.0,,2023,,Elerson Smith NYG→LV
+Free Agent Signing,Tay Gowan,DB,MIN,TEN,0.0,,2023,,Tay Gowan MIN→TEN
+Free Agent Signing,Tyrone Wheatley,OL,CLE,NE,0.0,,2023,,Tyrone Wheatley CLE→NE
+Free Agent Signing,Darren Hall,CB,ATL,IND,0.0,0.0,2023,,Darren Hall ATL→IND
+Free Agent Signing,Michael Bandy,WR,LAC,DEN,0.0,-2.31,2023,,Michael Bandy LAC→DEN
+Free Agent Signing,Monty Rice,LB,TEN,NO,0.0,0.0,2023,,Monty Rice TEN→NO
+Free Agent Signing,LaBryan Ray,DL,NE,CAR,0.0,,2023,,LaBryan Ray NE→CAR
+Free Agent Signing,Ronnie Perkins,DL,NE,DEN,0.0,,2023,,Ronnie Perkins NE→DEN
+Free Agent Signing,Trey Sermon,RB,PHI,IND,0.0,2.3,2023,,Trey Sermon PHI→IND
+Free Agent Signing,Tyrese Robinson,OL,PHI,MIN,0.0,,2023,,Tyrese Robinson PHI→MIN
+Free Agent Signing,Tyler Goodson,RB,GB,IND,0.0,,2023,,Tyler Goodson GB→IND
+Free Agent Signing,Josh Sills,OL,PHI,IND,0.0,,2023,,Josh Sills PHI→IND
+Free Agent Signing,Joey Blount,SAF,SEA,ARI,0.0,0.0,2023,,Joey Blount SEA→ARI
+Free Agent Signing,Roy Mbaeteka,OL,NYG,CHI,0.0,,2023,,Roy Mbaeteka NYG→CHI
+Free Agent Signing,Haggai Chisom Ndubuisi,OL,ARI,DEN,0.0,,2023,,Haggai Chisom Ndubuisi ARI→DEN
+Free Agent Signing,Michael Jacobson,TE,IND,NO,0.0,,2023,,Michael Jacobson IND→NO
+Free Agent Signing,Thomas Morstead,P,MIA,NYJ,0.0,0.0,2023,,Thomas Morstead MIA→NYJ
+Free Agent Signing,Matt Overton,LS,DAL,CHI,0.0,0.0,2023,,Matt Overton DAL→CHI
+Free Agent Signing,Al Woods,DT,SEA,NYJ,0.0,0.0,2023,,Al Woods SEA→NYJ
+Free Agent Signing,Tyreke Smith,LB,SEA,ARI,0.0,,2023,,Tyreke Smith SEA→ARI
+Free Agent Signing,Lance McCutcheon,WR,LA,NYJ,0.0,-4.0,2023,,Lance McCutcheon LA→NYJ
+Free Agent Signing,Riley Reiff,OT,CHI,NE,0.0,0.0,2023,,Riley Reiff CHI→NE
+Free Agent Signing,Greg Van Roten,G,BUF,LV,0.0,0.0,2023,,Greg Van Roten BUF→LV
+Free Agent Signing,Stephon Gilmore,CB,IND,DAL,1.39,,2023,,Stephon Gilmore IND→DAL
+Free Agent Signing,Vi Jones,LB,SEA,TB,0.0,,2023,,Vi Jones SEA→TB
+Free Agent Signing,Julio Jones,WR,TB,PHI,0.0,13.93,2023,,Julio Jones TB→PHI
+Free Agent Signing,Rodger Saffold,G,BUF,CLE,0.88,,2023,,Rodger Saffold BUF→CLE
+Free Agent Signing,Kyron Johnson,LB,PHI,PIT,0.0,0.0,2023,,Kyron Johnson PHI→PIT
+Free Agent Signing,Marquise Goodwin,WR,SEA,CLE,0.0,20.39,2023,,Marquise Goodwin SEA→CLE
+Free Agent Signing,Carson Tinker,LS,SEA,LA,0.0,0.0,2023,,Carson Tinker SEA→LA
+Free Agent Signing,Ty Nsekhe,OT,LA,CLE,0.0,0.0,2023,,Ty Nsekhe LA→CLE
+Free Agent Signing,Anthony Schwartz,WR,CLE,MIA,0.0,-3.98,2023,,Anthony Schwartz CLE→MIA
+Free Agent Signing,Dustin Hopkins,K,LAC,CLE,0.0,0.0,2023,,Dustin Hopkins LAC→CLE
+Free Agent Signing,Brett Maher,K,DAL,LA,0.0,0.0,2023,,Brett Maher DAL→LA
+Free Agent Signing,Duron Harmon,S,LV,CLE,1.05,,2023,,Duron Harmon LV→CLE
+Free Agent Signing,Justin Houston,OLB,BAL,MIA,0.0,0.0,2023,,Justin Houston BAL→MIA
+Free Agent Signing,Nikola Kalinic,TE,IND,LA,0.0,0.0,2023,,Nikola Kalinic IND→LA
+Free Agent Signing,Trey Lance,QB,SF,DAL,0.0,-4.86,2023,,Trey Lance SF→DAL
+Free Agent Signing,Hunter Long,TE,MIA,LA,0.0,-0.53,2023,,Hunter Long MIA→LA
+Free Agent Signing,Joe Flacco,QB,NYJ,CLE,0.0,-25.5,2023,,Joe Flacco NYJ→CLE
+Free Agent Signing,Rodney McLeod Jr.,FS,IND,CLE,0.0,0.0,2023,,Rodney McLeod Jr. IND→CLE
+Free Agent Signing,Bruce Irvin,LB,SEA,MIA,0.0,0.0,2023,,Bruce Irvin SEA→MIA
+Free Agent Signing,Alex Leatherwood,OT,CHI,CLE,0.0,0.0,2023,,Alex Leatherwood CHI→CLE
+Free Agent Signing,Za'Darius Smith,DE,MIN,CLE,1.11,,2023,,Za'Darius Smith MIN→CLE
+Free Agent Signing,Eric Rowe,CB,MIA,PIT,0.0,0.0,2023,,Eric Rowe MIA→PIT
+Free Agent Signing,Justin Ellis,DT,NYG,MIA,0.0,0.0,2023,,Justin Ellis NYG→MIA
+Free Agent Signing,Shelby Harris,DE,SEA,CLE,0.0,0.0,2023,,Shelby Harris SEA→CLE
+Free Agent Signing,Markus Golden,LB,ARI,PIT,0.0,0.0,2023,,Markus Golden ARI→PIT
+Free Agent Signing,Kwon Alexander,MLB,NYJ,PIT,0.0,0.0,2023,,Kwon Alexander NYJ→PIT
+Free Agent Signing,Carl Davis,DT,NE,DAL,0.0,0.0,2023,,Carl Davis NE→DAL
+Free Agent Signing,Riley Patterson,K,JAX,CLE,0.0,0.0,2023,,Riley Patterson JAX→CLE
+Free Agent Signing,Kalon Barnes,DB,MIN,CLE,0.0,,2023,,Kalon Barnes MIN→CLE
+Free Agent Signing,Buddy Johnson,LB,HOU,DAL,0.0,,2023,,Buddy Johnson HOU→DAL
+Free Agent Signing,Marcus Mariota,QB,ATL,PHI,0.0,18.05,2023,,Marcus Mariota ATL→PHI
+Free Agent Signing,Eli Apple,CB,CIN,MIA,1.3,,2023,,Eli Apple CIN→MIA
+Free Agent Signing,Tyler Kroft,TE,SF,MIA,0.0,2.72,2023,,Tyler Kroft SF→MIA
+Free Agent Signing,Damien Wilson,OLB,CAR,DAL,0.0,0.0,2023,,Damien Wilson CAR→DAL
+Free Agent Signing,Justin Murray,OL,BUF,CLE,0.0,,2023,,Justin Murray BUF→CLE
+Free Agent Signing,Jeff Driskel,QB,HOU,CLE,0.0,-11.16,2023,,Jeff Driskel HOU→CLE
+Free Agent Signing,Elandon Roberts,OLB,MIA,PIT,0.0,0.0,2023,,Elandon Roberts MIA→PIT
+Free Agent Signing,Blake Martinez,ILB,LV,PIT,0.0,0.0,2023,,Blake Martinez LV→PIT
+Free Agent Signing,Keanu Neal,S,TB,PIT,0.0,0.0,2023,,Keanu Neal TB→PIT
+Free Agent Signing,Miller Forristall,TE,CLE,LA,0.0,-0.51,2023,,Miller Forristall CLE→LA
+Free Agent Signing,Trenton Thompson,DB,NYG,PIT,0.0,,2023,,Trenton Thompson NYG→PIT
+Free Agent Signing,Kellen Diesch,OL,CHI,PIT,0.0,,2023,,Kellen Diesch CHI→PIT
+Free Agent Signing,Isaac Seumalo,G,PHI,PIT,0.87,,2023,,Isaac Seumalo PHI→PIT
+Free Agent Signing,Demarcus Robinson,WR,BAL,LA,0.0,7.58,2023,,Demarcus Robinson BAL→LA
+Free Agent Signing,Robbie Chosen,WR,ARI,MIA,0.0,-7.14,2023,,Robbie Chosen ARI→MIA
+Free Agent Signing,Matt Skura,C,LA,MIA,0.0,0.0,2023,,Matt Skura LA→MIA
+Free Agent Signing,Lecitus Smith,G,ARI,PHI,0.0,0.0,2023,,Lecitus Smith ARI→PHI
+Free Agent Signing,Le'Raven Clark,OL,TEN,PHI,0.0,,2023,,Le'Raven Clark TEN→PHI
+Free Agent Signing,Carson Wentz,QB,WAS,LA,0.0,-33.85,2023,,Carson Wentz WAS→LA
+Free Agent Signing,Dez Fitzpatrick,WR,TEN,PIT,0.0,0.0,2023,,Dez Fitzpatrick TEN→PIT
+Free Agent Signing,Dalvin Tomlinson,DE,MIN,CLE,0.0,0.0,2023,,Dalvin Tomlinson MIN→CLE
+Free Agent Signing,Zach Cunningham,ILB,TEN,PHI,0.0,0.0,2023,,Zach Cunningham TEN→PHI
+Free Agent Signing,Nicholas Morrow,LB,CHI,PHI,1.1,,2023,,Nicholas Morrow CHI→PHI
+Free Agent Signing,Racey McMath,WR,TEN,DAL,0.0,-5.82,2023,,Racey McMath TEN→DAL
+Free Agent Signing,Calvin Munson,LB,NE,MIA,0.0,,2023,,Calvin Munson NE→MIA
+Free Agent Signing,PJ Walker,QB,CAR,CLE,0.0,-18.5,2023,,PJ Walker CAR→CLE
+Free Agent Signing,Kevin Byard,FS,TEN,PHI,1.07,,2023,,Kevin Byard TEN→PHI
+Free Agent Signing,Kenyan Drake,RB,BAL,GB,0.0,-18.42,2023,,Kenyan Drake BAL→GB
+Free Agent Signing,Jaylon Smith,MLB,NYG,PIT,0.0,0.0,2023,,Jaylon Smith NYG→PIT
+Free Agent Signing,Jalen Ramsey,CB,LA,MIA,1.38,,2023,,Jalen Ramsey LA→MIA
+Free Agent Signing,Tyler Johnson,WR,TB,LA,0.0,,2023,,Tyler Johnson TB→LA
+Free Agent Signing,Albert Okwuegbunam,TE,DEN,PHI,0.0,-2.29,2023,,Albert Okwuegbunam DEN→PHI
+Free Agent Signing,Dylan Cook,OL,TB,PIT,0.0,,2023,,Dylan Cook TB→PIT
+Free Agent Signing,Olakunle Fatukasi,ILB,DEN,LA,0.0,0.0,2023,,Olakunle Fatukasi DEN→LA
+Free Agent Signing,Leonard Fournette,RB,TB,BUF,0.0,-29.6,2023,,Leonard Fournette TB→BUF
+Free Agent Signing,Ahkello Witherspoon,CB,PIT,LA,0.0,0.0,2023,,Ahkello Witherspoon PIT→LA
+Free Agent Signing,Vincent Gray,DB,NO,CLE,0.0,,2023,,Vincent Gray NO→CLE
+Free Agent Signing,Kevin Dotson,G,PIT,LA,0.9,,2023,,Kevin Dotson PIT→LA
+Free Agent Signing,Michael Ojemudia,DB,CHI,LA,0.0,,2023,,Michael Ojemudia CHI→LA
+Free Agent Signing,John Johnson,DB,CLE,LA,1.16,,2023,,John Johnson CLE→LA
+Free Agent Signing,Justin Evans,S,NO,PHI,0.0,0.0,2023,,Justin Evans NO→PHI
+Free Agent Signing,D'Andre Swift,RB,DET,PHI,0.0,14.67,2023,,D'Andre Swift DET→PHI
+Free Agent Signing,Mike White,QB,NYJ,MIA,0.0,-5.05,2023,,Mike White NYJ→MIA
+Free Agent Signing,Jordan Akins,TE,HOU,CLE,0.0,21.46,2023,,Jordan Akins HOU→CLE
+Free Agent Signing,Da'Shawn Hand,DL,TEN,MIA,0.0,,2023,,Da'Shawn Hand TEN→MIA
+Free Agent Signing,Leroy Watson,OL,SF,CLE,0.0,,2023,,Leroy Watson SF→CLE
+Free Agent Signing,Noah Igbinoghene,CB,MIA,DAL,0.0,0.0,2023,,Noah Igbinoghene MIA→DAL
+Free Agent Signing,Chase Claypool,WR,CHI,MIA,0.0,-1.02,2023,,Chase Claypool CHI→MIA
+Free Agent Signing,Braden Mann,P,NYJ,PHI,0.0,0.89,2023,,Braden Mann NYJ→PHI
+Free Agent Signing,Darrynton Evans,RB,CHI,MIA,0.0,5.54,2023,,Darrynton Evans CHI→MIA
+Free Agent Signing,Mykal Walker,LB,ATL,PIT,0.0,0.0,2023,,Mykal Walker ATL→PIT
+Free Agent Signing,Parry Nickerson,DB,MIN,MIA,0.0,,2023,,Parry Nickerson MIN→MIA
+Free Agent Signing,DeShon Elliott,SAF,DET,MIA,0.45,,2023,,DeShon Elliott DET→MIA
+Free Agent Signing,Trent Sieg,LS,LV,DAL,0.0,0.0,2023,,Trent Sieg LV→DAL
+Free Agent Signing,Isaiah Rodgers,CB,IND,PHI,0.0,0.0,2023,,Isaiah Rodgers IND→PHI
+Free Agent Signing,Braxton Berrios,WR,NYJ,MIA,0.0,-1.6,2023,,Braxton Berrios NYJ→MIA
+Free Agent Signing,Matthew Adams,OLB,CHI,CLE,0.0,0.0,2023,,Matthew Adams CHI→CLE
+Free Agent Signing,Denzel Mims,WR,NYJ,PIT,0.0,-2.84,2023,,Denzel Mims NYJ→PIT
+Free Agent Signing,Freddie Swain,WR,DEN,MIA,0.0,-3.9,2023,,Freddie Swain DEN→MIA
+Free Agent Signing,Chandon Sullivan,DB,MIN,PIT,0.98,,2023,,Chandon Sullivan MIN→PIT
+Free Agent Signing,Godwin Igwebuike,RB,SEA,PIT,0.0,-4.22,2023,,Godwin Igwebuike SEA→PIT
+Free Agent Signing,Mike Ford,DB,ATL,CLE,0.0,0.0,2023,,Mike Ford ATL→CLE
+Free Agent Signing,Luq Barcoo,DB,KC,PIT,0.0,,2023,,Luq Barcoo KC→PIT
+Free Agent Signing,Nick Bowers,TE,CIN,MIA,0.0,,2023,,Nick Bowers CIN→MIA
+Free Agent Signing,Chasen Hines,OL,NE,MIA,0.0,,2023,,Chasen Hines NE→MIA
+Free Agent Signing,James Proche,WR,BAL,CLE,0.0,-13.67,2023,,James Proche BAL→CLE
+Free Agent Signing,Rashaad Penny,RB,SEA,PHI,0.0,14.21,2023,,Rashaad Penny SEA→PHI
+Free Agent Signing,Billy Price,C,ARI,DAL,0.0,0.0,2023,,Billy Price ARI→DAL
+Free Agent Signing,Maurice Hurst,DL,SF,CLE,0.0,,2023,,Maurice Hurst SF→CLE
+Free Agent Signing,Nate Meadors,DB,TEN,PIT,0.0,,2023,,Nate Meadors TEN→PIT
+Free Agent Signing,Quinton Bell,LB,ATL,MIA,0.0,0.0,2023,,Quinton Bell ATL→MIA
+Free Agent Signing,Ogbo Okoronkwo,LB,HOU,CLE,0.0,0.0,2023,,Ogbo Okoronkwo HOU→CLE
+Free Agent Signing,Royce Freeman,RB,HOU,LA,0.0,-16.89,2023,,Royce Freeman HOU→LA
+Free Agent Signing,Sony Michel,RB,LAC,LA,0.0,-9.41,2023,,Sony Michel LAC→LA
+Free Agent Signing,Shaquille Leonard,OLB,IND,PHI,0.0,0.0,2023,,Shaquille Leonard IND→PHI
+Free Agent Signing,Isaiah Wynn,G,NE,MIA,0.0,0.0,2023,,Isaiah Wynn NE→MIA
+Free Agent Signing,Geron Christian,OL,MIA,CLE,0.0,,2023,,Geron Christian MIA→CLE
+Free Agent Signing,Brandon Smith,LB,CAR,PHI,0.0,0.0,2023,,Brandon Smith CAR→PHI
+Free Agent Signing,Pierre Strong,RB,NE,CLE,0.0,6.74,2023,,Pierre Strong NE→CLE
+Free Agent Signing,David Long,DB,TEN,MIA,0.77,,2023,,David Long TEN→MIA
+Free Agent Signing,Jalen Elliott,DB,LV,PIT,0.0,,2023,,Jalen Elliott LV→PIT
+Free Agent Signing,Breiden Fehoko,DT,LAC,PIT,0.0,0.0,2023,,Breiden Fehoko LAC→PIT
+Free Agent Signing,Chris Williams,DT,IND,CLE,0.0,0.0,2023,,Chris Williams IND→CLE
+Free Agent Signing,Olamide Zaccheaus,WR,ATL,PHI,0.0,23.21,2023,,Olamide Zaccheaus ATL→PHI
+Free Agent Signing,Trace McSorley,QB,ARI,PIT,0.0,-43.53,2023,,Trace McSorley ARI→PIT
+Free Agent Signing,Armon Watts,DT,CHI,PIT,0.0,0.0,2023,,Armon Watts CHI→PIT
+Free Agent Signing,Malik Reed,LB,PIT,MIA,0.0,0.0,2023,,Malik Reed PIT→MIA
+Free Agent Signing,Alexander Johnson,LB,SEA,MIA,0.0,0.0,2023,,Alexander Johnson SEA→MIA
+Free Agent Signing,Nate Herbig,G,NYJ,PIT,0.0,0.0,2023,,Nate Herbig NYJ→PIT
+Free Agent Signing,Patrick Peterson,CB,MIN,PIT,1.33,,2023,,Patrick Peterson MIN→PIT
+Free Agent Signing,Troy Reeder,LB,LAC,LA,0.0,0.0,2023,,Troy Reeder LAC→LA
+Free Agent Signing,Duke Shelley,CB,MIN,LA,0.0,0.0,2023,,Duke Shelley MIN→LA
+Free Agent Signing,Chuma Edoga,OT,ATL,DAL,0.0,0.0,2023,,Chuma Edoga ATL→DAL
+Free Agent Signing,Juan Thornhill,SAF,KC,CLE,0.48,,2023,,Juan Thornhill KC→CLE
+Free Agent Signing,Byron Cowart,DT,IND,MIA,0.0,0.0,2023,,Byron Cowart IND→MIA
+Free Agent Signing,Jake Bailey,P,NE,MIA,0.0,0.0,2023,,Jake Bailey NE→MIA
+Free Agent Signing,Cole Holcomb,LB,WAS,PIT,0.0,0.0,2023,,Cole Holcomb WAS→PIT
+Free Agent Signing,La'el Collins,OT,CIN,DAL,1.11,,2023,,La'el Collins CIN→DAL
+Free Agent Signing,Allen Robinson,WR,LA,PIT,0.0,9.0,2023,,Allen Robinson LA→PIT
+Free Agent Signing,Bradley Roby,CB,NO,PHI,0.0,0.0,2023,,Bradley Roby NO→PHI
+Free Agent Signing,Thomas Booker,DT,HOU,PHI,0.0,0.0,2023,,Thomas Booker HOU→PHI
+Free Agent Signing,Elijah Moore,WR,NYJ,CLE,0.0,0.39,2023,,Elijah Moore NYJ→CLE
+Free Agent Signing,Brandin Cooks,WR,HOU,DAL,0.0,4.54,2023,,Brandin Cooks HOU→DAL
+Free Agent Signing,Jonotthan Harrison,OL,ATL,MIA,0.0,,2023,,Jonotthan Harrison ATL→MIA
+Free Agent Signing,Connor McGovern,G,DAL,BUF,0.84,,2023,,Connor McGovern DAL→BUF
+Free Agent Signing,Ty Johnson,RB,NYJ,BUF,0.0,-15.55,2023,,Ty Johnson NYJ→BUF
+Free Agent Signing,Linval Joseph,DT,PHI,BUF,0.0,0.0,2023,,Linval Joseph PHI→BUF
+Free Agent Signing,Derek Barnett,DL,PHI,HOU,0.0,,2023,,Derek Barnett PHI→HOU
+Free Agent Signing,Kevin Jarvis,OL,DET,BUF,0.0,,2023,,Kevin Jarvis DET→BUF
+Free Agent Signing,Robert Woods,WR,TEN,HOU,0.53,8.95,2023,,Robert Woods TEN→HOU
+Free Agent Signing,Josh Norman,CB,CAR,BUF,0.0,0.0,2023,,Josh Norman CAR→BUF
+Free Agent Signing,Case Keenum,QB,BUF,HOU,0.0,-11.18,2023,,Case Keenum BUF→HOU
+Free Agent Signing,Chase McLaughlin,K,IND,TB,0.0,0.0,2023,,Chase McLaughlin IND→TB
+Free Agent Signing,Kareem Jackson,S,DEN,HOU,1.09,,2023,,Kareem Jackson DEN→HOU
+Free Agent Signing,Tre' McKitty,TE,LAC,BUF,0.0,-4.78,2023,,Tre' McKitty LAC→BUF
+Free Agent Signing,Robert Rochell,CB,LA,GB,0.0,0.0,2023,,Robert Rochell LA→GB
+Free Agent Signing,Kameron Cline,DE,IND,BUF,0.0,0.0,2023,,Kameron Cline IND→BUF
+Free Agent Signing,Denzel Perryman,MLB,LV,HOU,0.0,0.0,2023,,Denzel Perryman LV→HOU
+Free Agent Signing,Matt Feiler,G,LAC,TB,0.9,,2023,,Matt Feiler LAC→TB
+Free Agent Signing,Kerry Hyder,DE,SF,HOU,0.0,0.0,2023,,Kerry Hyder SF→HOU
+Free Agent Signing,Latavius Murray,RB,DEN,BUF,0.0,-13.84,2023,,Latavius Murray DEN→BUF
+Free Agent Signing,Jimmie Ward,SAF,SF,HOU,0.0,0.0,2023,,Jimmie Ward SF→HOU
+Free Agent Signing,Germain Ifedi,OL,ATL,BUF,0.0,,2023,,Germain Ifedi ATL→BUF
+Free Agent Signing,Matthew Orzech,LS,LA,GB,0.0,0.0,2023,,Matthew Orzech LA→GB
+Free Agent Signing,Baker Mayfield,QB,LA,TB,0.0,-58.42,2023,,Baker Mayfield LA→TB
+Free Agent Signing,Andrew Beck,FB,DEN,HOU,0.0,-6.85,2023,,Andrew Beck DEN→HOU
+Free Agent Signing,John Wolford,QB,LA,TB,0.0,-17.69,2023,,John Wolford LA→TB
+Free Agent Signing,Ka'dar Hollman,DB,MIA,HOU,0.0,,2023,,Ka'dar Hollman MIA→HOU
+Free Agent Signing,Steven Sims,WR,PIT,HOU,0.0,-3.75,2023,,Steven Sims PIT→HOU
+Free Agent Signing,Adrian Amos,S,GB,HOU,1.04,,2023,,Adrian Amos GB→HOU
+Free Agent Signing,Brandon Shell,OT,MIA,BUF,0.0,0.0,2023,,Brandon Shell MIA→BUF
+Free Agent Signing,Zyon Gilbert,DB,NYG,GB,0.0,0.0,2023,,Zyon Gilbert NYG→GB
+Free Agent Signing,Deandre Johnson,LB,MIA,GB,0.0,,2023,,Deandre Johnson MIA→GB
+Free Agent Signing,Shane Buechele,QB,KC,BUF,0.0,,2023,,Shane Buechele KC→BUF
+Free Agent Signing,Hassan Ridgeway,DT,SF,HOU,0.0,0.0,2023,,Hassan Ridgeway SF→HOU
+Free Agent Signing,George Fant,OT,NYJ,HOU,0.0,0.0,2023,,George Fant NYJ→HOU
+Free Agent Signing,Zayne Anderson,DB,KC,GB,0.0,,2023,,Zayne Anderson KC→GB
+Free Agent Signing,Arron Mosby,DE,CAR,GB,0.0,0.0,2023,,Arron Mosby CAR→GB
+Free Agent Signing,Myjai Sanders,LB,ARI,HOU,0.0,0.0,2023,,Myjai Sanders ARI→HOU
+Free Agent Signing,Marcell Harris,DB,NYJ,HOU,0.0,0.0,2023,,Marcell Harris NYJ→HOU
+Free Agent Signing,Chase Edmonds,RB,DEN,TB,0.0,-10.65,2023,,Chase Edmonds DEN→TB
+Free Agent Signing,Tyler Coyle,SAF,DAL,GB,0.0,0.0,2023,,Tyler Coyle DAL→GB
+Free Agent Signing,Damiere Byrd,WR,ATL,HOU,0.0,7.56,2023,,Damiere Byrd ATL→HOU
+Free Agent Signing,Shaq Mason,G,TB,HOU,0.89,,2023,,Shaq Mason TB→HOU
+Free Agent Signing,Teair Tart,DT,TEN,HOU,0.0,0.0,2023,,Teair Tart TEN→HOU
+Free Agent Signing,Kristian Welch,LB,BAL,GB,0.0,0.0,2023,,Kristian Welch BAL→GB
+Free Agent Signing,Eric Saubert,TE,DEN,HOU,0.0,-2.88,2023,,Eric Saubert DEN→HOU
+Free Agent Signing,Sheldon Rankins,DT,NYJ,HOU,0.0,0.0,2023,,Sheldon Rankins NYJ→HOU
+Free Agent Signing,DeAndre Houston-Carson,DB,CHI,HOU,0.0,0.0,2023,,DeAndre Houston-Carson CHI→HOU
+Free Agent Signing,Leonard Floyd,DE,LA,BUF,1.37,,2023,,Leonard Floyd LA→BUF
+Free Agent Signing,David Moore,WR,CHI,TB,0.0,,2023,,David Moore CHI→TB
+Free Agent Signing,Noah Brown,WR,DAL,HOU,0.22,0.99,2023,,Noah Brown DAL→HOU
+Free Agent Signing,Rasul Douglas,CB,GB,BUF,1.23,,2023,,Rasul Douglas GB→BUF
+Free Agent Signing,Brady Breeze,DB,DET,HOU,0.0,,2023,,Brady Breeze DET→HOU
+Free Agent Signing,Dalton Keene,TE,PHI,HOU,0.0,,2023,,Dalton Keene PHI→HOU
+Free Agent Signing,C.J. Brewer,DT,BUF,TB,0.0,0.0,2023,,C.J. Brewer BUF→TB
+Free Agent Signing,Logan Stenberg,G,DET,TB,0.0,0.0,2023,,Logan Stenberg DET→TB
+Free Agent Signing,Jonathan Owens,SAF,HOU,GB,0.41,,2023,,Jonathan Owens HOU→GB
+Free Agent Signing,Trent Sherfield,WR,MIA,BUF,0.0,3.42,2023,,Trent Sherfield MIA→BUF
+Free Agent Signing,Andrew Brown,DT,CHI,BUF,0.0,0.0,2023,,Andrew Brown CHI→BUF
+Free Agent Signing,Dieter Eiselen,OL,CHI,HOU,0.0,,2023,,Dieter Eiselen CHI→HOU
+Free Agent Signing,J.J. Taylor,RB,NE,HOU,0.0,-4.6,2023,,J.J. Taylor NE→HOU
+Free Agent Signing,Ryan Neal,DB,SEA,TB,0.0,0.0,2023,,Ryan Neal SEA→TB
+Free Agent Signing,Tim Boyle,QB,CHI,HOU,0.0,-5.46,2023,,Tim Boyle CHI→HOU
+Free Agent Signing,Daniel Whelan,P,NO,GB,0.0,,2023,,Daniel Whelan NO→GB
+Free Agent Signing,Kyle Allen,QB,HOU,BUF,0.0,-42.04,2023,,Kyle Allen HOU→BUF
+Free Agent Signing,Poona Ford,DT,SEA,BUF,0.0,0.0,2023,,Poona Ford SEA→BUF
+Free Agent Signing,Quandre Mosely,DB,NE,TB,0.0,,2023,,Quandre Mosely NE→TB
+Free Agent Signing,Dalton Schultz,TE,DAL,HOU,0.42,7.18,2023,,Dalton Schultz DAL→HOU
+Free Agent Signing,Richard LeCounte,SAF,LA,TB,0.0,0.0,2023,,Richard LeCounte LA→TB
+Free Agent Signing,Rashard Lawrence,DT,ARI,HOU,0.0,0.0,2023,,Rashard Lawrence ARI→HOU
+Free Agent Signing,McTelvin Agim,DL,IND,HOU,0.0,,2023,,McTelvin Agim IND→HOU
+Free Agent Signing,K.J. Hamler,WR,DEN,BUF,0.0,,2023,,K.J. Hamler DEN→BUF
+Free Agent Signing,Josh Jones,S,ARI,HOU,0.21,,2023,,Josh Jones ARI→HOU
+Free Agent Signing,Jeremy McNichols,RB,PIT,SF,0.0,,2023,,Jeremy McNichols PIT→SF
+Free Agent Signing,Khalil Davis,DL,LA,HOU,0.0,,2023,,Khalil Davis LA→HOU
+Free Agent Signing,Matt Haack,P,IND,BUF,0.0,0.0,2023,,Matt Haack IND→BUF
+Free Agent Signing,David Edwards,OT,LA,BUF,0.0,0.0,2023,,David Edwards LA→BUF
+Free Agent Signing,Kris Boyd,CB,MIN,HOU,0.0,0.0,2023,,Kris Boyd MIN→HOU
+Free Agent Signing,Mike Jordan,G,CAR,GB,0.0,0.0,2023,,Mike Jordan CAR→GB
+Free Agent Signing,Deonte Harty,WR,NO,BUF,0.0,-1.21,2023,,Deonte Harty NO→BUF
+Free Agent Signing,Michael Deiter,OL,MIA,HOU,0.0,,2023,,Michael Deiter MIA→HOU
+Free Agent Signing,Taylor Rapp,SAF,LA,BUF,0.47,,2023,,Taylor Rapp LA→BUF
+Free Agent Signing,David Long,DB,LA,GB,0.77,,2023,,David Long LA→GB
+Free Agent Signing,Greg Gaines,DT,LA,TB,0.0,0.0,2023,,Greg Gaines LA→TB
+Free Agent Signing,Devin Singletary,RB,BUF,HOU,0.0,-10.27,2023,,Devin Singletary BUF→HOU
+Free Agent Signing,Kendrick Green,OL,PIT,HOU,0.0,,2023,,Kendrick Green PIT→HOU
+Free Agent Signing,Damien Harris,RB,NE,BUF,0.0,-8.91,2023,,Damien Harris NE→BUF
+Free Agent Signing,Andy Isabella,WR,BAL,BUF,0.0,-0.2,2023,,Andy Isabella BAL→BUF
+Free Agent Signing,Kyron Brown,DB,TEN,BUF,0.0,,2023,,Kyron Brown TEN→BUF
+Free Agent Signing,Raleigh Webb,WR,NE,TB,0.0,0.0,2023,,Raleigh Webb NE→TB
+Free Agent Signing,Josh Johnson,QB,SF,BAL,0.0,-11.07,2023,,Josh Johnson SF→BAL
+Free Agent Signing,Dalvin Cook,RB,MIN,BAL,0.15,-52.24,2023,,Dalvin Cook MIN→BAL
+Free Agent Signing,Cameron Sutton,CB,PIT,DET,1.31,,2023,,Cameron Sutton PIT→DET
+Free Agent Signing,Emmanuel Moseley,DB,SF,DET,0.0,0.0,2023,,Emmanuel Moseley SF→DET
+Free Agent Signing,Kindle Vildor,CB,CHI,DET,0.0,0.0,2023,,Kindle Vildor CHI→DET
+Free Agent Signing,Bravvion Roy,DT,CAR,BAL,0.0,0.0,2023,,Bravvion Roy CAR→BAL
+Free Agent Signing,Tre Swilling,DB,SF,BAL,0.0,,2023,,Tre Swilling SF→BAL
+Free Agent Signing,Anthony Firkser,TE,ATL,DET,0.0,2.51,2023,,Anthony Firkser ATL→DET
+Free Agent Signing,Michael Schofield,G,CHI,DET,0.0,0.0,2023,,Michael Schofield CHI→DET
+Free Agent Signing,Tyler Ott,LS,SEA,BAL,0.0,,2023,,Tyler Ott SEA→BAL
+Free Agent Signing,Kyle Van Noy,MLB,LAC,BAL,0.0,0.0,2023,,Kyle Van Noy LAC→BAL
+Free Agent Signing,Jadeveon Clowney,DE,CLE,BAL,0.0,0.0,2023,,Jadeveon Clowney CLE→BAL
+Free Agent Signing,David Montgomery,RB,CHI,DET,0.0,-8.59,2023,,David Montgomery CHI→DET
+Free Agent Signing,Trayvon Mullen,CB,DAL,BAL,0.0,0.0,2023,,Trayvon Mullen DAL→BAL
+Free Agent Signing,C.J. Gardner-Johnson,SAF,PHI,DET,0.46,,2023,,C.J. Gardner-Johnson PHI→DET
+Free Agent Signing,Jalen Reeves-Maybin,LB,HOU,DET,0.0,0.0,2023,,Jalen Reeves-Maybin HOU→DET
+Free Agent Signing,Craig James,DB,NYJ,DET,0.0,,2023,,Craig James NYJ→DET
+Free Agent Signing,Daurice Fountain,WR,CHI,DET,0.0,,2023,,Daurice Fountain CHI→DET
+Free Agent Signing,Raymond Johnson III,DL,CIN,DET,0.0,,2023,,Raymond Johnson III CIN→DET
+Free Agent Signing,Nelson Agholor,WR,NE,BAL,0.0,-12.49,2023,,Nelson Agholor NE→BAL
+Free Agent Signing,David Blough,QB,ARI,DET,0.0,-9.84,2023,,David Blough ARI→DET
+Free Agent Signing,Sam Mustipher,C,CHI,BAL,0.89,,2023,,Sam Mustipher CHI→BAL
+Free Agent Signing,Scotty Washington,TE,NE,BAL,0.0,,2023,,Scotty Washington NE→BAL
+Free Agent Signing,Dan Chisena,WR,MIN,BAL,0.0,0.0,2023,,Dan Chisena MIN→BAL
+Free Agent Signing,Michael Niese,OL,CHI,DET,0.0,,2023,,Michael Niese CHI→DET
+Free Agent Signing,Max Pircher,OL,LA,DET,0.0,,2023,,Max Pircher LA→DET
+Free Agent Signing,Arthur Maulet,CB,PIT,BAL,0.0,0.0,2023,,Arthur Maulet PIT→BAL
+Free Agent Signing,Matt Farniok,G,DAL,DET,0.0,0.0,2023,,Matt Farniok DAL→DET
+Free Agent Signing,Donovan Peoples-Jones,WR,CLE,DET,1.06,18.03,2023,,Donovan Peoples-Jones CLE→DET
+Free Agent Signing,Jake Funk,RB,IND,DET,0.0,0.0,2023,,Jake Funk IND→DET
+Free Agent Signing,Melvin Gordon,RB,KC,BAL,0.0,-28.61,2023,,Melvin Gordon KC→BAL
+Free Agent Signing,Laquon Treadwell,WR,SEA,BAL,0.0,-3.1,2023,,Laquon Treadwell SEA→BAL
+Free Agent Signing,Graham Glasgow,C,DEN,DET,0.74,,2023,,Graham Glasgow DEN→DET
+Free Agent Signing,Andrew Adams,DB,TEN,BAL,0.0,0.0,2023,,Andrew Adams TEN→BAL
+Free Agent Signing,Christian Matthew,CB,ARI,BAL,0.0,0.0,2023,,Christian Matthew ARI→BAL
+Free Agent Signing,Ronald Darby,CB,DEN,BAL,0.0,0.0,2023,,Ronald Darby DEN→BAL
+Free Agent Signing,Rock Ya-Sin,CB,LV,BAL,0.0,0.0,2023,,Rock Ya-Sin LV→BAL
+Free Agent Signing,Teddy Bridgewater,QB,MIA,DET,0.0,2.81,2023,,Teddy Bridgewater MIA→DET
+Free Agent Signing,Josh Wells,OT,TB,BAL,0.0,0.0,2023,,Josh Wells TB→BAL
+Free Agent Signing,Zach Ertz,TE,ARI,DET,0.0,8.38,2023,,Zach Ertz ARI→DET
+Free Agent Signing,Bam Knight,RB,NYJ,DET,0.0,-9.83,2023,,Bam Knight NYJ→DET
+Free Agent Signing,Tyson Alualu,DE,PIT,DET,0.0,0.0,2023,,Tyson Alualu PIT→DET
+Free Agent Signing,Jake McQuaide,LS,DAL,DET,0.0,,2023,,Jake McQuaide DAL→DET
+Free Agent Signing,Gerrit Prince,TE,JAX,KC,0.0,,2023,,Gerrit Prince JAX→KC
+Free Agent Signing,Neil Farrell,DE,LV,KC,0.0,0.0,2023,,Neil Farrell LV→KC
+Free Agent Signing,Logan Ryan,CB,TB,SF,0.0,0.0,2023,,Logan Ryan TB→SF
+Free Agent Signing,Charles Omenihu,DE,SF,KC,0.0,0.0,2023,,Charles Omenihu SF→KC
+Free Agent Signing,Blaine Gabbert,QB,TB,KC,0.0,0.22,2023,,Blaine Gabbert TB→KC
+Free Agent Signing,Terrance Mitchell,CB,TEN,SF,0.0,0.0,2023,,Terrance Mitchell TEN→SF
+Free Agent Signing,Austin Bryant,DE,DET,SF,0.0,0.0,2023,,Austin Bryant DET→SF
+Free Agent Signing,Mike Edwards,SAF,TB,KC,0.47,,2023,,Mike Edwards TB→KC
+Free Agent Signing,Jesse Davis,OL,PIT,SF,0.0,,2023,,Jesse Davis PIT→SF
+Free Agent Signing,Sebastian Joseph-Day,DT,LAC,SF,0.0,0.0,2023,,Sebastian Joseph-Day LAC→SF
+Free Agent Signing,Sebastian Gutierrez,OL,LV,SF,0.0,,2023,,Sebastian Gutierrez LV→SF
+Free Agent Signing,Matt Dickerson,DE,ATL,KC,0.0,0.0,2023,,Matt Dickerson ATL→KC
+Free Agent Signing,Sam Darnold,QB,CAR,SF,0.0,17.07,2023,,Sam Darnold CAR→SF
+Free Agent Signing,Jordan Smith,LB,JAX,KC,0.0,,2023,,Jordan Smith JAX→KC
+Free Agent Signing,Donovan Smith,OT,TB,KC,1.14,,2023,,Donovan Smith TB→KC
+Free Agent Signing,Randy Gregory,LB,DEN,SF,0.0,0.0,2023,,Randy Gregory DEN→SF
+Free Agent Signing,Erik Harris,FS,ATL,SF,0.0,0.0,2023,,Erik Harris ATL→SF
+Free Agent Signing,Brandon Allen,QB,CIN,SF,0.0,-0.22,2023,,Brandon Allen CIN→SF
+Free Agent Signing,Montrell Washington,WR,DEN,KC,0.0,-7.8,2023,,Montrell Washington DEN→KC
+Free Agent Signing,Matt Pryor,OT,IND,SF,0.0,0.0,2023,,Matt Pryor IND→SF
+Free Agent Signing,Ben Bartch,OT,JAX,SF,0.0,0.0,2023,,Ben Bartch JAX→SF
+Free Agent Signing,Sam Okuayinonu,DT,TEN,SF,0.0,0.0,2023,,Sam Okuayinonu TEN→SF
+Free Agent Signing,Shi Smith,WR,CAR,KC,0.0,-9.33,2023,,Shi Smith CAR→KC
+Free Agent Signing,Jon Feliciano,G,NYG,SF,0.87,,2023,,Jon Feliciano NYG→SF
+Free Agent Signing,Keaontay Ingram,RB,ARI,KC,0.0,-12.45,2023,,Keaontay Ingram ARI→KC
+Free Agent Signing,Kelvin Joseph,CB,DAL,KC,0.0,0.0,2023,,Kelvin Joseph DAL→KC
+Free Agent Signing,Ian Book,QB,PHI,KC,0.0,,2023,,Ian Book PHI→KC
+Free Agent Signing,Anthony Miller,WR,PIT,KC,0.0,,2023,,Anthony Miller PIT→KC
+Free Agent Signing,Isaiah Oliver,FS,ATL,SF,0.0,0.0,2023,,Isaiah Oliver ATL→SF
+Free Agent Signing,Javon Hargrave,NT,PHI,SF,0.51,,2023,,Javon Hargrave PHI→SF
+Free Agent Signing,Richie James,WR,NYG,KC,0.0,24.87,2023,,Richie James NYG→KC
+Free Agent Signing,Isaac Alarcon,OL,DAL,SF,0.0,,2023,,Isaac Alarcon DAL→SF
+Free Agent Signing,Keith Taylor,CB,CAR,KC,0.0,0.0,2023,,Keith Taylor CAR→KC
+Free Agent Signing,Jawaan Taylor,OT,JAX,KC,1.18,,2023,,Jawaan Taylor JAX→KC
+Free Agent Signing,Isaiah Buggs,DT,DET,KC,0.0,0.0,2023,,Isaiah Buggs DET→KC
+Free Agent Signing,Clelin Ferrell,DE,LV,SF,0.0,0.0,2023,,Clelin Ferrell LV→SF
+Free Agent Signing,Drue Tranquill,LB,LAC,KC,1.03,,2023,,Drue Tranquill LAC→KC
+Free Agent Signing,Chris Conley,WR,TEN,SF,0.0,0.43,2023,,Chris Conley TEN→SF
+Free Agent Signing,Mike Pennel,DT,CHI,KC,0.0,0.0,2023,,Mike Pennel CHI→KC
+Free Agent Signing,Chase Young,DE,WAS,SF,0.0,0.0,2023,,Chase Young WAS→SF
+Free Agent Signing,Kemon Hall,DB,LAC,SF,0.0,0.0,2023,,Kemon Hall LAC→SF
+Free Agent Signing,Jake Tonges,TE,CHI,SF,0.0,-0.57,2023,,Jake Tonges CHI→SF
+Released / Retired,Dylan Parham,G,DEN,,0.85,,2023,,Dylan Parham left DEN
+Released / Retired,J.J. Watt,DE,ARI,,1.24,,2023,,J.J. Watt left ARI
+Released / Retired,Matt Ryan,QB,IND,,0.53,-39.58,2023,,Matt Ryan left IND
+Released / Retired,Andrew Norwell,G,WAS,,0.9,,2023,,Andrew Norwell left WAS
+Released / Retired,A.J. Cann,G,HOU,,0.9,,2023,,A.J. Cann left HOU
+Released / Retired,Lamarcus Joyner,S,NYJ,,1.03,,2023,,Lamarcus Joyner left NYJ
+Released / Retired,Tom Brady,QB,TB,,1.75,31.45,2023,,Tom Brady left TB
+Released / Retired,Austin Blythe,C,SEA,,0.86,,2023,,Austin Blythe left SEA
+Released / Retired,Nasir Adderley,FS,LAC,,0.94,,2023,,Nasir Adderley left LAC
+Trade (player),Sean Payton,,NO,DEN,0.0,,2023,,trade NO→DEN
+Trade (pick),Pick R3.0 #81.0,PICK,NO,DEN,0.25,,2023,,traded pick
+Trade (pick),Pick R1.0 #29.0,PICK,DEN,NO,0.79,,2023,,traded pick
+Trade (pick),Pick R2.0 #45.0,PICK,DEN,NO,0.55,,2023,,traded pick
+Trade (pick),Pick R7.0 #228.0,PICK,NYJ,BAL,0.01,,2023,,traded pick
+Trade (player),Chuck Clark,SAF,BAL,NYJ,0.5,,2023,,trade BAL→NYJ
+Trade (pick),Pick R1.0 #1.0,PICK,CHI,CAR,1.47,,2023,,traded pick
+Trade (pick),Pick R1.0 #9.0,PICK,CAR,CHI,1.23,,2023,,traded pick
+Trade (pick),Pick R2.0 #61.0,PICK,CAR,CHI,0.39,,2023,,traded pick
+Trade (pick),Pick R1.0 #1.0,PICK,CAR,CHI,1.47,,2023,,traded pick
+Trade (pick),Pick R2.0 #nan,PICK,CAR,CHI,0.0,,2023,,traded pick
+Trade (player),D.J. Moore,,CAR,CHI,0.0,,2023,,trade CAR→CHI
+Trade (player),Hunter Long,TE,MIA,LA,0.0,-0.53,2023,,trade MIA→LA
+Trade (pick),Pick R3.0 #77.0,PICK,MIA,LA,0.27,,2023,,traded pick
+Trade (player),Jalen Ramsey,CB,LA,MIA,1.38,,2023,,trade LA→MIA
+Trade (player),Jonnu Smith,TE,NE,ATL,0.0,1.24,2023,,trade NE→ATL
+Trade (pick),Pick R7.0 #245.0,PICK,ATL,NE,0.01,,2023,,traded pick
+Trade (player),Shaq Mason,G,TB,HOU,0.89,,2023,,trade TB→HOU
+Trade (pick),Pick R7.0 #230.0,PICK,TB,HOU,0.01,,2023,,traded pick
+Trade (pick),Pick R6.0 #179.0,PICK,HOU,TB,0.03,,2023,,traded pick
+Trade (pick),Pick R3.0 #100.0,PICK,NYG,LV,0.16,,2023,,traded pick
+Trade (player),Darren Waller,TE,LV,NYG,0.0,4.9,2023,,trade LV→NYG
+Trade (player),Stephon Gilmore,CB,IND,DAL,1.39,,2023,,trade IND→DAL
+Trade (pick),Pick R5.0 #176.0,PICK,DAL,IND,0.03,,2023,,traded pick
+Trade (player),Brandin Cooks,WR,HOU,DAL,0.0,4.54,2023,,trade HOU→DAL
+Trade (pick),Pick R5.0 #161.0,PICK,DAL,HOU,0.04,,2023,,traded pick
+Trade (pick),Pick R6.0 #200.0,PICK,DAL,HOU,0.02,,2023,,traded pick
+Trade (player),Elijah Moore,WR,NYJ,CLE,0.0,0.39,2023,,trade NYJ→CLE
+Trade (pick),Pick R3.0 #74.0,PICK,NYJ,CLE,0.29,,2023,,traded pick
+Trade (pick),Pick R2.0 #42.0,PICK,CLE,NYJ,0.59,,2023,,traded pick
+Trade (pick),Pick R7.0 #nan,PICK,SF,CAR,0.0,,2023,,traded pick
+Trade (player),Zane Gonzalez,,CAR,SF,0.0,,2023,,trade CAR→SF
+Trade (pick),Pick R7.0 #nan,PICK,CAR,SF,0.0,,2023,,traded pick
+Trade (player),Jeff Okudah,CB,DET,ATL,0.0,0.0,2023,,trade DET→ATL
+Trade (pick),Pick R5.0 #159.0,PICK,ATL,DET,0.04,,2023,,traded pick
+Trade (pick),Pick R7.0 #234.0,PICK,PIT,LA,0.01,,2023,,traded pick
+Trade (player),Allen Robinson,WR,LA,PIT,0.0,9.0,2023,,trade LA→PIT
+Trade (pick),Pick R7.0 #251.0,PICK,LA,PIT,0.01,,2023,,traded pick
+Trade (pick),Pick R1.0 #13.0,PICK,NYJ,GB,1.12,,2023,,traded pick
+Trade (pick),Pick R2.0 #42.0,PICK,NYJ,GB,0.59,,2023,,traded pick
+Trade (pick),Pick R6.0 #207.0,PICK,NYJ,GB,0.02,,2023,,traded pick
+Trade (pick),Pick R1.0 #nan,PICK,NYJ,GB,0.0,,2023,,traded pick
+Trade (player),Aaron Rodgers,QB,GB,NYJ,0.53,-12.97,2023,,trade GB→NYJ
+Trade (pick),Pick R1.0 #15.0,PICK,GB,NYJ,1.07,,2023,,traded pick
+Trade (pick),Pick R5.0 #170.0,PICK,GB,NYJ,0.03,,2023,,traded pick
+Trade (pick),Pick R3.0 #94.0,PICK,PHI,ARI,0.19,,2023,,traded pick
+Trade (pick),Pick R5.0 #156.0,PICK,PHI,ARI,0.05,,2023,,traded pick
+Trade (pick),Pick R3.0 #66.0,PICK,ARI,PHI,0.35,,2023,,traded pick
+Trade (pick),Pick R1.0 #12.0,PICK,HOU,ARI,1.15,,2023,,traded pick
+Trade (pick),Pick R2.0 #33.0,PICK,HOU,ARI,0.72,,2023,,traded pick
+Trade (pick),Pick R1.0 #27.0,PICK,HOU,ARI,0.82,,2023,,traded pick
+Trade (pick),Pick R3.0 #90.0,PICK,HOU,ARI,0.2,,2023,,traded pick
+Trade (pick),Pick R1.0 #3.0,PICK,ARI,HOU,1.4,,2023,,traded pick
+Trade (pick),Pick R4.0 #105.0,PICK,ARI,HOU,0.15,,2023,,traded pick
+Trade (pick),Pick R1.0 #6.0,PICK,DET,ARI,1.31,,2023,,traded pick
+Trade (pick),Pick R3.0 #81.0,PICK,DET,ARI,0.25,,2023,,traded pick
+Trade (pick),Pick R1.0 #12.0,PICK,ARI,DET,1.15,,2023,,traded pick
+Trade (pick),Pick R2.0 #34.0,PICK,ARI,DET,0.7,,2023,,traded pick
+Trade (pick),Pick R5.0 #168.0,PICK,ARI,DET,0.04,,2023,,traded pick
+Trade (pick),Pick R1.0 #10.0,PICK,PHI,CHI,1.2,,2023,,traded pick
+Trade (pick),Pick R4.0 #122.0,PICK,PHI,CHI,0.1,,2023,,traded pick
+Trade (pick),Pick R1.0 #9.0,PICK,CHI,PHI,1.23,,2023,,traded pick
+Trade (pick),Pick R1.0 #17.0,PICK,PIT,NE,1.03,,2023,,traded pick
+Trade (pick),Pick R4.0 #120.0,PICK,PIT,NE,0.1,,2023,,traded pick
+Trade (pick),Pick R1.0 #14.0,PICK,NE,PIT,1.1,,2023,,traded pick
+Trade (pick),Pick R1.0 #25.0,PICK,NYG,JAX,0.86,,2023,,traded pick
+Trade (pick),Pick R5.0 #160.0,PICK,NYG,JAX,0.04,,2023,,traded pick
+Trade (pick),Pick R7.0 #240.0,PICK,NYG,JAX,0.01,,2023,,traded pick
+Trade (pick),Pick R1.0 #24.0,PICK,JAX,NYG,0.88,,2023,,traded pick
+Trade (pick),Pick R1.0 #25.0,PICK,JAX,BUF,0.86,,2023,,traded pick
+Trade (pick),Pick R1.0 #27.0,PICK,BUF,JAX,0.82,,2023,,traded pick
+Trade (pick),Pick R4.0 #130.0,PICK,BUF,JAX,0.08,,2023,,traded pick
+Trade (pick),Pick R2.0 #41.0,PICK,TEN,ARI,0.6,,2023,,traded pick
+Trade (pick),Pick R3.0 #72.0,PICK,TEN,ARI,0.3,,2023,,traded pick
+Trade (pick),Pick R3.0 #71.0,PICK,TEN,ARI,0.31,,2023,,traded pick
+Trade (pick),Pick R2.0 #33.0,PICK,ARI,TEN,0.72,,2023,,traded pick
+Trade (pick),Pick R3.0 #81.0,PICK,ARI,TEN,0.25,,2023,,traded pick
+Trade (pick),Pick R2.0 #38.0,PICK,LV,IND,0.64,,2023,,traded pick
+Trade (pick),Pick R5.0 #141.0,PICK,LV,IND,0.07,,2023,,traded pick
+Trade (pick),Pick R2.0 #35.0,PICK,IND,LV,0.69,,2023,,traded pick
+Trade (pick),Pick R2.0 #38.0,PICK,IND,ATL,0.64,,2023,,traded pick
+Trade (pick),Pick R2.0 #44.0,PICK,ATL,IND,0.56,,2023,,traded pick
+Trade (pick),Pick R4.0 #110.0,PICK,ATL,IND,0.13,,2023,,traded pick
+Trade (pick),Pick R2.0 #45.0,PICK,GB,DET,0.55,,2023,,traded pick
+Trade (pick),Pick R2.0 #48.0,PICK,DET,GB,0.52,,2023,,traded pick
+Trade (pick),Pick R5.0 #159.0,PICK,DET,GB,0.04,,2023,,traded pick
+Trade (pick),Pick R2.0 #50.0,PICK,TB,GB,0.49,,2023,,traded pick
+Trade (pick),Pick R6.0 #179.0,PICK,TB,GB,0.03,,2023,,traded pick
+Trade (pick),Pick R2.0 #48.0,PICK,GB,TB,0.52,,2023,,traded pick
+Trade (pick),Pick R2.0 #63.0,PICK,KC,DET,0.37,,2023,,traded pick
+Trade (pick),Pick R4.0 #122.0,PICK,KC,DET,0.1,,2023,,traded pick
+Trade (pick),Pick R7.0 #249.0,PICK,KC,DET,0.01,,2023,,traded pick
+Trade (pick),Pick R2.0 #55.0,PICK,DET,KC,0.44,,2023,,traded pick
+Trade (pick),Pick R6.0 #194.0,PICK,DET,KC,0.02,,2023,,traded pick
+Trade (pick),Pick R2.0 #56.0,PICK,JAX,CHI,0.43,,2023,,traded pick
+Trade (pick),Pick R2.0 #61.0,PICK,CHI,JAX,0.39,,2023,,traded pick
+Trade (pick),Pick R5.0 #136.0,PICK,CHI,JAX,0.07,,2023,,traded pick
+Trade (pick),Pick R2.0 #62.0,PICK,PHI,HOU,0.38,,2023,,traded pick
+Trade (pick),Pick R3.0 #65.0,PICK,HOU,PHI,0.35,,2023,,traded pick
+Trade (pick),Pick R6.0 #188.0,PICK,HOU,PHI,0.02,,2023,,traded pick
+Trade (pick),Pick R7.0 #230.0,PICK,HOU,PHI,0.01,,2023,,traded pick
+Trade (pick),Pick R2.0 #63.0,PICK,DET,DEN,0.37,,2023,,traded pick
+Trade (pick),Pick R6.0 #183.0,PICK,DET,DEN,0.03,,2023,,traded pick
+Trade (pick),Pick R3.0 #68.0,PICK,DEN,DET,0.33,,2023,,traded pick
+Trade (pick),Pick R4.0 #139.0,PICK,DEN,DET,0.07,,2023,,traded pick
+Trade (pick),Pick R3.0 #69.0,PICK,LA,HOU,0.32,,2023,,traded pick
+Trade (pick),Pick R3.0 #73.0,PICK,HOU,LA,0.3,,2023,,traded pick
+Trade (pick),Pick R5.0 #161.0,PICK,HOU,LA,0.04,,2023,,traded pick
+Trade (pick),Pick R3.0 #89.0,PICK,NYG,LA,0.21,,2023,,traded pick
+Trade (pick),Pick R4.0 #128.0,PICK,NYG,LA,0.09,,2023,,traded pick
+Trade (pick),Pick R3.0 #73.0,PICK,LA,NYG,0.3,,2023,,traded pick
+Trade (pick),Pick R3.0 #80.0,PICK,PIT,CAR,0.25,,2023,,traded pick
+Trade (pick),Pick R3.0 #93.0,PICK,CAR,PIT,0.19,,2023,,traded pick
+Trade (pick),Pick R4.0 #132.0,PICK,CAR,PIT,0.08,,2023,,traded pick
+Trade (pick),Pick R3.0 #83.0,PICK,SEA,DEN,0.24,,2023,,traded pick
+Trade (pick),Pick R4.0 #108.0,PICK,DEN,SEA,0.14,,2023,,traded pick
+Trade (pick),Pick R3.0 #81.0,PICK,DEN,SEA,0.25,,2023,,traded pick
+Trade (pick),Pick R3.0 #102.0,PICK,SF,MIN,0.16,,2023,,traded pick
+Trade (pick),Pick R5.0 #164.0,PICK,SF,MIN,0.04,,2023,,traded pick
+Trade (pick),Pick R7.0 #222.0,PICK,SF,MIN,0.01,,2023,,traded pick
+Trade (pick),Pick R3.0 #87.0,PICK,MIN,SF,0.22,,2023,,traded pick
+Trade (pick),Pick R3.0 #95.0,PICK,KC,CIN,0.18,,2023,,traded pick
+Trade (pick),Pick R6.0 #217.0,PICK,KC,CIN,0.01,,2023,,traded pick
+Trade (pick),Pick R3.0 #92.0,PICK,CIN,KC,0.19,,2023,,traded pick
+Trade (pick),Pick R4.0 #122.0,PICK,DET,ARI,0.1,,2023,,traded pick
+Trade (pick),Pick R5.0 #168.0,PICK,DET,ARI,0.04,,2023,,traded pick
+Trade (pick),Pick R5.0 #168.0,PICK,DET,ARI,0.04,,2023,,traded pick
+Trade (pick),Pick R3.0 #96.0,PICK,ARI,DET,0.18,,2023,,traded pick
+Trade (pick),Pick R4.0 #115.0,PICK,NO,CHI,0.12,,2023,,traded pick
+Trade (pick),Pick R5.0 #165.0,PICK,NO,CHI,0.04,,2023,,traded pick
+Trade (pick),Pick R4.0 #103.0,PICK,CHI,NO,0.15,,2023,,traded pick
+Trade (pick),Pick R4.0 #109.0,PICK,LV,HOU,0.13,,2023,,traded pick
+Trade (pick),Pick R5.0 #174.0,PICK,LV,HOU,0.03,,2023,,traded pick
+Trade (pick),Pick R4.0 #104.0,PICK,HOU,LV,0.15,,2023,,traded pick
+Trade (pick),Pick R6.0 #203.0,PICK,HOU,LV,0.02,,2023,,traded pick
+Trade (pick),Pick R3.0 #86.0,PICK,PHI,HOU,0.22,,2023,,traded pick
+Trade (pick),Pick R4.0 #105.0,PICK,HOU,PHI,0.15,,2023,,traded pick
+Trade (pick),Pick R4.0 #112.0,PICK,NYJ,NE,0.12,,2023,,traded pick
+Trade (pick),Pick R4.0 #120.0,PICK,NE,NYJ,0.1,,2023,,traded pick
+Trade (pick),Pick R6.0 #184.0,PICK,NE,NYJ,0.03,,2023,,traded pick
+Trade (pick),Pick R4.0 #119.0,PICK,MIN,KC,0.11,,2023,,traded pick
+Trade (pick),Pick R4.0 #134.0,PICK,KC,MIN,0.08,,2023,,traded pick
+Trade (pick),Pick R5.0 #167.0,PICK,KC,MIN,0.04,,2023,,traded pick
+Trade (pick),Pick R7.0 #227.0,PICK,NO,JAX,0.01,,2023,,traded pick
+Trade (pick),Pick R4.0 #116.0,PICK,NO,JAX,0.11,,2023,,traded pick
+Trade (pick),Pick R4.0 #127.0,PICK,JAX,NO,0.09,,2023,,traded pick
+Trade (pick),Pick R7.0 #219.0,PICK,PHI,DET,0.01,,2023,,traded pick
+Trade (pick),Pick R4.0 #nan,PICK,PHI,DET,0.0,,2023,,traded pick
+Trade (player),D'Andre Swift,RB,DET,PHI,0.0,14.67,2023,,trade DET→PHI
+Trade (pick),Pick R7.0 #249.0,PICK,DET,PHI,0.01,,2023,,traded pick
+Trade (pick),Pick R4.0 #135.0,PICK,NE,LV,0.07,,2023,,traded pick
+Trade (pick),Pick R5.0 #144.0,PICK,LV,NE,0.06,,2023,,traded pick
+Trade (pick),Pick R6.0 #214.0,PICK,LV,NE,0.01,,2023,,traded pick
+Trade (pick),Pick R5.0 #150.0,PICK,WAS,BUF,0.05,,2023,,traded pick
+Trade (pick),Pick R6.0 #215.0,PICK,WAS,BUF,0.01,,2023,,traded pick
+Trade (pick),Pick R5.0 #137.0,PICK,BUF,WAS,0.07,,2023,,traded pick
+Trade (pick),Pick R5.0 #158.0,PICK,MIN,IND,0.04,,2023,,traded pick
+Trade (pick),Pick R6.0 #211.0,PICK,MIN,IND,0.01,,2023,,traded pick
+Trade (pick),Pick R5.0 #141.0,PICK,IND,MIN,0.07,,2023,,traded pick
+Trade (pick),Pick R5.0 #167.0,PICK,LA,HOU,0.04,,2023,,traded pick
+Trade (pick),Pick R5.0 #174.0,PICK,HOU,LA,0.03,,2023,,traded pick
+Trade (pick),Pick R7.0 #259.0,PICK,HOU,LA,0.0,,2023,,traded pick
+Trade (pick),Pick R5.0 #170.0,PICK,NYJ,LV,0.03,,2023,,traded pick
+Trade (pick),Pick R6.0 #204.0,PICK,LV,NYJ,0.02,,2023,,traded pick
+Trade (pick),Pick R7.0 #220.0,PICK,LV,NYJ,0.01,,2023,,traded pick
+Trade (pick),Pick R5.0 #175.0,PICK,TB,LA,0.03,,2023,,traded pick
+Trade (pick),Pick R7.0 #252.0,PICK,TB,LA,0.01,,2023,,traded pick
+Trade (pick),Pick R5.0 #171.0,PICK,LA,TB,0.03,,2023,,traded pick
+Trade (pick),Pick R7.0 #248.0,PICK,PHI,HOU,0.01,,2023,,traded pick
+Trade (pick),Pick R7.0 #248.0,PICK,PHI,HOU,0.01,,2023,,traded pick
+Trade (pick),Pick R6.0 #191.0,PICK,HOU,PHI,0.02,,2023,,traded pick
+Trade (pick),Pick R6.0 #178.0,PICK,KC,DAL,0.03,,2023,,traded pick
+Trade (pick),Pick R5.0 #159.0,PICK,DAL,KC,0.04,,2023,,traded pick
+Trade (pick),Pick R5.0 #161.0,PICK,TB,PHI,0.04,,2023,,traded pick
+Trade (pick),Pick R6.0 #191.0,PICK,PHI,TB,0.02,,2023,,traded pick
+Trade (player),Adam Trautman,TE,NO,DEN,0.0,8.53,2023,,trade NO→DEN
+Trade (pick),Pick R7.0 #257.0,PICK,NO,DEN,0.0,,2023,,traded pick
+Trade (pick),Pick R6.0 #195.0,PICK,DEN,NO,0.02,,2023,,traded pick
+Trade (pick),Pick R7.0 #230.0,PICK,HOU,BUF,0.01,,2023,,traded pick
+Trade (pick),Pick R6.0 #200.0,PICK,HOU,BUF,0.02,,2023,,traded pick
+Trade (pick),Pick R6.0 #205.0,PICK,BUF,HOU,0.02,,2023,,traded pick
+Trade (pick),Pick R7.0 #252.0,PICK,LA,BUF,0.01,,2023,,traded pick
+Trade (pick),Pick R6.0 #189.0,PICK,LA,BUF,0.02,,2023,,traded pick
+Trade (pick),Pick R6.0 #215.0,PICK,BUF,LA,0.01,,2023,,traded pick
+Trade (pick),Pick R7.0 #229.0,PICK,CLE,BAL,0.01,,2023,,traded pick
+Trade (pick),Pick R6.0 #206.0,PICK,BAL,CLE,0.02,,2023,,traded pick
+Trade (player),Riley Patterson,K,JAX,DET,0.0,0.0,2023,,trade JAX→DET
+Trade (pick),Pick R7.0 #nan,PICK,DET,JAX,0.0,,2023,,traded pick
+Trade (pick),Pick R7.0 #226.0,PICK,NYG,ARI,0.01,,2023,,traded pick
+Trade (player),Isaiah Simmons,SAF,ARI,NYG,0.4,,2023,,trade ARI→NYG
+Trade (pick),Pick R5.0 #162.0,PICK,HOU,ARI,0.04,,2023,,traded pick
+Trade (player),Josh Jones,S,ARI,HOU,0.21,,2023,,trade ARI→HOU
+Trade (pick),Pick R7.0 #224.0,PICK,ARI,HOU,0.01,,2023,,traded pick
+Trade (player),Joshua Dobbs,QB,CLE,ARI,0.0,-7.19,2023,,trade CLE→ARI
+Trade (pick),Pick R7.0 #230.0,PICK,CLE,ARI,0.01,,2023,,traded pick
+Trade (pick),Pick R5.0 #156.0,PICK,ARI,CLE,0.05,,2023,,traded pick
+Trade (player),Trey Lance,QB,SF,DAL,0.0,-4.86,2023,,trade SF→DAL
+Trade (pick),Pick R4.0 #124.0,PICK,DAL,SF,0.1,,2023,,traded pick
+Trade (player),Pierre Strong,RB,NE,CLE,0.0,6.74,2023,,trade NE→CLE
+Trade (player),Tyrone Wheatley Jr.,,CLE,NE,0.0,,2023,,trade CLE→NE
+Trade (player),Kevin Dotson,G,PIT,LA,0.9,,2023,,trade PIT→LA
+Trade (pick),Pick R5.0 #155.0,PICK,PIT,LA,0.05,,2023,,traded pick
+Trade (pick),Pick R6.0 #nan,PICK,PIT,LA,0.0,,2023,,traded pick
+Trade (pick),Pick R4.0 #120.0,PICK,LA,PIT,0.1,,2023,,traded pick
+Trade (pick),Pick R5.0 #nan,PICK,LA,PIT,0.0,,2023,,traded pick
+Trade (pick),Pick R6.0 #188.0,PICK,NE,MIN,0.02,,2023,,traded pick
+Trade (player),Vederian Lowe,OT,MIN,NE,0.0,0.0,2023,,trade MIN→NE
+Trade (player),Dustin Hopkins,K,LAC,CLE,0.0,0.0,2023,,trade LAC→CLE
+Trade (pick),Pick R7.0 #nan,PICK,CLE,LAC,0.0,,2023,,traded pick
+Trade (player),Dan Feeney,,MIA,CHI,0.0,,2023,,trade MIA→CHI
+Trade (pick),Pick R6.0 #184.0,PICK,CHI,MIA,0.03,,2023,,traded pick
+Trade (player),Ihmir Smith-Marsette,WR,KC,CAR,0.0,-8.93,2023,,trade KC→CAR
+Trade (pick),Pick R7.0 #nan,PICK,KC,CAR,0.0,,2023,,traded pick
+Trade (pick),Pick R7.0 #nan,PICK,CAR,KC,0.0,,2023,,traded pick
+Trade (player),Wil Lutz,K,NO,DEN,0.0,0.0,2023,,trade NO→DEN
+Trade (pick),Pick R7.0 #239.0,PICK,DEN,NO,0.01,,2023,,traded pick
+Trade (pick),Pick Rnan #nan,PICK,NYG,BUF,0.0,,2023,,traded pick
+Trade (player),Boogie Basham,,BUF,NYG,0.0,,2023,,trade BUF→NYG
+Trade (pick),Pick Rnan #nan,PICK,BUF,NYG,0.0,,2023,,traded pick
+Trade (pick),Pick R7.0 #nan,PICK,TEN,NE,0.0,,2023,,traded pick
+Trade (player),Nick Folk,K,NE,TEN,0.0,0.0,2023,,trade NE→TEN
+Trade (pick),Pick R6.0 #nan,PICK,PHI,DEN,0.0,,2023,,traded pick
+Trade (player),Albert Okwuegbunam,TE,DEN,PHI,0.0,-2.29,2023,,trade DEN→PHI
+Trade (player),Noah Igbinoghene,CB,MIA,DAL,0.0,0.0,2023,,trade MIA→DAL
+Trade (player),Kelvin Joseph,CB,DAL,MIA,0.0,0.0,2023,,trade DAL→MIA
+Trade (player),Kendrick Green,,PIT,HOU,0.0,,2023,,trade PIT→HOU
+Trade (pick),Pick R6.0 #nan,PICK,HOU,PIT,0.0,,2023,,traded pick
+Trade (player),Neil Farrell,DE,LV,KC,0.0,0.0,2023,,trade LV→KC
+Trade (pick),Pick R6.0 #208.0,PICK,KC,LV,0.01,,2023,,traded pick
+Trade (pick),Pick R6.0 #nan,PICK,MIN,LA,0.0,,2023,,traded pick
+Trade (player),Cam Akers,RB,LA,MIN,0.0,-9.13,2023,,trade LA→MIN
+Trade (pick),Pick R7.0 #nan,PICK,LA,MIN,0.0,,2023,,traded pick
+Trade (pick),Pick R6.0 #nan,PICK,NE,LAC,0.0,,2023,,traded pick
+Trade (player),J.C. Jackson,DB,LAC,NE,0.0,0.0,2023,,trade LAC→NE
+Trade (pick),Pick R7.0 #nan,PICK,LAC,NE,0.0,,2023,,traded pick
+Trade (pick),Pick R6.0 #nan,PICK,MIA,CHI,0.0,,2023,,traded pick
+Trade (player),Chase Claypool,WR,CHI,MIA,0.0,-1.02,2023,,trade CHI→MIA
+Trade (pick),Pick R7.0 #nan,PICK,CHI,MIA,0.0,,2023,,traded pick
+Trade (pick),Pick R6.0 #207.0,PICK,SF,DEN,0.02,,2023,,traded pick
+Trade (player),Randy Gregory,LB,DEN,SF,0.0,0.0,2023,,trade DEN→SF
+Trade (pick),Pick R7.0 #232.0,PICK,DEN,SF,0.01,,2023,,traded pick
+Trade (player),Van Jefferson,WR,LA,ATL,0.0,11.8,2023,,trade LA→ATL
+Trade (pick),Pick R7.0 #nan,PICK,LA,ATL,0.0,,2023,,traded pick
+Trade (pick),Pick R6.0 #nan,PICK,ATL,LA,0.0,,2023,,traded pick
+Trade (player),Mecole Hardman,WR,NYJ,KC,0.0,21.37,2023,,trade NYJ→KC
+Trade (pick),Pick R7.0 #nan,PICK,NYJ,KC,0.0,,2023,,traded pick
+Trade (pick),Pick R6.0 #nan,PICK,KC,NYJ,0.0,,2023,,traded pick
+Trade (player),Kevin Byard,FS,TEN,PHI,1.07,,2023,,trade TEN→PHI
+Trade (player),Terrell Edmunds,S,PHI,TEN,1.02,,2023,,trade PHI→TEN
+Trade (pick),Pick R5.0 #146.0,PICK,PHI,TEN,0.06,,2023,,traded pick
+Trade (pick),Pick R6.0 #182.0,PICK,PHI,TEN,0.03,,2023,,traded pick
+Trade (pick),Pick R2.0 #47.0,PICK,SEA,NYG,0.53,,2023,,traded pick
+Trade (pick),Pick R5.0 #nan,PICK,SEA,NYG,0.0,,2023,,traded pick
+Trade (player),Leonard Williams,DE,NYG,SEA,0.0,0.0,2023,,trade NYG→SEA
+Trade (player),Kentavius Street,DE,PHI,ATL,0.0,0.0,2023,,trade PHI→ATL
+Trade (pick),Pick R7.0 #nan,PICK,PHI,ATL,0.0,,2023,,traded pick
+Trade (pick),Pick R6.0 #nan,PICK,ATL,PHI,0.0,,2023,,traded pick
+Trade (player),Montez Sweat,DE,WAS,CHI,0.0,0.0,2023,,trade WAS→CHI
+Trade (pick),Pick R2.0 #40.0,PICK,CHI,WAS,0.62,,2023,,traded pick
+Trade (pick),Pick R6.0 #186.0,PICK,MIN,ARI,0.02,,2023,,traded pick
+Trade (player),Joshua Dobbs,QB,ARI,MIN,0.0,-7.19,2023,,trade ARI→MIN
+Trade (pick),Pick R6.0 #nan,PICK,ARI,MIN,0.0,,2023,,traded pick
+Trade (player),Ezra Cleveland,G,MIN,JAX,0.88,,2023,,trade MIN→JAX
+Trade (pick),Pick R6.0 #177.0,PICK,JAX,MIN,0.03,,2023,,traded pick
+Trade (pick),Pick R6.0 #nan,PICK,DET,CLE,0.0,,2023,,traded pick
+Trade (player),Donovan Peoples-Jones,WR,CLE,DET,1.06,18.03,2023,,trade CLE→DET
+Trade (player),Chase Young,DE,WAS,SF,0.0,0.0,2023,,trade WAS→SF
+Trade (pick),Pick R3.0 #100.0,PICK,SF,WAS,0.16,,2023,,traded pick
+Trade (player),Rasul Douglas,CB,GB,BUF,1.23,,2023,,trade GB→BUF
+Trade (pick),Pick R5.0 #160.0,PICK,GB,BUF,0.04,,2023,,traded pick
+Trade (pick),Pick R3.0 #91.0,PICK,BUF,GB,0.2,,2023,,traded pick
+Draft Pick,Bryce Young (R1 #1),QB,,CAR,1.47,,2023,,drafted
+Draft Pick,C.J. Stroud (R1 #2),QB,,HOU,1.43,,2023,,drafted
+Draft Pick,Will Anderson (R1 #3),LB,,HOU,1.4,,2023,,drafted
+Draft Pick,Anthony Richardson (R1 #4),QB,,IND,1.37,,2023,,drafted
+Draft Pick,Devon Witherspoon (R1 #5),DB,,SEA,1.34,,2023,,drafted
+Draft Pick,Paris Johnson (R1 #6),OL,,ARI,1.31,,2023,,drafted
+Draft Pick,Tyree Wilson (R1 #7),OLB,,LV,1.28,,2023,,drafted
+Draft Pick,Bijan Robinson (R1 #8),RB,,ATL,1.26,,2023,,drafted
+Draft Pick,Jalen Carter (R1 #9),DL,,PHI,1.23,,2023,,drafted
+Draft Pick,Darnell Wright (R1 #10),OL,,CHI,1.2,,2023,,drafted
+Draft Pick,Peter Skoronski (R1 #11),OL,,TEN,1.17,,2023,,drafted
+Draft Pick,Jahmyr Gibbs (R1 #12),RB,,DET,1.15,,2023,,drafted
+Draft Pick,Lukas Van Ness (R1 #13),DL,,GB,1.12,,2023,,drafted
+Draft Pick,Broderick Jones (R1 #14),OL,,PIT,1.1,,2023,,drafted
+Draft Pick,Will McDonald (R1 #15),DE,,NYJ,1.07,,2023,,drafted
+Draft Pick,Emmanuel Forbes (R1 #16),CB,,WAS,1.05,,2023,,drafted
+Draft Pick,Christian Gonzalez (R1 #17),DB,,NE,1.03,,2023,,drafted
+Draft Pick,Jack Campbell (R1 #18),LB,,DET,1.01,,2023,,drafted
+Draft Pick,Calijah Kancey (R1 #19),DL,,TB,0.98,,2023,,drafted
+Draft Pick,Jaxon Smith-Njigba (R1 #20),WR,,SEA,0.96,,2023,,drafted
+Draft Pick,Quentin Johnston (R1 #21),WR,,LAC,0.94,,2023,,drafted
+Draft Pick,Zay Flowers (R1 #22),WR,,BAL,0.92,,2023,,drafted
+Draft Pick,Jordan Addison (R1 #23),WR,,MIN,0.9,,2023,,drafted
+Draft Pick,Deonte Banks (R1 #24),DB,,NYG,0.88,,2023,,drafted
+Draft Pick,Dalton Kincaid (R1 #25),TE,,BUF,0.86,,2023,,drafted
+Draft Pick,Mazi Smith (R1 #26),DL,,DAL,0.84,,2023,,drafted
+Draft Pick,Anton Harrison (R1 #27),OL,,JAX,0.82,,2023,,drafted
+Draft Pick,Myles Murphy (R1 #28),DE,,CIN,0.81,,2023,,drafted
+Draft Pick,Bryan Bresee (R1 #29),DT,,NO,0.79,,2023,,drafted
+Draft Pick,Nolan Smith (R1 #30),OLB,,PHI,0.77,,2023,,drafted
+Draft Pick,Felix Anudike-Uzomah (R1 #31),DE,,KC,0.75,,2023,,drafted
+Draft Pick,Joey Porter Jr. (R2 #32),CB,,PIT,0.74,,2023,,drafted
+Draft Pick,Will Levis (R2 #33),QB,,TEN,0.72,,2023,,drafted
+Draft Pick,Sam LaPorta (R2 #34),TE,,DET,0.7,,2023,,drafted
+Draft Pick,Michael Mayer (R2 #35),TE,,LV,0.69,,2023,,drafted
+Draft Pick,Steve Avila (R2 #36),C,,LA,0.67,,2023,,drafted
+Draft Pick,Derick Hall (R2 #37),DE,,SEA,0.66,,2023,,drafted
+Draft Pick,Matthew Bergeron (R2 #38),OL,,ATL,0.64,,2023,,drafted
+Draft Pick,Jonathan Mingo (R2 #39),WR,,CAR,0.63,,2023,,drafted
+Draft Pick,Isaiah Foskey (R2 #40),DL,,NO,0.62,,2023,,drafted
+Draft Pick,BJ Ojulari (R2 #41),DE,,ARI,0.6,,2023,,drafted
+Draft Pick,Luke Musgrave (R2 #42),TE,,GB,0.59,,2023,,drafted
+Draft Pick,Joe Tippmann (R2 #43),OL,,NYJ,0.58,,2023,,drafted
+Draft Pick,Julius Brents (R2 #44),DB,,IND,0.56,,2023,,drafted
+Draft Pick,Brian Branch (R2 #45),DB,,DET,0.55,,2023,,drafted
+Draft Pick,Keion White (R2 #46),DL,,NE,0.54,,2023,,drafted
+Draft Pick,Quan Martin (R2 #47),DB,,WAS,0.53,,2023,,drafted
+Draft Pick,Cody Mauch (R2 #48),T,,TB,0.52,,2023,,drafted
+Draft Pick,Keeanu Benton (R2 #49),NT,,PIT,0.5,,2023,,drafted
+Draft Pick,Jayden Reed (R2 #50),WR,,GB,0.49,,2023,,drafted
+Draft Pick,Cam Smith (R2 #51),DB,,MIA,0.48,,2023,,drafted
+Draft Pick,Zach Charbonnet (R2 #52),RB,,SEA,0.47,,2023,,drafted
+Draft Pick,Gervon Dexter (R2 #53),DL,,CHI,0.46,,2023,,drafted
+Draft Pick,Tuli Tuipulotu (R2 #54),DL,,LAC,0.45,,2023,,drafted
+Draft Pick,Rashee Rice (R2 #55),WR,,KC,0.44,,2023,,drafted
+Draft Pick,Tyrique Stevenson (R2 #56),CB,,CHI,0.43,,2023,,drafted
+Draft Pick,John Michael Schmitz (R2 #57),OL,,NYG,0.42,,2023,,drafted
+Draft Pick,Luke Schoonmaker (R2 #58),TE,,DAL,0.41,,2023,,drafted
+Draft Pick,O'Cyrus Torrence (R2 #59),OL,,BUF,0.4,,2023,,drafted
+Draft Pick,DJ Turner (R2 #60),DB,,CIN,0.4,,2023,,drafted
+Draft Pick,Brenton Strange (R2 #61),TE,,JAX,0.39,,2023,,drafted
+Draft Pick,Juice Scruggs (R2 #62),OL,,HOU,0.38,,2023,,drafted
+Draft Pick,Marvin Mims (R2 #63),WR,,DEN,0.37,,2023,,drafted
+Draft Pick,Zacch Pickens (R3 #64),DL,,CHI,0.36,,2023,,drafted
+Draft Pick,Tyler Steen (R3 #65),OL,,PHI,0.35,,2023,,drafted
+Draft Pick,Sydney Brown (R3 #66),DB,,PHI,0.35,,2023,,drafted
+Draft Pick,Drew Sanders (R3 #67),LB,,DEN,0.34,,2023,,drafted
+Draft Pick,Hendon Hooker (R3 #68),QB,,DET,0.33,,2023,,drafted
+Draft Pick,Tank Dell (R3 #69),WR,,HOU,0.32,,2023,,drafted
+Draft Pick,Byron Young (R3 #70),DL,,LV,0.32,,2023,,drafted
+Draft Pick,Kendre Miller (R3 #71),RB,,NO,0.31,,2023,,drafted
+Draft Pick,Garrett Williams (R3 #72),DB,,ARI,0.3,,2023,,drafted
+Draft Pick,Jalin Hyatt (R3 #73),WR,,NYG,0.3,,2023,,drafted
+Draft Pick,Cedric Tillman (R3 #74),WR,,CLE,0.29,,2023,,drafted
+Draft Pick,Zach Harrison (R3 #75),DE,,ATL,0.28,,2023,,drafted
+Draft Pick,Marte Mapu (R3 #76),DB,,NE,0.28,,2023,,drafted
+Draft Pick,Byron Young (R3 #77),LB,,LA,0.27,,2023,,drafted
+Draft Pick,Tucker Kraft (R3 #78),TE,,GB,0.27,,2023,,drafted
+Draft Pick,Josh Downs (R3 #79),WR,,IND,0.26,,2023,,drafted
+Draft Pick,DJ Johnson (R3 #80),OLB,,CAR,0.25,,2023,,drafted
+Draft Pick,Tyjae Spears (R3 #81),RB,,TEN,0.25,,2023,,drafted
+Draft Pick,YaYa Diaby (R3 #82),DL,,TB,0.24,,2023,,drafted
+Draft Pick,Riley Moss (R3 #83),DB,,DEN,0.24,,2023,,drafted
+Draft Pick,De'Von Achane (R3 #84),RB,,MIA,0.23,,2023,,drafted
+Draft Pick,Daiyan Henley (R3 #85),LB,,LAC,0.23,,2023,,drafted
+Draft Pick,Trenton Simpson (R3 #86),LB,,BAL,0.22,,2023,,drafted
+Draft Pick,Ji'Ayir Brown (R3 #87),S,,SF,0.22,,2023,,drafted
+Draft Pick,Tank Bigsby (R3 #88),RB,,JAX,0.21,,2023,,drafted
+Draft Pick,Kobie Turner (R3 #89),DT,,LA,0.21,,2023,,drafted
+Draft Pick,DeMarvion Overshown (R3 #90),LB,,DAL,0.2,,2023,,drafted
+Draft Pick,Dorian Williams (R3 #91),LB,,BUF,0.2,,2023,,drafted
+Draft Pick,Wanya Morris (R3 #92),OL,,KC,0.19,,2023,,drafted
+Draft Pick,Darnell Washington (R3 #93),TE,,PIT,0.19,,2023,,drafted
+Draft Pick,Michael Wilson (R3 #94),WR,,ARI,0.19,,2023,,drafted
+Draft Pick,Jordan Battle (R3 #95),DB,,CIN,0.18,,2023,,drafted
+Draft Pick,Brodric Martin (R3 #96),DT,,DET,0.18,,2023,,drafted
+Draft Pick,Ricky Stromberg (R3 #97),OL,,WAS,0.17,,2023,,drafted
+Draft Pick,Siaki Ika (R3 #98),DL,,CLE,0.17,,2023,,drafted
+Draft Pick,Jake Moody (R3 #99),K,,SF,0.17,,2023,,drafted
+Draft Pick,Tre Tucker (R3 #100),WR,,LV,0.16,,2023,,drafted
+Draft Pick,Cameron Latu (R3 #101),TE,,SF,0.16,,2023,,drafted
+Draft Pick,Mekhi Blackmon (R3 #102),CB,,MIN,0.16,,2023,,drafted
+Draft Pick,Nick Saldiveri (R4 #103),OL,,NO,0.15,,2023,,drafted
+Draft Pick,Jakorian Bennett (R4 #104),DB,,LV,0.15,,2023,,drafted
+Draft Pick,Kelee Ringo (R4 #105),DB,,PHI,0.15,,2023,,drafted
+Draft Pick,Blake Freeland (R4 #106),OL,,IND,0.14,,2023,,drafted
+Draft Pick,Jake Andrews (R4 #107),OL,,NE,0.14,,2023,,drafted
+Draft Pick,Anthony Bradford (R4 #108),OL,,SEA,0.14,,2023,,drafted
+Draft Pick,Dylan Horton (R4 #109),DL,,HOU,0.13,,2023,,drafted
+Draft Pick,Adetomiwa Adebawore (R4 #110),DL,,IND,0.13,,2023,,drafted
+Draft Pick,Dawand Jones (R4 #111),OL,,CLE,0.13,,2023,,drafted
+Draft Pick,Chad Ryland (R4 #112),K,,NE,0.12,,2023,,drafted
+Draft Pick,Clark Phillips (R4 #113),CB,,ATL,0.12,,2023,,drafted
+Draft Pick,Chandler Zavala (R4 #114),G,,CAR,0.12,,2023,,drafted
+Draft Pick,Roschon Johnson (R4 #115),RB,,CHI,0.12,,2023,,drafted
+Draft Pick,Colby Wooden (R4 #116),DE,,GB,0.11,,2023,,drafted
+Draft Pick,Sidy Sow (R4 #117),OL,,NE,0.11,,2023,,drafted
+Draft Pick,Braeden Daniels (R4 #118),OL,,WAS,0.11,,2023,,drafted
+Draft Pick,Chamarri Conner (R4 #119),DB,,KC,0.11,,2023,,drafted
+Draft Pick,Carter Warren (R4 #120),OL,,NYJ,0.1,,2023,,drafted
+Draft Pick,Ventrell Miller (R4 #121),LB,,JAX,0.1,,2023,,drafted
+Draft Pick,Jon Gaines (R4 #122),OL,,ARI,0.1,,2023,,drafted
+Draft Pick,Cameron Young (R4 #123),DT,,SEA,0.1,,2023,,drafted
+Draft Pick,Tavius Robinson (R4 #124),DE,,BAL,0.1,,2023,,drafted
+Draft Pick,Derius Davis (R4 #125),WR,,LAC,0.09,,2023,,drafted
+Draft Pick,Isaiah McGuire (R4 #126),DL,,CLE,0.09,,2023,,drafted
+Draft Pick,Jake Haener (R4 #127),QB,,NO,0.09,,2023,,drafted
+Draft Pick,Stetson Bennett (R4 #128),QB,,LA,0.09,,2023,,drafted
+Draft Pick,Viliami Fehoko (R4 #129),DL,,DAL,0.09,,2023,,drafted
+Draft Pick,Tyler Lacy (R4 #130),DE,,JAX,0.08,,2023,,drafted
+Draft Pick,Charlie Jones (R4 #131),WR,,CIN,0.08,,2023,,drafted
+Draft Pick,Nick Herbig (R4 #132),OLB,,PIT,0.08,,2023,,drafted
+Draft Pick,Tyler Scott (R4 #133),WR,,CHI,0.08,,2023,,drafted
+Draft Pick,Jay Ward (R4 #134),S,,MIN,0.08,,2023,,drafted
+Draft Pick,Aidan O'Connell (R4 #135),QB,,LV,0.07,,2023,,drafted
+Draft Pick,Yasir Abdullah (R5 #136),LB,,JAX,0.07,,2023,,drafted
+Draft Pick,K.J. Henry (R5 #137),DE,,WAS,0.07,,2023,,drafted
+Draft Pick,Darius Rush (R5 #138),DB,,IND,0.07,,2023,,drafted
+Draft Pick,Clayton Tune (R5 #139),QB,,ARI,0.07,,2023,,drafted
+Draft Pick,Dorian Thompson-Robinson (R5 #140),QB,,CLE,0.07,,2023,,drafted
+Draft Pick,Jaquelin Roy (R5 #141),DT,,MIN,0.07,,2023,,drafted
+Draft Pick,Cameron Mitchell (R5 #142),DB,,CLE,0.06,,2023,,drafted
+Draft Pick,Israel Abanikanda (R5 #143),RB,,NYJ,0.06,,2023,,drafted
+Draft Pick,Atonio Mafi (R5 #144),OL,,NE,0.06,,2023,,drafted
+Draft Pick,Jammie Robinson (R5 #145),DB,,CAR,0.06,,2023,,drafted
+Draft Pick,Jordan Howden (R5 #146),DB,,NO,0.06,,2023,,drafted
+Draft Pick,Josh Whyle (R5 #147),TE,,TEN,0.06,,2023,,drafted
+Draft Pick,Noah Sewell (R5 #148),LB,,CHI,0.06,,2023,,drafted
+Draft Pick,Sean Clifford (R5 #149),QB,,GB,0.05,,2023,,drafted
+Draft Pick,Justin Shorter (R5 #150),WR,,BUF,0.05,,2023,,drafted
+Draft Pick,Mike Morris (R5 #151),DE,,SEA,0.05,,2023,,drafted
+Draft Pick,Colby Sorsdal (R5 #152),OL,,DET,0.05,,2023,,drafted
+Draft Pick,SirVocea Dennis (R5 #153),LB,,TB,0.05,,2023,,drafted
+Draft Pick,Olusegun Oluwatimi (R5 #154),C,,SEA,0.05,,2023,,drafted
+Draft Pick,Darrell Luter (R5 #155),CB,,SF,0.05,,2023,,drafted
+Draft Pick,Jordan McFadden (R5 #156),OL,,LAC,0.05,,2023,,drafted
+Draft Pick,Kyu Blu Kelly (R5 #157),CB,,BAL,0.05,,2023,,drafted
+Draft Pick,Daniel Scott (R5 #158),S,,IND,0.04,,2023,,drafted
+Draft Pick,Dontayvion Wicks (R5 #159),WR,,GB,0.04,,2023,,drafted
+Draft Pick,Antonio Johnson (R5 #160),DB,,JAX,0.04,,2023,,drafted
+Draft Pick,Nick Hampton (R5 #161),OLB,,LA,0.04,,2023,,drafted
+Draft Pick,Will Mallory (R5 #162),TE,,IND,0.04,,2023,,drafted
+Draft Pick,Chase Brown (R5 #163),RB,,CIN,0.04,,2023,,drafted
+Draft Pick,Jaren Hall (R5 #164),QB,,MIN,0.04,,2023,,drafted
+Draft Pick,Terell Smith (R5 #165),DB,,CHI,0.04,,2023,,drafted
+Draft Pick,BJ Thompson (R5 #166),DE,,KC,0.04,,2023,,drafted
+Draft Pick,Henry To'oTo'o (R5 #167),LB,,HOU,0.04,,2023,,drafted
+Draft Pick,Owen Pappoe (R5 #168),LB,,ARI,0.04,,2023,,drafted
+Draft Pick,Asim Richards (R5 #169),OL,,DAL,0.04,,2023,,drafted
+Draft Pick,Christopher Smith (R5 #170),DB,,LV,0.03,,2023,,drafted
+Draft Pick,Payne Durham (R5 #171),TE,,TB,0.03,,2023,,drafted
+Draft Pick,Eric Gray (R5 #172),RB,,NYG,0.03,,2023,,drafted
+Draft Pick,Robert Beal (R5 #173),OLB,,SF,0.03,,2023,,drafted
+Draft Pick,Warren McClendon (R5 #174),OL,,LA,0.03,,2023,,drafted
+Draft Pick,Davis Allen (R5 #175),TE,,LA,0.03,,2023,,drafted
+Draft Pick,Evan Hull (R5 #176),RB,,IND,0.03,,2023,,drafted
+Draft Pick,Puka Nacua (R5 #177),WR,,LA,0.03,,2023,,drafted
+Draft Pick,Eric Scott (R6 #178),DB,,DAL,0.03,,2023,,drafted
+Draft Pick,Karl Brooks (R6 #179),DT,,GB,0.03,,2023,,drafted
+Draft Pick,Kei'Trel Clark (R6 #180),DB,,ARI,0.03,,2023,,drafted
+Draft Pick,Josh Hayes (R6 #181),CB,,TB,0.03,,2023,,drafted
+Draft Pick,Tre'Vius Tomlinson (R6 #182),CB,,LA,0.03,,2023,,drafted
+Draft Pick,JL Skinner (R6 #183),S,,DEN,0.03,,2023,,drafted
+Draft Pick,Zaire Barnes (R6 #184),LB,,NYJ,0.03,,2023,,drafted
+Draft Pick,Parker Washington (R6 #185),WR,,JAX,0.02,,2023,,drafted
+Draft Pick,Jaelyn Duncan (R6 #186),OL,,TEN,0.02,,2023,,drafted
+Draft Pick,Kayshon Boutte (R6 #187),WR,,NE,0.02,,2023,,drafted
+Draft Pick,Tanner McKee (R6 #188),QB,,PHI,0.02,,2023,,drafted
+Draft Pick,Ochaun Mathis (R6 #189),DE,,LA,0.02,,2023,,drafted
+Draft Pick,Luke Wypler (R6 #190),OL,,CLE,0.02,,2023,,drafted
+Draft Pick,Trey Palmer (R6 #191),WR,,TB,0.02,,2023,,drafted
+Draft Pick,Bryce Baringer (R6 #192),P,,NE,0.02,,2023,,drafted
+Draft Pick,Chris Rodriguez (R6 #193),RB,,WAS,0.02,,2023,,drafted
+Draft Pick,Keondre Coburn (R6 #194),DT,,KC,0.02,,2023,,drafted
+Draft Pick,A.T. Perry (R6 #195),WR,,NO,0.02,,2023,,drafted
+Draft Pick,Jose Ramirez (R6 #196),DL,,TB,0.02,,2023,,drafted
+Draft Pick,Elijah Higgins (R6 #197),WR,,MIA,0.02,,2023,,drafted
+Draft Pick,Jerrick Reed (R6 #198),S,,SEA,0.02,,2023,,drafted
+Draft Pick,Malaesala Aumavae-Laulu (R6 #199),OL,,BAL,0.02,,2023,,drafted
+Draft Pick,Scott Matlock (R6 #200),DT,,LAC,0.02,,2023,,drafted
+Draft Pick,Jarrett Patterson (R6 #201),OL,,HOU,0.02,,2023,,drafted
+Draft Pick,Christian Braswell (R6 #202),DB,,JAX,0.02,,2023,,drafted
+Draft Pick,Amari Burney (R6 #203),LB,,LV,0.02,,2023,,drafted
+Draft Pick,Jarrick Bernard-Converse (R6 #204),CB,,NYJ,0.02,,2023,,drafted
+Draft Pick,Xavier Hutchinson (R6 #205),WR,,HOU,0.02,,2023,,drafted
+Draft Pick,Andrei Iosivas (R6 #206),WR,,CIN,0.02,,2023,,drafted
+Draft Pick,Anders Carlson (R6 #207),K,,GB,0.02,,2023,,drafted
+Draft Pick,Erick Hallett (R6 #208),DB,,JAX,0.01,,2023,,drafted
+Draft Pick,Tre Hawkins (R6 #209),CB,,NYG,0.01,,2023,,drafted
+Draft Pick,DeMario Douglas (R6 #210),WR,,NE,0.01,,2023,,drafted
+Draft Pick,Titus Leo (R6 #211),LB,,IND,0.01,,2023,,drafted
+Draft Pick,Deuce Vaughn (R6 #212),RB,,DAL,0.01,,2023,,drafted
+Draft Pick,Dante Stills (R6 #213),DT,,ARI,0.01,,2023,,drafted
+Draft Pick,Ameer Speed (R6 #214),CB,,NE,0.01,,2023,,drafted
+Draft Pick,Zach Evans (R6 #215),RB,,LA,0.01,,2023,,drafted
+Draft Pick,Dee Winters (R6 #216),LB,,SF,0.01,,2023,,drafted
+Draft Pick,Brad Robbins (R6 #217),P,,CIN,0.01,,2023,,drafted
+Draft Pick,Travis Bell (R7 #218),DL,,CHI,0.01,,2023,,drafted
+Draft Pick,Antoine Green (R7 #219),WR,,DET,0.01,,2023,,drafted
+Draft Pick,Zack Kuntz (R7 #220),TE,,NYJ,0.01,,2023,,drafted
+Draft Pick,Jaylon Jones (R7 #221),DB,,IND,0.01,,2023,,drafted
+Draft Pick,DeWayne McBride (R7 #222),RB,,MIN,0.01,,2023,,drafted
+Draft Pick,Ethan Evans (R7 #223),P,,LA,0.01,,2023,,drafted
+Draft Pick,DeMarcco Hellams (R7 #224),DB,,ATL,0.01,,2023,,drafted
+Draft Pick,Jovaughn Gwyn (R7 #225),OL,,ATL,0.01,,2023,,drafted
+Draft Pick,Cooper Hodges (R7 #226),OL,,JAX,0.01,,2023,,drafted
+Draft Pick,Raymond Vohasek (R7 #227),DT,,JAX,0.01,,2023,,drafted
+Draft Pick,Colton Dowell (R7 #228),WR,,TEN,0.01,,2023,,drafted
+Draft Pick,Andrew Vorhees (R7 #229),OL,,BAL,0.01,,2023,,drafted
+Draft Pick,Nick Broeker (R7 #230),OL,,BUF,0.01,,2023,,drafted
+Draft Pick,Nesta Jade Silvera (R7 #231),DT,,LV,0.01,,2023,,drafted
+Draft Pick,Carrington Valentine (R7 #232),DB,,GB,0.01,,2023,,drafted
+Draft Pick,Andre Jones (R7 #233),DE,,WAS,0.01,,2023,,drafted
+Draft Pick,Jason Taylor (R7 #234),S,,LA,0.01,,2023,,drafted
+Draft Pick,Lew Nichols (R7 #235),RB,,GB,0.01,,2023,,drafted
+Draft Pick,Jake Witt (R7 #236),OL,,IND,0.01,,2023,,drafted
+Draft Pick,Kenny McIntosh (R7 #237),RB,,SEA,0.01,,2023,,drafted
+Draft Pick,Ryan Hayes (R7 #238),OL,,MIA,0.01,,2023,,drafted
+Draft Pick,Max Duggan (R7 #239),QB,,LAC,0.01,,2023,,drafted
+Draft Pick,Derek Parish (R7 #240),DL,,JAX,0.01,,2023,,drafted
+Draft Pick,Cory Trice (R7 #241),CB,,PIT,0.01,,2023,,drafted
+Draft Pick,Anthony Johnson (R7 #242),DB,,GB,0.01,,2023,,drafted
+Draft Pick,Jordon Riley (R7 #243),DL,,NYG,0.01,,2023,,drafted
+Draft Pick,Jalen Brooks (R7 #244),WR,,DAL,0.01,,2023,,drafted
+Draft Pick,Isaiah Bolden (R7 #245),CB,,NE,0.01,,2023,,drafted
+Draft Pick,DJ Ivey (R7 #246),CB,,CIN,0.01,,2023,,drafted
+Draft Pick,Brayden Willis (R7 #247),TE,,SF,0.01,,2023,,drafted
+Draft Pick,Brandon Hill (R7 #248),DB,,HOU,0.01,,2023,,drafted
+Draft Pick,Moro Ojomo (R7 #249),DE,,PHI,0.01,,2023,,drafted
+Draft Pick,Nic Jones (R7 #250),CB,,KC,0.01,,2023,,drafted
+Draft Pick,Spencer Anderson (R7 #251),OL,,PIT,0.01,,2023,,drafted
+Draft Pick,Alex Austin (R7 #252),DB,,BUF,0.01,,2023,,drafted
+Draft Pick,Ronnie Bell (R7 #253),WR,,SF,0.01,,2023,,drafted
+Draft Pick,Gervarrius Owens (R7 #254),DB,,NYG,0.01,,2023,,drafted
+Draft Pick,Jalen Graham (R7 #255),S,,SF,0.01,,2023,,drafted
+Draft Pick,Grant Dubose (R7 #256),WR,,GB,0.01,,2023,,drafted
+Draft Pick,Alex Forsyth (R7 #257),OL,,DEN,0.0,,2023,,drafted
+Draft Pick,Kendall Williamson (R7 #258),S,,CHI,0.0,,2023,,drafted
+Draft Pick,Desjuan Johnson (R7 #259),DT,,LA,0.0,,2023,,drafted
