@@ -39,13 +39,14 @@
   "label_col": "Picked",
   "train_years": [
     2020,
-    2021
-  ],
-  "val_years": [
+    2021,
     2022
   ],
-  "test_years": [
+  "val_years": [
     2023
   ],
-  "trained_at": "2026-09-30T19:23:42.538293+00:00"
+  "test_years": [
+    2024
+  ],
+  "trained_at": "2026-10-01T00:09:17.348192+00:00"
 }
