@@ -2,37 +2,39 @@ import { useState, useEffect } from 'react'
 import ConstraintsPanel from './ConstraintsPanel'
 import ResultsPanel from './ResultsPanel'
 import { runOptimizer, fetchSplashContests } from '../../api/client'
+import { useContest } from '../../contexts/ContestContext'
+
+// The global contest key (contest_config) -> the key the Splash config/API use.
+const SPLASH_KEY = { world_championship: 'survivor_world_championship' }
 
 export default function SplashOptimizerView() {
+  const { contest: globalContest } = useContest()
+  const splashKey = SPLASH_KEY[globalContest] || globalContest
+
   const [contests, setContests] = useState([])
-  const [selectedContest, setSelectedContest] = useState(null)
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     fetchSplashContests()
-      .then(d => {
-        const cs = d.contests || []
-        setContests(cs)
-        if (cs.length) setSelectedContest(cs[0].key)
-      })
+      .then(d => setContests(d.contests || []))
       .catch(e => setError(e.message))
   }, [])
 
-  const contest = contests.find(c => c.key === selectedContest)
+  // The stats row for the globally-selected contest.
+  const contest = contests.find(c => c.key === splashKey)
 
   const handleSubmit = async (constraints) => {
-    if (!selectedContest) return
     setLoading(true)
     setError(null)
     setResults(null)
     try {
-      // Splash: send contest key + its double-pick weeks. Backend also injects
-      // the contest's manual pick data. NFL weeks (no holiday insertion).
+      // Splash: send the contest key + its double-pick weeks. Backend also
+      // injects the contest's manual pick data. NFL weeks (no holiday insertion).
       const data = await runOptimizer({
         ...constraints,
-        contest: selectedContest,
+        contest: splashKey,
         double_pick_weeks: contest?.double_pick_weeks || [],
       })
       setResults(data)
@@ -45,27 +47,7 @@ export default function SplashOptimizerView() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Contest selector */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-3 flex-wrap">
-        <span className="text-xs text-gray-500 uppercase tracking-wide">Contest</span>
-        <div className="flex gap-1.5 flex-wrap">
-          {contests.map(c => (
-            <button
-              key={c.key}
-              onClick={() => setSelectedContest(c.key)}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition-colors font-medium ${
-                selectedContest === c.key
-                  ? 'bg-cyan-600 text-white border-cyan-600'
-                  : 'border-gray-700 text-gray-400 hover:text-white'
-              }`}
-            >
-              {c.display_name}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Contest summary — entries, survivors, double-pick weeks */}
+      {/* Contest summary — live entries, survivors, double-pick weeks */}
       {contest && (
         <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-6 flex-wrap text-sm">
           <div>
