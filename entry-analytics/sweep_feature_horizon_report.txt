@@ -1,0 +1,68 @@
+FEATURE-COUNT × HORIZON  —  which top_n projects best, how far out
+==========================================================================
+MAE in pick-% points (lower better); Spearman (higher better).
+
+
+##########################################################################
+## BIG_SPLASH
+##########################################################################
+
+  best feature count by horizon (lowest MAE):
+    h= 0:  top_n=  50  (MAE 0.0285, n=1)
+
+  per-config decay:
+    top_n=  20: MAE@h0=0.0293  skill half-life=n/a
+    top_n=  30: MAE@h0=0.0292  skill half-life=n/a
+    top_n=  40: MAE@h0=0.0288  skill half-life=n/a
+    top_n=  50: MAE@h0=0.0285  skill half-life=n/a
+    top_n=  60: MAE@h0=0.0289  skill half-life=n/a
+    top_n= all: MAE@h0=0.0289  skill half-life=n/a
+
+##########################################################################
+## CIRCA
+##########################################################################
+
+  best feature count by horizon (lowest MAE):
+    h= 0:  top_n=  20  (MAE 0.0225, n=97)
+    h= 1:  top_n=  20  (MAE 0.0292, n=89)
+    h= 2:  top_n=  20  (MAE 0.0301, n=83)
+    h= 3:  top_n=  20  (MAE 0.0310, n=78)
+    h= 4:  top_n=  20  (MAE 0.0330, n=73)
+    h= 5:  top_n=  20  (MAE 0.0339, n=68)
+    h= 6:  top_n=  20  (MAE 0.0349, n=63)
+    h= 7:  top_n=  20  (MAE 0.0360, n=58)
+    h= 8:  top_n=  20  (MAE 0.0383, n=53)
+    h= 9:  top_n=  20  (MAE 0.0395, n=48)
+    h=10:  top_n=  20  (MAE 0.0410, n=44)
+    h=11:  top_n=  20  (MAE 0.0433, n=39)
+    h=12:  top_n=  50  (MAE 0.0384, n=34)
+    h=13:  top_n=  20  (MAE 0.0341, n=29)
+    h=14:  top_n=  20  (MAE 0.0382, n=24)
+    h=15:  top_n=  20  (MAE 0.0416, n=19)
+    h=16:  top_n=  20  (MAE 0.0476, n=14)
+    h=17:  top_n=  20  (MAE 0.0389, n=10)
+    h=18:  top_n=  20  (MAE 0.0311, n=8)
+    h=19:  top_n=  20  (MAE 0.0295, n=4)
+
+  per-config decay:
+    top_n=  20: MAE@h0=0.0225  skill half-life=26.5 wks
+    top_n=  30: MAE@h0=0.0228  skill half-life=24.81 wks
+    top_n=  40: MAE@h0=0.0226  skill half-life=25.36 wks
+    top_n=  50: MAE@h0=0.0226  skill half-life=25.23 wks
+    top_n=  60: MAE@h0=0.0226  skill half-life=25.27 wks
+    top_n= all: MAE@h0=0.0226  skill half-life=25.39 wks
+
+##########################################################################
+## WORLD_CHAMPIONSHIP
+##########################################################################
+
+  best feature count by horizon (lowest MAE):
+    h= 0:  top_n=  30  (MAE 0.0205, n=1)
+
+  per-config decay:
+    top_n=  20: MAE@h0=0.0207  skill half-life=n/a
+    top_n=  30: MAE@h0=0.0205  skill half-life=n/a
+    top_n=  40: MAE@h0=0.0206  skill half-life=n/a
+    top_n=  50: MAE@h0=0.0205  skill half-life=n/a
+    top_n=  60: MAE@h0=0.0208  skill half-life=n/a
+    top_n= all: MAE@h0=0.0210  skill half-life=n/a
