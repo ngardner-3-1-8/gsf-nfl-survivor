@@ -83,7 +83,7 @@ CONTESTS = {
 # blended working value the live pipeline uses; 'Top Down' is daily_2's pure
 # market projection; 'Archetype' is daily_4's behavioral estimate; 'Actual' is
 # the realized live pick % (weekly_1 for Circa, Splash historical for Splash).
-PICK_FLAVORS = ("Predicted", "Actual", "Archetype", "Top Down")
+PICK_FLAVORS = ("Predicted", "Actual", "Archetype", "Top Down", "Blend")
 
 
 def flavor_col(flavor, side, contest=None):
