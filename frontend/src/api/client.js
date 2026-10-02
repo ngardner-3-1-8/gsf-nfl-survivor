@@ -188,3 +188,9 @@ export async function fetchSplashContests() {
   if (!res.ok) throw new Error('Failed to fetch Splash contests')
   return res.json()
 }
+
+export async function fetchCircaContestStats() {
+  const res = await fetch(`${API_URL}/api/circa/contest-stats`)
+  if (!res.ok) throw new Error('Failed to fetch Circa contest stats')
+  return res.json()
+}
