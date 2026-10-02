@@ -103,8 +103,9 @@ export async function fetchScheduleForWeek(week) {
   return res.json()
 }
 
-export async function fetchContestYears() {
-  const res = await fetch(`${API_URL}/api/contest/years/available`)
+export async function fetchContestYears(contest = null) {
+  const qs = contest != null ? `?contest=${contest}` : ''
+  const res = await fetch(`${API_URL}/api/contest/years/available${qs}`)
   if (!res.ok) throw new Error('Failed to fetch contest years')
   return res.json()
 }
@@ -115,11 +116,12 @@ export async function fetchAvailableYears() {
   return res.json()
 }
 
-export async function fetchContestData(year, asOfWeek = null) {
-  const url = asOfWeek != null
-    ? `${API_URL}/api/contest/${year}?as_of_week=${asOfWeek}`
-    : `${API_URL}/api/contest/${year}`
-  const res = await fetch(url)
+export async function fetchContestData(year, asOfWeek = null, contest = null) {
+  const p = new URLSearchParams()
+  if (asOfWeek != null) p.set('as_of_week', asOfWeek)
+  if (contest != null) p.set('contest', contest)
+  const qs = p.toString()
+  const res = await fetch(`${API_URL}/api/contest/${year}${qs ? '?' + qs : ''}`)
   if (!res.ok) throw new Error(`Failed to fetch contest data for ${year}`)
   return res.json()
 }
@@ -167,10 +169,11 @@ export async function fetchFinalResults(year) {
   return res.json()
 }
 
-export async function fetchContestCharts(year = null, throughWeek = null) {
+export async function fetchContestCharts(year = null, throughWeek = null, contest = null) {
   const p = new URLSearchParams()
   if (year != null) p.set('year', year)
   if (throughWeek != null) p.set('through_week', throughWeek)
+  if (contest != null) p.set('contest', contest)
   const qs = p.toString()
   const res = await fetch(`${API_URL}/api/contest/charts${qs ? '?' + qs : ''}`)
   if (!res.ok) throw new Error('Failed to fetch contest charts')
