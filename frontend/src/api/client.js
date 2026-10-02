@@ -147,24 +147,31 @@ export async function fetchTransactions(year) {
   return res.json()
 }
 
-export async function fetchEntryAnalyticsAvailable() {
-  const res = await fetch(`${API_URL}/api/entry-analytics/available`)
+export async function fetchEntryAnalyticsAvailable(contest = null) {
+  const params = new URLSearchParams()
+  if (contest != null) params.set('contest', contest)
+  const qs = params.toString()
+  const res = await fetch(`${API_URL}/api/entry-analytics/available${qs ? '?' + qs : ''}`)
   if (!res.ok) throw new Error('Failed to fetch analytics availability')
   return res.json()
 }
 
-export async function fetchEntryAnalytics(year = null, week = null) {
+export async function fetchEntryAnalytics(year = null, week = null, contest = null) {
   const params = new URLSearchParams()
   if (year != null) params.set('year', year)
   if (week != null) params.set('week', week)
+  if (contest != null) params.set('contest', contest)
   const qs = params.toString()
   const res = await fetch(`${API_URL}/api/entry-analytics${qs ? '?' + qs : ''}`)
   if (!res.ok) throw new Error('Failed to fetch entry analytics')
   return res.json()
 }
 
-export async function fetchFinalResults(year) {
-  const res = await fetch(`${API_URL}/api/entry-analytics/final?year=${year}`)
+export async function fetchFinalResults(year, contest = null) {
+  const params = new URLSearchParams()
+  params.set('year', year)
+  if (contest != null) params.set('contest', contest)
+  const res = await fetch(`${API_URL}/api/entry-analytics/final?${params.toString()}`)
   if (!res.ok) throw new Error('Failed to fetch final results')
   return res.json()
 }
