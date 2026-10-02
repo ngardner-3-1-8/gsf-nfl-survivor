@@ -1,23 +1,18 @@
 import { useState, useEffect } from 'react'
 import { fetchLastUpdated } from './api/client'
+import { useContest } from './contexts/ContestContext'
 import OptimizerView from './components/optimizer/OptimizerView'
 import SplashOptimizerView from './components/optimizer/SplashOptimizerView'
 import ScheduleView from './components/schedule/ScheduleView'
 import RankingsView from './components/rankings/RankingsView'
 import RecommendedBetsView from './components/bets/RecommendedBetsView'
 import MyBetsView from './components/bets/MyBetsView'
-import BetHistoryView from './components/bets/BetHistoryView' 
+import BetHistoryView from './components/bets/BetHistoryView'
 import EVCalculatorView from './components/evcalc/EVCalculatorView'
 import ContestView from './components/contest/ContestView'
 import TransactionsView from './components/transactions/TransactionsView'
 import AnalyticsView from './components/analytics/AnalyticsView'
 import FAQView from './components/faq/FAQView'
-
-const ComingSoon = ({ name }) => (
-  <div className="flex items-center justify-center h-64">
-    <p className="text-gray-500 text-sm">{name} coming soon...</p>
-  </div>
-)
 
 const TABS = [
   { id: 'optimizer',     label: 'Optimizer' },
@@ -34,7 +29,9 @@ const TABS = [
 export default function App() {
   const [activeTab, setActiveTab] = useState('optimizer')
   const [lastUpdated, setLastUpdated] = useState(null)
-  const [betsSubTab, setBetsSubTab] = useState('recommended')  // ← moved inside
+  const [betsSubTab, setBetsSubTab] = useState('recommended')
+
+  const { contest, setContest, contests } = useContest()
 
   useEffect(() => {
     fetchLastUpdated()
@@ -44,32 +41,10 @@ export default function App() {
 
   const renderTab = () => {
     switch (activeTab) {
+      // The global contest selector (header) drives which optimizer renders.
       case 'optimizer':
-        return (
-          <div className="flex flex-col gap-4">
-            <div className="flex gap-1 border-b border-gray-800 -mb-4 pb-0">
-              {[
-                { id: 'recommended', label: 'Circa Optimizer' },
-                { id: 'my-bets',     label: 'Splash Optimizer' },
-              ].map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setBetsSubTab(t.id)}
-                  className={`text-sm px-4 py-3 border-b-2 transition-colors ${
-                    betsSubTab === t.id
-                      ? 'border-green-500 text-white font-medium'
-                      : 'border-transparent text-gray-500 hover:text-white'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            {betsSubTab === 'recommended' && <OptimizerView />}
-            {betsSubTab === 'my-bets'     && <SplashOptimizerView />}
-          </div>
-        )
-    
+        return contest === 'circa' ? <OptimizerView /> : <SplashOptimizerView />
+
       case 'schedule':     return <ScheduleView />
       case 'rankings':     return <RankingsView />
       case 'bets':
@@ -156,6 +131,26 @@ export default function App() {
           )}
         </div>
       </nav>
+
+      {/* Universal contest selector — drives every contest-aware view */}
+      <div className="border-b border-gray-800 bg-gray-900/60 sticky top-14 z-10">
+        <div className="max-w-screen-2xl mx-auto px-6 h-11 flex items-center gap-2 overflow-x-auto scrollbar-hide">
+          <span className="text-xs text-gray-500 uppercase tracking-wide mr-1 flex-shrink-0">Contest</span>
+          {contests.map(c => (
+            <button
+              key={c.value}
+              onClick={() => setContest(c.value)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors font-medium flex-shrink-0 ${
+                contest === c.value
+                  ? 'bg-green-600 text-white border-green-600'
+                  : 'border-gray-700 text-gray-400 hover:text-white'
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <main className="max-w-screen-2xl mx-auto px-6 py-6">
         {renderTab()}
