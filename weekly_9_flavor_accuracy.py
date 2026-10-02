@@ -58,10 +58,11 @@ import contest_config as cc
 FINAL_DIR = 'nfl-power-ratings/final_data/{year}_final_data'
 WEEK_RE = re.compile(r'Week_(\d+)_(\d+)_Final_Data\.csv$')
 OUT_DIR = 'entry-analytics'
-FLAVORS = ['Predicted', 'Top Down', 'Archetype']
+FLAVORS = ['Predicted', 'Top Down', 'Archetype', 'Blend']
 MIN_TEAMS = 5
 
-FLAVOR_COLOR = {'Predicted': '#2a78d6', 'Top Down': '#eb6834', 'Archetype': '#1baf7a'}
+FLAVOR_COLOR = {'Predicted': '#2a78d6', 'Top Down': '#eb6834',
+                'Archetype': '#1baf7a', 'Blend': '#eda100'}
 
 _TEAM_CANON = {'LA': 'LAR', 'JAC': 'JAX', 'WSH': 'WAS', 'WFT': 'WAS'}
 
