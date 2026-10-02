@@ -4,6 +4,7 @@ import {
   fetchEntryAnalyticsAvailable,
   fetchFinalResults,
 } from '../../api/client'
+import { useContest } from '../../contexts/ContestContext'
 
 function fmtMoney(v) {
   if (v == null) return '—'
@@ -23,6 +24,7 @@ function survivalColor(p) {
 const PAGE_SIZE = 50
 
 export default function AnalyticsView() {
+  const { contest, contests } = useContest()
   const [available, setAvailable] = useState({})
   const [year, setYear] = useState(null)
   const [week, setWeek] = useState(null)          // number | 'final'
@@ -154,6 +156,17 @@ export default function AnalyticsView() {
       )}
     </div>
   )
+
+  if (contest !== 'circa') {
+    const label = contests.find(c => c.value === contest)?.label || 'This contest'
+    return (
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl flex items-center justify-center h-64">
+        <p className="text-gray-500 text-sm">
+          {label} entry analytics is coming soon — currently available for Circa only.
+        </p>
+      </div>
+    )
+  }
 
   if (loading) return (
     <div className="flex flex-col gap-4">
