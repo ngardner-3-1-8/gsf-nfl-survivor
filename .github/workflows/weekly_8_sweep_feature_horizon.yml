@@ -1,0 +1,76 @@
+name: Weekly 8 Sweep Feature Horizon
+
+# Manual study. Retrains the pick-% model at several feature counts and measures
+# which count projects best at each forecast horizon (weeks ahead). Self-
+# contained: works off the committed historical file, no daily_2 run and no
+# re-backfill. Commits the tables, the report (best top_n per horizon) and a
+# per-contest chart under entry-analytics/.
+#
+# Runtime scales with years × as-of weeks × feature counts (each is a model
+# refit). A full run is ~10–20 min; use week_stride=2 and/or fewer top_ns to
+# speed up a quick look.
+
+on:
+  workflow_dispatch:
+    inputs:
+      years:
+        description: 'Space-separated years (blank = all with history)'
+        required: false
+        default: ''
+      contests:
+        description: 'Space-separated contest keys (blank = all)'
+        required: false
+        default: ''
+      top_ns:
+        description: "Feature counts to test (e.g. '9 15 30 40 60 all')"
+        required: false
+        default: '9 15 30 40 60 all'
+      week_stride:
+        description: 'Sample every Nth as-of week (1 = all, 2 = faster)'
+        required: false
+        default: '1'
+
+permissions:
+  contents: write
+
+jobs:
+  sweep_horizon:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy scipy scikit-learn matplotlib
+
+      - name: Run feature-count × horizon study
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.years }}" ];    then ARGS="$ARGS --years ${{ inputs.years }}"; fi
+          if [ -n "${{ inputs.contests }}" ]; then ARGS="$ARGS --contests ${{ inputs.contests }}"; fi
+          if [ -n "${{ inputs.top_ns }}" ];   then ARGS="$ARGS --top-ns ${{ inputs.top_ns }}"; fi
+          if [ -n "${{ inputs.week_stride }}" ]; then ARGS="$ARGS --week-stride ${{ inputs.week_stride }}"; fi
+          echo "weekly_8_sweep_feature_horizon.py $ARGS"
+          python weekly_8_sweep_feature_horizon.py $ARGS
+
+      - name: Commit the study outputs
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add entry-analytics/sweep_feature_horizon.csv \
+                  entry-analytics/sweep_feature_horizon_curve.csv \
+                  entry-analytics/sweep_feature_horizon_report.txt \
+                  entry-analytics/sweep_feature_horizon_*.png 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "Feature-count x horizon study
+
+          Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+          Claude-Session: https://claude.ai/code/session_01UP4LjqY5SmZynhBYgsPMyG"
+          git push || echo "Nothing to push"
