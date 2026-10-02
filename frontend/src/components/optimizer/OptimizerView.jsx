@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import ConstraintsPanel from './ConstraintsPanel'
 import ResultsPanel from './ResultsPanel'
-import { runOptimizer, fetchWeeks, fetchPickPercentages } from '../../api/client'
+import { runOptimizer, fetchWeeks, fetchPickPercentages, fetchCircaContestStats } from '../../api/client'
 import { useAvailableYears } from '../../hooks/useAvailableYears'
 import YearSelector from '../ui/YearSelector'
 
@@ -12,8 +12,15 @@ export default function OptimizerView() {
   const [upcomingWeek, setUpcomingWeek] = useState(1)
   const [allPickPcts, setAllPickPcts] = useState({})
   const [weekOptions, setWeekOptions] = useState([])
+  const [circaStats, setCircaStats] = useState(null)
 
   const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
+
+  // Circa contest stats (live entries + static prize) for the summary bar.
+  useEffect(() => {
+    if (isHistorical) { setCircaStats(null); return }
+    fetchCircaContestStats().then(setCircaStats).catch(() => setCircaStats(null))
+  }, [isHistorical])
 
   // Reload weeks when year changes
   useEffect(() => {
@@ -77,6 +84,36 @@ export default function OptimizerView() {
           </span>
         )}
       </div>
+
+      {/* Contest summary — live entries + static prize (Circa) */}
+      {!isHistorical && circaStats && (
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-6 flex-wrap text-sm">
+          <div>
+            <p className="text-gray-500 text-xs">Total Entries</p>
+            <p className="text-white font-mono">{circaStats.total_entries?.toLocaleString() ?? '\u2014'}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Surviving Entries</p>
+            <p className="text-white font-mono">{circaStats.surviving_entries?.toLocaleString() ?? '\u2014'}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Entry Fee</p>
+            <p className="text-white font-mono">${circaStats.entry_fee?.toLocaleString() ?? '\u2014'}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Total Prizes</p>
+            <p className="text-white font-mono">${circaStats.total_prize?.toLocaleString() ?? '\u2014'}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Average Entry Value</p>
+            <p className="text-white font-mono">
+              {circaStats.total_prize && circaStats.surviving_entries
+                ? `$${Math.round(circaStats.total_prize / circaStats.surviving_entries).toLocaleString()}`
+                : '\u2014'}
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-[340px_1fr] gap-6 items-start">
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 sticky top-6">
