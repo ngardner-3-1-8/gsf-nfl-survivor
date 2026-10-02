@@ -24,7 +24,7 @@ function survivalColor(p) {
 const PAGE_SIZE = 50
 
 export default function AnalyticsView() {
-  const { contest, contests } = useContest()
+  const { contest } = useContest()
   const [available, setAvailable] = useState({})
   const [year, setYear] = useState(null)
   const [week, setWeek] = useState(null)          // number | 'final'
@@ -38,35 +38,40 @@ export default function AnalyticsView() {
   const [page, setPage] = useState(0)
 
   useEffect(() => {
-    fetchEntryAnalyticsAvailable()
+    // Re-discover availability whenever the contest changes. Reset the current
+    // selection first so stale year/week/data from the previous contest can't
+    // flash or fire a fetch against the newly selected one.
+    setLoading(true); setError(null)
+    setYear(null); setWeek(null); setData(null); setFinalData(null)
+    fetchEntryAnalyticsAvailable(contest)
       .then(d => {
         const avail = d.available || {}
         setAvailable(avail)
         const years = Object.keys(avail).map(Number).sort((a, b) => b - a)
-        if (!years.length) { setError('No entry data available yet'); setLoading(false); return }
+        if (!years.length) { setAvailable({}); setError('No entry data available yet'); setLoading(false); return }
         const y = years[0]
         const weeks = avail[String(y)] || []
         setYear(y)
         setWeek(weeks.length ? weeks[weeks.length - 1] : 'final')
       })
-      .catch(e => { setError(e.message); setLoading(false) })
-  }, [])
+      .catch(e => { setAvailable({}); setError(e.message); setLoading(false) })
+  }, [contest])
 
   useEffect(() => {
     if (year == null || week == null) return
     setLoading(true); setError(null)
     if (week === 'final') {
-      fetchFinalResults(year)
+      fetchFinalResults(year, contest)
         .then(d => setFinalData(d))
         .catch(e => setError(e.message))
         .finally(() => setLoading(false))
     } else {
-      fetchEntryAnalytics(year, week)
+      fetchEntryAnalytics(year, week, contest)
         .then(d => setData(d))
         .catch(e => setError(e.message))
         .finally(() => setLoading(false))
     }
-  }, [year, week])
+  }, [year, week, contest])
 
   const rankings = data?.rankings || []
 
@@ -156,17 +161,6 @@ export default function AnalyticsView() {
       )}
     </div>
   )
-
-  if (contest !== 'circa') {
-    const label = contests.find(c => c.value === contest)?.label || 'This contest'
-    return (
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl flex items-center justify-center h-64">
-        <p className="text-gray-500 text-sm">
-          {label} entry analytics is coming soon — currently available for Circa only.
-        </p>
-      </div>
-    )
-  }
 
   if (loading) return (
     <div className="flex flex-col gap-4">
