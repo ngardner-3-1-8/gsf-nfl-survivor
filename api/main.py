@@ -1941,15 +1941,33 @@ def get_splash_contests():
     """
     try:
         import splash_config as _splash
+        from contest_live_stats import live_entry_counts
+        # Current year + upcoming week so the live counts are point-in-time.
+        try:
+            _ctx = load_current_data(DATA_DIR)
+            _year, _week = _ctx["target_year"], _ctx["upcoming_week"]
+        except Exception:
+            _year = _week = None
+        # splash_config key -> contest_config key (for locating the picks file).
+        _SPLASH_TO_CC = {"survivor_world_championship": "world_championship"}
         out = []
         for key, name in _splash.list_contests():
             c = _splash.get_contest(key)
+            # Live entry counts from the picks file; fall back to the manual
+            # config values when the file isn't available yet.
+            _live_total = _live_surv = None
+            if _year is not None:
+                _live_total, _live_surv = live_entry_counts(
+                    _SPLASH_TO_CC.get(key, key), _year, _week)
+            _total = _live_total if _live_total is not None else c.get("total_entries", c.get("entries"))
+            _surv = _live_surv if _live_surv is not None else c.get("surviving_entries", c.get("survivors"))
             out.append({
                 "key": key,
                 "display_name": name,
-                # New config field names (with fallbacks to old names)
-                "total_entries": c.get("total_entries", c.get("entries")),
-                "surviving_entries": c.get("surviving_entries", c.get("survivors")),
+                # Live counts (auto); entry_fee / total_prize / double-pick weeks
+                # remain manual static config below.
+                "total_entries": _total,
+                "surviving_entries": _surv,
                 "entry_fee": c.get("entry_fee"),
                 "total_prize": c.get("total_prize"),
                 "double_pick_weeks": list(c.get("double_pick_weeks", [])),
