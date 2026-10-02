@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 import glob
 import re
 
+
 def sanitize(obj):
     """Recursively replace nan/inf with None for JSON serialization."""
     if isinstance(obj, float):
@@ -822,7 +823,8 @@ def delete_bet(username: str, bet_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/contest/charts")
-def get_contest_charts(year: int = Query(None), through_week: int = Query(None)):
+def get_contest_charts(year: int = Query(None), through_week: int = Query(None),
+                       contest: str = Query("circa")):
     """
     Returns:
       availability: [{team, available}] — alive entries that still have each
@@ -834,12 +836,7 @@ def get_contest_charts(year: int = Query(None), through_week: int = Query(None))
         if year is None:
             year = load_current_data(DATA_DIR)["target_year"]
 
-        picks_path = os.path.join(
-            DATA_DIR, f"circa-pick-history/{year}_survivor_picks.csv")
-        if not os.path.exists(picks_path):
-            raise FileNotFoundError(f"No picks file for {year}")
-
-        df = pd.read_csv(picks_path)
+        df = _load_contest_picks_df(contest, year)
         df["Total_Wins"] = pd.to_numeric(
             df["Total_Wins"], errors="coerce").fillna(0).astype(int)
         week_cols = sorted(
@@ -869,9 +866,10 @@ def get_contest_charts(year: int = Query(None), through_week: int = Query(None))
                 w = int(c.replace("Week_", ""))
                 if w >= cutoff:
                     continue
-                t = norm(row.get(c))
-                if t in used_counts:
-                    used_counts[t] += 1
+                for p in str(row.get(c) or "").replace("/", ";").replace(",", ";").split(";"):
+                    t = norm(p)
+                    if t in used_counts:
+                        used_counts[t] += 1
         availability = [{"team": t, "available": n_alive - used_counts[t]}
                         for t in ALL]
 
@@ -883,10 +881,11 @@ def get_contest_charts(year: int = Query(None), through_week: int = Query(None))
                 continue
             counts, total = {}, 0
             for _, row in df.iterrows():
-                t = norm(row.get(c))
-                if t in used_counts and t != "":
-                    counts[t] = counts.get(t, 0) + 1
-                    total += 1
+                for p in str(row.get(c) or "").replace("/", ";").replace(",", ";").split(";"):
+                    t = norm(p)
+                    if t in used_counts and t != "":
+                        counts[t] = counts.get(t, 0) + 1
+                        total += 1
             if total == 0:
                 continue
             row_out = {"week": w}
@@ -1073,14 +1072,45 @@ def _apply_pick_source(sim_df, year, pick_source, contest=None):
     return sim_df
 
 
-@app.get("/api/contest/{year}")
-def get_contest_data(year: int):
-    try:
-        picks_path = os.path.join(DATA_DIR, f"circa-pick-history/{year}_survivor_picks.csv")
-        if not os.path.exists(picks_path):
-            raise FileNotFoundError(f"No pick history for {year}")
+def _load_contest_picks_df(contest, year):
+    """Picks dataframe for a contest, guaranteed to have a Total_Wins column.
+    Circa provides it natively; Splash picks (Status + weekly picks, no
+    Total_Wins) get it derived -- alive entries survived every completed week,
+    and an eliminated entry's last submitted pick marks the week it went out."""
+    from contest_config import CONTESTS as _CC
+    cc = _CC.get(contest) or _CC["circa"]
+    path = os.path.join(DATA_DIR, cc["picks_pattern"].format(year=year))
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"No pick history for {contest} {year}")
+    df = pd.read_csv(path)
+    if "Total_Wins" not in df.columns:
+        import re as _re
+        wk_cols = [c for c in df.columns if _re.fullmatch(r"Week_\d+", c)]
+        try:
+            completed = max(0, int(load_current_data(DATA_DIR)["upcoming_week"]) - 1)
+        except Exception:
+            completed = len(wk_cols)
+        def _last_pick_week(row):
+            last = 0
+            for c in wk_cols:
+                v = row.get(c)
+                if pd.notna(v) and str(v).strip():
+                    last = int(c.split("_")[1])
+            return last
+        if "Status" in df.columns:
+            alive = df["Status"].astype(str).str.strip().str.lower().ne("eliminated")
+        else:
+            alive = pd.Series(True, index=df.index)
+        lpw = df.apply(_last_pick_week, axis=1)
+        df["Total_Wins"] = [completed if a else max(0, int(w) - 1)
+                            for a, w in zip(alive, lpw)]
+    return df
 
-        picks_df = pd.read_csv(picks_path)
+
+@app.get("/api/contest/{year}")
+def get_contest_data(year: int, contest: str = Query("circa")):
+    try:
+        picks_df = _load_contest_picks_df(contest, year)
 
         # Load current sim data for team strength values
         try:
@@ -1169,7 +1199,12 @@ def get_contest_data(year: int):
             picks_this_week = picks_this_week[picks_this_week.str.strip() != ""]
             
             from collections import Counter
-            counts = Counter(normalize(t) for t in picks_this_week.tolist())
+            counts = Counter(
+                normalize(p)
+                for cell in picks_this_week.tolist()
+                for p in str(cell).replace("/", ";").replace(",", ";").split(";")
+                if p.strip()
+            )
             # Total is entries alive that week — not just those who picked
             total_alive = len(alive_this_week)
             
@@ -1280,7 +1315,9 @@ def get_contest_data(year: int):
             for col in week_cols:
                 val = row.get(col, "")
                 if val and str(val).strip():
-                    used.add(normalize(str(val).strip()))
+                    for p in str(val).replace("/", ";").replace(",", ";").split(";"):
+                        if p.strip():
+                            used.add(normalize(p.strip()))
 
             scores = score_remaining_teams(used) if team_strength else {
                 "remaining_count": len(ALL_TEAMS - used),
@@ -1384,10 +1421,12 @@ def get_contest_data(year: int):
 
 
 @app.get("/api/contest/years/available")
-def get_available_contest_years():
+def get_available_contest_years(contest: str = Query("circa")):
     try:
         import glob
-        pattern = os.path.join(DATA_DIR, "circa-pick-history/*_survivor_picks.csv")
+        from contest_config import CONTESTS as _CC
+        _cc = _CC.get(contest) or _CC["circa"]
+        pattern = os.path.join(DATA_DIR, _cc["picks_pattern"].replace("{year}", "*"))
         files = glob.glob(pattern)
         years = []
         for f in sorted(files):
@@ -1836,12 +1875,7 @@ def get_final_results(year: int = Query(...)):
     the most wins split the pot), plus their full week-by-week pick history.
     """
     try:
-        picks_path = os.path.join(
-            DATA_DIR, f"circa-pick-history/{year}_survivor_picks.csv")
-        if not os.path.exists(picks_path):
-            raise FileNotFoundError(f"No picks file for {year}")
-
-        df = pd.read_csv(picks_path)
+        df = _load_contest_picks_df(contest, year)
         df["Total_Wins"] = pd.to_numeric(
             df["Total_Wins"], errors="coerce").fillna(0).astype(int)
 
