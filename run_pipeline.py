@@ -54,6 +54,8 @@ STAGES = [
 ]
 POST_STAGES = [
     ("weekly_7", "weekly_7_analyze_projection_horizon.py"),
+    ("weekly_8", "weekly_8_sweep_feature_horizon.py"),
+    ("weekly_9", "weekly_9_flavor_accuracy.py"),
 ]
 
 
