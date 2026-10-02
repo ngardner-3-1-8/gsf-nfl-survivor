@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { fetchContestYears, fetchContestCharts } from '../../api/client'
+import { useContest } from '../../contexts/ContestContext'
 import ContestHistorical from './ContestHistorical'
 import ContestCurrent from './ContestCurrent'
 import { AvailabilityBarChart, PickPctByWeekChart } from './ContestCharts'
-import { useContest } from '../../contexts/ContestContext'
 
 export default function ContestView() {
-  const { contest, contests } = useContest()
+  const { contest } = useContest()
   const [years, setYears] = useState([])
   const [activeSubTab, setActiveSubTab] = useState('historical')
 
@@ -17,34 +17,34 @@ export default function ContestView() {
   const [charts, setCharts] = useState(null)
   const [chartsLoading, setChartsLoading] = useState(false)
 
+  // Reload the available years whenever the global contest changes, and reset
+  // the year/week selection (contests don't share the same seasons).
   useEffect(() => {
-    fetchContestYears()
+    fetchContestYears(contest)
       .then(d => {
         const ys = d.years || []
         setYears(ys)
-        if (ys.length && chartYear == null) {
-          setChartYear(Math.max(...ys.map(Number)))
-        }
+        setChartYear(ys.length ? Math.max(...ys.map(Number)) : null)
+        setThroughWeek(null)
+        setMaxWeek(null)
       })
-      .catch(() => {})
-  }, [])
+      .catch(() => { setYears([]); setChartYear(null) })
+  }, [contest])
 
   // Fetch charts for the selected year + "as of week".
-  // Passing through_week scopes BOTH charts to that point in the season.
   useEffect(() => {
     if (activeSubTab !== 'current' || chartYear == null) return
     setChartsLoading(true)
     setCharts(null)
-    fetchContestCharts(chartYear, throughWeek)
+    fetchContestCharts(chartYear, throughWeek, contest)
       .then(d => {
         setCharts(d)
         if (d?.max_week) setMaxWeek(d.max_week)
-        // If no week chosen yet, default to the latest available week
         if (throughWeek == null && d?.through_week) setThroughWeek(d.through_week)
       })
       .catch(() => setCharts(null))
       .finally(() => setChartsLoading(false))
-  }, [activeSubTab, chartYear, throughWeek])
+  }, [activeSubTab, chartYear, throughWeek, contest])
 
   // Reset week when the year changes so we don't carry a stale week across seasons
   const handleYearChange = (y) => {
@@ -124,17 +124,6 @@ export default function ContestView() {
     </div>
   )
 
-  if (contest !== 'circa') {
-    const label = contests.find(c => c.value === contest)?.label || 'This contest'
-    return (
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl flex items-center justify-center h-64">
-        <p className="text-gray-500 text-sm">
-          {label} contest analysis is coming soon — currently available for Circa only.
-        </p>
-      </div>
-    )
-  }
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex gap-1 border-b border-gray-800">
@@ -156,10 +145,10 @@ export default function ContestView() {
         ))}
       </div>
 
-      {activeSubTab === 'historical' && <ContestHistorical years={years} />}
+      {activeSubTab === 'historical' && <ContestHistorical years={years} contest={contest} />}
       {activeSubTab === 'current' && (
         <div className="flex flex-col gap-4">
-          <ContestCurrent years={years} />
+          <ContestCurrent years={years} contest={contest} />
           {currentSeasonCharts}
         </div>
       )}
