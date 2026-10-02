@@ -122,7 +122,7 @@ function EliminationHeatmap({ allData }) {
   )
 }
 
-export default function ContestHistorical({ years }) {
+export default function ContestHistorical({ years, contest }) {
   const [allData, setAllData] = useState({})
   const [loading, setLoading] = useState(false)
   const [selectedYear, setSelectedYear] = useState(null)
@@ -131,7 +131,7 @@ export default function ContestHistorical({ years }) {
     if (years.length === 0) return
     setLoading(true)
     setSelectedYear(years[0])
-    Promise.all(years.map(y => fetchContestData(y).then(d => [y, d])))
+    Promise.all(years.map(y => fetchContestData(y, null, contest).then(d => [y, d])))
       .then(results => {
         const map = {}
         results.forEach(([y, d]) => { map[y] = d })
