@@ -3,8 +3,10 @@ import { fetchContestYears, fetchContestCharts } from '../../api/client'
 import ContestHistorical from './ContestHistorical'
 import ContestCurrent from './ContestCurrent'
 import { AvailabilityBarChart, PickPctByWeekChart } from './ContestCharts'
+import { useContest } from '../../contexts/ContestContext'
 
 export default function ContestView() {
+  const { contest, contests } = useContest()
   const [years, setYears] = useState([])
   const [activeSubTab, setActiveSubTab] = useState('historical')
 
@@ -121,6 +123,17 @@ export default function ContestView() {
       )}
     </div>
   )
+
+  if (contest !== 'circa') {
+    const label = contests.find(c => c.value === contest)?.label || 'This contest'
+    return (
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl flex items-center justify-center h-64">
+        <p className="text-gray-500 text-sm">
+          {label} contest analysis is coming soon — currently available for Circa only.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4">
