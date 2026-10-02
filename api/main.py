@@ -1981,6 +1981,35 @@ def get_splash_contests():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/circa/contest-stats")
+def get_circa_contest_stats():
+    """Circa optimizer-tab stats: live total/surviving entries from the picks
+    file, with the static entry fee / total prize from circa_config."""
+    try:
+        from circa_config import get_circa_contest
+        from contest_live_stats import live_entry_counts
+        c = get_circa_contest()
+        try:
+            _ctx = load_current_data(DATA_DIR)
+            _year, _week = _ctx["target_year"], _ctx["upcoming_week"]
+        except Exception:
+            _year = _week = None
+        _total = _surv = None
+        if _year is not None:
+            _total, _surv = live_entry_counts("circa", _year, _week)
+        return {
+            "key": c["key"],
+            "display_name": c["display_name"],
+            "total_entries": _total,
+            "surviving_entries": _surv,
+            "entry_fee": c["entry_fee"],
+            "total_prize": c["total_prize"],
+            "double_pick_weeks": list(c.get("double_pick_weeks", [])),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/debug-paths")
 def debug_paths():
     import os
