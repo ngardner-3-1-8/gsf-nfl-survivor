@@ -62,7 +62,8 @@ jobs:
           # daily_4 ML, etc.) since run_pipeline runs them all in one job.
           pip install pandas numpy requests beautifulsoup4 scikit-learn tqdm \
                       ortools selenium undetected-chromedriver nflreadpy pytz \
-                      polars lxml pyarrow lightgbm joblib scipy python-dateutil
+                      polars lxml pyarrow lightgbm joblib scipy python-dateutil \
+                      matplotlib
 
       - name: Install Chrome (for Selenium in daily_2 / daily_3)
         uses: browser-actions/setup-chrome@latest
