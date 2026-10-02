@@ -19,7 +19,7 @@ function formatCurrency(val) {
   return '$' + Math.round(val).toLocaleString()
 }
 
-export default function ContestCurrent({ years }) {
+export default function ContestCurrent({ years, contest }) {
   const [selectedYear, setSelectedYear] = useState(years[0] || null)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -37,7 +37,7 @@ export default function ContestCurrent({ years }) {
     if (!selectedYear) return
     setLoading(true)
     Promise.all([
-      fetchContestData(selectedYear),
+      fetchContestData(selectedYear, null, contest),
       fetchSchedule(),
     ])
       .then(([contestData, schedData]) => {
