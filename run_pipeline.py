@@ -52,6 +52,9 @@ STAGES = [
     ("daily_4", "daily_4_generate_entry_archetype_pick_estimates.py", True),
     ("daily_5", "daily_5_apply_archetype_blend_and_ev.py", False),
 ]
+POST_STAGES = [
+    ("weekly_7", "weekly_7_analyze_projection_horizon.py"),
+]
 
 
 def _run(script, contest, date, keep_going):
@@ -104,16 +107,16 @@ def main(argv=None):
         print("Stages (in order):")
         for name, script, pc in STAGES:
             print(f"  {name:26s} {script}" + ("  [per contest]" if pc else ""))
+        print("Post-run (once, after all dates):")
+        for name, script in POST_STAGES:
+            print(f"  {name:26s} {script}")
         return 0
 
-    stages = STAGES
-    if args.only:
-        want = set(args.only)
-        stages = [s for s in STAGES if s[0] in want]
-    if args.skip:
-        drop = set(args.skip)
-        stages = [s for s in stages if s[0] not in drop]
-    if not stages:
+    want = set(args.only) if args.only else None
+    drop = set(args.skip) if args.skip else set()
+    stages = [s for s in STAGES if (want is None or s[0] in want) and s[0] not in drop]
+    post_stages = [s for s in POST_STAGES if (want is None or s[0] in want) and s[0] not in drop]
+    if not stages and not post_stages:
         print("No stages selected.")
         return 1
 
@@ -135,6 +138,20 @@ def main(argv=None):
                 print(f"\n🛑 Aborting remaining stages for {date} "
                       f"(stage '{name}' failed). Use --keep-going to override.")
                 break
+
+    # Post-run analyses: once, after every date, over the whole history.
+    for name, script in post_stages:
+        print("\n" + "=" * 72)
+        print(f"  POST-RUN: {name}")
+        print("=" * 72)
+        env = dict(os.environ)
+        env.pop("SURVIVOR_CONTEST", None)
+        print(f"\n▶️  {script}")
+        result = subprocess.run([sys.executable, script], env=env, cwd=REPO_DIR)
+        if result.returncode != 0:
+            # Analysis only — never fail the pipeline over it.
+            print(f"❌ {script} exited with code {result.returncode} (non-fatal).")
+
     print("\n✅ Pipeline run complete.")
     return 0
 
