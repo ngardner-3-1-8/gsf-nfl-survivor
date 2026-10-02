@@ -172,7 +172,9 @@ def blend_all_contests(target_year, upcoming_week, sim_path=None, verbose=True):
         pred_home, pred_away = flavor_cols("Predicted", contest_key)
         tdf_home, tdf_away = flavor_cols("Top Down", contest_key)
         arch_home, arch_away = flavor_cols("Archetype", contest_key)
-        for _c in (pred_home, pred_away, tdf_home, tdf_away, arch_home, arch_away):
+        blend_home, blend_away = flavor_cols("Blend", contest_key)
+        for _c in (pred_home, pred_away, tdf_home, tdf_away,
+                   arch_home, arch_away, blend_home, blend_away):
             if _c not in sim.columns:
                 sim[_c] = np.nan
 
@@ -191,10 +193,17 @@ def blend_all_contests(target_year, upcoming_week, sim_path=None, verbose=True):
             # for every row this week. Predicted == the working column: Circa's
             # upcoming week already holds the live-crowd blend; every other week
             # holds pure top-down until it is re-blended just below.
+            # Top Down = daily_2's pure market projection (most accurate per weekly_9).
             sim.loc[wk_mask, tdf_home] = pd.to_numeric(sim.loc[wk_mask, home_td], errors="coerce")
             sim.loc[wk_mask, tdf_away] = pd.to_numeric(sim.loc[wk_mask, away_td], errors="coerce")
-            sim.loc[wk_mask, pred_home] = pd.to_numeric(sim.loc[wk_mask, home_out], errors="coerce")
-            sim.loc[wk_mask, pred_away] = pd.to_numeric(sim.loc[wk_mask, away_out], errors="coerce")
+            # PREDICTED is now the pure top-down projection, and the production
+            # working column is set to it too, so every downstream consumer (EV,
+            # optimizer, interface) uses the most accurate projection. The learned
+            # blend is recorded separately in the Blend columns below.
+            sim.loc[wk_mask, pred_home] = pd.to_numeric(sim.loc[wk_mask, home_td], errors="coerce")
+            sim.loc[wk_mask, pred_away] = pd.to_numeric(sim.loc[wk_mask, away_td], errors="coerce")
+            sim.loc[wk_mask, home_out] = pd.to_numeric(sim.loc[wk_mask, home_td], errors="coerce")
+            sim.loc[wk_mask, away_out] = pd.to_numeric(sim.loc[wk_mask, away_td], errors="coerce")
 
             # Behavioral (archetype) estimate for this week, if daily_4 produced
             # one. Used to record the Archetype flavor and (where allowed) to
@@ -252,11 +261,12 @@ def blend_all_contests(target_year, upcoming_week, sim_path=None, verbose=True):
                                    week, alive, model)
             rec_df["blended"] = blended
 
+            # Record the learned blend in the Blend flavor columns ONLY — it no
+            # longer overwrites the production column or Predicted (those stay
+            # pure top-down). Kept for the weekly_9 accuracy study.
             for _, r in rec_df.iterrows():
-                out_c = home_out if r["side"] == "home" else away_out
-                pred_c = pred_home if r["side"] == "home" else pred_away
-                sim.at[r["idx"], out_c] = r["blended"]
-                sim.at[r["idx"], pred_c] = r["blended"]
+                blend_c = blend_home if r["side"] == "home" else blend_away
+                sim.at[r["idx"], blend_c] = r["blended"]
             n_blended += 1
 
         result[contest_key] = n_blended
