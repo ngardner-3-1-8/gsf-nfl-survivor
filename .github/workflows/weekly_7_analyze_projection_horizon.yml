@@ -1,0 +1,70 @@
+name: Weekly 7 Analyze Projection Horizon
+
+# Manual study. Reads the committed projection snapshots
+# (nfl-power-ratings/final_sim_results_with_variance_week_{W}_{year}.csv) against
+# the actuals (final_data files where present, else the historical training file)
+# and quantifies how pick-% accuracy decays with forecast horizon. Commits the
+# tables, the readable report, and a per-contest chart under entry-analytics/.
+#
+# Nothing here re-runs the model or the sims — it only analyzes existing files,
+# so it's fast and safe to run any time (e.g. after a backfill adds snapshots).
+
+on:
+  workflow_dispatch:
+    inputs:
+      years:
+        description: 'Space-separated years (blank = every year with snapshots)'
+        required: false
+        default: ''
+      contests:
+        description: 'Space-separated contest keys (blank = all)'
+        required: false
+        default: ''
+      skill_threshold:
+        description: 'Spearman floor defining the "skill horizon"'
+        required: false
+        default: '0.5'
+
+permissions:
+  contents: write
+
+jobs:
+  horizon:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy scipy matplotlib
+
+      - name: Run horizon analysis
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.years }}" ];    then ARGS="$ARGS --years ${{ inputs.years }}"; fi
+          if [ -n "${{ inputs.contests }}" ]; then ARGS="$ARGS --contests ${{ inputs.contests }}"; fi
+          if [ -n "${{ inputs.skill_threshold }}" ]; then ARGS="$ARGS --skill-threshold ${{ inputs.skill_threshold }}"; fi
+          echo "weekly_7_analyze_projection_horizon.py $ARGS"
+          python weekly_7_analyze_projection_horizon.py $ARGS
+
+      - name: Commit the horizon outputs
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add entry-analytics/flavor_horizon_accuracy.csv \
+                  entry-analytics/horizon_curve.csv \
+                  entry-analytics/horizon_report.txt \
+                  entry-analytics/horizon_*.png 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "Projection horizon analysis
+
+          Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+          Claude-Session: https://claude.ai/code/session_01UP4LjqY5SmZynhBYgsPMyG"
+          git push || echo "Nothing to push"
