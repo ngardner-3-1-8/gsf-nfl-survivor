@@ -60,7 +60,7 @@ import contest_config as cc
 
 OUT_DIR = 'entry-analytics'
 MIN_TEAMS = 5
-DEFAULT_TOP_NS = [9, 15, 30, 40, 60, 'all']
+DEFAULT_TOP_NS = [20, 30, 40, 50, 60, 'all']
 
 # --- Mirrors of daily_2's pick-% feature logic (keep in sync) ---------------
 BASE_FEATURE_CANDIDATES = [
