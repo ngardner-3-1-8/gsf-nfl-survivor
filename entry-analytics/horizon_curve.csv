@@ -1,0 +1,65 @@
+contest,flavor,horizon,n_obs,mae_pct_points,spearman,mean_bias
+big_splash,Predicted,0,2,0.01994,0.86854,0.0
+big_splash,Predicted,1,1,0.04662,-0.02669,0.0
+big_splash,Top Down,0,2,0.01994,0.86854,0.0
+big_splash,Top Down,1,1,0.04662,-0.02669,0.0
+circa,Archetype,0,70,0.02955,0.76579,0.01344
+circa,Archetype,1,66,0.03473,0.71009,0.01372
+circa,Archetype,2,61,0.03571,0.70988,0.01381
+circa,Archetype,3,56,0.03824,0.69932,0.01448
+circa,Archetype,4,52,0.03853,0.70532,0.01479
+circa,Archetype,5,48,0.03925,0.70571,0.01504
+circa,Archetype,6,44,0.04148,0.70978,0.01536
+circa,Archetype,7,40,0.04265,0.70396,0.01593
+circa,Archetype,8,36,0.0434,0.69683,0.0167
+circa,Archetype,9,32,0.0478,0.6809,0.01767
+circa,Archetype,10,28,0.04979,0.66974,0.01843
+circa,Archetype,11,25,0.04753,0.63947,0.01919
+circa,Archetype,12,21,0.04855,0.61306,0.0169
+circa,Archetype,13,17,0.05172,0.62172,0.01838
+circa,Archetype,14,13,0.05564,0.56474,0.02128
+circa,Archetype,15,9,0.06163,0.55193,0.02727
+circa,Archetype,16,5,0.09127,0.6353,0.04284
+circa,Archetype,17,3,0.0426,0.43346,0.01584
+circa,Predicted,0,103,0.02603,0.77656,0.00971
+circa,Predicted,1,96,0.02906,0.75122,0.01
+circa,Predicted,2,89,0.0303,0.73495,0.01003
+circa,Predicted,3,82,0.03121,0.73974,0.0105
+circa,Predicted,4,76,0.03252,0.71046,0.01091
+circa,Predicted,5,70,0.03371,0.71766,0.01124
+circa,Predicted,6,64,0.03482,0.70074,0.01146
+circa,Predicted,7,58,0.03596,0.70342,0.01172
+circa,Predicted,8,52,0.03621,0.69689,0.01226
+circa,Predicted,9,46,0.03967,0.71227,0.01307
+circa,Predicted,10,41,0.04294,0.69119,0.01379
+circa,Predicted,11,36,0.04424,0.67709,0.01433
+circa,Predicted,12,32,0.04421,0.65622,0.01499
+circa,Predicted,13,27,0.042,0.61448,0.01314
+circa,Predicted,14,22,0.0446,0.59635,0.0142
+circa,Predicted,15,17,0.04589,0.59112,0.01628
+circa,Predicted,16,12,0.05438,0.61371,0.02045
+circa,Predicted,17,7,0.05947,0.52745,0.0306
+circa,Predicted,18,4,0.03274,0.46329,0.01188
+circa,Top Down,0,103,0.0242,0.79002,0.00966
+circa,Top Down,1,96,0.02743,0.74454,0.01
+circa,Top Down,2,89,0.02879,0.72524,0.01003
+circa,Top Down,3,82,0.0289,0.72189,0.0105
+circa,Top Down,4,76,0.03133,0.68593,0.01091
+circa,Top Down,5,70,0.03272,0.68718,0.01124
+circa,Top Down,6,64,0.03395,0.66382,0.01146
+circa,Top Down,7,58,0.03489,0.65865,0.01172
+circa,Top Down,8,52,0.0356,0.64804,0.01226
+circa,Top Down,9,46,0.03923,0.66401,0.01307
+circa,Top Down,10,41,0.04173,0.63472,0.01379
+circa,Top Down,11,36,0.04322,0.62915,0.01433
+circa,Top Down,12,32,0.04126,0.60487,0.01499
+circa,Top Down,13,27,0.04163,0.5599,0.01314
+circa,Top Down,14,22,0.04237,0.58656,0.0142
+circa,Top Down,15,17,0.04445,0.59623,0.01628
+circa,Top Down,16,12,0.05551,0.5729,0.02045
+circa,Top Down,17,7,0.05767,0.50512,0.0306
+circa,Top Down,18,4,0.03274,0.46329,0.01188
+world_championship,Predicted,0,2,0.02102,0.87437,0.0
+world_championship,Predicted,1,1,0.04798,0.06091,0.0
+world_championship,Top Down,0,2,0.02102,0.87437,0.0
+world_championship,Top Down,1,1,0.04798,0.06091,0.0
