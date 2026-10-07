@@ -265,12 +265,16 @@ def loop_through_rankings(date):
             # --- SHORT-NAME -> DISPLAY-NAME RESOLVER -----------------------
             # Lookups (manual starter maps, game_qb_dict) hold the short
             # 'F.Last' form, but the rating map is now keyed by display name.
-            # Bridge them: for each (short name, team) pick the display name
-            # with the most snaps, so the correct player on that team wins when
-            # a short name is shared. A team-agnostic fallback (highest-volume
-            # display for a short name) covers lookups whose team has no prior
-            # snaps for that player.
-            qb_name_resolver, qb_name_fallback = {}, {}
+            # Bridge them per TEAM: for each (short name, team) pick the display
+            # name with the most snaps for that team. Deliberately NO team-
+            # agnostic fallback: if a team has no snaps under a short name, the
+            # lookup falls through to replacement level. That is what keeps a
+            # hand-entered backup who shares a name with a star (TB's
+            # 'J.Daniels' vs WAS's Jayden Daniels) from inheriting the star's
+            # rating — the backup isn't in TB's snaps, so he rates as a backup,
+            # which is correct. The cost is only that a QB with zero snaps for a
+            # brand-new team rates as replacement until he logs a game there.
+            qb_name_resolver = {}
             if name_key != 'player_name' and 'player_name' in qbs.columns:
                 _vt = (qbs.groupby(['player_name', team_col, name_key])['total_involvement']
                           .sum().reset_index().sort_values('total_involvement', ascending=False))
@@ -278,11 +282,27 @@ def loop_through_rankings(date):
                     _k = (_r['player_name'], _r[team_col])
                     if _k not in qb_name_resolver:
                         qb_name_resolver[_k] = _r[name_key]
+
+            # Team-agnostic fallback, but ONLY for short names that are
+            # UNAMBIGUOUS in the data (exactly one real player). This carries a
+            # player's history to a new team before he has snaps there, so a
+            # trade like J.McCarthy (MIN to NYG) keeps his Vikings rating.
+            # Shared short names (two 'J.Daniels') are excluded so they can
+            # never cross-contaminate: they must match on team, else fall to
+            # replacement. The only residual gap is a brand-new player who
+            # shares a star's short name and has zero career snaps (invisible to
+            # the data until he plays), who would borrow the star's rating for
+            # that window.
+            qb_name_fallback = {}
+            if name_key != 'player_name' and 'player_name' in qbs.columns:
+                _distinct = qbs.groupby('player_name')[id_col].nunique()
+                _unique_shorts = set(_distinct[_distinct == 1].index)
                 _vg = (qbs.groupby(['player_name', name_key])['total_involvement']
                           .sum().reset_index().sort_values('total_involvement', ascending=False))
                 for _, _r in _vg.iterrows():
-                    if _r['player_name'] not in qb_name_fallback:
-                        qb_name_fallback[_r['player_name']] = _r[name_key]
+                    _s = _r['player_name']
+                    if _s in _unique_shorts and _s not in qb_name_fallback:
+                        qb_name_fallback[_s] = _r[name_key]
 
             # --- TEAM VOLUME ---
             team_game_stats = qbs.groupby([team_col, 'season', 'week'])['total_involvement'].sum().reset_index()
@@ -291,7 +311,7 @@ def loop_through_rankings(date):
 
             # Return the replacement_epa as a 3rd variable to use as a fallback
             return qb_rating_map, team_volume_map, replacement_epa, qb_name_resolver, qb_name_fallback
-            
+
         except Exception as e:
             print(f"Error loading player stats: {e}")
             return {}, {}, -0.05, {}, {}
@@ -328,10 +348,19 @@ def loop_through_rankings(date):
 
         def resolve_qb_rating(short_name, team, default):
             """Rating for a QB given the short 'F.Last' name and the team it's
-            looked up under. Resolves the short name to the full display name
-            the rating map is keyed by — preferring the player with the most
-            snaps for that team, then the highest-volume player overall — so a
-            shared short name (two 'J.Daniels') can't cross-contaminate."""
+            looked up under. Resolution order:
+              1. (short name, team) -> display name, matched on that team's
+                 snaps. A direct team match always wins, so two players who
+                 share a short name on different teams each get their own
+                 rating.
+              2. For an UNAMBIGUOUS short name only, a team-agnostic fallback to
+                 that player's display name, so a trade carries his history to a
+                 team he hasn't played for yet (J.McCarthy MIN -> NYG).
+              3. Otherwise the default (replacement level): a name shared with a
+                 star but not in this team's snaps is treated as an unknown
+                 backup rather than borrowing the star's rating.
+            With no display-name column both maps are empty and this degrades to
+            the original short-name lookup."""
             if short_name is None:
                 return default
             disp = (qb_name_resolver.get((short_name, team))
