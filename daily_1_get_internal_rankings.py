@@ -658,19 +658,51 @@ def loop_through_rankings(date):
         
         if not df.empty:
             filename = f"nfl-power-ratings/nfl_power_ratings_blended_week_{CURRENT_UPCOMING_WEEK}_{target_year}.csv"
-            
-            # 2. Compare if file exists
-            if os.path.exists(f'nfl-power-ratings/mp_ratings_week_{starting_week}_{target_year}.csv'):
-                print("Found MP Ratings file. Merging and analyzing...")
+
+            # 2. Resolve the Massey-Peabody ratings file.
+            #    MP publishes at irregular times, so the current week's file is
+            #    often absent (or empty) for part of the week. Walk back to the
+            #    most recent week that actually has ratings and carry those
+            #    forward, so MP_Rating / MP Rank are never left blank anywhere
+            #    downstream (this file feeds daily_2's sim build, the schedule,
+            #    the optimizer/trap check, and the rankings tab). The real
+            #    current-week file replaces them as soon as it lands.
+            mp_path, mp_week = None, 0
+            for _w in range(int(starting_week), 0, -1):
+                _p = f'nfl-power-ratings/mp_ratings_week_{_w}_{target_year}.csv'
+                if not os.path.exists(_p):
+                    continue
                 try:
-                    final_df = compare_models(df, f'nfl-power-ratings/mp_ratings_week_{starting_week}_{target_year}.csv')
+                    _probe = pd.read_csv(_p)
+                except Exception:
+                    continue
+                if 'Rating' not in _probe.columns:
+                    continue
+                if not pd.to_numeric(_probe['Rating'], errors='coerce').notna().any():
+                    continue  # file exists but has no ratings yet
+                mp_path, mp_week = _p, _w
+                break
+
+            if mp_path:
+                if mp_week == starting_week:
+                    print(f"Found MP Ratings for week {starting_week}. Merging and analyzing...")
+                else:
+                    print(f"MP Ratings for week {starting_week} not available yet — "
+                          f"carrying forward week {mp_week}.")
+                try:
+                    final_df = compare_models(df, mp_path)
                 except Exception as e:
                     print(f"Error during merge: {e}. Saving internal ratings only.")
                     final_df = df
             else:
-                print("mp_ratings.csv not found. Skipping comparison.")
+                print("No MP ratings file found for any week. Skipping comparison.")
                 final_df = df
-    
+
+            # Flag whether MP was carried from an earlier week so the UI can
+            # mark it (True for the whole slate when a prior week was used).
+            if isinstance(final_df, pd.DataFrame):
+                final_df['MP Carried'] = bool(mp_path) and (mp_week != starting_week)
+
             # 3. Save
             final_df.to_csv(filename, index=False)
             print(f"\nSuccessfully created {filename}")
