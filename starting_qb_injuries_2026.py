@@ -70,3 +70,23 @@ MANUAL_CURRENT_STARTERS = {
     'TEN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'WAS': [None, None, 'M.Mariota', 'M.Mariota', 'M.Mariota', None, None, None, None, None, None, None, None, None, None, None, None, None]
 }
+
+# FORCE REPLACEMENT-LEVEL RATING
+# -----------------------------------------------------------------------------
+# A set of (TEAM, 'F.Last') pairs pinned to replacement level in daily_1,
+# overriding the normal rating lookup entirely.
+#
+# Use this ONLY for the one case the play-by-play data cannot resolve on its
+# own: a spot-starter / backup whose short 'F.Last' name collides with an
+# established NFL player AND who has no NFL snaps of his own yet. Until he takes
+# a snap he is invisible to the data, so the rating resolver would otherwise
+# hand him the established player's rating (e.g. a pre-debut Tampa Bay
+# 'J.Daniels' borrowing Jayden Daniels' rating).
+#
+# Once the player has his own snaps the resolver separates them by team on its
+# own, so REMOVE the entry at that point if you want his real (shrinkage-
+# regressed) rating instead of a hard replacement floor.
+#
+# Example — Jalon Daniels on TB before his Week 4 2026 debut:
+#     FORCE_REPLACEMENT = {('TB', 'J.Daniels')}
+FORCE_REPLACEMENT = set()
