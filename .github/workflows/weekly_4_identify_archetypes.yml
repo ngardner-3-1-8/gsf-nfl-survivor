@@ -75,4 +75,26 @@ jobs:
                   big-splash-pick-history/*_with_archetypes_week_*.csv \
                   splash-world-championship-pick-history/*_with_archetypes_week_*.csv \
                   entry_archetypes_last_updated.json
-          git diff --cached --quiet || (git commit -m "Auto-update entry archetypes (all contests)" && git push)
+          if git diff --cached --quiet; then
+            echo "No archetype changes to commit."
+            exit 0
+          fi
+          git commit -m "Auto-update entry archetypes (all contests)"
+          # Push with retries. GitHub occasionally returns a transient 500
+          # ("remote: Internal Server Error") on a push; a plain single push
+          # then fails the whole run. Retry with backoff, and re-sync with
+          # --rebase between attempts so a non-fast-forward (another chained
+          # workflow pushed meanwhile) is also recovered rather than fatal.
+          n=0
+          until [ "$n" -ge 5 ]; do
+            if git push; then
+              echo "Push succeeded."
+              exit 0
+            fi
+            n=$((n + 1))
+            echo "Push attempt $n failed; re-syncing and retrying in $((n * 15))s..."
+            git pull --rebase --autostash origin main || true
+            sleep $((n * 15))
+          done
+          echo "Push still failing after $n attempts (likely a GitHub-side 500 — check githubstatus.com, then re-run)."
+          exit 1
