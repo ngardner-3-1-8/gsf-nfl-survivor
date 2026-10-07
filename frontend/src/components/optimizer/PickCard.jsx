@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { trapInfo, TRAP_STYLES, trapTitle } from '../../utils/trap'
 
 function weatherEmoji(temp, precip, wind, dome) {
   if (dome) return '🏟️'
@@ -32,12 +33,14 @@ function holidayEmoji(pick) {
   return turkey + tree
 }
 
-function pickPctColor(pickPct, weekPcts) {
-  if (!weekPcts || weekPcts.length === 0) return 'text-gray-400'
-  const rank = weekPcts.findIndex(p => p <= pickPct) + 1
-  if (rank <= 2) return 'text-red-400'
-  if (rank <= 5) return 'text-yellow-400'
-  return 'text-green-400'
+// Trap severity for a pick, using the rating + popularity rank the backend
+// attaches to each PickResult. null = not a trap.
+function pickTrap(pick) {
+  return trapInfo({
+    mp: pick.mp_rating,
+    gsf: pick.gsf_rating,
+    rank: pick.pick_pct_rank,
+  })
 }
 
 export default function PickCard({ solution, index, label, allWeeklyPickPcts }) {
@@ -130,10 +133,11 @@ export default function PickCard({ solution, index, label, allWeeklyPickPcts }) 
             <tbody>
               {solution.map((pick, i) => {
                 const isClose = pick.win_pct < 0.65
-                const weekPcts = allWeeklyPickPcts?.[pick.week] || []
-                const rank = weekPcts.findIndex(p => p <= pick.pick_pct) + 1
                 const weather = weatherEmoji(pick.temperature, pick.precipitation, pick.wind, pick.dome)
                 const holiday = holidayEmoji(pick)
+                const trap = pickTrap(pick)
+                const trapSt = trap.severity ? TRAP_STYLES[trap.severity] : null
+                const trapTip = trapSt ? trapTitle(pick.pick_pct_rank, pick.mp_rating, pick.gsf_rating) : undefined
 
                 return (
                   <tr
@@ -148,7 +152,10 @@ export default function PickCard({ solution, index, label, allWeeklyPickPcts }) 
                     </td>
                     <td className="px-4 py-2.5 text-base">{holiday}</td>
                     <td className="px-4 py-2.5 text-gray-400 text-xs">{pick.day || '—'}</td>
-                    <td className="px-4 py-2.5 font-semibold text-white">{pick.team}</td>
+                    <td className={`px-4 py-2.5 font-semibold ${trapSt ? trapSt.text : 'text-white'}`}
+                      title={trapTip}>
+                      {trapSt && <span aria-hidden="true" className="mr-1">⚠️</span>}{pick.team}
+                    </td>
                     <td className="px-4 py-2.5 text-gray-300 text-xs">{pick.starting_qb || '—'}</td>
                     <td className="px-4 py-2.5 text-gray-400 text-xs">{pick.opponent}</td>
                     <td className="px-4 py-2.5">
@@ -197,8 +204,10 @@ export default function PickCard({ solution, index, label, allWeeklyPickPcts }) 
                     <td className="px-4 py-2.5 text-right font-mono text-xs text-green-400">
                       {pick.ev.toFixed(4)}
                     </td>
-                    <td className={`px-4 py-2.5 text-right font-mono text-xs ${pickPctColor(pick.pick_pct, weekPcts)}`}>
+                    <td className={`px-4 py-2.5 text-right font-mono text-xs ${trapSt ? trapSt.text : 'text-gray-400'}`}
+                      title={trapTip}>
                       {(pick.pick_pct * 100).toFixed(1)}%
+                      {trapSt && <span aria-hidden="true" className="ml-1">⚠️</span>}
                     </td>
                   </tr>
                 )
