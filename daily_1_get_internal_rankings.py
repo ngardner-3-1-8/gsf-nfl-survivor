@@ -220,8 +220,27 @@ def loop_through_rankings(date):
             qbs['total_epa'] = qbs['passing_epa'] + qbs['rushing_epa']
             qbs['total_involvement'] = qbs['attempts'] + qbs['sacks_val'] + qbs['carries']
             
+            # --- NAME-COLLISION DIAGNOSTIC ---------------------------------
+            # The short "F.Last" form (player_name) is not unique: two real
+            # players can share it (e.g. 'J.Daniels' = Jayden Daniels / Jalon
+            # Daniels). Grouping career ratings on that short form silently
+            # MERGES them. Flag every short name that covers more than one real
+            # player so a genuine clash is visible in the log, then group the
+            # ratings on the full display name instead so the two stay separate.
+            name_key = 'player_display_name' if 'player_display_name' in qbs.columns else 'player_name'
+            id_col = 'player_id' if 'player_id' in qbs.columns else name_key
+            if 'player_name' in qbs.columns and id_col != 'player_name':
+                _clash = qbs.groupby('player_name')[id_col].nunique()
+                _clash = _clash[_clash > 1]
+                for _short, _n in _clash.items():
+                    _who = sorted(
+                        qbs.loc[qbs['player_name'] == _short, name_key].dropna().unique().tolist())
+                    print(f"   ⚠️  QB name collision: '{_short}' covers {_n} players "
+                          f"({', '.join(_who)}). Ratings grouped by {name_key}; "
+                          f"lookups resolve by (short name, team).")
+
             # --- EFFICIENCY RATING WITH BAYESIAN SHRINKAGE ---
-            qb_career = qbs.groupby('player_name').agg(
+            qb_career = qbs.groupby(name_key).agg(
                 career_epa=('total_epa', 'sum'),
                 career_plays=('total_involvement', 'sum')
             ).reset_index()
@@ -240,19 +259,42 @@ def loop_through_rankings(date):
             qb_career['epa_per_play'] = (qb_career['career_epa'] + (B * replacement_epa)) / (qb_career['career_plays'] + B)
             
             # Notice we no longer drop QBs with < 50 plays!
-            qb_rating_map = pd.Series(qb_career.epa_per_play.values, index=qb_career.player_name).to_dict()
-            
+            # qb_rating_map is keyed by name_key (full display name when present).
+            qb_rating_map = pd.Series(qb_career.epa_per_play.values, index=qb_career[name_key]).to_dict()
+
+            # --- SHORT-NAME -> DISPLAY-NAME RESOLVER -----------------------
+            # Lookups (manual starter maps, game_qb_dict) hold the short
+            # 'F.Last' form, but the rating map is now keyed by display name.
+            # Bridge them: for each (short name, team) pick the display name
+            # with the most snaps, so the correct player on that team wins when
+            # a short name is shared. A team-agnostic fallback (highest-volume
+            # display for a short name) covers lookups whose team has no prior
+            # snaps for that player.
+            qb_name_resolver, qb_name_fallback = {}, {}
+            if name_key != 'player_name' and 'player_name' in qbs.columns:
+                _vt = (qbs.groupby(['player_name', team_col, name_key])['total_involvement']
+                          .sum().reset_index().sort_values('total_involvement', ascending=False))
+                for _, _r in _vt.iterrows():
+                    _k = (_r['player_name'], _r[team_col])
+                    if _k not in qb_name_resolver:
+                        qb_name_resolver[_k] = _r[name_key]
+                _vg = (qbs.groupby(['player_name', name_key])['total_involvement']
+                          .sum().reset_index().sort_values('total_involvement', ascending=False))
+                for _, _r in _vg.iterrows():
+                    if _r['player_name'] not in qb_name_fallback:
+                        qb_name_fallback[_r['player_name']] = _r[name_key]
+
             # --- TEAM VOLUME ---
             team_game_stats = qbs.groupby([team_col, 'season', 'week'])['total_involvement'].sum().reset_index()
             team_volume = team_game_stats.groupby(team_col)['total_involvement'].mean()
             team_volume_map = team_volume.to_dict()
-            
+
             # Return the replacement_epa as a 3rd variable to use as a fallback
-            return qb_rating_map, team_volume_map, replacement_epa
+            return qb_rating_map, team_volume_map, replacement_epa, qb_name_resolver, qb_name_fallback
             
         except Exception as e:
             print(f"Error loading player stats: {e}")
-            return {}, {}, -0.05
+            return {}, {}, -0.05, {}, {}
     
     def weighted_avg(values, weights):
         if len(values) == 0: return 0
@@ -282,7 +324,20 @@ def loop_through_rankings(date):
         pbp = load_pbp_data(years_to_load)
         if pbp.empty: return pd.DataFrame()
         
-        qb_rating_map, team_qb_vol_map, replacement_epa = get_qb_ratings_fast(years_to_load, target_year, CURRENT_UPCOMING_WEEK)
+        qb_rating_map, team_qb_vol_map, replacement_epa, qb_name_resolver, qb_name_fallback = get_qb_ratings_fast(years_to_load, target_year, CURRENT_UPCOMING_WEEK)
+
+        def resolve_qb_rating(short_name, team, default):
+            """Rating for a QB given the short 'F.Last' name and the team it's
+            looked up under. Resolves the short name to the full display name
+            the rating map is keyed by — preferring the player with the most
+            snaps for that team, then the highest-volume player overall — so a
+            shared short name (two 'J.Daniels') can't cross-contaminate."""
+            if short_name is None:
+                return default
+            disp = (qb_name_resolver.get((short_name, team))
+                    or qb_name_fallback.get(short_name)
+                    or short_name)
+            return qb_rating_map.get(disp, default)
     
         # 3. Process PBP
         print("Processing PBP data...")
@@ -437,7 +492,7 @@ def loop_through_rankings(date):
                         last_game_id = last_game_slice['game_id'].values[0]
                         curr_starter = game_qb_dict.get((last_game_id, team), 'Unknown')
             
-            curr_qb_rating = qb_rating_map.get(curr_starter, replacement_epa)
+            curr_qb_rating = resolve_qb_rating(curr_starter, team, replacement_epa)
             t_games_sched = df_sched[df_sched['team'] == team]
             
             total_weight = 0
@@ -447,7 +502,7 @@ def loop_through_rankings(date):
             for _, row in t_games_sched.iterrows():
                 g_qb = row['game_qb']
                 w = row['weight']
-                rating = qb_rating_map.get(g_qb, 0.0)
+                rating = resolve_qb_rating(g_qb, team, 0.0)
                 hist_qb_ratings.append(rating)
                 hist_weights.append(w)
                 total_weight += w
