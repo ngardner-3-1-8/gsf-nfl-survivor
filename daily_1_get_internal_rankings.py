@@ -177,6 +177,12 @@ def loop_through_rankings(date):
     
     # TYPICAL STARTERS MAP (Primary 2025 Starters)
     from starting_qb_injuries_2026 import TYPICAL_STARTERS, MANUAL_CURRENT_STARTERS
+    # Optional manual override: (team, short name) pairs pinned to replacement
+    # level. Defaults to empty if the injuries file predates this feature.
+    try:
+        from starting_qb_injuries_2026 import FORCE_REPLACEMENT
+    except ImportError:
+        FORCE_REPLACEMENT = set()
     
     def load_pbp_data(years):
         print(f"Loading PBP data for {years}...")
@@ -360,9 +366,16 @@ def loop_through_rankings(date):
                  star but not in this team's snaps is treated as an unknown
                  backup rather than borrowing the star's rating.
             With no display-name column both maps are empty and this degrades to
-            the original short-name lookup."""
+            the original short-name lookup.
+
+            A (team, short name) pair in FORCE_REPLACEMENT is pinned to
+            replacement level, overriding every step above — the manual escape
+            hatch for a collision the data can't yet resolve (a pre-debut backup
+            who shares a short name with an established player)."""
             if short_name is None:
                 return default
+            if (team, short_name) in FORCE_REPLACEMENT:
+                return replacement_epa
             disp = (qb_name_resolver.get((short_name, team))
                     or qb_name_fallback.get(short_name)
                     or short_name)
