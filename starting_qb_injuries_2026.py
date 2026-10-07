@@ -66,7 +66,7 @@ MANUAL_CURRENT_STARTERS = {
     'PIT': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'SEA': [None, 'D.Lock', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'SF': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'TB': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+    'TB': [None, None, None, 'J.Daniels', 'J.Daniels', None, None, None, None, None, None, None, None, None, None, None, None, None],
     'TEN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'WAS': [None, None, 'M.Mariota', 'M.Mariota', None, None, None, None, None, None, None, None, None, None, None, None, None, None]
+    'WAS': [None, None, 'M.Mariota', 'M.Mariota', 'M.Mariota', None, None, None, None, None, None, None, None, None, None, None, None, None]
 }
