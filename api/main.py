@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 import glob
 import re
 
+
 def sanitize(obj):
     """Recursively replace nan/inf with None for JSON serialization."""
     if isinstance(obj, float):
@@ -424,6 +425,67 @@ def optimize(request: OptimizeRequest):
         import traceback; traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")
 
+def _backfill_mp_ratings(df, ratings_dir, week, year):
+    """Fill blank MP_Rating from the most recent prior week's blended file.
+
+    Massey-Peabody ratings publish at irregular times during the week, so a
+    freshly-built current-week ratings file often has a blank MP_Rating column
+    until they drop (GSF / Power Rating is computed in-house and is always
+    present). For any team whose current MP is blank, walk back week by week
+    and carry forward the newest MP we can find. When anything is carried, the
+    MP 'Rank' column is recomputed from the filled ratings so rank and rating
+    stay consistent. Returns (df, carried_teams)."""
+    carried = set()
+    if df is None or "MP_Rating" not in df.columns or not week:
+        return df, carried
+    df = df.copy()
+    # daily_1 may already have carried the whole slate forward and tagged it.
+    if "MP Carried" in df.columns and "Team" in df.columns:
+        carried |= set(df.loc[df["MP Carried"].astype(bool), "Team"].astype(str))
+    df["MP_Rating"] = pd.to_numeric(df["MP_Rating"], errors="coerce")
+    missing = df.loc[df["MP_Rating"].isna(), "Team"].astype(str).tolist() \
+        if "Team" in df.columns else []
+    if not missing:
+        if "Team" in df.columns:
+            df["MP Carried"] = df["Team"].astype(str).isin(carried)
+        return df, carried
+    blank_backfilled = False
+
+    for w in range(int(week) - 1, 0, -1):
+        if not missing:
+            break
+        pf = os.path.join(ratings_dir, f"nfl_power_ratings_blended_week_{w}_{year}.csv")
+        if not os.path.exists(pf):
+            continue
+        try:
+            pdf = pd.read_csv(pf)
+        except Exception:
+            continue
+        if "MP_Rating" not in pdf.columns or "Team" not in pdf.columns:
+            continue
+        prior = dict(zip(pdf["Team"].astype(str),
+                         pd.to_numeric(pdf["MP_Rating"], errors="coerce")))
+        still = []
+        for team in missing:
+            val = prior.get(team)
+            if val is not None and pd.notna(val):
+                df.loc[df["Team"].astype(str) == team, "MP_Rating"] = val
+                carried.add(team)
+                blank_backfilled = True
+            else:
+                still.append(team)
+        missing = still
+
+    # Flag carried rows and, if we filled any BLANKS here, recompute the MP rank
+    # from the now-complete ratings so 'Rank' isn't left blank / inconsistent.
+    # (When daily_1 already carried the slate, its Rank is already consistent.)
+    df["MP Carried"] = df["Team"].astype(str).isin(carried) if "Team" in df.columns else False
+    if blank_backfilled and "Rank" in df.columns:
+        df["Rank"] = (df["MP_Rating"].rank(ascending=False, method="min")
+                      .astype("Int64"))
+    return df, carried
+
+
 @app.get("/api/rankings")
 def get_rankings(year: int = Query(None), week: int = Query(None)):
     try:
@@ -470,6 +532,9 @@ def get_rankings(year: int = Query(None), week: int = Query(None)):
                 upcoming_week = extract_week(current_file)
 
         df = pd.read_csv(current_file)
+        # Carry forward last week's Massey-Peabody ratings for any team whose MP
+        # hasn't published yet, so the tab isn't left blank mid-week.
+        df, mp_carried_teams = _backfill_mp_ratings(df, ratings_dir, upcoming_week, target)
         df = df.rename(columns={"Power Rating": "GSF Power Rating"})
         if "GSF Power Rating" in df.columns:
             df["GSF Rank"] = df["GSF Power Rating"].rank(ascending=False, method="min").astype("Int64")
@@ -504,6 +569,8 @@ def get_rankings(year: int = Query(None), week: int = Query(None)):
             "target_year": target,
             "has_preseason": bool(preseason_data),
             "is_historical": target != current_year,
+            "mp_carried": bool(mp_carried_teams),
+            "mp_carried_teams": sorted(mp_carried_teams),
             "rankings": records,
         }))
     except FileNotFoundError as e:
@@ -1720,24 +1787,27 @@ def get_transactions(year: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/entry-analytics/available")
-def get_entry_analytics_available():
+def get_entry_analytics_available(contest: str = Query("circa")):
     """
-    Returns the years and weeks for which entry rankings can be shown.
-    A (year, week) is available if either a cached rankings CSV exists OR
-    the raw inputs (picks file + a final-data file for that week) exist so
-    it can be generated on demand.
+    Returns the years and weeks for which entry rankings can be shown, for the
+    given contest. A (year, week) is available if either a cached rankings CSV
+    exists OR the raw inputs (picks file + a final-data file for that week)
+    exist so it can be generated on demand.
     """
     try:
+        from contest_config import CONTESTS as _CC
+        _cc = _CC.get(contest) or _CC["circa"]
+        _ctag = "" if contest == "circa" else f"{contest}_"
         out = {}
         analytics_dir = os.path.join(DATA_DIR, "entry-analytics")
-        picks_dir = os.path.join(DATA_DIR, "circa-pick-history")
+        picks_glob = os.path.join(DATA_DIR, _cc["picks_pattern"].replace("{year}", "*"))
  
         # Years that have a picks file at all
-        for pf in glob.glob(os.path.join(picks_dir, "*_survivor_picks.csv")):
-            try:
-                y = int(os.path.basename(pf).split("_")[0])
-            except ValueError:
+        for pf in glob.glob(picks_glob):
+            _m = re.match(r"(\d{4})", os.path.basename(pf))
+            if not _m:
                 continue
+            y = int(_m.group(1))
             # Weeks with a season final-data file (these define scoreable weeks)
             fd = glob.glob(os.path.join(
                 DATA_DIR,
@@ -1750,7 +1820,7 @@ def get_entry_analytics_available():
                 except (IndexError, ValueError):
                     pass
             # Also include any cached weekly rankings
-            for rf in glob.glob(os.path.join(analytics_dir, f"{y}_week_*_entry_rankings.csv")):
+            for rf in glob.glob(os.path.join(analytics_dir, f"{y}_{_ctag}week_*_entry_rankings.csv")):
                 try:
                     weeks.append(int(os.path.basename(rf).split("_week_")[1].split("_entry")[0]))
                 except (IndexError, ValueError):
@@ -1763,7 +1833,8 @@ def get_entry_analytics_available():
  
  
 @app.get("/api/entry-analytics")
-def get_entry_analytics(year: int = Query(None), week: int = Query(None)):
+def get_entry_analytics(year: int = Query(None), week: int = Query(None),
+                        contest: str = Query("circa")):
     """
     Returns entry rankings for a given year and week.
       - If year/week omitted → most recent available (current behavior).
@@ -1772,6 +1843,9 @@ def get_entry_analytics(year: int = Query(None), week: int = Query(None)):
         using the picks file + the season-through-that-week final-data file.
     """
     try:
+        from contest_config import CONTESTS as _CC
+        _cc = _CC.get(contest) or _CC["circa"]
+        _ctag = "" if contest == "circa" else f"{contest}_"
         analytics_dir = os.path.join(DATA_DIR, "entry-analytics")
  
         # Default: current target year, latest available week
@@ -1781,13 +1855,13 @@ def get_entry_analytics(year: int = Query(None), week: int = Query(None)):
  
         # 1. Try a cached rankings file (exact week, else highest week)
         def cached_path(y, w):
-            return os.path.join(analytics_dir, f"{y}_week_{w}_entry_rankings.csv")
+            return os.path.join(analytics_dir, f"{y}_{_ctag}week_{w}_entry_rankings.csv")
  
         rank_file = None
         if week is not None and os.path.exists(cached_path(year, week)):
             rank_file = cached_path(year, week)
         elif week is None:
-            weekly = glob.glob(os.path.join(analytics_dir, f"{year}_week_*_entry_rankings.csv"))
+            weekly = glob.glob(os.path.join(analytics_dir, f"{year}_{_ctag}week_*_entry_rankings.csv"))
             if weekly:
                 def wk(p):
                     try:
@@ -1797,7 +1871,7 @@ def get_entry_analytics(year: int = Query(None), week: int = Query(None)):
                 rank_file = max(weekly, key=wk)
                 week = wk(rank_file)
             else:
-                preseason = os.path.join(analytics_dir, f"{year}_preseason_entry_rankings.csv")
+                preseason = os.path.join(analytics_dir, f"{year}_{_ctag}preseason_entry_rankings.csv")
                 if os.path.exists(preseason):
                     rank_file = preseason
                     week = 0
@@ -1807,7 +1881,7 @@ def get_entry_analytics(year: int = Query(None), week: int = Query(None)):
             if week is None:
                 raise FileNotFoundError(f"No entry analytics for {year}")
  
-            picks_path = os.path.join(DATA_DIR, f"circa-pick-history/{year}_survivor_picks.csv")
+            picks_path = os.path.join(DATA_DIR, _cc["picks_pattern"].format(year=year))
             fd = glob.glob(os.path.join(
                 DATA_DIR,
                 f"nfl-power-ratings/final_data/{year}_final_data/"
@@ -1829,7 +1903,7 @@ def get_entry_analytics(year: int = Query(None), week: int = Query(None)):
                 DATA_DIR,
                 f"nfl-power-ratings/final_data/{year-1}_final_data/"
                 f"Season_{year-1}_Through_Week_*_Final_Data.csv"))
-            prior_picks = os.path.join(DATA_DIR, f"circa-pick-history/{year-1}_survivor_picks.csv")
+            prior_picks = os.path.join(DATA_DIR, _cc["picks_pattern"].format(year=year - 1))
             run_entry_analytics(
                 picks_csv_path=picks_path,
                 sim_df=season_df,
@@ -1838,6 +1912,7 @@ def get_entry_analytics(year: int = Query(None), week: int = Query(None)):
                 output_dir=analytics_dir,
                 prior_picks_csv=prior_picks if os.path.exists(prior_picks) else None,
                 prior_season_df=(pd.read_csv(max(prior_final, key=wk)) if prior_final else None),
+                contest=contest,
             )
             rank_file = cached_path(year, week)
             if not os.path.exists(rank_file):
@@ -1867,7 +1942,7 @@ def get_entry_analytics(year: int = Query(None), week: int = Query(None)):
 # ── Add to api/main.py ──────────────────────────────────────────────────────
 
 @app.get("/api/entry-analytics/final")
-def get_final_results(year: int = Query(...)):
+def get_final_results(year: int = Query(...), contest: str = Query("circa")):
     """
     Final results for a completed season: the entries that finished with the
     most wins (Circa's rule — if nobody survives every week, the entries with
