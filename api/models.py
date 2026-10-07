@@ -24,6 +24,13 @@ class SchedulingConstraints(BaseModel):
     avoid_away_close: bool = False
     min_away_spread: float = 3.0           # only active if avoid_away_close=True
 
+    # Avoid popular "trap" teams: a below-average team (rating below
+    # trap_rating_threshold on MP OR GSF) that is ALSO among the week's
+    # most-picked teams (projected pick-% rank <= trap_pick_pct_rank).
+    avoid_trap_teams: bool = False
+    trap_pick_pct_rank: Literal[1, 2, 3, 5] = 5   # top-N pick% that counts as "popular"
+    trap_rating_threshold: float = 3.0            # below this on MP or GSF = weak
+
     # Bayesian / ranking consistency constraint (legacy single-enum form)
     bayesian_constraint: Literal[
         "none",
@@ -137,6 +144,12 @@ class PickResult(BaseModel):
     home_or_away: str
     opponent: str
     spread: Optional[float] = None
+    # Trap-team context: this team's MP / GSF rating and its popularity rank
+    # (1 = most-picked) within the week, so the UI can flag a weak-but-popular
+    # pick with the same logic as the Schedule tab.
+    mp_rating: Optional[float] = None
+    gsf_rating: Optional[float] = None
+    pick_pct_rank: Optional[int] = None
     # Display fields for the results table
     stadium: Optional[str] = None
     day: Optional[str] = None
