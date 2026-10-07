@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { trapInfo, rankWithin, TRAP_STYLES, trapTitle } from '../../utils/trap'
 
 // ── Column definitions per view ──────────────────────────────
 const COLUMNS = {
@@ -72,8 +73,8 @@ const COLUMNS = {
   ],
   'Contest': [
     { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
-    { key: 'Away Team', label: 'Away Team' },
-    { key: 'Home Team', label: 'Home Team' },
+    { key: 'Away Team', label: 'Away Team', render: (v, r, allRows) => teamNameCell(v, 'Away', r, allRows) },
+    { key: 'Home Team', label: 'Home Team', render: (v, r, allRows) => teamNameCell(v, 'Home', r, allRows) },
     { key: 'Away Pick %', label: 'Away Pick%', render: (v, r, allRows) => pickPctCell(v, 'Away Team', r, allRows) },
     { key: 'Home Pick %', label: 'Home Pick%', render: (v, r, allRows) => pickPctCell(v, 'Home Team', r, allRows) },
     { key: 'Away Team EV', label: 'Away EV', render: v => v != null ? Number(v).toFixed(4) : '—' },
@@ -274,21 +275,50 @@ function bayesianCell(val) {
   return <span className="text-gray-600 text-xs">{val}</span>
 }
 
+// Trap info for one side ('Home'|'Away') of a game, ranked within the week.
+function scheduleTrapInfo(side, row, allRows) {
+  const pick = parseFloat(row[`${side} Pick %`])
+  if (isNaN(pick)) return { severity: null }
+  const week = row['Week_x'] ?? row['Week']
+  const weekRows = (allRows || []).filter(r => (r['Week_x'] ?? r['Week']) === week)
+  const allPcts = weekRows.flatMap(r => [r['Away Pick %'], r['Home Pick %']])
+  const rank = rankWithin(pick, allPcts)
+  const mp = row[`${side} Team Massey-Peabody Current Rank`]
+  const gsf = row[`${side} Team Generic Sports Fan Current Rank`]
+  const { severity } = trapInfo({ mp, gsf, rank })
+  return { severity, rank, mp, gsf, pickPct: pick }
+}
+
+// Team name cell (Contest view) — tinted + ⚠ when the team is a trap.
+function teamNameCell(name, side, row, allRows) {
+  const { severity, rank, mp, gsf } = scheduleTrapInfo(side, row, allRows)
+  if (!severity) return <span className="text-gray-300">{name || '—'}</span>
+  const st = TRAP_STYLES[severity]
+  return (
+    <span className={`inline-flex items-center gap-1 font-medium ${st.text}`}
+      title={trapTitle(rank, mp, gsf)}>
+      <span aria-hidden="true">⚠️</span>{name}
+    </span>
+  )
+}
+
+// Pick % cell — colored ONLY when the team is a trap (weak AND popular);
+// severity follows popularity rank (red #1, orange #2–3, yellow #4–5).
 function pickPctCell(val, teamKey, row, allRows) {
   const v = parseFloat(val)
   if (isNaN(v)) return <span className="text-gray-600">—</span>
-  // Get all pick pcts for this week to determine rank
-  const week = row['Week_x'] ?? row['Week']
-  const weekRows = allRows.filter(r => (r['Week_x'] ?? r['Week']) === week)
-  const allPcts = weekRows.flatMap(r => [
-    parseFloat(r['Away Pick %'] || 0),
-    parseFloat(r['Home Pick %'] || 0),
-  ]).filter(p => !isNaN(p)).sort((a, b) => b - a)
-  const rank = allPcts.findIndex(p => p <= v) + 1
+  const side = String(teamKey).startsWith('Home') ? 'Home' : 'Away'
+  const { severity, rank, mp, gsf } = scheduleTrapInfo(side, row, allRows)
   const pct = (v * 100).toFixed(1) + '%'
-  if (rank <= 2) return <span className="text-red-400 font-mono text-xs">{pct}</span>
-  if (rank <= 5) return <span className="text-yellow-400 font-mono text-xs">{pct}</span>
-  return <span className="text-green-400 font-mono text-xs">{pct}</span>
+  if (severity) {
+    const st = TRAP_STYLES[severity]
+    return (
+      <span className={`font-mono text-xs ${st.text}`} title={trapTitle(rank, mp, gsf)}>
+        {pct} <span aria-hidden="true">⚠️</span>
+      </span>
+    )
+  }
+  return <span className="text-gray-400 font-mono text-xs">{pct}</span>
 }
 
 // ── Row highlight logic ───────────────────────────────────────
@@ -403,6 +433,21 @@ export default function ScheduleTable({ games, activeView }) {
           <span className="w-2 h-2 rounded-sm bg-purple-900/50 inline-block" />
           Thursday Night Football
         </span>
+        {activeView === 'Contest' && (
+          <span className="flex items-center gap-2 pl-3 border-l border-gray-800">
+            <span aria-hidden="true">⚠️</span>
+            <span>Trap (below-avg team, popular pick):</span>
+            <span className="flex items-center gap-1 text-red-400">
+              <span className="w-2 h-2 rounded-sm bg-red-900/60 inline-block" />#1
+            </span>
+            <span className="flex items-center gap-1 text-orange-400">
+              <span className="w-2 h-2 rounded-sm bg-orange-900/60 inline-block" />#2–3
+            </span>
+            <span className="flex items-center gap-1 text-yellow-400">
+              <span className="w-2 h-2 rounded-sm bg-yellow-900/60 inline-block" />#4–5
+            </span>
+          </span>
+        )}
         <span className="ml-auto">{sorted.length} games</span>
       </div>
     </div>
