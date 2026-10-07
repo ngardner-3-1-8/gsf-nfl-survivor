@@ -214,6 +214,15 @@ def prepare_df(sim_df: pd.DataFrame, request: OptimizeRequest) -> pd.DataFrame:
         (combined["Week_Num"] <= request.end_week)
     ].reset_index(drop=True)
 
+    # ── Per-week pick-% popularity rank (1 = most-picked) ──
+    # Computed on the FULL week field (before prohibited teams are dropped) so a
+    # team's popularity doesn't shift just because the user burned other teams.
+    # Feeds the trap-team constraint and is surfaced on each PickResult.
+    combined["Pick Pct Rank"] = (
+        pd.to_numeric(combined["Expected Pick Percent"], errors="coerce")
+        .groupby(combined["Week_Num"]).rank(method="min", ascending=False)
+    )
+
     # ── Filter prohibited teams ──
     if request.prohibited_teams:
         combined = combined[
@@ -460,6 +469,22 @@ def apply_constraints(
             if week_num in request.prohibited_weekly_picks[team]:
                 solver.Add(picks[i] == 0)
 
+    # ── Avoid popular "trap" teams ──
+    # Forbid any team that is BOTH below average (rating < threshold on MP OR
+    # GSF) AND among the week's most-picked teams (pick-% rank <= top N). Done
+    # vectorized over the whole frame; df index is 0..N-1 so positions line up
+    # with the picks dict keys.
+    if s.avoid_trap_teams:
+        thr = float(getattr(s, "trap_rating_threshold", 3.0) or 3.0)
+        topn = int(getattr(s, "trap_pick_pct_rank", 5) or 5)
+        mp = pd.to_numeric(df.get("MP Current Rank"), errors="coerce")
+        gsf = pd.to_numeric(df.get("GSF Current Rank"), errors="coerce")
+        rank = pd.to_numeric(df.get("Pick Pct Rank"), errors="coerce")
+        weak = (mp < thr) | (gsf < thr)          # NaN comparisons -> False
+        trap = (weak & (rank <= topn)).fillna(False)
+        for p in np.where(trap.to_numpy())[0]:
+            solver.Add(picks[int(p)] == 0)
+
     # ── Required picks (force specific team-week combinations) ──
     for team, req_week in request.required_picks.items():
         if req_week > 0:
@@ -579,6 +604,15 @@ def run_solver(
                 home_or_away="Away" if bool(row.get("Team Is Away", False)) else "Home",
                 opponent=str(row.get("Opponent", "")),
                 spread=round(float(row.get("Sportsbook Spread", 0) or 0), 1),
+                mp_rating=(round(float(row.get("MP Current Rank")), 2)
+                           if row.get("MP Current Rank") is not None
+                           and str(row.get("MP Current Rank")) != "nan" else None),
+                gsf_rating=(round(float(row.get("GSF Current Rank")), 2)
+                            if row.get("GSF Current Rank") is not None
+                            and str(row.get("GSF Current Rank")) != "nan" else None),
+                pick_pct_rank=(int(row.get("Pick Pct Rank"))
+                               if row.get("Pick Pct Rank") is not None
+                               and str(row.get("Pick Pct Rank")) != "nan" else None),
                 stadium=(str(row.get("Location")) if row.get("Location") is not None
                          and str(row.get("Location")) not in ("nan", "Home", "") else None),
                 day=(str(row.get("Day")) if row.get("Day") is not None
