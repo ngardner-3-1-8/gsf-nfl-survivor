@@ -29,6 +29,13 @@ const FAVORED_OPTIONS = [
   { value: 'all',        label: 'All Models' },
 ]
 
+const TRAP_RANK_OPTIONS = [
+  { value: 1, label: 'Top pick only (#1)' },
+  { value: 2, label: 'Top 2 most-picked' },
+  { value: 3, label: 'Top 3 most-picked' },
+  { value: 5, label: 'Top 5 most-picked' },
+]
+
 export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek, weekOptions }) {
   const [objective, setObjective] = useState('consensus')
   const [numSolutions, setNumSolutions] = useState(1)
@@ -55,6 +62,8 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek, week
     min_div_spread: 3.0,
     avoid_away_close: false,
     min_away_spread: 3.0,
+    avoid_trap_teams: false,
+    trap_pick_pct_rank: 5,
   })
 
   const [bayesian, setBayesian] = useState({
@@ -287,6 +296,25 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek, week
         checked={scheduling.avoid_away_close}
         onChange={() => toggleScheduling('avoid_away_close')}
       />
+
+      {/* Popularity trap */}
+      <SectionHeader title="Popularity Trap" />
+      <Toggle
+        label="Avoid popular trap teams"
+        description="Exclude a below-average team (rating under 3.0 on MP or GSF) when it's also one of the week's most-picked teams"
+        checked={scheduling.avoid_trap_teams}
+        onChange={() => toggleScheduling('avoid_trap_teams')}
+      />
+      {scheduling.avoid_trap_teams && (
+        <div className="mt-2">
+          <Select
+            label="Counts as popular if within"
+            value={scheduling.trap_pick_pct_rank}
+            onChange={v => setScheduling(prev => ({ ...prev, trap_pick_pct_rank: Number(v) }))}
+            options={TRAP_RANK_OPTIONS}
+          />
+        </div>
+      )}
 
       {/* Bayesian constraints */}
       <SectionHeader title="Bayesian — Massey-Peabody" />
