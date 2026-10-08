@@ -42,7 +42,7 @@ MANUAL_CURRENT_STARTERS = {
     'BAL': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'BUF': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'CAR': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'CHI': [None, None, 'T.Bagent', 'T.Bagent', None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+    'CHI': [None, None, 'T.Bagent', 'T.Bagent', 'T.Bagent', None, None, None, None, None, None, None, None, None, None, None, None, None],
     'CIN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'CLE': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'DAL': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
@@ -68,7 +68,7 @@ MANUAL_CURRENT_STARTERS = {
     'SF': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'TB': [None, None, None, 'J.Daniels', 'J.Daniels', None, None, None, None, None, None, None, None, None, None, None, None, None],
     'TEN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'WAS': [None, None, 'M.Mariota', 'M.Mariota', 'M.Mariota', None, None, None, None, None, None, None, None, None, None, None, None, None]
+    'WAS': [None, None, 'M.Mariota', 'M.Mariota', None, None, None, None, None, None, None, None, None, None, None, None, None, None]
 }
 
 # FORCE REPLACEMENT-LEVEL RATING
