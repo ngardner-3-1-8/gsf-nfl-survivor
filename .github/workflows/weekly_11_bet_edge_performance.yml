@@ -1,0 +1,71 @@
+name: Weekly 11 Bet Edge Performance
+
+# "Which edges are most successful" — by year and with unit profit, plus
+# model-agreement signals (MC+GSF, MC+MP, MP+GSF, MC+MP+GSF for spread & ML;
+# anything with MP limited to 2026+). Writes
+# entry-analytics/bet_edge_performance.json for the Bets tab to read.
+# Runs weekly (and on demand) — the UI reads the committed JSON, it is never
+# computed on page load.
+
+on:
+  workflow_dispatch:
+    inputs:
+      years:
+        description: 'Space-separated seasons to include (blank = all available)'
+        required: false
+        default: ''
+  schedule:
+    # Tuesdays 13:17 UTC (~early morning US) — after a week's results settle.
+    - cron: '23 13 * * 2'
+
+permissions:
+  contents: write
+
+jobs:
+  bet-edge-performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy
+
+      - name: Run week-range analysis
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.years }}" ]; then ARGS="--years ${{ inputs.years }}"; fi
+          echo "weekly_11_bet_edge_performance.py $ARGS"
+          python weekly_11_bet_edge_performance.py $ARGS
+
+      - name: Commit the output
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add entry-analytics/bet_edge_performance.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No change to week-range analysis."
+            exit 0
+          fi
+          git commit -m "Update bet edge-performance analysis
+
+          Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+          Claude-Session: https://claude.ai/code/session_01UP4LjqY5SmZynhBYgsPMyG"
+          n=0
+          until [ "$n" -ge 5 ]; do
+            if git push; then echo "Pushed."; exit 0; fi
+            n=$((n + 1))
+            echo "Push attempt $n failed; re-syncing and retrying in $((n * 15))s..."
+            git pull --rebase --autostash origin main || true
+            sleep $((n * 15))
+          done
+          echo "Push still failing after $n attempts."
+          exit 1
