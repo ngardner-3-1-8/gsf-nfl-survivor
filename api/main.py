@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 import glob
 import re
 
+
 def sanitize(obj):
     """Recursively replace nan/inf with None for JSON serialization."""
     if isinstance(obj, float):
@@ -1731,6 +1732,26 @@ def get_betting_history(year: int = Query(None)):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/bets/week-range")
+def get_bet_week_range():
+    """Serve the precomputed week-range bet analysis written by
+    weekly_10_bet_week_range_analysis.py. Read-only: this is NOT computed on the
+    fly. Returns 404 with guidance if the weekly script hasn't produced it yet."""
+    path = os.path.join(DATA_DIR, "entry-analytics", "bet_week_range_analysis.json")
+    if not os.path.exists(path):
+        raise HTTPException(
+            status_code=404,
+            detail="Week-range analysis not generated yet. Run "
+                   "weekly_10_bet_week_range_analysis.py (Weekly 10 workflow).")
+    try:
+        with open(path) as f:
+            payload = json.load(f)
+    except Exception as e:
+        raise HTTPException(status_code=500,
+                            detail=f"Could not read week-range analysis: {e}")
+    return JSONResponse(content=sanitize(payload))
+
 
 @app.get("/api/transactions/years/available")
 def get_transaction_years():
