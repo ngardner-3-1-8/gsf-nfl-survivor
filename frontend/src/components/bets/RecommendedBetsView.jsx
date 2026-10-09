@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { fetchRecommendedBets, fetchBettingHistory, fetchBetWeekRange } from '../../api/client'
+import { fetchRecommendedBets, fetchBettingHistory, fetchBetWeekRange, fetchBetEdgePerformance } from '../../api/client'
 import { useAvailableYears } from '../../hooks/useAvailableYears'
 import YearSelector from '../ui/YearSelector'
 
@@ -258,6 +258,146 @@ function WeekRangeSection({ weekRange }) {
   )
 }
 
+// ── Edge-bucket + model-agreement performance (precomputed weekly) ─────────
+const unitsStr = v => (v == null ? '—' : (v >= 0 ? '+' : '') + Math.round(v).toLocaleString())
+const moneyStr = v => (v == null ? '—' : (v >= 0 ? '+$' : '−$') + Math.abs(Math.round(v)).toLocaleString())
+
+function RecordCell({ rec }) {
+  if (!rec || !rec.n) return <span className="text-gray-700">—</span>
+  return (
+    <div className="leading-tight">
+      <span className={`font-mono font-medium ${winPctColor(rec.win_pct)}`}>
+        {rec.win_pct != null ? `${rec.win_pct}%` : '—'}
+      </span>
+      <div className="text-xs font-mono">
+        <span className={rec.units >= 0 ? 'text-green-500/80' : 'text-red-500/80'}>{unitsStr(rec.units)}u</span>
+        <span className="text-gray-600"> · {rec.wins}-{rec.losses}</span>
+      </div>
+      {rec.kelly != null && (
+        <div className="text-xs font-mono text-gray-600" title={rec.avg_kelly_pct != null ? `avg ${rec.avg_kelly_pct}% of bankroll` : undefined}>
+          K <span className={rec.kelly >= 0 ? 'text-green-500/70' : 'text-red-500/70'}>{moneyStr(rec.kelly)}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AgreementSection({ edgePerf }) {
+  const agr = edgePerf?.agreement
+  const keys = agr ? Object.keys(agr) : []
+  if (!keys.length) return null
+  const yearSet = new Set()
+  keys.forEach(k => Object.keys(agr[k].by_year || {}).forEach(y => yearSet.add(y)))
+  const years = [...yearSet].sort((a, b) => b - a)
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+      <p className="text-white font-semibold text-sm">Model-agreement signals</p>
+      <p className="text-gray-500 text-xs mt-0.5 mb-3">
+        Results when models pick the same side — win % and unit profit, lifetime and by season.
+        Anything involving Massey-Peabody is limited to {edgePerf.mp_min_year}+ (MP wasn't reliably
+        tracked before then).
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {keys.map(k => {
+          const d = agr[k]
+          const lt = d.lifetime
+          return (
+            <div key={k} className="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-xs font-medium text-white">
+                  {k}{d.mp_involved && <span className="text-amber-500/70"> · {d.min_year}+</span>}
+                </span>
+                <span className={`text-lg font-bold font-mono ${winPctColor(lt.win_pct)}`}>
+                  {lt.win_pct != null ? `${lt.win_pct}%` : '—'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 mt-0.5">
+                {lt.wins}-{lt.losses}{lt.pushes ? `-${lt.pushes}P` : ''} ·{' '}
+                <span className={lt.units >= 0 ? 'text-green-500/80' : 'text-red-500/80'}>{unitsStr(lt.units)}u</span>
+                {lt.kelly != null && (
+                  <> · K <span className={lt.kelly >= 0 ? 'text-green-500/80' : 'text-red-500/80'}>{moneyStr(lt.kelly)}</span></>
+                )}
+              </p>
+              {years.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-gray-800/80 flex flex-wrap gap-x-2 gap-y-0.5">
+                  {years.map(y => {
+                    const r = d.by_year?.[y]
+                    if (!r) return null
+                    return (
+                      <span key={y} className="text-xs font-mono text-gray-500"
+                        title={`${r.wins}-${r.losses} · ${unitsStr(r.units)}u`}>
+                        {String(y).slice(2)}:
+                        <span className={winPctColor(r.win_pct)}> {r.win_pct != null ? Math.round(r.win_pct) + '%' : '—'}</span>
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function EdgeBucketSection({ edgePerf }) {
+  const eb = edgePerf?.edge_buckets
+  const labels = eb ? Object.keys(eb) : []
+  const [sel, setSel] = useState('')
+  useEffect(() => {
+    if (labels.length && !eb[sel]) setSel(labels[0])
+  }, [edgePerf]) // eslint-disable-line react-hooks/exhaustive-deps
+  if (!eb || !labels.length) return null
+  const d = eb[sel] || eb[labels[0]]
+  const years = Object.keys(d.by_year || {}).sort((a, b) => b - a)
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+        <div>
+          <p className="text-white font-semibold text-sm">Profitability by edge size</p>
+          <p className="text-gray-500 text-xs mt-0.5">
+            Win % and unit profit per edge bucket, by season — which edges actually win.
+          </p>
+        </div>
+        <select value={sel} onChange={e => setSel(e.target.value)}
+          className="bg-gray-800 border border-gray-700 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-600">
+          {labels.map(l => (
+            <option key={l} value={l}>{l}{eb[l].mp_involved ? ` (${eb[l].min_year}+)` : ''}</option>
+          ))}
+        </select>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-gray-800 text-gray-500">
+              <th className="text-left px-3 py-2 font-medium whitespace-nowrap">Edge</th>
+              <th className="text-left px-3 py-2 font-medium">Lifetime</th>
+              {years.map(y => <th key={y} className="text-left px-3 py-2 font-medium">{y}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {d.bucket_labels.map(bl => (
+              <tr key={bl} className="border-b border-gray-800/50">
+                <td className="px-3 py-2 text-gray-300 font-mono whitespace-nowrap">{bl}</td>
+                <td className="px-3 py-2"><RecordCell rec={d.lifetime?.[bl]} /></td>
+                {years.map(y => <td key={y} className="px-3 py-2"><RecordCell rec={d.by_year?.[y]?.[bl]} /></td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-gray-600 text-xs mt-2">
+        Each cell: win %, then unit profit ("u", flat $100 stakes) with record, then
+        <span className="font-mono"> K</span> = quarter-Kelly profit (sized off a $10k bankroll using the
+        sim's probability for the picked side). Columns are seasons.
+      </p>
+    </div>
+  )
+}
+
 export default function RecommendedBetsView() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -268,6 +408,7 @@ export default function RecommendedBetsView() {
   // so they load once and are non-fatal (sections just hide if unavailable).
   const [history, setHistory] = useState(null)
   const [weekRange, setWeekRange] = useState(null)
+  const [edgePerf, setEdgePerf] = useState(null)
 
   const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
 
@@ -286,6 +427,7 @@ export default function RecommendedBetsView() {
   useEffect(() => {
     fetchBettingHistory().then(setHistory).catch(() => setHistory(null))
     fetchBetWeekRange().then(setWeekRange).catch(() => setWeekRange(null))
+    fetchBetEdgePerformance().then(setEdgePerf).catch(() => setEdgePerf(null))
   }, [])
 
   // Live lifetime win rate for a recommended bet: prefer the exact tier cell,
@@ -419,6 +561,10 @@ export default function RecommendedBetsView() {
 
       {/* Auto-detected strong/weak week ranges (precomputed weekly) */}
       <WeekRangeSection weekRange={weekRange} />
+
+      {/* Model-agreement signals + profitability by edge size (precomputed weekly) */}
+      <AgreementSection edgePerf={edgePerf} />
+      <EdgeBucketSection edgePerf={edgePerf} />
 
       {/* Season backtest summary — historical mode only */}
       {isHistorical && data?.season_summary && (
