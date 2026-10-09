@@ -132,6 +132,12 @@ export async function fetchBetWeekRange() {
   return res.json()
 }
 
+export async function fetchBetEdgePerformance() {
+  const res = await fetch(`${API_URL}/api/bets/edge-performance`)
+  if (!res.ok) throw new Error('Failed to fetch bet edge-performance analysis')
+  return res.json()
+}
+
 export async function fetchBettingHistory(year = null) {
   const url = year != null
     ? `${API_URL}/api/betting-history?year=${year}`
