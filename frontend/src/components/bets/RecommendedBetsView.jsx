@@ -1,7 +1,52 @@
 import { useState, useEffect } from 'react'
-import { fetchRecommendedBets } from '../../api/client'
+import { fetchRecommendedBets, fetchBettingHistory, fetchBetWeekRange } from '../../api/client'
 import { useAvailableYears } from '../../hooks/useAvailableYears'
 import YearSelector from '../ui/YearSelector'
+
+// All 12 tracked bet types, grouped for display. Labels match the
+// betting-history endpoint + weekly_10 analysis.
+const BET_TYPE_ORDER = [
+  'Sim Spread', 'GSF Spread', 'MP Spread', 'Consensus Spread',
+  'Sim Moneyline', 'GSF Moneyline', 'MP Moneyline', 'Consensus Moneyline',
+  'Sim Total',
+  'Sim Spread (Kelly)', 'Sim Moneyline (Kelly)', 'Sim Total (Kelly)',
+]
+const BET_DISPLAY = {
+  'Consensus Spread': 'Consensus Spread · MC+GSF agree',
+  'Consensus Moneyline': 'Consensus ML · MC+GSF agree',
+}
+const CATEGORY_OF = {
+  'Sim Spread': 'Spread', 'GSF Spread': 'Spread', 'MP Spread': 'Spread',
+  'Consensus Spread': 'Spread', 'Sim Spread (Kelly)': 'Spread',
+  'Sim Moneyline': 'Moneyline', 'GSF Moneyline': 'Moneyline', 'MP Moneyline': 'Moneyline',
+  'Consensus Moneyline': 'Moneyline', 'Sim Moneyline (Kelly)': 'Moneyline',
+  'Sim Total': 'Total', 'Sim Total (Kelly)': 'Total',
+}
+
+// Map a recommended-bet card to its betting-history label.
+function betHistoryLabel(bet) {
+  if (bet.model === 'GSF' && bet.bet_type === 'Spread') return 'GSF Spread'
+  if (bet.model === 'Combined (MC+GSF)') return 'Consensus Spread'
+  if (bet.model === 'Monte Carlo') {
+    if (bet.bet_type === 'Spread') return 'Sim Spread'
+    if (bet.bet_type === 'Moneyline') return 'Sim Moneyline'
+    if (bet.bet_type === 'Total') return 'Sim Total'
+  }
+  return null
+}
+
+function winPctColor(v) {
+  if (v == null) return 'text-gray-500'
+  if (v >= 55) return 'text-green-400'
+  if (v >= 50) return 'text-yellow-400'
+  return 'text-red-400'
+}
+
+const RANGE_CLASS_STYLE = {
+  strong:  { chip: 'bg-green-900/50 text-green-300 border border-green-700/50', label: 'Strong' },
+  weak:    { chip: 'bg-red-900/50 text-red-300 border border-red-700/50',       label: 'Weak' },
+  average: { chip: 'bg-gray-800 text-gray-400 border border-gray-700',          label: 'Average' },
+}
 
 const TIER_CONFIG = {
   S: { label: 'S', bg: 'bg-green-900/60', text: 'text-green-300', border: 'border-green-700', desc: 'Highest confidence' },
@@ -107,12 +152,122 @@ function BetDetails({ bet }) {
   )
 }
 
+// ── Lifetime + per-year hit-rate cards for every tracked bet type ──────────
+function HitRateCards({ history }) {
+  if (!history?.total?.by_bet_type) return null
+  const total = history.total.by_bet_type
+  const byYear = history.by_year || {}
+  const years = (history.available_years || []).slice().sort((a, b) => b - a)
+  const labels = BET_TYPE_ORDER.filter(l => total[l])
+  if (!labels.length) return null
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+      <p className="text-white font-semibold text-sm">Hit rate by bet type</p>
+      <p className="text-gray-500 text-xs mt-0.5 mb-3">
+        Lifetime and per-season win rate across all settled bets — updates as results come in
+      </p>
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+        {labels.map(label => {
+          const s = total[label]
+          const settled = (s.wins || 0) + (s.losses || 0)
+          return (
+            <div key={label} className="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-xs font-medium text-white leading-tight">
+                  {BET_DISPLAY[label] || label}
+                </span>
+                <span className={`text-lg font-bold font-mono ${winPctColor(s.win_pct)}`}>
+                  {s.win_pct != null ? `${s.win_pct}%` : '—'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 mt-0.5">
+                {s.wins}-{s.losses}{s.pushes ? `-${s.pushes}P` : ''} · {settled} bets
+                {s.roi != null && (
+                  <span className={s.roi >= 0 ? ' text-green-500/80' : ' text-red-500/80'}>
+                    {' '}· {s.roi >= 0 ? '+' : ''}{s.roi}% ROI
+                  </span>
+                )}
+              </p>
+              {years.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-gray-800/80 flex flex-wrap gap-x-2 gap-y-0.5">
+                  {years.map(y => {
+                    const ys = byYear[String(y)]?.by_bet_type?.[label]
+                    if (!ys || ys.win_pct == null) return null
+                    return (
+                      <span key={y} className="text-xs font-mono text-gray-500" title={`${ys.wins}-${ys.losses}`}>
+                        {String(y).slice(2)}:
+                        <span className={winPctColor(ys.win_pct)}> {Math.round(ys.win_pct)}%</span>
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Auto-detected strong/average/weak week ranges per bet type ─────────────
+function WeekRangeSection({ weekRange }) {
+  const byType = weekRange?.by_bet_type
+  if (!byType) return null
+  const labels = BET_TYPE_ORDER.filter(l => byType[l])
+  if (!labels.length) return null
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+      <p className="text-white font-semibold text-sm">Best &amp; worst weeks of the season</p>
+      <p className="text-gray-500 text-xs mt-0.5 mb-3">
+        Win rate by part of the season vs each bet's own baseline, pooled across{' '}
+        {(weekRange.seasons_used || []).length} seasons (weeks 1–{weekRange.max_week}).
+        A stretch is flagged when it beats/trails the baseline by {weekRange.margin_pts}+ points.
+      </p>
+      <div className="flex flex-col gap-2.5">
+        {labels.map(label => {
+          const d = byType[label]
+          return (
+            <div key={label} className="flex items-start gap-3 flex-wrap border-b border-gray-800/60 pb-2.5 last:border-0">
+              <div className="w-44 shrink-0">
+                <p className="text-xs font-medium text-white">{BET_DISPLAY[label] || label}</p>
+                <p className="text-xs text-gray-600">baseline {d.baseline_win_pct}% · {d.n} bets</p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {d.ranges.map((r, i) => {
+                  const st = RANGE_CLASS_STYLE[r.class] || RANGE_CLASS_STYLE.average
+                  return (
+                    <span key={i} className={`text-xs px-2 py-1 rounded-lg ${st.chip}`}
+                      title={`${st.label} · ${r.n} bets`}>
+                      <span className="font-medium">{r.label}</span>
+                      {r.win_pct != null && <span className="font-mono"> · {r.win_pct}%</span>}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <p className="text-gray-600 text-xs mt-3">
+        Green = beats baseline, red = trails it, gray = in line. Short one-week blips are smoothed out.
+      </p>
+    </div>
+  )
+}
+
 export default function RecommendedBetsView() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filterTier, setFilterTier] = useState('all')
   const [filterType, setFilterType] = useState('all')
+  // Lifetime/per-year hit rates and the week-range analysis are season-agnostic,
+  // so they load once and are non-fatal (sections just hide if unavailable).
+  const [history, setHistory] = useState(null)
+  const [weekRange, setWeekRange] = useState(null)
 
   const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
 
@@ -126,6 +281,30 @@ export default function RecommendedBetsView() {
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
   }, [selectedYear])
+
+  // Hit-rate history + week-range analysis — fetched once, best-effort.
+  useEffect(() => {
+    fetchBettingHistory().then(setHistory).catch(() => setHistory(null))
+    fetchBetWeekRange().then(setWeekRange).catch(() => setWeekRange(null))
+  }, [])
+
+  // Live lifetime win rate for a recommended bet: prefer the exact tier cell,
+  // fall back to the bet type's overall lifetime rate. Always realized results.
+  const liveTierWinRate = (bet) => {
+    const label = betHistoryLabel(bet)
+    if (!label || !history?.total) return null
+    const tierCell = history.total.by_tier?.[bet.tier]?.[label]
+    if (tierCell && tierCell.win_pct != null) {
+      return { scope: `Tier ${bet.tier}`, win_pct: tierCell.win_pct,
+               wins: tierCell.wins, losses: tierCell.losses }
+    }
+    const overall = history.total.by_bet_type?.[label]
+    if (overall && overall.win_pct != null) {
+      return { scope: 'Lifetime', win_pct: overall.win_pct,
+               wins: overall.wins, losses: overall.losses }
+    }
+    return null
+  }
 
   const bets = data?.bets || []
   const counts = data?.counts || {}
@@ -234,6 +413,12 @@ export default function RecommendedBetsView() {
           ))}
         </div>
       </div>
+
+      {/* Lifetime + per-year hit rate for every bet type */}
+      <HitRateCards history={history} />
+
+      {/* Auto-detected strong/weak week ranges (precomputed weekly) */}
+      <WeekRangeSection weekRange={weekRange} />
 
       {/* Season backtest summary — historical mode only */}
       {isHistorical && data?.season_summary && (
@@ -375,30 +560,22 @@ export default function RecommendedBetsView() {
 
               <BetDetails bet={bet} />
 
-              {/* Context bar */}
-              <div className="mt-2 pt-2 border-t border-gray-800 flex items-center gap-4 text-xs text-gray-600 flex-wrap">
-                {bet.model === 'Monte Carlo' && bet.bet_type === 'Spread' && (
-                  <>
-                    {parseFloat(bet.edge) >= 4.0 && <span>Historical: 69.5% win rate at edge ≥ 4.0</span>}
-                    {parseFloat(bet.edge) >= 1.0 && parseFloat(bet.edge) < 2.0 && <span>Historical: 72.0% win rate at edge 1.0–2.0</span>}
-                  </>
-                )}
-                {bet.model === 'Monte Carlo' && bet.bet_type === 'Moneyline' && (
-                  <>
-                    {parseFloat(bet.edge) >= 20 && <span>Historical: 70.0% win rate at edge ≥ 20%</span>}
-                    {parseFloat(bet.edge) >= 15 && parseFloat(bet.edge) < 20 && <span>Historical: 76.5% win rate at edge 15–20%</span>}
-                    {parseFloat(bet.edge) >= 10 && parseFloat(bet.edge) < 15 && <span>Historical: 68.4% win rate at edge 10–15%</span>}
-                  </>
-                )}
-                {bet.model === 'Monte Carlo' && bet.bet_type === 'Total' && (
-                  <>
-                    {parseFloat(bet.edge) >= 5.0 && <span>Historical: 62.1% win rate at edge ≥ 5.0</span>}
-                    {parseFloat(bet.edge) >= 3.0 && parseFloat(bet.edge) < 5.0 && <span>Historical: 61.8% win rate at edge 3.0–5.0</span>}
-                  </>
-                )}
-                {bet.model === 'GSF' && <span>Historical: 64.4% win rate at GSF edge 2.0–3.0</span>}
-                {bet.note && <span className="text-green-600">72.8% win rate when MC+GSF agree</span>}
-              </div>
+              {/* Context bar — LIVE lifetime win rate for this bet type at this
+                  tier, computed from realized results (updates each week). */}
+              {(() => {
+                const wr = liveTierWinRate(bet)
+                if (!wr) return null
+                return (
+                  <div className="mt-2 pt-2 border-t border-gray-800 flex items-center gap-2 text-xs flex-wrap">
+                    <span className="text-gray-500">{wr.scope} win rate:</span>
+                    <span className={`font-mono font-medium ${winPctColor(wr.win_pct)}`}>
+                      {wr.win_pct}%
+                    </span>
+                    <span className="text-gray-600">({wr.wins}-{wr.losses})</span>
+                    {bet.note && <span className="text-green-500/80">· MC+GSF agree</span>}
+                  </div>
+                )
+              })()}
             </div>
           ))}
         </div>
