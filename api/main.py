@@ -1753,6 +1753,25 @@ def get_bet_week_range():
     return JSONResponse(content=sanitize(payload))
 
 
+@app.get("/api/bets/edge-performance")
+def get_bet_edge_performance():
+    """Serve the precomputed edge-bucket + model-agreement bet analysis written
+    by weekly_11_bet_edge_performance.py. Read-only, NOT computed on page load."""
+    path = os.path.join(DATA_DIR, "entry-analytics", "bet_edge_performance.json")
+    if not os.path.exists(path):
+        raise HTTPException(
+            status_code=404,
+            detail="Edge-performance analysis not generated yet. Run "
+                   "weekly_11_bet_edge_performance.py (Weekly 11 workflow).")
+    try:
+        with open(path) as f:
+            payload = json.load(f)
+    except Exception as e:
+        raise HTTPException(status_code=500,
+                            detail=f"Could not read edge-performance analysis: {e}")
+    return JSONResponse(content=sanitize(payload))
+
+
 @app.get("/api/transactions/years/available")
 def get_transaction_years():
     """Returns years that have transaction data available."""
