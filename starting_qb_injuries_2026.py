@@ -39,7 +39,7 @@ TYPICAL_STARTERS = {
 MANUAL_CURRENT_STARTERS = {
     'ARI': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'ATL': ['C.Rush', 'C.Rush', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix'],
-    'BAL': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+    'BAL': [None, None, None, None, 'T.Huntley', None, None, None, None, None, None, None, None, None, None, None, None, None],
     'BUF': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'CAR': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'CHI': [None, None, 'T.Bagent', 'T.Bagent', 'T.Bagent', None, None, None, None, None, None, None, None, None, None, None, None, None],
