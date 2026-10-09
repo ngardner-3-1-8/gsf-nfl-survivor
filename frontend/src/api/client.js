@@ -126,6 +126,12 @@ export async function fetchContestData(year, asOfWeek = null, contest = null) {
   return res.json()
 }
 
+export async function fetchBetWeekRange() {
+  const res = await fetch(`${API_URL}/api/bets/week-range`)
+  if (!res.ok) throw new Error('Failed to fetch bet week-range analysis')
+  return res.json()
+}
+
 export async function fetchBettingHistory(year = null) {
   const url = year != null
     ? `${API_URL}/api/betting-history?year=${year}`
