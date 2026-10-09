@@ -1,0 +1,1845 @@
+{
+  "generated_at": "2026-10-09T16:48:27+00:00",
+  "seasons_used": [
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "max_week": 18,
+  "margin_pts": 5.0,
+  "min_week_n": 25,
+  "by_bet_type": {
+    "GSF Spread": {
+      "baseline_win_pct": 46.2,
+      "n": 1465,
+      "weeks": [
+        {
+          "week": 1,
+          "win_pct": 50.0,
+          "n": 110,
+          "class": "average"
+        },
+        {
+          "week": 2,
+          "win_pct": 51.4,
+          "n": 111,
+          "class": "average"
+        },
+        {
+          "week": 3,
+          "win_pct": 44.5,
+          "n": 110,
+          "class": "average"
+        },
+        {
+          "week": 4,
+          "win_pct": 44.7,
+          "n": 94,
+          "class": "average"
+        },
+        {
+          "week": 5,
+          "win_pct": 42.5,
+          "n": 87,
+          "class": "average"
+        },
+        {
+          "week": 6,
+          "win_pct": 50.6,
+          "n": 85,
+          "class": "average"
+        },
+        {
+          "week": 7,
+          "win_pct": 46.3,
+          "n": 82,
+          "class": "average"
+        },
+        {
+          "week": 8,
+          "win_pct": 49.4,
+          "n": 87,
+          "class": "average"
+        },
+        {
+          "week": 9,
+          "win_pct": 45.8,
+          "n": 83,
+          "class": "average"
+        },
+        {
+          "week": 10,
+          "win_pct": 46.9,
+          "n": 81,
+          "class": "average"
+        },
+        {
+          "week": 11,
+          "win_pct": 40.5,
+          "n": 84,
+          "class": "average"
+        },
+        {
+          "week": 12,
+          "win_pct": 53.8,
+          "n": 26,
+          "class": "average"
+        },
+        {
+          "week": 13,
+          "win_pct": 47.1,
+          "n": 51,
+          "class": "average"
+        },
+        {
+          "week": 14,
+          "win_pct": 42.5,
+          "n": 80,
+          "class": "average"
+        },
+        {
+          "week": 15,
+          "win_pct": 51.8,
+          "n": 85,
+          "class": "average"
+        },
+        {
+          "week": 16,
+          "win_pct": 46.3,
+          "n": 95,
+          "class": "average"
+        },
+        {
+          "week": 17,
+          "win_pct": 39.1,
+          "n": 64,
+          "class": "average"
+        },
+        {
+          "week": 18,
+          "win_pct": 36.0,
+          "n": 50,
+          "class": "average"
+        }
+      ],
+      "ranges": [
+        {
+          "start": 1,
+          "end": 18,
+          "class": "average",
+          "win_pct": 46.2,
+          "n": 1465,
+          "label": "Weeks 1\u201318"
+        }
+      ],
+      "best_range": {
+        "start": 1,
+        "end": 18,
+        "class": "average",
+        "win_pct": 46.2,
+        "n": 1465,
+        "label": "Weeks 1\u201318"
+      },
+      "worst_range": {
+        "start": 1,
+        "end": 18,
+        "class": "average",
+        "win_pct": 46.2,
+        "n": 1465,
+        "label": "Weeks 1\u201318"
+      },
+      "category": "Spread"
+    },
+    "MP Spread": {
+      "baseline_win_pct": 30.2,
+      "n": 1465,
+      "weeks": [
+        {
+          "week": 1,
+          "win_pct": 31.8,
+          "n": 110,
+          "class": "average"
+        },
+        {
+          "week": 2,
+          "win_pct": 31.5,
+          "n": 111,
+          "class": "average"
+        },
+        {
+          "week": 3,
+          "win_pct": 33.6,
+          "n": 110,
+          "class": "average"
+        },
+        {
+          "week": 4,
+          "win_pct": 35.1,
+          "n": 94,
+          "class": "average"
+        },
+        {
+          "week": 5,
+          "win_pct": 29.9,
+          "n": 87,
+          "class": "average"
+        },
+        {
+          "week": 6,
+          "win_pct": 29.4,
+          "n": 85,
+          "class": "average"
+        },
+        {
+          "week": 7,
+          "win_pct": 32.9,
+          "n": 82,
+          "class": "average"
+        },
+        {
+          "week": 8,
+          "win_pct": 32.2,
+          "n": 87,
+          "class": "average"
+        },
+        {
+          "week": 9,
+          "win_pct": 27.7,
+          "n": 83,
+          "class": "average"
+        },
+        {
+          "week": 10,
+          "win_pct": 37.0,
+          "n": 81,
+          "class": "average"
+        },
+        {
+          "week": 11,
+          "win_pct": 29.8,
+          "n": 84,
+          "class": "average"
+        },
+        {
+          "week": 12,
+          "win_pct": 30.8,
+          "n": 26,
+          "class": "average"
+        },
+        {
+          "week": 13,
+          "win_pct": 25.5,
+          "n": 51,
+          "class": "average"
+        },
+        {
+          "week": 14,
+          "win_pct": 26.2,
+          "n": 80,
+          "class": "average"
+        },
+        {
+          "week": 15,
+          "win_pct": 28.2,
+          "n": 85,
+          "class": "average"
+        },
+        {
+          "week": 16,
+          "win_pct": 26.3,
+          "n": 95,
+          "class": "average"
+        },
+        {
+          "week": 17,
+          "win_pct": 26.6,
+          "n": 64,
+          "class": "weak"
+        },
+        {
+          "week": 18,
+          "win_pct": 20.0,
+          "n": 50,
+          "class": "weak"
+        }
+      ],
+      "ranges": [
+        {
+          "start": 1,
+          "end": 16,
+          "class": "average",
+          "win_pct": 30.7,
+          "n": 1351,
+          "label": "Weeks 1\u201316"
+        },
+        {
+          "start": 17,
+          "end": 18,
+          "class": "weak",
+          "win_pct": 23.7,
+          "n": 114,
+          "label": "Weeks 17\u201318"
+        }
+      ],
+      "best_range": {
+        "start": 1,
+        "end": 16,
+        "class": "average",
+        "win_pct": 30.7,
+        "n": 1351,
+        "label": "Weeks 1\u201316"
+      },
+      "worst_range": {
+        "start": 17,
+        "end": 18,
+        "class": "weak",
+        "win_pct": 23.7,
+        "n": 114,
+        "label": "Weeks 17\u201318"
+      },
+      "category": "Spread"
+    },
+    "Sim Spread": {
+      "baseline_win_pct": 50.9,
+      "n": 1465,
+      "weeks": [
+        {
+          "week": 1,
+          "win_pct": 51.8,
+          "n": 110,
+          "class": "average"
+        },
+        {
+          "week": 2,
+          "win_pct": 53.2,
+          "n": 111,
+          "class": "average"
+        },
+        {
+          "week": 3,
+          "win_pct": 53.6,
+          "n": 110,
+          "class": "average"
+        },
+        {
+          "week": 4,
+          "win_pct": 56.4,
+          "n": 94,
+          "class": "average"
+        },
+        {
+          "week": 5,
+          "win_pct": 55.2,
+          "n": 87,
+          "class": "average"
+        },
+        {
+          "week": 6,
+          "win_pct": 55.3,
+          "n": 85,
+          "class": "average"
+        },
+        {
+          "week": 7,
+          "win_pct": 48.8,
+          "n": 82,
+          "class": "average"
+        },
+        {
+          "week": 8,
+          "win_pct": 43.7,
+          "n": 87,
+          "class": "average"
+        },
+        {
+          "week": 9,
+          "win_pct": 50.6,
+          "n": 83,
+          "class": "average"
+        },
+        {
+          "week": 10,
+          "win_pct": 50.6,
+          "n": 81,
+          "class": "average"
+        },
+        {
+          "week": 11,
+          "win_pct": 57.1,
+          "n": 84,
+          "class": "average"
+        },
+        {
+          "week": 12,
+          "win_pct": 61.5,
+          "n": 26,
+          "class": "average"
+        },
+        {
+          "week": 13,
+          "win_pct": 45.1,
+          "n": 51,
+          "class": "average"
+        },
+        {
+          "week": 14,
+          "win_pct": 48.8,
+          "n": 80,
+          "class": "average"
+        },
+        {
+          "week": 15,
+          "win_pct": 45.9,
+          "n": 85,
+          "class": "average"
+        },
+        {
+          "week": 16,
+          "win_pct": 49.5,
+          "n": 95,
+          "class": "average"
+        },
+        {
+          "week": 17,
+          "win_pct": 43.8,
+          "n": 64,
+          "class": "weak"
+        },
+        {
+          "week": 18,
+          "win_pct": 42.0,
+          "n": 50,
+          "class": "weak"
+        }
+      ],
+      "ranges": [
+        {
+          "start": 1,
+          "end": 16,
+          "class": "average",
+          "win_pct": 51.5,
+          "n": 1351,
+          "label": "Weeks 1\u201316"
+        },
+        {
+          "start": 17,
+          "end": 18,
+          "class": "weak",
+          "win_pct": 43.0,
+          "n": 114,
+          "label": "Weeks 17\u201318"
+        }
+      ],
+      "best_range": {
+        "start": 1,
+        "end": 16,
+        "class": "average",
+        "win_pct": 51.5,
+        "n": 1351,
+        "label": "Weeks 1\u201316"
+      },
+      "worst_range": {
+        "start": 17,
+        "end": 18,
+        "class": "weak",
+        "win_pct": 43.0,
+        "n": 114,
+        "label": "Weeks 17\u201318"
+      },
+      "category": "Spread"
+    },
+    "Sim Spread (Kelly)": {
+      "baseline_win_pct": 50.9,
+      "n": 1465,
+      "weeks": [
+        {
+          "week": 1,
+          "win_pct": 51.8,
+          "n": 110,
+          "class": "average"
+        },
+        {
+          "week": 2,
+          "win_pct": 53.2,
+          "n": 111,
+          "class": "average"
+        },
+        {
+          "week": 3,
+          "win_pct": 53.6,
+          "n": 110,
+          "class": "average"
+        },
+        {
+          "week": 4,
+          "win_pct": 56.4,
+          "n": 94,
+          "class": "average"
+        },
+        {
+          "week": 5,
+          "win_pct": 55.2,
+          "n": 87,
+          "class": "average"
+        },
+        {
+          "week": 6,
+          "win_pct": 55.3,
+          "n": 85,
+          "class": "average"
+        },
+        {
+          "week": 7,
+          "win_pct": 48.8,
+          "n": 82,
+          "class": "average"
+        },
+        {
+          "week": 8,
+          "win_pct": 43.7,
+          "n": 87,
+          "class": "average"
+        },
+        {
+          "week": 9,
+          "win_pct": 50.6,
+          "n": 83,
+          "class": "average"
+        },
+        {
+          "week": 10,
+          "win_pct": 50.6,
+          "n": 81,
+          "class": "average"
+        },
+        {
+          "week": 11,
+          "win_pct": 57.1,
+          "n": 84,
+          "class": "average"
+        },
+        {
+          "week": 12,
+          "win_pct": 61.5,
+          "n": 26,
+          "class": "average"
+        },
+        {
+          "week": 13,
+          "win_pct": 45.1,
+          "n": 51,
+          "class": "average"
+        },
+        {
+          "week": 14,
+          "win_pct": 48.8,
+          "n": 80,
+          "class": "average"
+        },
+        {
+          "week": 15,
+          "win_pct": 45.9,
+          "n": 85,
+          "class": "average"
+        },
+        {
+          "week": 16,
+          "win_pct": 49.5,
+          "n": 95,
+          "class": "average"
+        },
+        {
+          "week": 17,
+          "win_pct": 43.8,
+          "n": 64,
+          "class": "weak"
+        },
+        {
+          "week": 18,
+          "win_pct": 42.0,
+          "n": 50,
+          "class": "weak"
+        }
+      ],
+      "ranges": [
+        {
+          "start": 1,
+          "end": 16,
+          "class": "average",
+          "win_pct": 51.5,
+          "n": 1351,
+          "label": "Weeks 1\u201316"
+        },
+        {
+          "start": 17,
+          "end": 18,
+          "class": "weak",
+          "win_pct": 43.0,
+          "n": 114,
+          "label": "Weeks 17\u201318"
+        }
+      ],
+      "best_range": {
+        "start": 1,
+        "end": 16,
+        "class": "average",
+        "win_pct": 51.5,
+        "n": 1351,
+        "label": "Weeks 1\u201316"
+      },
+      "worst_range": {
+        "start": 17,
+        "end": 18,
+        "class": "weak",
+        "win_pct": 43.0,
+        "n": 114,
+        "label": "Weeks 17\u201318"
+      },
+      "category": "Spread"
+    },
+    "Consensus Spread": {
+      "baseline_win_pct": 40.0,
+      "n": 1465,
+      "weeks": [
+        {
+          "week": 1,
+          "win_pct": 41.8,
+          "n": 110,
+          "class": "average"
+        },
+        {
+          "week": 2,
+          "win_pct": 44.1,
+          "n": 111,
+          "class": "average"
+        },
+        {
+          "week": 3,
+          "win_pct": 45.5,
+          "n": 110,
+          "class": "average"
+        },
+        {
+          "week": 4,
+          "win_pct": 38.3,
+          "n": 94,
+          "class": "average"
+        },
+        {
+          "week": 5,
+          "win_pct": 43.7,
+          "n": 87,
+          "class": "average"
+        },
+        {
+          "week": 6,
+          "win_pct": 41.2,
+          "n": 85,
+          "class": "average"
+        },
+        {
+          "week": 7,
+          "win_pct": 42.7,
+          "n": 82,
+          "class": "average"
+        },
+        {
+          "week": 8,
+          "win_pct": 35.6,
+          "n": 87,
+          "class": "average"
+        },
+        {
+          "week": 9,
+          "win_pct": 41.0,
+          "n": 83,
+          "class": "average"
+        },
+        {
+          "week": 10,
+          "win_pct": 40.7,
+          "n": 81,
+          "class": "average"
+        },
+        {
+          "week": 11,
+          "win_pct": 40.5,
+          "n": 84,
+          "class": "average"
+        },
+        {
+          "week": 12,
+          "win_pct": 50.0,
+          "n": 26,
+          "class": "average"
+        },
+        {
+          "week": 13,
+          "win_pct": 45.1,
+          "n": 51,
+          "class": "average"
+        },
+        {
+          "week": 14,
+          "win_pct": 30.0,
+          "n": 80,
+          "class": "average"
+        },
+        {
+          "week": 15,
+          "win_pct": 40.0,
+          "n": 85,
+          "class": "average"
+        },
+        {
+          "week": 16,
+          "win_pct": 33.7,
+          "n": 95,
+          "class": "average"
+        },
+        {
+          "week": 17,
+          "win_pct": 34.4,
+          "n": 64,
+          "class": "weak"
+        },
+        {
+          "week": 18,
+          "win_pct": 34.0,
+          "n": 50,
+          "class": "weak"
+        }
+      ],
+      "ranges": [
+        {
+          "start": 1,
+          "end": 16,
+          "class": "average",
+          "win_pct": 40.5,
+          "n": 1351,
+          "label": "Weeks 1\u201316"
+        },
+        {
+          "start": 17,
+          "end": 18,
+          "class": "weak",
+          "win_pct": 34.2,
+          "n": 114,
+          "label": "Weeks 17\u201318"
+        }
+      ],
+      "best_range": {
+        "start": 1,
+        "end": 16,
+        "class": "average",
+        "win_pct": 40.5,
+        "n": 1351,
+        "label": "Weeks 1\u201316"
+      },
+      "worst_range": {
+        "start": 17,
+        "end": 18,
+        "class": "weak",
+        "win_pct": 34.2,
+        "n": 114,
+        "label": "Weeks 17\u201318"
+      },
+      "category": "Spread"
+    },
+    "GSF Moneyline": {
+      "baseline_win_pct": 44.8,
+      "n": 1320,
+      "weeks": [
+        {
+          "week": 1,
+          "win_pct": 55.8,
+          "n": 95,
+          "class": "strong"
+        },
+        {
+          "week": 2,
+          "win_pct": 51.5,
+          "n": 99,
+          "class": "strong"
+        },
+        {
+          "week": 3,
+          "win_pct": 43.4,
+          "n": 106,
+          "class": "average"
+        },
+        {
+          "week": 4,
+          "win_pct": 39.8,
+          "n": 88,
+          "class": "average"
+        },
+        {
+          "week": 5,
+          "win_pct": 46.2,
+          "n": 78,
+          "class": "average"
+        },
+        {
+          "week": 6,
+          "win_pct": 49.4,
+          "n": 79,
+          "class": "average"
+        },
+        {
+          "week": 7,
+          "win_pct": 46.8,
+          "n": 77,
+          "class": "average"
+        },
+        {
+          "week": 8,
+          "win_pct": 46.1,
+          "n": 76,
+          "class": "average"
+        },
+        {
+          "week": 9,
+          "win_pct": 38.7,
+          "n": 75,
+          "class": "average"
+        },
+        {
+          "week": 10,
+          "win_pct": 41.1,
+          "n": 73,
+          "class": "average"
+        },
+        {
+          "week": 11,
+          "win_pct": 42.0,
+          "n": 81,
+          "class": "average"
+        },
+        {
+          "week": 12,
+          "win_pct": 54.5,
+          "n": 22,
+          "class": "average"
+        },
+        {
+          "week": 13,
+          "win_pct": 41.9,
+          "n": 43,
+          "class": "average"
+        },
+        {
+          "week": 14,
+          "win_pct": 37.5,
+          "n": 72,
+          "class": "average"
+        },
+        {
+          "week": 15,
+          "win_pct": 46.6,
+          "n": 73,
+          "class": "average"
+        },
+        {
+          "week": 16,
+          "win_pct": 44.4,
+          "n": 81,
+          "class": "average"
+        },
+        {
+          "week": 17,
+          "win_pct": 40.7,
+          "n": 59,
+          "class": "average"
+        },
+        {
+          "week": 18,
+          "win_pct": 39.5,
+          "n": 43,
+          "class": "average"
+        }
+      ],
+      "ranges": [
+        {
+          "start": 1,
+          "end": 2,
+          "class": "strong",
+          "win_pct": 53.6,
+          "n": 194,
+          "label": "Weeks 1\u20132"
+        },
+        {
+          "start": 3,
+          "end": 18,
+          "class": "average",
+          "win_pct": 43.3,
+          "n": 1126,
+          "label": "Weeks 3\u201318"
+        }
+      ],
+      "best_range": {
+        "start": 1,
+        "end": 2,
+        "class": "strong",
+        "win_pct": 53.6,
+        "n": 194,
+        "label": "Weeks 1\u20132"
+      },
+      "worst_range": {
+        "start": 3,
+        "end": 18,
+        "class": "average",
+        "win_pct": 43.3,
+        "n": 1126,
+        "label": "Weeks 3\u201318"
+      },
+      "category": "Moneyline"
+    },
+    "MP Moneyline": {
+      "baseline_win_pct": 36.7,
+      "n": 1369,
+      "weeks": [
+        {
+          "week": 1,
+          "win_pct": 43.0,
+          "n": 100,
+          "class": "strong"
+        },
+        {
+          "week": 2,
+          "win_pct": 40.6,
+          "n": 106,
+          "class": "strong"
+        },
+        {
+          "week": 3,
+          "win_pct": 41.5,
+          "n": 94,
+          "class": "average"
+        },
+        {
+          "week": 4,
+          "win_pct": 36.4,
+          "n": 88,
+          "class": "average"
+        },
+        {
+          "week": 5,
+          "win_pct": 37.8,
+          "n": 82,
+          "class": "average"
+        },
+        {
+          "week": 6,
+          "win_pct": 34.2,
+          "n": 79,
+          "class": "average"
+        },
+        {
+          "week": 7,
+          "win_pct": 40.3,
+          "n": 77,
+          "class": "average"
+        },
+        {
+          "week": 8,
+          "win_pct": 39.3,
+          "n": 84,
+          "class": "average"
+        },
+        {
+          "week": 9,
+          "win_pct": 30.3,
+          "n": 76,
+          "class": "average"
+        },
+        {
+          "week": 10,
+          "win_pct": 49.4,
+          "n": 77,
+          "class": "average"
+        },
+        {
+          "week": 11,
+          "win_pct": 34.2,
+          "n": 79,
+          "class": "average"
+        },
+        {
+          "week": 12,
+          "win_pct": 30.8,
+          "n": 26,
+          "class": "average"
+        },
+        {
+          "week": 13,
+          "win_pct": 34.8,
+          "n": 46,
+          "class": "average"
+        },
+        {
+          "week": 14,
+          "win_pct": 26.3,
+          "n": 76,
+          "class": "average"
+        },
+        {
+          "week": 15,
+          "win_pct": 37.5,
+          "n": 80,
+          "class": "average"
+        },
+        {
+          "week": 16,
+          "win_pct": 32.6,
+          "n": 92,
+          "class": "average"
+        },
+        {
+          "week": 17,
+          "win_pct": 31.0,
+          "n": 58,
+          "class": "weak"
+        },
+        {
+          "week": 18,
+          "win_pct": 26.5,
+          "n": 49,
+          "class": "weak"
+        }
+      ],
+      "ranges": [
+        {
+          "start": 1,
+          "end": 2,
+          "class": "strong",
+          "win_pct": 41.7,
+          "n": 206,
+          "label": "Weeks 1\u20132"
+        },
+        {
+          "start": 3,
+          "end": 16,
+          "class": "average",
+          "win_pct": 36.5,
+          "n": 1056,
+          "label": "Weeks 3\u201316"
+        },
+        {
+          "start": 17,
+          "end": 18,
+          "class": "weak",
+          "win_pct": 29.0,
+          "n": 107,
+          "label": "Weeks 17\u201318"
+        }
+      ],
+      "best_range": {
+        "start": 1,
+        "end": 2,
+        "class": "strong",
+        "win_pct": 41.7,
+        "n": 206,
+        "label": "Weeks 1\u20132"
+      },
+      "worst_range": {
+        "start": 17,
+        "end": 18,
+        "class": "weak",
+        "win_pct": 29.0,
+        "n": 107,
+        "label": "Weeks 17\u201318"
+      },
+      "category": "Moneyline"
+    },
+    "Sim Moneyline": {
+      "baseline_win_pct": 49.6,
+      "n": 1354,
+      "weeks": [
+        {
+          "week": 1,
+          "win_pct": 56.4,
+          "n": 101,
+          "class": "strong"
+        },
+        {
+          "week": 2,
+          "win_pct": 59.4,
+          "n": 101,
+          "class": "strong"
+        },
+        {
+          "week": 3,
+          "win_pct": 49.0,
+          "n": 102,
+          "class": "average"
+        },
+        {
+          "week": 4,
+          "win_pct": 49.4,
+          "n": 83,
+          "class": "average"
+        },
+        {
+          "week": 5,
+          "win_pct": 56.8,
+          "n": 81,
+          "class": "average"
+        },
+        {
+          "week": 6,
+          "win_pct": 51.3,
+          "n": 76,
+          "class": "average"
+        },
+        {
+          "week": 7,
+          "win_pct": 48.7,
+          "n": 78,
+          "class": "average"
+        },
+        {
+          "week": 8,
+          "win_pct": 39.2,
+          "n": 79,
+          "class": "average"
+        },
+        {
+          "week": 9,
+          "win_pct": 48.7,
+          "n": 76,
+          "class": "average"
+        },
+        {
+          "week": 10,
+          "win_pct": 48.7,
+          "n": 78,
+          "class": "average"
+        },
+        {
+          "week": 11,
+          "win_pct": 54.9,
+          "n": 82,
+          "class": "average"
+        },
+        {
+          "week": 12,
+          "win_pct": 52.4,
+          "n": 21,
+          "class": "average"
+        },
+        {
+          "week": 13,
+          "win_pct": 50.0,
+          "n": 50,
+          "class": "average"
+        },
+        {
+          "week": 14,
+          "win_pct": 45.7,
+          "n": 70,
+          "class": "average"
+        },
+        {
+          "week": 15,
+          "win_pct": 44.3,
+          "n": 79,
+          "class": "average"
+        },
+        {
+          "week": 16,
+          "win_pct": 46.7,
+          "n": 90,
+          "class": "weak"
+        },
+        {
+          "week": 17,
+          "win_pct": 41.7,
+          "n": 60,
+          "class": "weak"
+        },
+        {
+          "week": 18,
+          "win_pct": 40.4,
+          "n": 47,
+          "class": "weak"
+        }
+      ],
+      "ranges": [
+        {
+          "start": 1,
+          "end": 2,
+          "class": "strong",
+          "win_pct": 57.9,
+          "n": 202,
+          "label": "Weeks 1\u20132"
+        },
+        {
+          "start": 3,
+          "end": 15,
+          "class": "average",
+          "win_pct": 49.0,
+          "n": 955,
+          "label": "Weeks 3\u201315"
+        },
+        {
+          "start": 16,
+          "end": 18,
+          "class": "weak",
+          "win_pct": 43.7,
+          "n": 197,
+          "label": "Weeks 16\u201318"
+        }
+      ],
+      "best_range": {
+        "start": 1,
+        "end": 2,
+        "class": "strong",
+        "win_pct": 57.9,
+        "n": 202,
+        "label": "Weeks 1\u20132"
+      },
+      "worst_range": {
+        "start": 16,
+        "end": 18,
+        "class": "weak",
+        "win_pct": 43.7,
+        "n": 197,
+        "label": "Weeks 16\u201318"
+      },
+      "category": "Moneyline"
+    },
+    "Sim Moneyline (Kelly)": {
+      "baseline_win_pct": 49.6,
+      "n": 1354,
+      "weeks": [
+        {
+          "week": 1,
+          "win_pct": 56.4,
+          "n": 101,
+          "class": "strong"
+        },
+        {
+          "week": 2,
+          "win_pct": 59.4,
+          "n": 101,
+          "class": "strong"
+        },
+        {
+          "week": 3,
+          "win_pct": 49.0,
+          "n": 102,
+          "class": "average"
+        },
+        {
+          "week": 4,
+          "win_pct": 49.4,
+          "n": 83,
+          "class": "average"
+        },
+        {
+          "week": 5,
+          "win_pct": 56.8,
+          "n": 81,
+          "class": "average"
+        },
+        {
+          "week": 6,
+          "win_pct": 51.3,
+          "n": 76,
+          "class": "average"
+        },
+        {
+          "week": 7,
+          "win_pct": 48.7,
+          "n": 78,
+          "class": "average"
+        },
+        {
+          "week": 8,
+          "win_pct": 39.2,
+          "n": 79,
+          "class": "average"
+        },
+        {
+          "week": 9,
+          "win_pct": 48.7,
+          "n": 76,
+          "class": "average"
+        },
+        {
+          "week": 10,
+          "win_pct": 48.7,
+          "n": 78,
+          "class": "average"
+        },
+        {
+          "week": 11,
+          "win_pct": 54.9,
+          "n": 82,
+          "class": "average"
+        },
+        {
+          "week": 12,
+          "win_pct": 52.4,
+          "n": 21,
+          "class": "average"
+        },
+        {
+          "week": 13,
+          "win_pct": 50.0,
+          "n": 50,
+          "class": "average"
+        },
+        {
+          "week": 14,
+          "win_pct": 45.7,
+          "n": 70,
+          "class": "average"
+        },
+        {
+          "week": 15,
+          "win_pct": 44.3,
+          "n": 79,
+          "class": "average"
+        },
+        {
+          "week": 16,
+          "win_pct": 46.7,
+          "n": 90,
+          "class": "weak"
+        },
+        {
+          "week": 17,
+          "win_pct": 41.7,
+          "n": 60,
+          "class": "weak"
+        },
+        {
+          "week": 18,
+          "win_pct": 40.4,
+          "n": 47,
+          "class": "weak"
+        }
+      ],
+      "ranges": [
+        {
+          "start": 1,
+          "end": 2,
+          "class": "strong",
+          "win_pct": 57.9,
+          "n": 202,
+          "label": "Weeks 1\u20132"
+        },
+        {
+          "start": 3,
+          "end": 15,
+          "class": "average",
+          "win_pct": 49.0,
+          "n": 955,
+          "label": "Weeks 3\u201315"
+        },
+        {
+          "start": 16,
+          "end": 18,
+          "class": "weak",
+          "win_pct": 43.7,
+          "n": 197,
+          "label": "Weeks 16\u201318"
+        }
+      ],
+      "best_range": {
+        "start": 1,
+        "end": 2,
+        "class": "strong",
+        "win_pct": 57.9,
+        "n": 202,
+        "label": "Weeks 1\u20132"
+      },
+      "worst_range": {
+        "start": 16,
+        "end": 18,
+        "class": "weak",
+        "win_pct": 43.7,
+        "n": 197,
+        "label": "Weeks 16\u201318"
+      },
+      "category": "Moneyline"
+    },
+    "Consensus Moneyline": {
+      "baseline_win_pct": 40.2,
+      "n": 1284,
+      "weeks": [
+        {
+          "week": 1,
+          "win_pct": 52.2,
+          "n": 92,
+          "class": "strong"
+        },
+        {
+          "week": 2,
+          "win_pct": 48.5,
+          "n": 97,
+          "class": "strong"
+        },
+        {
+          "week": 3,
+          "win_pct": 41.8,
+          "n": 98,
+          "class": "average"
+        },
+        {
+          "week": 4,
+          "win_pct": 38.6,
+          "n": 83,
+          "class": "average"
+        },
+        {
+          "week": 5,
+          "win_pct": 45.0,
+          "n": 80,
+          "class": "average"
+        },
+        {
+          "week": 6,
+          "win_pct": 37.1,
+          "n": 70,
+          "class": "average"
+        },
+        {
+          "week": 7,
+          "win_pct": 43.2,
+          "n": 74,
+          "class": "average"
+        },
+        {
+          "week": 8,
+          "win_pct": 33.3,
+          "n": 75,
+          "class": "average"
+        },
+        {
+          "week": 9,
+          "win_pct": 36.5,
+          "n": 74,
+          "class": "average"
+        },
+        {
+          "week": 10,
+          "win_pct": 45.1,
+          "n": 71,
+          "class": "average"
+        },
+        {
+          "week": 11,
+          "win_pct": 38.2,
+          "n": 76,
+          "class": "average"
+        },
+        {
+          "week": 12,
+          "win_pct": 34.8,
+          "n": 23,
+          "class": "average"
+        },
+        {
+          "week": 13,
+          "win_pct": 45.2,
+          "n": 42,
+          "class": "average"
+        },
+        {
+          "week": 14,
+          "win_pct": 26.2,
+          "n": 65,
+          "class": "average"
+        },
+        {
+          "week": 15,
+          "win_pct": 42.9,
+          "n": 70,
+          "class": "average"
+        },
+        {
+          "week": 16,
+          "win_pct": 35.2,
+          "n": 88,
+          "class": "average"
+        },
+        {
+          "week": 17,
+          "win_pct": 34.4,
+          "n": 61,
+          "class": "weak"
+        },
+        {
+          "week": 18,
+          "win_pct": 33.3,
+          "n": 45,
+          "class": "weak"
+        }
+      ],
+      "ranges": [
+        {
+          "start": 1,
+          "end": 2,
+          "class": "strong",
+          "win_pct": 50.3,
+          "n": 189,
+          "label": "Weeks 1\u20132"
+        },
+        {
+          "start": 3,
+          "end": 16,
+          "class": "average",
+          "win_pct": 38.9,
+          "n": 989,
+          "label": "Weeks 3\u201316"
+        },
+        {
+          "start": 17,
+          "end": 18,
+          "class": "weak",
+          "win_pct": 34.0,
+          "n": 106,
+          "label": "Weeks 17\u201318"
+        }
+      ],
+      "best_range": {
+        "start": 1,
+        "end": 2,
+        "class": "strong",
+        "win_pct": 50.3,
+        "n": 189,
+        "label": "Weeks 1\u20132"
+      },
+      "worst_range": {
+        "start": 17,
+        "end": 18,
+        "class": "weak",
+        "win_pct": 34.0,
+        "n": 106,
+        "label": "Weeks 17\u201318"
+      },
+      "category": "Moneyline"
+    },
+    "Sim Total": {
+      "baseline_win_pct": 53.5,
+      "n": 1470,
+      "weeks": [
+        {
+          "week": 1,
+          "win_pct": 47.3,
+          "n": 112,
+          "class": "average"
+        },
+        {
+          "week": 2,
+          "win_pct": 63.6,
+          "n": 110,
+          "class": "average"
+        },
+        {
+          "week": 3,
+          "win_pct": 45.9,
+          "n": 111,
+          "class": "average"
+        },
+        {
+          "week": 4,
+          "win_pct": 54.3,
+          "n": 94,
+          "class": "average"
+        },
+        {
+          "week": 5,
+          "win_pct": 54.5,
+          "n": 88,
+          "class": "average"
+        },
+        {
+          "week": 6,
+          "win_pct": 44.6,
+          "n": 83,
+          "class": "average"
+        },
+        {
+          "week": 7,
+          "win_pct": 54.2,
+          "n": 83,
+          "class": "average"
+        },
+        {
+          "week": 8,
+          "win_pct": 48.9,
+          "n": 88,
+          "class": "average"
+        },
+        {
+          "week": 9,
+          "win_pct": 50.0,
+          "n": 84,
+          "class": "average"
+        },
+        {
+          "week": 10,
+          "win_pct": 59.8,
+          "n": 82,
+          "class": "average"
+        },
+        {
+          "week": 11,
+          "win_pct": 40.0,
+          "n": 85,
+          "class": "average"
+        },
+        {
+          "week": 12,
+          "win_pct": 51.9,
+          "n": 27,
+          "class": "average"
+        },
+        {
+          "week": 13,
+          "win_pct": 52.9,
+          "n": 51,
+          "class": "average"
+        },
+        {
+          "week": 14,
+          "win_pct": 60.3,
+          "n": 78,
+          "class": "strong"
+        },
+        {
+          "week": 15,
+          "win_pct": 67.9,
+          "n": 84,
+          "class": "strong"
+        },
+        {
+          "week": 16,
+          "win_pct": 54.2,
+          "n": 96,
+          "class": "strong"
+        },
+        {
+          "week": 17,
+          "win_pct": 59.4,
+          "n": 64,
+          "class": "average"
+        },
+        {
+          "week": 18,
+          "win_pct": 56.0,
+          "n": 50,
+          "class": "average"
+        }
+      ],
+      "ranges": [
+        {
+          "start": 1,
+          "end": 13,
+          "class": "average",
+          "win_pct": 51.4,
+          "n": 1098,
+          "label": "Weeks 1\u201313"
+        },
+        {
+          "start": 14,
+          "end": 16,
+          "class": "strong",
+          "win_pct": 60.5,
+          "n": 258,
+          "label": "Weeks 14\u201316"
+        },
+        {
+          "start": 17,
+          "end": 18,
+          "class": "average",
+          "win_pct": 57.9,
+          "n": 114,
+          "label": "Weeks 17\u201318"
+        }
+      ],
+      "best_range": {
+        "start": 14,
+        "end": 16,
+        "class": "strong",
+        "win_pct": 60.5,
+        "n": 258,
+        "label": "Weeks 14\u201316"
+      },
+      "worst_range": {
+        "start": 1,
+        "end": 13,
+        "class": "average",
+        "win_pct": 51.4,
+        "n": 1098,
+        "label": "Weeks 1\u201313"
+      },
+      "category": "Total"
+    },
+    "Sim Total (Kelly)": {
+      "baseline_win_pct": 53.5,
+      "n": 1470,
+      "weeks": [
+        {
+          "week": 1,
+          "win_pct": 47.3,
+          "n": 112,
+          "class": "average"
+        },
+        {
+          "week": 2,
+          "win_pct": 63.6,
+          "n": 110,
+          "class": "average"
+        },
+        {
+          "week": 3,
+          "win_pct": 45.9,
+          "n": 111,
+          "class": "average"
+        },
+        {
+          "week": 4,
+          "win_pct": 54.3,
+          "n": 94,
+          "class": "average"
+        },
+        {
+          "week": 5,
+          "win_pct": 54.5,
+          "n": 88,
+          "class": "average"
+        },
+        {
+          "week": 6,
+          "win_pct": 44.6,
+          "n": 83,
+          "class": "average"
+        },
+        {
+          "week": 7,
+          "win_pct": 54.2,
+          "n": 83,
+          "class": "average"
+        },
+        {
+          "week": 8,
+          "win_pct": 48.9,
+          "n": 88,
+          "class": "average"
+        },
+        {
+          "week": 9,
+          "win_pct": 50.0,
+          "n": 84,
+          "class": "average"
+        },
+        {
+          "week": 10,
+          "win_pct": 59.8,
+          "n": 82,
+          "class": "average"
+        },
+        {
+          "week": 11,
+          "win_pct": 40.0,
+          "n": 85,
+          "class": "average"
+        },
+        {
+          "week": 12,
+          "win_pct": 51.9,
+          "n": 27,
+          "class": "average"
+        },
+        {
+          "week": 13,
+          "win_pct": 52.9,
+          "n": 51,
+          "class": "average"
+        },
+        {
+          "week": 14,
+          "win_pct": 60.3,
+          "n": 78,
+          "class": "strong"
+        },
+        {
+          "week": 15,
+          "win_pct": 67.9,
+          "n": 84,
+          "class": "strong"
+        },
+        {
+          "week": 16,
+          "win_pct": 54.2,
+          "n": 96,
+          "class": "strong"
+        },
+        {
+          "week": 17,
+          "win_pct": 59.4,
+          "n": 64,
+          "class": "average"
+        },
+        {
+          "week": 18,
+          "win_pct": 56.0,
+          "n": 50,
+          "class": "average"
+        }
+      ],
+      "ranges": [
+        {
+          "start": 1,
+          "end": 13,
+          "class": "average",
+          "win_pct": 51.4,
+          "n": 1098,
+          "label": "Weeks 1\u201313"
+        },
+        {
+          "start": 14,
+          "end": 16,
+          "class": "strong",
+          "win_pct": 60.5,
+          "n": 258,
+          "label": "Weeks 14\u201316"
+        },
+        {
+          "start": 17,
+          "end": 18,
+          "class": "average",
+          "win_pct": 57.9,
+          "n": 114,
+          "label": "Weeks 17\u201318"
+        }
+      ],
+      "best_range": {
+        "start": 14,
+        "end": 16,
+        "class": "strong",
+        "win_pct": 60.5,
+        "n": 258,
+        "label": "Weeks 14\u201316"
+      },
+      "worst_range": {
+        "start": 1,
+        "end": 13,
+        "class": "average",
+        "win_pct": 51.4,
+        "n": 1098,
+        "label": "Weeks 1\u201313"
+      },
+      "category": "Total"
+    }
+  }
+}
