@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-09T16:48:27+00:00",
+  "generated_at": "2026-10-13T19:54:20+00:00",
   "seasons_used": [
     2020,
     2021,
@@ -14,8 +14,8 @@
   "min_week_n": 25,
   "by_bet_type": {
     "GSF Spread": {
-      "baseline_win_pct": 46.2,
-      "n": 1465,
+      "baseline_win_pct": 46.3,
+      "n": 1495,
       "weeks": [
         {
           "week": 1,
@@ -37,14 +37,14 @@
         },
         {
           "week": 4,
-          "win_pct": 44.7,
-          "n": 94,
+          "win_pct": 45.5,
+          "n": 110,
           "class": "average"
         },
         {
           "week": 5,
-          "win_pct": 42.5,
-          "n": 87,
+          "win_pct": 43.6,
+          "n": 101,
           "class": "average"
         },
         {
@@ -131,8 +131,8 @@
           "start": 1,
           "end": 18,
           "class": "average",
-          "win_pct": 46.2,
-          "n": 1465,
+          "win_pct": 46.3,
+          "n": 1495,
           "label": "Weeks 1\u201318"
         }
       ],
@@ -140,23 +140,23 @@
         "start": 1,
         "end": 18,
         "class": "average",
-        "win_pct": 46.2,
-        "n": 1465,
+        "win_pct": 46.3,
+        "n": 1495,
         "label": "Weeks 1\u201318"
       },
       "worst_range": {
         "start": 1,
         "end": 18,
         "class": "average",
-        "win_pct": 46.2,
-        "n": 1465,
+        "win_pct": 46.3,
+        "n": 1495,
         "label": "Weeks 1\u201318"
       },
       "category": "Spread"
     },
     "MP Spread": {
-      "baseline_win_pct": 30.2,
-      "n": 1465,
+      "baseline_win_pct": 30.8,
+      "n": 1495,
       "weeks": [
         {
           "week": 1,
@@ -178,14 +178,14 @@
         },
         {
           "week": 4,
-          "win_pct": 35.1,
-          "n": 94,
+          "win_pct": 39.1,
+          "n": 110,
           "class": "average"
         },
         {
           "week": 5,
-          "win_pct": 29.9,
-          "n": 87,
+          "win_pct": 33.7,
+          "n": 101,
           "class": "average"
         },
         {
@@ -272,8 +272,8 @@
           "start": 1,
           "end": 16,
           "class": "average",
-          "win_pct": 30.7,
-          "n": 1351,
+          "win_pct": 31.4,
+          "n": 1381,
           "label": "Weeks 1\u201316"
         },
         {
@@ -289,8 +289,8 @@
         "start": 1,
         "end": 16,
         "class": "average",
-        "win_pct": 30.7,
-        "n": 1351,
+        "win_pct": 31.4,
+        "n": 1381,
         "label": "Weeks 1\u201316"
       },
       "worst_range": {
@@ -304,8 +304,8 @@
       "category": "Spread"
     },
     "Sim Spread": {
-      "baseline_win_pct": 50.9,
-      "n": 1465,
+      "baseline_win_pct": 51.1,
+      "n": 1495,
       "weeks": [
         {
           "week": 1,
@@ -327,14 +327,14 @@
         },
         {
           "week": 4,
-          "win_pct": 56.4,
-          "n": 94,
+          "win_pct": 57.3,
+          "n": 110,
           "class": "average"
         },
         {
           "week": 5,
-          "win_pct": 55.2,
-          "n": 87,
+          "win_pct": 56.4,
+          "n": 101,
           "class": "average"
         },
         {
@@ -421,8 +421,8 @@
           "start": 1,
           "end": 16,
           "class": "average",
-          "win_pct": 51.5,
-          "n": 1351,
+          "win_pct": 51.8,
+          "n": 1381,
           "label": "Weeks 1\u201316"
         },
         {
@@ -438,8 +438,8 @@
         "start": 1,
         "end": 16,
         "class": "average",
-        "win_pct": 51.5,
-        "n": 1351,
+        "win_pct": 51.8,
+        "n": 1381,
         "label": "Weeks 1\u201316"
       },
       "worst_range": {
@@ -453,8 +453,8 @@
       "category": "Spread"
     },
     "Sim Spread (Kelly)": {
-      "baseline_win_pct": 50.9,
-      "n": 1465,
+      "baseline_win_pct": 51.1,
+      "n": 1495,
       "weeks": [
         {
           "week": 1,
@@ -476,14 +476,14 @@
         },
         {
           "week": 4,
-          "win_pct": 56.4,
-          "n": 94,
+          "win_pct": 57.3,
+          "n": 110,
           "class": "average"
         },
         {
           "week": 5,
-          "win_pct": 55.2,
-          "n": 87,
+          "win_pct": 56.4,
+          "n": 101,
           "class": "average"
         },
         {
@@ -570,8 +570,8 @@
           "start": 1,
           "end": 16,
           "class": "average",
-          "win_pct": 51.5,
-          "n": 1351,
+          "win_pct": 51.8,
+          "n": 1381,
           "label": "Weeks 1\u201316"
         },
         {
@@ -587,8 +587,8 @@
         "start": 1,
         "end": 16,
         "class": "average",
-        "win_pct": 51.5,
-        "n": 1351,
+        "win_pct": 51.8,
+        "n": 1381,
         "label": "Weeks 1\u201316"
       },
       "worst_range": {
@@ -602,8 +602,8 @@
       "category": "Spread"
     },
     "Consensus Spread": {
-      "baseline_win_pct": 40.0,
-      "n": 1465,
+      "baseline_win_pct": 40.5,
+      "n": 1495,
       "weeks": [
         {
           "week": 1,
@@ -625,14 +625,14 @@
         },
         {
           "week": 4,
-          "win_pct": 38.3,
-          "n": 94,
+          "win_pct": 41.8,
+          "n": 110,
           "class": "average"
         },
         {
           "week": 5,
-          "win_pct": 43.7,
-          "n": 87,
+          "win_pct": 47.5,
+          "n": 101,
           "class": "average"
         },
         {
@@ -719,8 +719,8 @@
           "start": 1,
           "end": 16,
           "class": "average",
-          "win_pct": 40.5,
-          "n": 1351,
+          "win_pct": 41.1,
+          "n": 1381,
           "label": "Weeks 1\u201316"
         },
         {
@@ -736,8 +736,8 @@
         "start": 1,
         "end": 16,
         "class": "average",
-        "win_pct": 40.5,
-        "n": 1351,
+        "win_pct": 41.1,
+        "n": 1381,
         "label": "Weeks 1\u201316"
       },
       "worst_range": {
@@ -751,20 +751,20 @@
       "category": "Spread"
     },
     "GSF Moneyline": {
-      "baseline_win_pct": 44.8,
-      "n": 1320,
+      "baseline_win_pct": 45.1,
+      "n": 1347,
       "weeks": [
         {
           "week": 1,
           "win_pct": 55.8,
           "n": 95,
-          "class": "strong"
+          "class": "average"
         },
         {
           "week": 2,
           "win_pct": 51.5,
           "n": 99,
-          "class": "strong"
+          "class": "average"
         },
         {
           "week": 3,
@@ -774,14 +774,14 @@
         },
         {
           "week": 4,
-          "win_pct": 39.8,
-          "n": 88,
+          "win_pct": 42.2,
+          "n": 102,
           "class": "average"
         },
         {
           "week": 5,
-          "win_pct": 46.2,
-          "n": 78,
+          "win_pct": 48.4,
+          "n": 91,
           "class": "average"
         },
         {
@@ -866,54 +866,46 @@
       "ranges": [
         {
           "start": 1,
-          "end": 2,
-          "class": "strong",
-          "win_pct": 53.6,
-          "n": 194,
-          "label": "Weeks 1\u20132"
-        },
-        {
-          "start": 3,
           "end": 18,
           "class": "average",
-          "win_pct": 43.3,
-          "n": 1126,
-          "label": "Weeks 3\u201318"
+          "win_pct": 45.1,
+          "n": 1347,
+          "label": "Weeks 1\u201318"
         }
       ],
       "best_range": {
         "start": 1,
-        "end": 2,
-        "class": "strong",
-        "win_pct": 53.6,
-        "n": 194,
-        "label": "Weeks 1\u20132"
-      },
-      "worst_range": {
-        "start": 3,
         "end": 18,
         "class": "average",
-        "win_pct": 43.3,
-        "n": 1126,
-        "label": "Weeks 3\u201318"
+        "win_pct": 45.1,
+        "n": 1347,
+        "label": "Weeks 1\u201318"
+      },
+      "worst_range": {
+        "start": 1,
+        "end": 18,
+        "class": "average",
+        "win_pct": 45.1,
+        "n": 1347,
+        "label": "Weeks 1\u201318"
       },
       "category": "Moneyline"
     },
     "MP Moneyline": {
-      "baseline_win_pct": 36.7,
-      "n": 1369,
+      "baseline_win_pct": 37.2,
+      "n": 1395,
       "weeks": [
         {
           "week": 1,
           "win_pct": 43.0,
           "n": 100,
-          "class": "strong"
+          "class": "average"
         },
         {
           "week": 2,
           "win_pct": 40.6,
           "n": 106,
-          "class": "strong"
+          "class": "average"
         },
         {
           "week": 3,
@@ -923,14 +915,14 @@
         },
         {
           "week": 4,
-          "win_pct": 36.4,
-          "n": 88,
+          "win_pct": 40.2,
+          "n": 102,
           "class": "average"
         },
         {
           "week": 5,
-          "win_pct": 37.8,
-          "n": 82,
+          "win_pct": 41.5,
+          "n": 94,
           "class": "average"
         },
         {
@@ -1015,19 +1007,11 @@
       "ranges": [
         {
           "start": 1,
-          "end": 2,
-          "class": "strong",
-          "win_pct": 41.7,
-          "n": 206,
-          "label": "Weeks 1\u20132"
-        },
-        {
-          "start": 3,
           "end": 16,
           "class": "average",
-          "win_pct": 36.5,
-          "n": 1056,
-          "label": "Weeks 3\u201316"
+          "win_pct": 37.9,
+          "n": 1288,
+          "label": "Weeks 1\u201316"
         },
         {
           "start": 17,
@@ -1040,11 +1024,11 @@
       ],
       "best_range": {
         "start": 1,
-        "end": 2,
-        "class": "strong",
-        "win_pct": 41.7,
-        "n": 206,
-        "label": "Weeks 1\u20132"
+        "end": 16,
+        "class": "average",
+        "win_pct": 37.9,
+        "n": 1288,
+        "label": "Weeks 1\u201316"
       },
       "worst_range": {
         "start": 17,
@@ -1057,8 +1041,8 @@
       "category": "Moneyline"
     },
     "Sim Moneyline": {
-      "baseline_win_pct": 49.6,
-      "n": 1354,
+      "baseline_win_pct": 49.9,
+      "n": 1380,
       "weeks": [
         {
           "week": 1,
@@ -1080,14 +1064,14 @@
         },
         {
           "week": 4,
-          "win_pct": 49.4,
-          "n": 83,
+          "win_pct": 51.5,
+          "n": 97,
           "class": "average"
         },
         {
           "week": 5,
-          "win_pct": 56.8,
-          "n": 81,
+          "win_pct": 59.1,
+          "n": 93,
           "class": "average"
         },
         {
@@ -1182,8 +1166,8 @@
           "start": 3,
           "end": 15,
           "class": "average",
-          "win_pct": 49.0,
-          "n": 955,
+          "win_pct": 49.5,
+          "n": 981,
           "label": "Weeks 3\u201315"
         },
         {
@@ -1214,8 +1198,8 @@
       "category": "Moneyline"
     },
     "Sim Moneyline (Kelly)": {
-      "baseline_win_pct": 49.6,
-      "n": 1354,
+      "baseline_win_pct": 49.9,
+      "n": 1380,
       "weeks": [
         {
           "week": 1,
@@ -1237,14 +1221,14 @@
         },
         {
           "week": 4,
-          "win_pct": 49.4,
-          "n": 83,
+          "win_pct": 51.5,
+          "n": 97,
           "class": "average"
         },
         {
           "week": 5,
-          "win_pct": 56.8,
-          "n": 81,
+          "win_pct": 59.1,
+          "n": 93,
           "class": "average"
         },
         {
@@ -1339,8 +1323,8 @@
           "start": 3,
           "end": 15,
           "class": "average",
-          "win_pct": 49.0,
-          "n": 955,
+          "win_pct": 49.5,
+          "n": 981,
           "label": "Weeks 3\u201315"
         },
         {
@@ -1371,8 +1355,8 @@
       "category": "Moneyline"
     },
     "Consensus Moneyline": {
-      "baseline_win_pct": 40.2,
-      "n": 1284,
+      "baseline_win_pct": 40.6,
+      "n": 1307,
       "weeks": [
         {
           "week": 1,
@@ -1394,14 +1378,14 @@
         },
         {
           "week": 4,
-          "win_pct": 38.6,
-          "n": 83,
+          "win_pct": 41.7,
+          "n": 96,
           "class": "average"
         },
         {
           "week": 5,
-          "win_pct": 45.0,
-          "n": 80,
+          "win_pct": 47.8,
+          "n": 90,
           "class": "average"
         },
         {
@@ -1496,8 +1480,8 @@
           "start": 3,
           "end": 16,
           "class": "average",
-          "win_pct": 38.9,
-          "n": 989,
+          "win_pct": 39.5,
+          "n": 1012,
           "label": "Weeks 3\u201316"
         },
         {
@@ -1528,8 +1512,8 @@
       "category": "Moneyline"
     },
     "Sim Total": {
-      "baseline_win_pct": 53.5,
-      "n": 1470,
+      "baseline_win_pct": 53.3,
+      "n": 1501,
       "weeks": [
         {
           "week": 1,
@@ -1551,14 +1535,14 @@
         },
         {
           "week": 4,
-          "win_pct": 54.3,
-          "n": 94,
+          "win_pct": 51.8,
+          "n": 110,
           "class": "average"
         },
         {
           "week": 5,
-          "win_pct": 54.5,
-          "n": 88,
+          "win_pct": 54.4,
+          "n": 103,
           "class": "average"
         },
         {
@@ -1645,8 +1629,8 @@
           "start": 1,
           "end": 13,
           "class": "average",
-          "win_pct": 51.4,
-          "n": 1098,
+          "win_pct": 51.2,
+          "n": 1129,
           "label": "Weeks 1\u201313"
         },
         {
@@ -1678,15 +1662,15 @@
         "start": 1,
         "end": 13,
         "class": "average",
-        "win_pct": 51.4,
-        "n": 1098,
+        "win_pct": 51.2,
+        "n": 1129,
         "label": "Weeks 1\u201313"
       },
       "category": "Total"
     },
     "Sim Total (Kelly)": {
-      "baseline_win_pct": 53.5,
-      "n": 1470,
+      "baseline_win_pct": 53.3,
+      "n": 1501,
       "weeks": [
         {
           "week": 1,
@@ -1708,14 +1692,14 @@
         },
         {
           "week": 4,
-          "win_pct": 54.3,
-          "n": 94,
+          "win_pct": 51.8,
+          "n": 110,
           "class": "average"
         },
         {
           "week": 5,
-          "win_pct": 54.5,
-          "n": 88,
+          "win_pct": 54.4,
+          "n": 103,
           "class": "average"
         },
         {
@@ -1802,8 +1786,8 @@
           "start": 1,
           "end": 13,
           "class": "average",
-          "win_pct": 51.4,
-          "n": 1098,
+          "win_pct": 51.2,
+          "n": 1129,
           "label": "Weeks 1\u201313"
         },
         {
@@ -1835,8 +1819,8 @@
         "start": 1,
         "end": 13,
         "class": "average",
-        "win_pct": 51.4,
-        "n": 1098,
+        "win_pct": 51.2,
+        "n": 1129,
         "label": "Weeks 1\u201313"
       },
       "category": "Total"
