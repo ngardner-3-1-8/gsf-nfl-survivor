@@ -172,6 +172,119 @@ def _apply_contest_to_schedule(df, contest, ev_model="consensus"):
     return df
 
 
+# Contest -> the prefix daily_2 uses for that contest's per-week flag columns
+# ("{prefix} Active / Multi-Pick Week / Picks Required"). None = Circa, which
+# has no Splash flags: it uses holiday-aware "Circa Week" labels and never has
+# double-pick weeks. NOTE the World Championship's data prefix is "Survivor
+# World Championship", not "World Championship".
+_CONTEST_FLAG_PREFIX = {
+    "circa": None,
+    "big_splash": "Big Splash",
+    "world_championship": "Survivor World Championship",
+}
+
+
+def _annotate_schedule_weeks(df, contest):
+    """Attach the canonical display-week columns the schedule UI reads and,
+    for Splash contests, normalize pick % per NFL week to the picks required.
+
+    Adds per row:
+      _DisplayWeek   the number the week pills + filtering key off
+                     (Circa -> Circa-shifted Week_x; Splash -> raw NFL Week 1-18)
+      _WeekLabel     the label shown in the Wk column + pills
+                     (Circa -> 'Circa Week' incl. 'Thanksgiving'/'Christmas';
+                      Splash -> the NFL week number)
+      _DoubleWeek    True on a contest double-pick week (Splash only)
+      _PicksRequired 2 on a double week, else 1
+
+    Splash contests use the raw NFL week as their identity. The sim file is
+    keyed on the Circa-shifted week (Week_x), which splits NFL weeks 12 and 16
+    into two rows apiece (the Thanksgiving / Christmas slates). Keying Splash
+    off NFL Week reunites them and keeps the pills at 1-18 instead of 1-20.
+
+    Pick % is then renormalized so each NFL week sums to that week's picks
+    required: ~2.0 on a double week (each entry makes two picks) and ~1.0
+    otherwise. That both makes the displayed ownership account for double
+    weeks and undoes the holiday split, which would otherwise leave an NFL
+    week spread across two Week_x rows each normalized to 1.0."""
+    key = (contest or "circa").strip().lower()
+    if key not in _CONTEST_FLAG_PREFIX:
+        key = "circa"
+    df = df.copy()
+    week_x = "Week_x" if "Week_x" in df.columns else ("Week" if "Week" in df.columns else None)
+    nfl_col = "NFL Week" if "NFL Week" in df.columns else week_x
+    circa_col = "Circa Week" if "Circa Week" in df.columns else None
+    prefix = _CONTEST_FLAG_PREFIX[key]
+
+    if prefix is None:
+        # Circa: holiday-aware labels, Week_x identity, no double-pick weeks.
+        if week_x:
+            df["_DisplayWeek"] = pd.to_numeric(df[week_x], errors="coerce")
+            if circa_col:
+                df["_WeekLabel"] = df[circa_col].astype(str)
+            else:
+                df["_WeekLabel"] = df["_DisplayWeek"].astype("Int64").astype(str)
+        df["_DoubleWeek"] = False
+        df["_PicksRequired"] = 1
+        return df
+
+    # Splash: NFL-week identity (1-18), no holiday weeks.
+    mp_col = f"{prefix} Multi-Pick Week"
+    pr_col = f"{prefix} Picks Required"
+    active_col = f"{prefix} Active"
+    if nfl_col:
+        df["_DisplayWeek"] = pd.to_numeric(df[nfl_col], errors="coerce")
+        df["_WeekLabel"] = df["_DisplayWeek"].astype("Int64").astype(str)
+    df["_DoubleWeek"] = df[mp_col].fillna(False).astype(bool) if mp_col in df.columns else False
+    if pr_col in df.columns:
+        df["_PicksRequired"] = pd.to_numeric(df[pr_col], errors="coerce").fillna(1).astype(int)
+    else:
+        df["_PicksRequired"] = np.where(df["_DoubleWeek"], 2, 1)
+
+    # Only this contest's active regular-season weeks (1-18). Drops pre-start
+    # seasons and the NFL playoff weeks (>18) that aren't part of the pool.
+    if active_col in df.columns:
+        df = df[df[active_col].fillna(False).astype(bool)]
+    if "_DisplayWeek" in df.columns:
+        df = df[df["_DisplayWeek"].notna() & (df["_DisplayWeek"] <= 18)]
+
+    # Renormalize pick % so each NFL week sums to its picks required.
+    for col in ("Home Pick %", "Away Pick %"):
+        if col not in df.columns:
+            df[col] = 0.0
+        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
+    if "_DisplayWeek" in df.columns and len(df):
+        for wk, idx in df.groupby("_DisplayWeek").groups.items():
+            mass = df.loc[idx, "Home Pick %"].sum() + df.loc[idx, "Away Pick %"].sum()
+            target = int(df.loc[idx, "_PicksRequired"].iloc[0])
+            if mass > 0 and target > 0:
+                factor = target / mass
+                df.loc[idx, "Home Pick %"] = df.loc[idx, "Home Pick %"] * factor
+                df.loc[idx, "Away Pick %"] = df.loc[idx, "Away Pick %"] * factor
+    return df
+
+
+def _schedule_week_options(df):
+    """Build the week-pill options from an annotated schedule frame: one entry
+    per distinct _DisplayWeek with its label and whether it's a double week."""
+    if "_DisplayWeek" not in df.columns:
+        return []
+    cols = ["_DisplayWeek", "_WeekLabel", "_DoubleWeek"]
+    cols = [c for c in cols if c in df.columns]
+    seen = df[cols].drop_duplicates(subset="_DisplayWeek")
+    opts = []
+    for _, r in seen.iterrows():
+        w = r["_DisplayWeek"]
+        if pd.isna(w):
+            continue
+        opts.append({
+            "week": int(w),
+            "label": str(r["_WeekLabel"]) if "_WeekLabel" in seen.columns and pd.notna(r.get("_WeekLabel")) else f"Week {int(w)}",
+            "double": bool(r.get("_DoubleWeek", False)),
+        })
+    return sorted(opts, key=lambda x: x["week"])
+
+
 @app.get("/api/schedule")
 def get_schedule(week: int = Query(None), year: int = Query(None),
                  contest: str = Query("circa")):
@@ -181,25 +294,19 @@ def get_schedule(week: int = Query(None), year: int = Query(None),
 
         if year and year != current_year:
             df, latest_week, source_file = load_historical_data(DATA_DIR, year)
-            week_col = "Week_x" if "Week_x" in df.columns else "Week"
-            if week is not None:
-                df = df[df[week_col] == week]
             df = _apply_contest_to_schedule(df, contest)
-            # Build week options from the data
-            circa_col = "Circa Week" if "Circa Week" in df.columns else None
-            weeks_df = df[[week_col] + ([circa_col] if circa_col else [])].drop_duplicates()
-            week_options = []
-            for _, r in weeks_df.iterrows():
-                w = int(r[week_col])
-                label = str(r[circa_col]) if circa_col and pd.notna(r.get(circa_col)) else f"Week {w}"
-                week_options.append({"week": w, "label": label})
+            df = _annotate_schedule_weeks(df, contest)
+            if week is not None and "_DisplayWeek" in df.columns:
+                df = df[df["_DisplayWeek"] == week]
+            week_options = _schedule_week_options(df)
 
             result = {
                 "upcoming_week": latest_week,
                 "target_year": year,
                 "source_file": source_file,
                 "contest": (contest or "circa").strip().lower(),
-                "weeks": sorted(df[week_col].dropna().unique().tolist()),
+                "weeks": [o["week"] for o in week_options],
+                "week_options": week_options,
                 "total_games": len(df),
                 "games": df.to_dict(orient="records"),
                 "is_historical": True,
@@ -209,14 +316,17 @@ def get_schedule(week: int = Query(None), year: int = Query(None),
         # Live logic. Surface the selected contest's pick % / EV before slicing.
         df = clean_df(data["sim_df"])
         df = _apply_contest_to_schedule(df, contest)
-        if week is not None:
-            df = df[df["Week_x"] == week]
+        df = _annotate_schedule_weeks(df, contest)
+        if week is not None and "_DisplayWeek" in df.columns:
+            df = df[df["_DisplayWeek"] == week]
+        week_options = _schedule_week_options(df)
         result = {
             "upcoming_week": data["upcoming_week"],
             "target_year": current_year,
             "source_file": data["sim_file"],
             "contest": (contest or "circa").strip().lower(),
-            "weeks": sorted(df["Week_x"].dropna().unique().tolist()),
+            "weeks": [o["week"] for o in week_options],
+            "week_options": week_options,
             "total_games": len(df),
             "games": df.to_dict(orient="records"),
             "is_historical": False,
