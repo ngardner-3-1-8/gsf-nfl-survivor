@@ -24,10 +24,18 @@ const CATEGORY_OF = {
   'Sim Total': 'Total', 'Sim Total (Kelly)': 'Total',
 }
 
+// A recommended "Combined (...)" card's model -> its key in the agreement
+// analysis (edgePerf.agreement), for the live lifetime win rate.
+const COMBINED_AGREEMENT_KEY = {
+  'Combined (MC+GSF)': 'MC + GSF',
+  'Combined (MC+MP)': 'MC + MP',
+  'Combined (MP+GSF)': 'MP + GSF',
+  'Combined (MC+MP+GSF)': 'MC + MP + GSF',
+}
+
 // Map a recommended-bet card to its betting-history label.
 function betHistoryLabel(bet) {
   if (bet.model === 'GSF' && bet.bet_type === 'Spread') return 'GSF Spread'
-  if (bet.model === 'Combined (MC+GSF)') return 'Consensus Spread'
   if (bet.model === 'Monte Carlo') {
     if (bet.bet_type === 'Spread') return 'Sim Spread'
     if (bet.bet_type === 'Moneyline') return 'Sim Moneyline'
@@ -303,8 +311,8 @@ function WeekRangeSection({ weekRange }) {
 }
 
 // ── Edge-bucket + model-agreement performance (precomputed weekly) ─────────
-const unitsStr = v => (v == null ? '—' : (v >= 0 ? '+' : '') + Math.round(v).toLocaleString())
-const moneyStr = v => (v == null ? '—' : (v >= 0 ? '+$' : '−$') + Math.abs(Math.round(v)).toLocaleString())
+// Profit is stored in dollars; a unit is $100, so divide by 100 for unit display.
+const unitsStr = v => (v == null ? '—' : (v >= 0 ? '+' : '') + (v / 100).toFixed(2))
 
 function RecordCell({ rec }) {
   if (!rec || !rec.n) return <span className="text-gray-700">—</span>
@@ -319,7 +327,7 @@ function RecordCell({ rec }) {
       </div>
       {rec.kelly != null && (
         <div className="text-xs font-mono text-gray-600" title={rec.avg_kelly_pct != null ? `avg ${rec.avg_kelly_pct}% of bankroll` : undefined}>
-          K <span className={rec.kelly >= 0 ? 'text-green-500/70' : 'text-red-500/70'}>{moneyStr(rec.kelly)}</span>
+          K <span className={rec.kelly >= 0 ? 'text-green-500/70' : 'text-red-500/70'}>{unitsStr(rec.kelly)}u</span>
         </div>
       )}
     </div>
@@ -374,9 +382,9 @@ function EdgeBucketSection({ edgePerf }) {
         </table>
       </div>
       <p className="text-gray-600 text-xs mt-2">
-        Each cell: win %, then unit profit ("u", flat $100 stakes) with record, then
-        <span className="font-mono"> K</span> = quarter-Kelly profit (sized off a $10k bankroll using the
-        sim's probability for the picked side). Columns are seasons.
+        Each cell: win %, then flat-stake profit in units ("u" = $100/unit) with record, then
+        <span className="font-mono"> K</span> = quarter-Kelly profit in units (sized off a $10k bankroll
+        using the sim's probability for the picked side). Columns are seasons.
       </p>
     </div>
   )
@@ -417,14 +425,15 @@ export default function RecommendedBetsView() {
   // Live lifetime win rate for a recommended bet: prefer the exact tier cell,
   // fall back to the bet type's overall lifetime rate. Always realized results.
   const liveTierWinRate = (bet) => {
-    // The MC+GSF "Combined" pick is a true two-model agreement, NOT the
+    // Any "Combined (...)" pick is a true model-agreement signal, NOT the
     // all-models Consensus column — read its realized rate from the
     // model-agreement analysis instead.
-    if (bet.model === 'Combined (MC+GSF)') {
-      const key = bet.bet_type === 'Moneyline' ? 'MC + GSF (Moneyline)' : 'MC + GSF (Spread)'
-      const lt = edgePerf?.agreement?.[key]?.lifetime
+    const comboAgr = COMBINED_AGREEMENT_KEY[bet.model]
+    if (comboAgr) {
+      const cat = bet.bet_type === 'Moneyline' ? 'Moneyline' : 'Spread'
+      const lt = edgePerf?.agreement?.[`${comboAgr} (${cat})`]?.lifetime
       if (lt && lt.win_pct != null) {
-        return { scope: 'MC+GSF agree', win_pct: lt.win_pct, wins: lt.wins, losses: lt.losses }
+        return { scope: `${comboAgr} agree`, win_pct: lt.win_pct, wins: lt.wins, losses: lt.losses }
       }
       return null
     }
@@ -725,7 +734,7 @@ export default function RecommendedBetsView() {
                       {wr.win_pct}%
                     </span>
                     <span className="text-gray-600">({wr.wins}-{wr.losses})</span>
-                    {bet.note && <span className="text-green-500/80">· MC+GSF agree</span>}
+                    {bet.note && <span className="text-green-500/80">· {bet.note}</span>}
                   </div>
                 )
               })()}
