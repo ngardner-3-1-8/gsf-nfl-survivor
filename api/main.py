@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 import glob
 import re
 
+
 def sanitize(obj):
     """Recursively replace nan/inf with None for JSON serialization."""
     if isinstance(obj, float):
@@ -1706,6 +1707,12 @@ def get_betting_history(year: int = Query(None)):
 
             return {"by_bet_type": by_bet_type, "by_tier": by_tier}
 
+        # Massey-Peabody wasn't reliably tracked before this season, so drop MP
+        # results for earlier years (set to "No Bet" so they're excluded from
+        # both the per-year and the combined records).
+        MP_MIN_YEAR = 2026
+        MP_WL_COLS = ["MP Spread Win/Loss", "MP Moneyline Win/Loss"]
+
         # Build per-year summaries
         year_summaries = {}
         combined_df = pd.DataFrame()
@@ -1713,6 +1720,10 @@ def get_betting_history(year: int = Query(None)):
             ydf = load_year_data(y)
             if ydf is None:
                 continue
+            if y < MP_MIN_YEAR:
+                for col in MP_WL_COLS:
+                    if col in ydf.columns:
+                        ydf[col] = "No Bet"
             year_summaries[str(y)] = summarize(ydf)
             combined_df = pd.concat([combined_df, ydf], ignore_index=True)
 
