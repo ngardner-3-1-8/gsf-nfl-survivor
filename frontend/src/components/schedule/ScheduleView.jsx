@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
-import { fetchSchedule } from '../../api/client'
+import { fetchSchedule, fetchContestYears } from '../../api/client'
 import ScheduleFilters from './ScheduleFilters'
 import ScheduleTable from './ScheduleTable'
-import { useAvailableYears } from '../../hooks/useAvailableYears'
 import { useContest } from '../../contexts/ContestContext'
 import YearSelector from '../ui/YearSelector'
 
@@ -16,35 +15,56 @@ export default function ScheduleView() {
   const [selectedWeeks, setSelectedWeeks] = useState([])
   const [teamSearch, setTeamSearch] = useState('')
   const [showFilter, setShowFilter] = useState('all')
-  const [availableWeeks, setAvailableWeeks] = useState([])
+  const [weekOptions, setWeekOptions] = useState([])
 
   const { contest } = useContest()
-  const { years, selectedYear, setSelectedYear, isHistorical } = useAvailableYears()
 
-  // Reload schedule when the year or the global contest changes
+  // Years are per contest: Circa runs back to 2020, the Splash contests only
+  // exist from 2026 on. Reload the year list when the contest changes and
+  // keep the selected year valid for the new contest (newest = current).
+  const [years, setYears] = useState([])
+  const [selectedYear, setSelectedYear] = useState(null)
+
   useEffect(() => {
-    if (!selectedYear) return
+    fetchContestYears(contest)
+      .then(data => {
+        const ys = (data.years || []).slice().sort((a, b) => b - a)
+        setYears(ys)
+        setSelectedYear(prev => (ys.includes(prev) ? prev : (ys[0] ?? null)))
+      })
+      .catch(() => { setYears([]); setSelectedYear(null) })
+  }, [contest])
+
+  // The newest year with data for a contest is its current season.
+  const currentYear = years[0] ?? null
+  const effectiveYear = years.includes(selectedYear) ? selectedYear : currentYear
+  const isHistorical = effectiveYear != null && currentYear != null && effectiveYear !== currentYear
+
+  // Reload schedule when the effective year or the global contest changes.
+  // `ignore` drops a stale response if year/contest changed before it resolved.
+  useEffect(() => {
+    if (!effectiveYear) return
+    let ignore = false
     setLoading(true)
     setError(null)
     setSelectedWeeks([])
-    fetchSchedule(null, selectedYear, contest)
+    fetchSchedule(null, effectiveYear, contest)
       .then(data => {
-        const g = data.games || []
-        setGames(g)
-        const weeks = [...new Set(g.map(r => r['Week_x'] ?? r['Week']))]
-          .sort((a, b) => a - b)
-        setAvailableWeeks(weeks)
+        if (ignore) return
+        setGames(data.games || [])
+        setWeekOptions(data.week_options || [])
       })
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false))
-  }, [selectedYear, contest])
+      .catch(e => { if (!ignore) setError(e.message) })
+      .finally(() => { if (!ignore) setLoading(false) })
+    return () => { ignore = true }
+  }, [effectiveYear, contest])
 
   // Apply filters
   const filtered = useMemo(() => {
     let rows = [...games]
 
     if (selectedWeeks.length > 0) {
-      rows = rows.filter(r => selectedWeeks.includes(r['Week_x'] ?? r['Week']))
+      rows = rows.filter(r => selectedWeeks.includes(r['_DisplayWeek'] ?? r['Week_x'] ?? r['Week']))
     }
 
     if (teamSearch.trim()) {
@@ -134,7 +154,7 @@ export default function ScheduleView() {
       </div>
 
       <ScheduleFilters
-        availableWeeks={availableWeeks}
+        weekOptions={weekOptions}
         selectedWeeks={selectedWeeks}
         onToggleWeek={toggleWeek}
         onClearWeeks={() => setSelectedWeeks([])}
