@@ -153,14 +153,58 @@ function BetDetails({ bet }) {
   )
 }
 
+// A single hit-rate tile: big win %, record + ROI, and a per-year win% strip.
+function HitRateTile({ title, rec, byYearRec, years, roi }) {
+  const settled = (rec.wins || 0) + (rec.losses || 0)
+  return (
+    <div className="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-xs font-medium text-white leading-tight">{title}</span>
+        <span className={`text-lg font-bold font-mono ${winPctColor(rec.win_pct)}`}>
+          {rec.win_pct != null ? `${rec.win_pct}%` : '—'}
+        </span>
+      </div>
+      <p className="text-xs text-gray-600 mt-0.5">
+        {rec.wins}-{rec.losses}{rec.pushes ? `-${rec.pushes}P` : ''} · {settled} bets
+        {roi != null && (
+          <span className={roi >= 0 ? ' text-green-500/80' : ' text-red-500/80'}>
+            {' '}· {roi >= 0 ? '+' : ''}{roi}% ROI
+          </span>
+        )}
+      </p>
+      {years.length > 0 && (
+        <div className="mt-2 pt-2 border-t border-gray-800/80 flex flex-wrap gap-x-2 gap-y-0.5">
+          {years.map(y => {
+            const ys = byYearRec(String(y))
+            if (!ys || ys.win_pct == null) return null
+            return (
+              <span key={y} className="text-xs font-mono text-gray-500" title={`${ys.wins}-${ys.losses}`}>
+                {String(y).slice(2)}:
+                <span className={winPctColor(ys.win_pct)}> {Math.round(ys.win_pct)}%</span>
+              </span>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Lifetime + per-year hit-rate cards for every tracked bet type ──────────
-function HitRateCards({ history }) {
+function HitRateCards({ history, edgePerf }) {
   if (!history?.total?.by_bet_type) return null
   const total = history.total.by_bet_type
   const byYear = history.by_year || {}
   const years = (history.available_years || []).slice().sort((a, b) => b - a)
   const labels = BET_TYPE_ORDER.filter(l => total[l])
   if (!labels.length) return null
+
+  // Agreement combos come from the weekly edge-performance analysis.
+  const agr = edgePerf?.agreement || {}
+  const comboKeys = Object.keys(agr)
+  const comboYearSet = new Set()
+  comboKeys.forEach(k => Object.keys(agr[k].by_year || {}).forEach(y => comboYearSet.add(y)))
+  const comboYears = [...comboYearSet].sort((a, b) => b - a)
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
@@ -169,45 +213,44 @@ function HitRateCards({ history }) {
         Lifetime and per-season win rate across all settled bets — updates as results come in
       </p>
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-        {labels.map(label => {
-          const s = total[label]
-          const settled = (s.wins || 0) + (s.losses || 0)
-          return (
-            <div key={label} className="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="text-xs font-medium text-white leading-tight">
-                  {BET_DISPLAY[label] || label}
-                </span>
-                <span className={`text-lg font-bold font-mono ${winPctColor(s.win_pct)}`}>
-                  {s.win_pct != null ? `${s.win_pct}%` : '—'}
-                </span>
-              </div>
-              <p className="text-xs text-gray-600 mt-0.5">
-                {s.wins}-{s.losses}{s.pushes ? `-${s.pushes}P` : ''} · {settled} bets
-                {s.roi != null && (
-                  <span className={s.roi >= 0 ? ' text-green-500/80' : ' text-red-500/80'}>
-                    {' '}· {s.roi >= 0 ? '+' : ''}{s.roi}% ROI
-                  </span>
-                )}
-              </p>
-              {years.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-gray-800/80 flex flex-wrap gap-x-2 gap-y-0.5">
-                  {years.map(y => {
-                    const ys = byYear[String(y)]?.by_bet_type?.[label]
-                    if (!ys || ys.win_pct == null) return null
-                    return (
-                      <span key={y} className="text-xs font-mono text-gray-500" title={`${ys.wins}-${ys.losses}`}>
-                        {String(y).slice(2)}:
-                        <span className={winPctColor(ys.win_pct)}> {Math.round(ys.win_pct)}%</span>
-                      </span>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )
-        })}
+        {labels.map(label => (
+          <HitRateTile
+            key={label}
+            title={BET_DISPLAY[label] || label}
+            rec={total[label]}
+            roi={total[label].roi}
+            years={years}
+            byYearRec={y => byYear[y]?.by_bet_type?.[label]}
+          />
+        ))}
       </div>
+
+      {comboKeys.length > 0 && (
+        <>
+          <p className="text-white font-semibold text-sm mt-5">Model-agreement combos</p>
+          <p className="text-gray-500 text-xs mt-0.5 mb-3">
+            Win rate when the models pick the same side (calculated from each model's pick, not the
+            blended Consensus column). MP combos are 2026+ only.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+            {comboKeys.map(k => {
+              const lt = agr[k].lifetime
+              const settled = (lt.wins || 0) + (lt.losses || 0)
+              const roi = settled ? Math.round(lt.units / (settled * 110) * 1000) / 10 : null
+              return (
+                <HitRateTile
+                  key={k}
+                  title={k}
+                  rec={lt}
+                  roi={roi}
+                  years={comboYears}
+                  byYearRec={y => agr[k].by_year?.[y]}
+                />
+              )
+            })}
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -279,66 +322,6 @@ function RecordCell({ rec }) {
           K <span className={rec.kelly >= 0 ? 'text-green-500/70' : 'text-red-500/70'}>{moneyStr(rec.kelly)}</span>
         </div>
       )}
-    </div>
-  )
-}
-
-function AgreementSection({ edgePerf }) {
-  const agr = edgePerf?.agreement
-  const keys = agr ? Object.keys(agr) : []
-  if (!keys.length) return null
-  const yearSet = new Set()
-  keys.forEach(k => Object.keys(agr[k].by_year || {}).forEach(y => yearSet.add(y)))
-  const years = [...yearSet].sort((a, b) => b - a)
-
-  return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-      <p className="text-white font-semibold text-sm">Model-agreement signals</p>
-      <p className="text-gray-500 text-xs mt-0.5 mb-3">
-        Results when models pick the same side — win % and unit profit, lifetime and by season.
-        Anything involving Massey-Peabody is limited to {edgePerf.mp_min_year}+ (MP wasn't reliably
-        tracked before then).
-      </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {keys.map(k => {
-          const d = agr[k]
-          const lt = d.lifetime
-          return (
-            <div key={k} className="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="text-xs font-medium text-white">
-                  {k}{d.mp_involved && <span className="text-amber-500/70"> · {d.min_year}+</span>}
-                </span>
-                <span className={`text-lg font-bold font-mono ${winPctColor(lt.win_pct)}`}>
-                  {lt.win_pct != null ? `${lt.win_pct}%` : '—'}
-                </span>
-              </div>
-              <p className="text-xs text-gray-600 mt-0.5">
-                {lt.wins}-{lt.losses}{lt.pushes ? `-${lt.pushes}P` : ''} ·{' '}
-                <span className={lt.units >= 0 ? 'text-green-500/80' : 'text-red-500/80'}>{unitsStr(lt.units)}u</span>
-                {lt.kelly != null && (
-                  <> · K <span className={lt.kelly >= 0 ? 'text-green-500/80' : 'text-red-500/80'}>{moneyStr(lt.kelly)}</span></>
-                )}
-              </p>
-              {years.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-gray-800/80 flex flex-wrap gap-x-2 gap-y-0.5">
-                  {years.map(y => {
-                    const r = d.by_year?.[y]
-                    if (!r) return null
-                    return (
-                      <span key={y} className="text-xs font-mono text-gray-500"
-                        title={`${r.wins}-${r.losses} · ${unitsStr(r.units)}u`}>
-                        {String(y).slice(2)}:
-                        <span className={winPctColor(r.win_pct)}> {r.win_pct != null ? Math.round(r.win_pct) + '%' : '—'}</span>
-                      </span>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
     </div>
   )
 }
@@ -568,18 +551,15 @@ export default function RecommendedBetsView() {
         </div>
       </div>
 
-      {/* Lifetime + per-year hit rate for every bet type */}
-      <HitRateCards history={history} />
+      {/* Lifetime + per-year hit rate for every bet type + agreement combos */}
+      <HitRateCards history={history} edgePerf={edgePerf} />
 
       {/* Auto-detected strong/weak week ranges (precomputed weekly) */}
       <WeekRangeSection weekRange={weekRange} />
 
-      {/* Model-agreement signals + profitability by edge size (precomputed weekly) */}
+      {/* Profitability by edge size (precomputed weekly) */}
       {edgePerf ? (
-        <>
-          <AgreementSection edgePerf={edgePerf} />
-          <EdgeBucketSection edgePerf={edgePerf} />
-        </>
+        <EdgeBucketSection edgePerf={edgePerf} />
       ) : (
         <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 text-xs text-gray-500">
           <p className="font-medium text-gray-400 mb-1">Edge-bucket &amp; model-agreement analysis</p>
