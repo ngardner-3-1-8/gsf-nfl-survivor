@@ -1679,7 +1679,9 @@ def get_betting_history(year: int = Query(None)):
                     "no_bets": no_bets,
                     "win_pct": round(wins / settled * 100, 1) if settled > 0 else None,
                     "total_pl": round(total_pl, 2),
-                    "roi": round(total_pl / (settled * 100) * 100, 1) if settled > 0 else None,
+                    # ROI on amount RISKED ($110 per bet at -110), so a full-loss
+                    # season floors at -100% rather than overshooting it.
+                    "roi": round(total_pl / (settled * 110) * 100, 1) if settled > 0 else None,
                 }
 
                 # Tier breakdown for this bet type
@@ -1710,16 +1712,19 @@ def get_betting_history(year: int = Query(None)):
                 for label, cell in by_tier[tier].items():
                     settled = cell["wins"] + cell["losses"]
                     cell["win_pct"] = round(cell["wins"] / settled * 100, 1) if settled > 0 else None
-                    cell["roi"] = round(cell["total_pl"] / (settled * 100) * 100, 1) if settled > 0 else None
+                    cell["roi"] = round(cell["total_pl"] / (settled * 110) * 100, 1) if settled > 0 else None
                     cell["total_pl"] = round(cell["total_pl"], 2)
 
             return {"by_bet_type": by_bet_type, "by_tier": by_tier}
 
         # Massey-Peabody wasn't reliably tracked before this season, so drop MP
-        # results for earlier years (set to "No Bet" so they're excluded from
-        # both the per-year and the combined records).
+        # results for earlier years. BOTH the Win/Loss (set to "No Bet") AND the
+        # P/L (zeroed) must be cleared — otherwise the lifetime P/L keeps summing
+        # every year while the record counts only 2026, which blows ROI past
+        # -100%.
         MP_MIN_YEAR = 2026
         MP_WL_COLS = ["MP Spread Win/Loss", "MP Moneyline Win/Loss"]
+        MP_PL_COLS = ["MP Spread P/L", "MP Moneyline P/L"]
 
         # Build per-year summaries
         year_summaries = {}
@@ -1732,6 +1737,9 @@ def get_betting_history(year: int = Query(None)):
                 for col in MP_WL_COLS:
                     if col in ydf.columns:
                         ydf[col] = "No Bet"
+                for col in MP_PL_COLS:
+                    if col in ydf.columns:
+                        ydf[col] = 0.0
             year_summaries[str(y)] = summarize(ydf)
             combined_df = pd.concat([combined_df, ydf], ignore_index=True)
 
