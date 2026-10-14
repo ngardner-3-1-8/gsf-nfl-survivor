@@ -841,6 +841,49 @@ def save_bets(bets: dict):
     with open(BETS_FILE, "w") as f:
         json.dump(bets, f, indent=2)
 
+# NOTE: these static /api/bets/... routes MUST be declared before the
+# /api/bets/{username} route below. FastAPI matches in definition order, so if
+# {username} comes first it swallows "week-range" / "edge-performance" as a
+# username and returns {"bets": []} instead of the analysis.
+@app.get("/api/bets/week-range")
+def get_bet_week_range():
+    """Serve the precomputed week-range bet analysis written by
+    weekly_10_bet_week_range_analysis.py. Read-only: this is NOT computed on the
+    fly. Returns 404 with guidance if the weekly script hasn't produced it yet."""
+    path = os.path.join(DATA_DIR, "entry-analytics", "bet_week_range_analysis.json")
+    if not os.path.exists(path):
+        raise HTTPException(
+            status_code=404,
+            detail="Week-range analysis not generated yet. Run "
+                   "weekly_10_bet_week_range_analysis.py (Weekly 10 workflow).")
+    try:
+        with open(path) as f:
+            payload = json.load(f)
+    except Exception as e:
+        raise HTTPException(status_code=500,
+                            detail=f"Could not read week-range analysis: {e}")
+    return JSONResponse(content=sanitize(payload))
+
+
+@app.get("/api/bets/edge-performance")
+def get_bet_edge_performance():
+    """Serve the precomputed edge-bucket + model-agreement bet analysis written
+    by weekly_11_bet_edge_performance.py. Read-only, NOT computed on page load."""
+    path = os.path.join(DATA_DIR, "entry-analytics", "bet_edge_performance.json")
+    if not os.path.exists(path):
+        raise HTTPException(
+            status_code=404,
+            detail="Edge-performance analysis not generated yet. Run "
+                   "weekly_11_bet_edge_performance.py (Weekly 11 workflow).")
+    try:
+        with open(path) as f:
+            payload = json.load(f)
+    except Exception as e:
+        raise HTTPException(status_code=500,
+                            detail=f"Could not read edge-performance analysis: {e}")
+    return JSONResponse(content=sanitize(payload))
+
+
 @app.get("/api/bets/{username}")
 def get_bets(username: str):
     try:
@@ -1758,45 +1801,6 @@ def get_betting_history(year: int = Query(None)):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/bets/week-range")
-def get_bet_week_range():
-    """Serve the precomputed week-range bet analysis written by
-    weekly_10_bet_week_range_analysis.py. Read-only: this is NOT computed on the
-    fly. Returns 404 with guidance if the weekly script hasn't produced it yet."""
-    path = os.path.join(DATA_DIR, "entry-analytics", "bet_week_range_analysis.json")
-    if not os.path.exists(path):
-        raise HTTPException(
-            status_code=404,
-            detail="Week-range analysis not generated yet. Run "
-                   "weekly_10_bet_week_range_analysis.py (Weekly 10 workflow).")
-    try:
-        with open(path) as f:
-            payload = json.load(f)
-    except Exception as e:
-        raise HTTPException(status_code=500,
-                            detail=f"Could not read week-range analysis: {e}")
-    return JSONResponse(content=sanitize(payload))
-
-
-@app.get("/api/bets/edge-performance")
-def get_bet_edge_performance():
-    """Serve the precomputed edge-bucket + model-agreement bet analysis written
-    by weekly_11_bet_edge_performance.py. Read-only, NOT computed on page load."""
-    path = os.path.join(DATA_DIR, "entry-analytics", "bet_edge_performance.json")
-    if not os.path.exists(path):
-        raise HTTPException(
-            status_code=404,
-            detail="Edge-performance analysis not generated yet. Run "
-                   "weekly_11_bet_edge_performance.py (Weekly 11 workflow).")
-    try:
-        with open(path) as f:
-            payload = json.load(f)
-    except Exception as e:
-        raise HTTPException(status_code=500,
-                            detail=f"Could not read edge-performance analysis: {e}")
-    return JSONResponse(content=sanitize(payload))
-
 
 @app.get("/api/transactions/years/available")
 def get_transaction_years():
