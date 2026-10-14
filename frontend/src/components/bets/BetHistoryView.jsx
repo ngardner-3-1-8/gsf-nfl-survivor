@@ -218,6 +218,26 @@ function ByTierGrid({ summary }) {
           </table>
         </div>
       </div>
+
+      {/* How tiers are defined */}
+      <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 text-xs text-gray-500">
+        <p className="font-medium text-gray-400 mb-1">How tiers are calculated</p>
+        <p>
+          Each bet is graded by its model's edge (the gap between the model and the market). Higher
+          tier = bigger edge. Thresholds vary by bet type:
+        </p>
+        <ul className="mt-1.5 space-y-0.5 list-disc list-inside">
+          <li><span className="text-gray-400">Sim (MC) Spread</span> — S: ≥4.0 pts · A: 1.0–2.0 pts · B: other ≥0 (excludes the 2–3 "dead zone")</li>
+          <li><span className="text-gray-400">Sim (MC) Moneyline</span> — S: ≥15% · A: ≥10% · B: ≥5%</li>
+          <li><span className="text-gray-400">Sim (MC) Total</span> — S: ≥5.0 pts · A: ≥3.0 pts · B: 1.0–2.0 pts</li>
+          <li><span className="text-gray-400">GSF Spread</span> — A only, 2.0–3.0 pts (other edges are unprofitable historically)</li>
+          <li><span className="text-gray-400">MP / Consensus</span> — S: ≥4.0 pts/% · A: ≥2.0 · B: ≥0</li>
+        </ul>
+        <p className="mt-1.5">
+          For finer, by-season win rate and unit/Kelly profit at each exact edge size, see
+          “Profitability by edge size” on the Recommended Bets tab.
+        </p>
+      </div>
     </div>
   )
 }
