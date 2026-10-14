@@ -751,21 +751,29 @@ def get_recommended_bets(year: int = Query(None)):
                         "tier": t,
                     }, "GSF Spread"))
 
-            # Combined Spread
-            con_spread_bet  = row.get("Consensus Spread Bet")
-            con_spread_edge = row.get("Consensus Spread Edge")
-            if (con_spread_bet and not pd.isna(con_spread_bet) and str(con_spread_bet).strip()
-                    and mc_spread_bet and gsf_spread_bet
-                    and str(mc_spread_bet).strip() == str(gsf_spread_bet).strip()):
-                t = tier("combined_spread", con_spread_edge)
+            # Combined Spread — MC and GSF agree on the same side. The pick and
+            # edge come ONLY from MC + GSF (not the all-models Consensus column):
+            # the pick is the agreed team and the edge is the average of the two
+            # models' spread edges. The historical W/L uses MC's result, which
+            # equals GSF's whenever they agree on the side.
+            _mcp = str(mc_spread_bet).strip() if mc_spread_bet is not None else ""
+            _gsp = str(gsf_spread_bet).strip() if gsf_spread_bet is not None else ""
+            if (_mcp and _gsp and _mcp not in ("No Bet", "nan") and _mcp == _gsp):
+                mc_e = float(mc_spread_edge) if mc_spread_edge is not None and not pd.isna(mc_spread_edge) else None
+                gsf_e = float(gsf_spread_edge) if gsf_spread_edge is not None and not pd.isna(gsf_spread_edge) else None
+                if mc_e is not None and gsf_e is not None:
+                    combined_edge = (mc_e + gsf_e) / 2.0
+                else:
+                    combined_edge = mc_e if mc_e is not None else gsf_e
+                t = tier("combined_spread", combined_edge)
                 if t:
                     bets.append(make_bet({
                         **game,
                         "bet_type": "Spread", "model": "Combined (MC+GSF)",
-                        "pick": str(con_spread_bet),
-                        "edge": round(float(con_spread_edge), 2) if not pd.isna(con_spread_edge) else None,
+                        "pick": _mcp,
+                        "edge": round(combined_edge, 2) if combined_edge is not None else None,
                         "tier": t, "note": "MC and GSF agree",
-                    }, "Consensus Spread"))
+                    }, "Sim Spread"))
 
         tier_order = {"S": 0, "A": 1, "B": 2}
         bets.sort(key=lambda b: (tier_order.get(b["tier"], 9), -(b["edge"] or 0)))
