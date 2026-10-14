@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { fetchBettingHistory } from '../../api/client'
+import { fetchBettingHistory, fetchBetEdgePerformance } from '../../api/client'
 
 const TIER_CONFIG = {
   S: { bg: 'bg-green-900/40', text: 'text-green-300', border: 'border-green-700' },
@@ -41,6 +41,64 @@ function RecordCell({ data }) {
       <span className={`font-mono text-xs ${plColor(data.total_pl)}`}>
         {fmtPL(data.total_pl)}
       </span>
+    </div>
+  )
+}
+
+// ── Model-agreement combos (from the edge-performance analysis) ──
+function ByAgreementTable({ edgePerf, activeYear }) {
+  const agr = edgePerf?.agreement
+  if (!agr) return null
+  const keys = Object.keys(agr)
+  if (!keys.length) return null
+  const recFor = k => (activeYear === 'total' ? agr[k].lifetime : agr[k].by_year?.[activeYear])
+  const rows = keys.map(k => ({ k, r: recFor(k) })).filter(x => x.r && x.r.n)
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-800">
+        <p className="text-white font-semibold text-sm">Model-Agreement Combos</p>
+        <p className="text-gray-500 text-xs mt-0.5">
+          Results when the models pick the same side (from each model's own pick, not the blended
+          Consensus column). MP combos are 2026+ only.
+        </p>
+      </div>
+      {rows.length === 0 ? (
+        <div className="px-4 py-6 text-center text-gray-500 text-sm">
+          No agreement bets settled {activeYear === 'total' ? 'yet' : `in ${activeYear}`}.
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-800">
+                {['Combo', 'Record', 'Win %', 'P/L', 'ROI'].map(h => (
+                  <th key={h} className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(({ k, r }) => {
+                const settled = (r.wins || 0) + (r.losses || 0)
+                const roi = settled ? Math.round(r.units / (settled * 110) * 1000) / 10 : null
+                return (
+                  <tr key={k} className="border-b border-gray-800/50 hover:bg-gray-800/20">
+                    <td className="px-4 py-2.5 text-white text-xs font-medium">{k}</td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-gray-300">
+                      {r.wins}-{r.losses}{r.pushes ? `-${r.pushes}` : ''}
+                    </td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-gray-200">{fmtPct(r.win_pct)}</td>
+                    <td className={`px-4 py-2.5 font-mono text-xs ${plColor(r.units)}`}>{fmtPL(r.units)}</td>
+                    <td className={`px-4 py-2.5 font-mono text-xs ${plColor(roi)}`}>
+                      {roi != null ? `${roi >= 0 ? '+' : ''}${roi}%` : '—'}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
@@ -249,6 +307,7 @@ export default function BetHistoryView() {
   const [error, setError] = useState(null)
   const [activeYear, setActiveYear] = useState('total')
   const [view, setView] = useState('by_tier') // 'by_tier' | 'by_bet_type'
+  const [edgePerf, setEdgePerf] = useState(null)
 
   useEffect(() => {
     fetchBettingHistory()
@@ -259,6 +318,8 @@ export default function BetHistoryView() {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
+    // Agreement combos come from the weekly edge-performance analysis; best-effort.
+    fetchBetEdgePerformance().then(setEdgePerf).catch(() => setEdgePerf(null))
   }, [])
 
   if (loading) return (
@@ -359,6 +420,9 @@ export default function BetHistoryView() {
       ) : (
         <ByBetTypeTable summary={currentSummary} />
       )}
+
+      {/* Model-agreement combos — respects the selected year */}
+      <ByAgreementTable edgePerf={edgePerf} activeYear={activeYear} />
 
       {/* Methodology note */}
       <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 text-xs text-gray-500">
