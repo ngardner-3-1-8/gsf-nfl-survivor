@@ -751,29 +751,48 @@ def get_recommended_bets(year: int = Query(None)):
                         "tier": t,
                     }, "GSF Spread"))
 
-            # Combined Spread — MC and GSF agree on the same side. The pick and
-            # edge come ONLY from MC + GSF (not the all-models Consensus column):
-            # the pick is the agreed team and the edge is the average of the two
-            # models' spread edges. The historical W/L uses MC's result, which
-            # equals GSF's whenever they agree on the side.
-            _mcp = str(mc_spread_bet).strip() if mc_spread_bet is not None else ""
-            _gsp = str(gsf_spread_bet).strip() if gsf_spread_bet is not None else ""
-            if (_mcp and _gsp and _mcp not in ("No Bet", "nan") and _mcp == _gsp):
-                mc_e = float(mc_spread_edge) if mc_spread_edge is not None and not pd.isna(mc_spread_edge) else None
-                gsf_e = float(gsf_spread_edge) if gsf_spread_edge is not None and not pd.isna(gsf_spread_edge) else None
-                if mc_e is not None and gsf_e is not None:
-                    combined_edge = (mc_e + gsf_e) / 2.0
-                else:
-                    combined_edge = mc_e if mc_e is not None else gsf_e
-                t = tier("combined_spread", combined_edge)
-                if t:
-                    bets.append(make_bet({
-                        **game,
-                        "bet_type": "Spread", "model": "Combined (MC+GSF)",
-                        "pick": _mcp,
-                        "edge": round(combined_edge, 2) if combined_edge is not None else None,
-                        "tier": t, "note": "MC and GSF agree",
-                    }, "Sim Spread"))
+            # Model-agreement combos — each fires when every listed model picks
+            # the SAME spread side. Pick = the agreed team; edge = the average of
+            # the participating models' spread edges (NOT the blended Consensus
+            # column). Historical W/L reads one agreeing model's result (they
+            # match on agreement). MP-involving combos are 2026+ only, since MP
+            # wasn't reliably tracked before then.
+            mp_spread_bet  = row.get("Massey-Peabody Spread Bet")
+            mp_spread_edge = row.get("Massey-Peabody Spread Edge")
+
+            def _combo_spread(parts, model_label, note, result_label, mp_involved):
+                # parts: list of (bet_value, edge_value) for each model in the combo
+                picks = [str(b).strip() if b is not None else "" for b, _ in parts]
+                if any((not p) or p in ("No Bet", "nan") for p in picks):
+                    return
+                if len(set(picks)) != 1:
+                    return
+                if mp_involved and (year is None or int(year) < 2026):
+                    return
+                edges = [float(e) for _, e in parts if e is not None and not pd.isna(e)]
+                if not edges:
+                    return
+                cedge = sum(edges) / len(edges)
+                tt = tier("combined_spread", cedge)
+                if not tt:
+                    return
+                bets.append(make_bet({
+                    **game,
+                    "bet_type": "Spread", "model": model_label,
+                    "pick": picks[0],
+                    "edge": round(cedge, 2),
+                    "tier": tt, "note": note,
+                }, result_label))
+
+            _combo_spread([(mc_spread_bet, mc_spread_edge), (gsf_spread_bet, gsf_spread_edge)],
+                          "Combined (MC+GSF)", "MC and GSF agree", "Sim Spread", False)
+            _combo_spread([(mc_spread_bet, mc_spread_edge), (mp_spread_bet, mp_spread_edge),
+                           (gsf_spread_bet, gsf_spread_edge)],
+                          "Combined (MC+MP+GSF)", "MC, MP and GSF agree", "Sim Spread", True)
+            _combo_spread([(mc_spread_bet, mc_spread_edge), (mp_spread_bet, mp_spread_edge)],
+                          "Combined (MC+MP)", "MC and MP agree", "Sim Spread", True)
+            _combo_spread([(mp_spread_bet, mp_spread_edge), (gsf_spread_bet, gsf_spread_edge)],
+                          "Combined (MP+GSF)", "MP and GSF agree", "GSF Spread", True)
 
         tier_order = {"S": 0, "A": 1, "B": 2}
         bets.sort(key=lambda b: (tier_order.get(b["tier"], 9), -(b["edge"] or 0)))
