@@ -4,7 +4,7 @@ import { trapInfo, rankWithin, TRAP_STYLES, trapTitle } from '../../utils/trap'
 // ── Column definitions per view ──────────────────────────────
 const COLUMNS = {
   'Overview': [
-    { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
+    { key: 'Week_x', label: 'Wk', render: (v, r) => weekCell(v, r) },
     { key: 'Date_x', label: 'Date', render: v => {
       if (!v) return '—'
       // Parse as local date by replacing hyphens to avoid UTC shift
@@ -23,7 +23,7 @@ const COLUMNS = {
     { key: '_holiday', label: '🗓', render: (_, r) => holidayEmoji(r) },
   ],
 'Odds & Win%': [
-  { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
+  { key: 'Week_x', label: 'Wk', render: (v, r) => weekCell(v, r) },
   { key: 'Away Team', label: 'Away Team' },
   { key: 'Home Team', label: 'Home Team' },
   { key: 'Consensus Away Win Pct', label: 'Away Consensus', render: v => winPctCell(v) },
@@ -57,7 +57,7 @@ const COLUMNS = {
   { key: 'Sim_Total_Median', label: 'Sim Total Median', render: v => totalCell(v) },
 ],
   'Situational': [
-    { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
+    { key: 'Week_x', label: 'Wk', render: (v, r) => weekCell(v, r) },
     { key: 'Away Team', label: 'Away Team' },
     { key: 'Home Team', label: 'Home Team' },
     { key: 'Away Team Weekly Rest', label: 'Away Rest', render: v => v ?? '—' },
@@ -72,7 +72,7 @@ const COLUMNS = {
     { key: 'International Game', label: 'Intl?', render: v => v ? '🌍' : '—' },
   ],
   'Contest': [
-    { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
+    { key: 'Week_x', label: 'Wk', render: (v, r) => weekCell(v, r) },
     { key: 'Away Team', label: 'Away Team', render: (v, r, allRows) => teamNameCell(v, 'Away', r, allRows) },
     { key: 'Home Team', label: 'Home Team', render: (v, r, allRows) => teamNameCell(v, 'Home', r, allRows) },
     { key: 'Away Pick %', label: 'Away Pick%', render: (v, r, allRows) => pickPctCell(v, 'Away Team', r, allRows) },
@@ -86,7 +86,7 @@ const COLUMNS = {
     { key: 'Away Team Expected Availability', label: 'Away Avail', render: v => v != null ? (Number(v) * 100).toFixed(1) + '%' : '—' },
   ],
   'Betting': [
-    { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
+    { key: 'Week_x', label: 'Wk', render: (v, r) => weekCell(v, r) },
     { key: 'Away Team', label: 'Away Team' },
     { key: 'Home Team', label: 'Home Team' },
     { key: 'Away Team Sportsbook Fair Odds', label: 'Away SB Odds', render: v => winPctCell(v) },
@@ -118,7 +118,7 @@ const COLUMNS = {
     { key: 'MC Bet Direction', label: 'MC Direction', render: v => v || '—' },
   ],
   'Bayesian': [
-    { key: 'Week_x', label: 'Wk', render: (v, r) => r['Circa Week'] || v },
+    { key: 'Week_x', label: 'Wk', render: (v, r) => weekCell(v, r) },
     { key: 'Away Team', label: 'Away Team' },
     { key: 'Home Team', label: 'Home Team' },
     { key: 'Massey-Peabody Bayesian Same Winner Across All Metrics', label: 'MP All Metrics', render: v => bayesianCell(v) },
@@ -134,6 +134,23 @@ const COLUMNS = {
 }
 
 // ── Helper renderers ──────────────────────────────────────────
+
+// Week cell: shows the contest-appropriate label (Circa holiday weeks, or the
+// NFL week for Splash) with a 2× badge on double-pick weeks. Falls back to the
+// Circa Week / raw week for older payloads without the annotated columns.
+function weekCell(v, row) {
+  const label = row['_WeekLabel'] ?? row['Circa Week'] ?? v
+  const isDouble = row['_DoubleWeek'] === true
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span>{label}</span>
+      {isDouble && (
+        <span className="text-[10px] font-semibold leading-none px-1 py-0.5 rounded bg-amber-500/20 text-amber-300"
+          title="Double-pick week (2 picks required)">2×</span>
+      )}
+    </span>
+  )
+}
 
 function dayLabel(row) {
   try {
@@ -279,8 +296,8 @@ function bayesianCell(val) {
 function scheduleTrapInfo(side, row, allRows) {
   const pick = parseFloat(row[`${side} Pick %`])
   if (isNaN(pick)) return { severity: null }
-  const week = row['Week_x'] ?? row['Week']
-  const weekRows = (allRows || []).filter(r => (r['Week_x'] ?? r['Week']) === week)
+  const week = row['_DisplayWeek'] ?? row['Week_x'] ?? row['Week']
+  const weekRows = (allRows || []).filter(r => (r['_DisplayWeek'] ?? r['Week_x'] ?? r['Week']) === week)
   const allPcts = weekRows.flatMap(r => [r['Away Pick %'], r['Home Pick %']])
   const rank = rankWithin(pick, allPcts)
   const mp = row[`${side} Team Massey-Peabody Current Rank`]
