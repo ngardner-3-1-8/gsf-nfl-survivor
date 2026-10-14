@@ -12,8 +12,9 @@ const BET_TYPE_ORDER = [
   'Sim Spread (Kelly)', 'Sim Moneyline (Kelly)', 'Sim Total (Kelly)',
 ]
 const BET_DISPLAY = {
-  'Consensus Spread': 'Consensus Spread · MC+GSF agree',
-  'Consensus Moneyline': 'Consensus ML · MC+GSF agree',
+  // Consensus = ALL models blended, not the MC+GSF two-model agreement.
+  'Consensus Spread': 'Consensus Spread · all models',
+  'Consensus Moneyline': 'Consensus ML · all models',
 }
 const CATEGORY_OF = {
   'Sim Spread': 'Spread', 'GSF Spread': 'Spread', 'MP Spread': 'Spread',
@@ -433,6 +434,17 @@ export default function RecommendedBetsView() {
   // Live lifetime win rate for a recommended bet: prefer the exact tier cell,
   // fall back to the bet type's overall lifetime rate. Always realized results.
   const liveTierWinRate = (bet) => {
+    // The MC+GSF "Combined" pick is a true two-model agreement, NOT the
+    // all-models Consensus column — read its realized rate from the
+    // model-agreement analysis instead.
+    if (bet.model === 'Combined (MC+GSF)') {
+      const key = bet.bet_type === 'Moneyline' ? 'MC + GSF (Moneyline)' : 'MC + GSF (Spread)'
+      const lt = edgePerf?.agreement?.[key]?.lifetime
+      if (lt && lt.win_pct != null) {
+        return { scope: 'MC+GSF agree', win_pct: lt.win_pct, wins: lt.wins, losses: lt.losses }
+      }
+      return null
+    }
     const label = betHistoryLabel(bet)
     if (!label || !history?.total) return null
     const tierCell = history.total.by_tier?.[bet.tier]?.[label]
@@ -563,8 +575,23 @@ export default function RecommendedBetsView() {
       <WeekRangeSection weekRange={weekRange} />
 
       {/* Model-agreement signals + profitability by edge size (precomputed weekly) */}
-      <AgreementSection edgePerf={edgePerf} />
-      <EdgeBucketSection edgePerf={edgePerf} />
+      {edgePerf ? (
+        <>
+          <AgreementSection edgePerf={edgePerf} />
+          <EdgeBucketSection edgePerf={edgePerf} />
+        </>
+      ) : (
+        <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 text-xs text-gray-500">
+          <p className="font-medium text-gray-400 mb-1">Edge-bucket &amp; model-agreement analysis</p>
+          <p>
+            Not loaded. This section reads a precomputed file — run the{' '}
+            <span className="text-gray-300">Weekly 11 Bet Edge Performance</span> workflow (or{' '}
+            <span className="font-mono">weekly_11_bet_edge_performance.py</span>), commit{' '}
+            <span className="font-mono">entry-analytics/bet_edge_performance.json</span>, and restart the
+            API so <span className="font-mono">/api/bets/edge-performance</span> can serve it.
+          </p>
+        </div>
+      )}
 
       {/* Season backtest summary — historical mode only */}
       {isHistorical && data?.season_summary && (
