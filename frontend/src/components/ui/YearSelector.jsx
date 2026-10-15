@@ -1,11 +1,17 @@
 export default function YearSelector({ years, selectedYear, onChange }) {
-  if (!years || years.length <= 1) return null
+  // Tolerate both shapes: [{year,label,is_current}] and a plain number list.
+  const opts = (years || []).map(y =>
+    (y !== null && typeof y === 'object')
+      ? y
+      : { year: y, label: String(y), is_current: false }
+  )
+  if (opts.length <= 1) return null
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <span className="text-xs text-gray-500 uppercase tracking-wide">Season</span>
       <div className="flex gap-1 flex-wrap">
-        {years.map(y => (
+        {opts.map(y => (
           <button
             key={y.year}
             onClick={() => onChange(y.year)}
@@ -21,7 +27,7 @@ export default function YearSelector({ years, selectedYear, onChange }) {
           </button>
         ))}
       </div>
-      {selectedYear && years.find(y => y.year === selectedYear && !y.is_current) && (
+      {selectedYear && opts.find(y => y.year === selectedYear && !y.is_current) && (
         <span className="text-xs text-amber-500 ml-1">
           📋 Historical — showing actual results
         </span>
