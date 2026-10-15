@@ -1,10 +1,18 @@
 export default function ScheduleFilters({
-  availableWeeks, selectedWeeks, onToggleWeek, onClearWeeks,
+  weekOptions, availableWeeks, selectedWeeks, onToggleWeek, onClearWeeks,
   teamSearch, onTeamSearch,
   showFilter, onShowFilter,
   activeView, onViewChange, columnViews,
   totalGames, filteredGames,
 }) {
+  // Accept the new week_options shape ([{week,label,double}]) and gracefully
+  // fall back to a legacy plain-number list, so a version skew between this
+  // component and its parent can never crash on an undefined array.
+  const opts = (weekOptions && weekOptions.length ? weekOptions : (availableWeeks || []).map(w => ({
+    week: w, label: String(w), double: false,
+  }))) || []
+  const views = columnViews || []
+  const hasDouble = opts.some(o => o.double)
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col gap-3">
 
@@ -23,19 +31,33 @@ export default function ScheduleFilters({
         >
           All
         </button>
-        {availableWeeks.map(week => (
-          <button
-            key={week}
-            onClick={() => onToggleWeek(week)}
-            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-              selectedWeeks.includes(week)
-                ? 'bg-green-600 text-white border-green-600'
-                : 'border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
-            }`}
-          >
-            {week}
-          </button>
-        ))}
+        {opts.map(opt => {
+          const selected = selectedWeeks.includes(opt.week)
+          return (
+            <button
+              key={opt.week}
+              onClick={() => onToggleWeek(opt.week)}
+              title={opt.double ? 'Double-pick week (2 picks required)' : undefined}
+              className={`text-xs px-3 py-1 rounded-full border transition-colors inline-flex items-center gap-1 ${
+                selected
+                  ? 'bg-green-600 text-white border-green-600'
+                  : opt.double
+                    ? 'border-amber-600/60 text-amber-300 hover:text-white hover:border-amber-400'
+                    : 'border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+              }`}
+            >
+              {opt.label}
+              {opt.double && (
+                <span className={`text-[10px] font-semibold leading-none px-1 py-0.5 rounded ${
+                  selected ? 'bg-white/20 text-white' : 'bg-amber-500/20 text-amber-300'
+                }`}>2×</span>
+              )}
+            </button>
+          )
+        })}
+        {hasDouble && (
+          <span className="text-[11px] text-amber-400/80 ml-1">2× = double-pick week</span>
+        )}
       </div>
 
       {/* Row 2 — Team search + Show filter + Column view tabs */}
@@ -74,7 +96,7 @@ export default function ScheduleFilters({
         <div className="w-px h-5 bg-gray-700" />
 
         <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">View</span>
-        {columnViews.map(view => (
+        {views.map(view => (
           <button
             key={view}
             onClick={() => onViewChange(view)}
