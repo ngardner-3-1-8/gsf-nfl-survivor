@@ -40,6 +40,12 @@ export default function ScheduleView() {
   const effectiveYear = years.includes(selectedYear) ? selectedYear : currentYear
   const isHistorical = effectiveYear != null && currentYear != null && effectiveYear !== currentYear
 
+  // YearSelector expects objects: { year, label, is_current }.
+  const yearOptions = useMemo(
+    () => years.map(y => ({ year: y, label: String(y), is_current: y === currentYear })),
+    [years, currentYear]
+  )
+
   // Reload schedule when the effective year or the global contest changes.
   // `ignore` drops a stale response if year/contest changed before it resolved.
   useEffect(() => {
@@ -105,7 +111,7 @@ export default function ScheduleView() {
     return (
       <div className="flex flex-col gap-4">
         <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-4 flex-wrap">
-          <YearSelector years={years} selectedYear={selectedYear} onChange={setSelectedYear} />
+          <YearSelector years={yearOptions} selectedYear={selectedYear} onChange={setSelectedYear} />
         </div>
         <div className="flex items-center justify-center h-64 gap-3">
           <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
@@ -121,7 +127,7 @@ export default function ScheduleView() {
     return (
       <div className="flex flex-col gap-4">
         <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-4">
-          <YearSelector years={years} selectedYear={selectedYear} onChange={setSelectedYear} />
+          <YearSelector years={yearOptions} selectedYear={selectedYear} onChange={setSelectedYear} />
         </div>
         <div className="bg-red-950/50 border border-red-800 rounded-xl p-4">
           <p className="text-red-400 text-sm font-medium">Error loading schedule</p>
@@ -137,7 +143,7 @@ export default function ScheduleView() {
       {/* Year selector */}
       <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-4 flex-wrap">
         <YearSelector
-          years={years}
+          years={yearOptions}
           selectedYear={selectedYear}
           onChange={year => {
             setSelectedYear(year)
