@@ -39,7 +39,7 @@ TYPICAL_STARTERS = {
 MANUAL_CURRENT_STARTERS = {
     'ARI': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'ATL': ['C.Rush', 'C.Rush', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix', 'M.Penix'],
-    'BAL': [None, None, None, None, 'T.Huntley', None, None, None, None, None, None, None, None, None, None, None, None, None],
+    'BAL': [None, None, None, None, 'T.Huntley', 'T.Huntley', None, None, None, None, None, None, None, None, None, None, None, None],
     'BUF': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'CAR': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'CHI': [None, None, 'T.Bagent', 'T.Bagent', 'T.Bagent', None, None, None, None, None, None, None, None, None, None, None, None, None],
@@ -60,13 +60,13 @@ MANUAL_CURRENT_STARTERS = {
     'MIN': [None, 'C.Wentz', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'NE': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'NO': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'NYG': [None, None, 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston'],
+    'NYG': [None, None, 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy'],
     'NYJ': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'PHI': [None, None, None, None, None, 'T.Mckee', None, None, None, None, None, None, None, None, None, None, None, None],
+    'PHI': [None, None, None, None, None, 'T.Mckee', 'T.Mckee', 'T.Mckee', 'T.Mckee', 'T.Mckee', 'T.Mckee', 'T.Mckee', 'T.Mckee', 'T.Mckee', 'T.Mckee', 'T.Mckee', 'T.Mckee', 'T.Mckee'],
     'PIT': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'SEA': [None, 'D.Lock', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'SF': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'TB': [None, None, None, 'J.Daniels', 'J.Daniels', None, None, None, None, None, None, None, None, None, None, None, None, None],
+    'TB': [None, None, None, 'J.Daniels', 'J.Daniels', 'J.Daniels', 'J.Daniels', None, None, None, None, None, None, None, None, None, None, None],
     'TEN': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'WAS': [None, None, 'M.Mariota', 'M.Mariota', None, None, None, None, None, None, None, None, None, None, None, None, None, None]
 }
