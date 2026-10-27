@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-21T17:27:43+00:00",
+  "generated_at": "2026-10-27T18:47:59+00:00",
   "seasons_used": [
     2020,
     2021,
@@ -25,13 +25,13 @@
       "lifetime": {
         "0.0\u20131.0": {
           "wins": 99,
-          "losses": 115,
+          "losses": 117,
           "pushes": 4,
-          "n": 218,
-          "win_pct": 46.3,
-          "units": -2750.0,
-          "kelly": 928.81,
-          "avg_kelly_pct": 0.1
+          "n": 220,
+          "win_pct": 45.8,
+          "units": -2970.0,
+          "kelly": 779.76,
+          "avg_kelly_pct": 0.11
         },
         "1.0\u20132.0": {
           "wins": 111,
@@ -45,32 +45,32 @@
         },
         "2.0\u20133.0": {
           "wins": 111,
-          "losses": 92,
-          "pushes": 2,
-          "n": 205,
-          "win_pct": 54.7,
-          "units": 980.0,
-          "kelly": 7506.6,
-          "avg_kelly_pct": 2.3
-        },
-        "3.0\u20134.0": {
-          "wins": 101,
-          "losses": 103,
+          "losses": 93,
           "pushes": 2,
           "n": 206,
-          "win_pct": 49.5,
-          "units": -1230.0,
-          "kelly": 5603.84,
-          "avg_kelly_pct": 3.62
+          "win_pct": 54.4,
+          "units": 870.0,
+          "kelly": 7474.1,
+          "avg_kelly_pct": 2.29
+        },
+        "3.0\u20134.0": {
+          "wins": 104,
+          "losses": 104,
+          "pushes": 2,
+          "n": 210,
+          "win_pct": 50.0,
+          "units": -1040.0,
+          "kelly": 6777.46,
+          "avg_kelly_pct": 3.63
         },
         "4.0+": {
-          "wins": 410,
-          "losses": 409,
+          "wins": 412,
+          "losses": 414,
           "pushes": 18,
-          "n": 837,
-          "win_pct": 50.1,
-          "units": -3990.0,
-          "kelly": -1952.71,
+          "n": 844,
+          "win_pct": 49.9,
+          "units": -4340.0,
+          "kelly": -4387.41,
           "avg_kelly_pct": 8.55
         }
       },
@@ -390,13 +390,13 @@
         "2026": {
           "0.0\u20131.0": {
             "wins": 8,
-            "losses": 11,
+            "losses": 13,
             "pushes": 1,
-            "n": 20,
-            "win_pct": 42.1,
-            "units": -410.0,
-            "kelly": 32.14,
-            "avg_kelly_pct": 0.26
+            "n": 22,
+            "win_pct": 38.1,
+            "units": -630.0,
+            "kelly": -116.91,
+            "avg_kelly_pct": 0.31
           },
           "1.0\u20132.0": {
             "wins": 9,
@@ -410,33 +410,33 @@
           },
           "2.0\u20133.0": {
             "wins": 9,
-            "losses": 2,
+            "losses": 3,
             "pushes": 0,
-            "n": 11,
-            "win_pct": 81.8,
-            "units": 680.0,
-            "kelly": 2064.75,
-            "avg_kelly_pct": 2.78
+            "n": 12,
+            "win_pct": 75.0,
+            "units": 570.0,
+            "kelly": 2032.25,
+            "avg_kelly_pct": 2.57
           },
           "3.0\u20134.0": {
-            "wins": 14,
-            "losses": 4,
+            "wins": 17,
+            "losses": 5,
             "pushes": 0,
-            "n": 18,
-            "win_pct": 77.8,
-            "units": 960.0,
-            "kelly": 4143.53,
-            "avg_kelly_pct": 4.39
+            "n": 22,
+            "win_pct": 77.3,
+            "units": 1150.0,
+            "kelly": 5317.15,
+            "avg_kelly_pct": 4.33
           },
           "4.0+": {
-            "wins": 20,
-            "losses": 8,
+            "wins": 22,
+            "losses": 13,
             "pushes": 1,
-            "n": 29,
-            "win_pct": 71.4,
-            "units": 1120.0,
-            "kelly": 10907.37,
-            "avg_kelly_pct": 9.09
+            "n": 36,
+            "win_pct": 62.9,
+            "units": 770.0,
+            "kelly": 8472.67,
+            "avg_kelly_pct": 9.03
           }
         }
       }
@@ -454,34 +454,34 @@
       "min_year": null,
       "lifetime": {
         "0.0\u20131.0": {
-          "wins": 141,
-          "losses": 155,
+          "wins": 143,
+          "losses": 156,
           "pushes": 3,
-          "n": 299,
-          "win_pct": 47.6,
-          "units": -2950.0,
-          "kelly": 2050.2,
-          "avg_kelly_pct": 2.25
+          "n": 302,
+          "win_pct": 47.8,
+          "units": -2860.0,
+          "kelly": 2146.05,
+          "avg_kelly_pct": 2.27
         },
         "1.0\u20132.0": {
-          "wins": 140,
-          "losses": 135,
+          "wins": 144,
+          "losses": 137,
           "pushes": 5,
-          "n": 280,
-          "win_pct": 50.9,
-          "units": -850.0,
-          "kelly": 10831.95,
-          "avg_kelly_pct": 2.57
+          "n": 286,
+          "win_pct": 51.2,
+          "units": -670.0,
+          "kelly": 11095.03,
+          "avg_kelly_pct": 2.54
         },
         "2.0\u20133.0": {
-          "wins": 97,
+          "wins": 99,
           "losses": 137,
           "pushes": 3,
-          "n": 237,
-          "win_pct": 41.5,
-          "units": -5370.0,
-          "kelly": 10948.44,
-          "avg_kelly_pct": 3.28
+          "n": 239,
+          "win_pct": 41.9,
+          "units": -5170.0,
+          "kelly": 12131.07,
+          "avg_kelly_pct": 3.31
         },
         "3.0\u20134.0": {
           "wins": 111,
@@ -494,14 +494,14 @@
           "avg_kelly_pct": 3.39
         },
         "4.0+": {
-          "wins": 249,
-          "losses": 359,
+          "wins": 250,
+          "losses": 361,
           "pushes": 13,
-          "n": 621,
-          "win_pct": 41.0,
-          "units": -14590.0,
-          "kelly": -50167.69,
-          "avg_kelly_pct": 5.29
+          "n": 624,
+          "win_pct": 40.9,
+          "units": -14710.0,
+          "kelly": -51524.52,
+          "avg_kelly_pct": 5.3
         }
       },
       "by_year": {
@@ -819,34 +819,34 @@
         },
         "2026": {
           "0.0\u20131.0": {
-            "wins": 7,
-            "losses": 8,
+            "wins": 9,
+            "losses": 9,
             "pushes": 0,
-            "n": 15,
-            "win_pct": 46.7,
-            "units": -180.0,
-            "kelly": 2241.19,
-            "avg_kelly_pct": 2.25
+            "n": 18,
+            "win_pct": 50.0,
+            "units": -90.0,
+            "kelly": 2337.03,
+            "avg_kelly_pct": 2.45
           },
           "1.0\u20132.0": {
-            "wins": 11,
-            "losses": 10,
+            "wins": 15,
+            "losses": 12,
             "pushes": 1,
-            "n": 22,
-            "win_pct": 52.4,
-            "units": 0.0,
-            "kelly": 817.21,
-            "avg_kelly_pct": 1.63
+            "n": 28,
+            "win_pct": 55.6,
+            "units": 180.0,
+            "kelly": 1080.29,
+            "avg_kelly_pct": 1.5
           },
           "2.0\u20133.0": {
-            "wins": 7,
+            "wins": 9,
             "losses": 8,
             "pushes": 0,
-            "n": 15,
-            "win_pct": 46.7,
-            "units": -180.0,
-            "kelly": 2065.17,
-            "avg_kelly_pct": 2.48
+            "n": 17,
+            "win_pct": 52.9,
+            "units": 20.0,
+            "kelly": 3247.81,
+            "avg_kelly_pct": 2.95
           },
           "3.0\u20134.0": {
             "wins": 7,
@@ -859,14 +859,14 @@
             "avg_kelly_pct": 2.66
           },
           "4.0+": {
-            "wins": 15,
-            "losses": 10,
+            "wins": 16,
+            "losses": 12,
             "pushes": 1,
-            "n": 26,
-            "win_pct": 60.0,
-            "units": 400.0,
-            "kelly": 7785.21,
-            "avg_kelly_pct": 5.79
+            "n": 29,
+            "win_pct": 57.1,
+            "units": 280.0,
+            "kelly": 6428.38,
+            "avg_kelly_pct": 6.08
           }
         }
       }
@@ -884,24 +884,24 @@
       "min_year": 2026,
       "lifetime": {
         "0.0\u20131.0": {
-          "wins": 16,
-          "losses": 12,
+          "wins": 18,
+          "losses": 14,
           "pushes": 0,
-          "n": 28,
-          "win_pct": 57.1,
-          "units": 280.0,
-          "kelly": 2098.21,
-          "avg_kelly_pct": 1.03
+          "n": 32,
+          "win_pct": 56.2,
+          "units": 260.0,
+          "kelly": 709.69,
+          "avg_kelly_pct": 1.61
         },
         "1.0\u20132.0": {
-          "wins": 11,
-          "losses": 9,
+          "wins": 12,
+          "losses": 10,
           "pushes": 1,
-          "n": 21,
-          "win_pct": 55.0,
-          "units": 110.0,
-          "kelly": 3982.49,
-          "avg_kelly_pct": 5.01
+          "n": 23,
+          "win_pct": 54.5,
+          "units": 100.0,
+          "kelly": 3949.99,
+          "avg_kelly_pct": 4.59
         },
         "2.0\u20133.0": {
           "wins": 6,
@@ -914,47 +914,47 @@
           "avg_kelly_pct": 2.83
         },
         "3.0\u20134.0": {
-          "wins": 2,
-          "losses": 5,
+          "wins": 4,
+          "losses": 6,
           "pushes": 0,
-          "n": 7,
-          "win_pct": 28.6,
-          "units": -350.0,
-          "kelly": 946.58,
-          "avg_kelly_pct": 2.98
+          "n": 10,
+          "win_pct": 40.0,
+          "units": -260.0,
+          "kelly": 2709.54,
+          "avg_kelly_pct": 4.02
         },
         "4.0+": {
           "wins": 7,
-          "losses": 13,
+          "losses": 18,
           "pushes": 1,
-          "n": 21,
-          "win_pct": 35.0,
-          "units": -730.0,
-          "kelly": 1071.64,
-          "avg_kelly_pct": 2.78
+          "n": 26,
+          "win_pct": 28.0,
+          "units": -1280.0,
+          "kelly": -1474.41,
+          "avg_kelly_pct": 3.22
         }
       },
       "by_year": {
         "2026": {
           "0.0\u20131.0": {
-            "wins": 16,
-            "losses": 12,
+            "wins": 18,
+            "losses": 14,
             "pushes": 0,
-            "n": 28,
-            "win_pct": 57.1,
-            "units": 280.0,
-            "kelly": 2098.21,
-            "avg_kelly_pct": 1.03
+            "n": 32,
+            "win_pct": 56.2,
+            "units": 260.0,
+            "kelly": 709.69,
+            "avg_kelly_pct": 1.61
           },
           "1.0\u20132.0": {
-            "wins": 11,
-            "losses": 9,
+            "wins": 12,
+            "losses": 10,
             "pushes": 1,
-            "n": 21,
-            "win_pct": 55.0,
-            "units": 110.0,
-            "kelly": 3982.49,
-            "avg_kelly_pct": 5.01
+            "n": 23,
+            "win_pct": 54.5,
+            "units": 100.0,
+            "kelly": 3949.99,
+            "avg_kelly_pct": 4.59
           },
           "2.0\u20133.0": {
             "wins": 6,
@@ -967,24 +967,24 @@
             "avg_kelly_pct": 2.83
           },
           "3.0\u20134.0": {
-            "wins": 2,
-            "losses": 5,
+            "wins": 4,
+            "losses": 6,
             "pushes": 0,
-            "n": 7,
-            "win_pct": 28.6,
-            "units": -350.0,
-            "kelly": 946.58,
-            "avg_kelly_pct": 2.98
+            "n": 10,
+            "win_pct": 40.0,
+            "units": -260.0,
+            "kelly": 2709.54,
+            "avg_kelly_pct": 4.02
           },
           "4.0+": {
             "wins": 7,
-            "losses": 13,
+            "losses": 18,
             "pushes": 1,
-            "n": 21,
-            "win_pct": 35.0,
-            "units": -730.0,
-            "kelly": 1071.64,
-            "avg_kelly_pct": 2.78
+            "n": 26,
+            "win_pct": 28.0,
+            "units": -1280.0,
+            "kelly": -1474.41,
+            "avg_kelly_pct": 3.22
           }
         }
       }
@@ -1002,54 +1002,54 @@
       "min_year": null,
       "lifetime": {
         "0\u20135%": {
-          "wins": 209,
-          "losses": 185,
+          "wins": 210,
+          "losses": 188,
           "pushes": 1,
-          "n": 395,
-          "win_pct": 53.0,
-          "units": 3323.2,
-          "kelly": 3659.05,
+          "n": 399,
+          "win_pct": 52.8,
+          "units": 2716.82,
+          "kelly": 3083.77,
           "avg_kelly_pct": 1.79
         },
         "5\u201310%": {
-          "wins": 168,
-          "losses": 194,
+          "wins": 170,
+          "losses": 195,
           "pushes": 1,
-          "n": 363,
-          "win_pct": 46.4,
-          "units": -2136.55,
-          "kelly": 3664.58,
-          "avg_kelly_pct": 3.97
+          "n": 366,
+          "win_pct": 46.6,
+          "units": -2035.01,
+          "kelly": 3959.83,
+          "avg_kelly_pct": 3.98
         },
         "10\u201315%": {
-          "wins": 140,
-          "losses": 159,
+          "wins": 141,
+          "losses": 160,
           "pushes": 0,
-          "n": 299,
+          "n": 301,
           "win_pct": 46.8,
-          "units": 2315.15,
-          "kelly": 13549.85,
+          "units": 2395.15,
+          "kelly": 13967.48,
           "avg_kelly_pct": 5.74
         },
         "15\u201320%": {
-          "wins": 88,
-          "losses": 87,
+          "wins": 89,
+          "losses": 88,
           "pushes": 2,
-          "n": 177,
+          "n": 179,
           "win_pct": 50.3,
-          "units": 2312.53,
-          "kelly": 23413.33,
-          "avg_kelly_pct": 7.46
+          "units": 2311.23,
+          "kelly": 23349.24,
+          "avg_kelly_pct": 7.49
         },
         "20%+": {
           "wins": 149,
-          "losses": 152,
+          "losses": 154,
           "pushes": 1,
-          "n": 302,
-          "win_pct": 49.5,
-          "units": 9999.2,
-          "kelly": 129493.12,
-          "avg_kelly_pct": 10.37
+          "n": 304,
+          "win_pct": 49.2,
+          "units": 9749.2,
+          "kelly": 126670.5,
+          "avg_kelly_pct": 10.39
         }
       },
       "by_year": {
@@ -1367,54 +1367,54 @@
         },
         "2026": {
           "0\u20135%": {
-            "wins": 19,
-            "losses": 9,
+            "wins": 20,
+            "losses": 12,
             "pushes": 1,
-            "n": 29,
-            "win_pct": 67.9,
-            "units": 1496.06,
-            "kelly": 1521.07,
-            "avg_kelly_pct": 1.64
+            "n": 33,
+            "win_pct": 62.5,
+            "units": 889.68,
+            "kelly": 945.78,
+            "avg_kelly_pct": 1.67
           },
           "5\u201310%": {
-            "wins": 8,
-            "losses": 10,
+            "wins": 10,
+            "losses": 11,
             "pushes": 0,
-            "n": 18,
-            "win_pct": 44.4,
-            "units": -416.85,
-            "kelly": -1624.77,
-            "avg_kelly_pct": 4.12
+            "n": 21,
+            "win_pct": 47.6,
+            "units": -315.31,
+            "kelly": -1329.53,
+            "avg_kelly_pct": 4.18
           },
           "10\u201315%": {
-            "wins": 8,
-            "losses": 5,
+            "wins": 9,
+            "losses": 6,
             "pushes": 0,
-            "n": 13,
-            "win_pct": 61.5,
-            "units": 60.82,
-            "kelly": 809.97,
-            "avg_kelly_pct": 7.31
+            "n": 15,
+            "win_pct": 60.0,
+            "units": 140.82,
+            "kelly": 1227.6,
+            "avg_kelly_pct": 7.1
           },
           "15\u201320%": {
-            "wins": 6,
-            "losses": 2,
+            "wins": 7,
+            "losses": 3,
             "pushes": 0,
-            "n": 8,
-            "win_pct": 75.0,
-            "units": 572.59,
-            "kelly": 3376.74,
-            "avg_kelly_pct": 8.84
+            "n": 10,
+            "win_pct": 70.0,
+            "units": 571.29,
+            "kelly": 3312.66,
+            "avg_kelly_pct": 8.96
           },
           "20%+": {
             "wins": 6,
-            "losses": 1,
+            "losses": 3,
             "pushes": 0,
-            "n": 7,
-            "win_pct": 85.7,
-            "units": 982.43,
-            "kelly": 12151.42,
-            "avg_kelly_pct": 14.77
+            "n": 9,
+            "win_pct": 66.7,
+            "units": 732.43,
+            "kelly": 9328.8,
+            "avg_kelly_pct": 14.63
           }
         }
       }
@@ -1432,54 +1432,54 @@
       "min_year": null,
       "lifetime": {
         "0\u20135%": {
-          "wins": 209,
-          "losses": 251,
+          "wins": 217,
+          "losses": 252,
           "pushes": 1,
-          "n": 461,
-          "win_pct": 45.4,
-          "units": -5294.36,
-          "kelly": 25587.86,
-          "avg_kelly_pct": 2.8
+          "n": 470,
+          "win_pct": 46.3,
+          "units": -4297.82,
+          "kelly": 27140.7,
+          "avg_kelly_pct": 2.81
         },
         "5\u201310%": {
-          "wins": 189,
+          "wins": 190,
           "losses": 236,
           "pushes": 2,
-          "n": 427,
-          "win_pct": 44.5,
-          "units": -1621.36,
+          "n": 428,
+          "win_pct": 44.6,
+          "units": -1553.46,
           "kelly": 40274.91,
-          "avg_kelly_pct": 3.38
+          "avg_kelly_pct": 3.37
         },
         "10\u201315%": {
-          "wins": 113,
+          "wins": 114,
           "losses": 145,
           "pushes": 0,
-          "n": 258,
-          "win_pct": 43.8,
-          "units": -1257.68,
-          "kelly": 27164.31,
+          "n": 259,
+          "win_pct": 44.0,
+          "units": -1196.57,
+          "kelly": 27461.98,
           "avg_kelly_pct": 4.29
         },
         "15\u201320%": {
           "wins": 55,
-          "losses": 101,
+          "losses": 102,
           "pushes": 1,
-          "n": 157,
-          "win_pct": 35.3,
-          "units": -3601.7,
-          "kelly": -8228.3,
-          "avg_kelly_pct": 4.35
+          "n": 158,
+          "win_pct": 35.0,
+          "units": -3711.7,
+          "kelly": -8843.44,
+          "avg_kelly_pct": 4.36
         },
         "20%+": {
           "wins": 88,
-          "losses": 110,
+          "losses": 111,
           "pushes": 0,
-          "n": 198,
-          "win_pct": 44.4,
-          "units": 1321.14,
-          "kelly": 28970.57,
-          "avg_kelly_pct": 5.63
+          "n": 199,
+          "win_pct": 44.2,
+          "units": 1211.14,
+          "kelly": 27577.27,
+          "avg_kelly_pct": 5.67
         }
       },
       "by_year": {
@@ -1797,54 +1797,54 @@
         },
         "2026": {
           "0\u20135%": {
-            "wins": 19,
-            "losses": 16,
+            "wins": 27,
+            "losses": 17,
             "pushes": 0,
-            "n": 35,
-            "win_pct": 54.3,
-            "units": 332.79,
-            "kelly": 1371.2,
-            "avg_kelly_pct": 1.79
+            "n": 44,
+            "win_pct": 61.4,
+            "units": 1329.33,
+            "kelly": 2924.04,
+            "avg_kelly_pct": 2.03
           },
           "5\u201310%": {
-            "wins": 4,
+            "wins": 5,
             "losses": 12,
             "pushes": 1,
-            "n": 17,
-            "win_pct": 25.0,
-            "units": -1011.65,
+            "n": 18,
+            "win_pct": 29.4,
+            "units": -943.75,
             "kelly": -2137.56,
-            "avg_kelly_pct": 1.81
+            "avg_kelly_pct": 1.71
           },
           "10\u201315%": {
-            "wins": 9,
+            "wins": 10,
             "losses": 7,
             "pushes": 0,
-            "n": 16,
-            "win_pct": 56.2,
-            "units": 464.15,
-            "kelly": 2239.4,
-            "avg_kelly_pct": 5.25
+            "n": 17,
+            "win_pct": 58.8,
+            "units": 525.26,
+            "kelly": 2537.07,
+            "avg_kelly_pct": 5.26
           },
           "15\u201320%": {
             "wins": 7,
-            "losses": 0,
+            "losses": 1,
             "pushes": 0,
-            "n": 7,
-            "win_pct": 100.0,
-            "units": 1555.33,
-            "kelly": 6606.43,
-            "avg_kelly_pct": 7.84
+            "n": 8,
+            "win_pct": 87.5,
+            "units": 1445.33,
+            "kelly": 5991.28,
+            "avg_kelly_pct": 7.63
           },
           "20%+": {
             "wins": 3,
-            "losses": 3,
+            "losses": 4,
             "pushes": 0,
-            "n": 6,
-            "win_pct": 50.0,
-            "units": 377.34,
-            "kelly": 6861.72,
-            "avg_kelly_pct": 4.93
+            "n": 7,
+            "win_pct": 42.9,
+            "units": 267.34,
+            "kelly": 5468.42,
+            "avg_kelly_pct": 6.22
           }
         }
       }
@@ -1862,44 +1862,44 @@
       "min_year": 2026,
       "lifetime": {
         "0\u20135%": {
-          "wins": 15,
-          "losses": 16,
+          "wins": 16,
+          "losses": 18,
           "pushes": 0,
-          "n": 31,
-          "win_pct": 48.4,
-          "units": 266.33,
-          "kelly": -636.88,
-          "avg_kelly_pct": 3.71
+          "n": 34,
+          "win_pct": 47.1,
+          "units": 200.33,
+          "kelly": -1357.12,
+          "avg_kelly_pct": 3.59
         },
         "5\u201310%": {
-          "wins": 11,
+          "wins": 15,
           "losses": 14,
           "pushes": 0,
-          "n": 25,
-          "win_pct": 44.0,
-          "units": 144.08,
-          "kelly": 7485.12,
-          "avg_kelly_pct": 3.13
+          "n": 29,
+          "win_pct": 51.7,
+          "units": 749.92,
+          "kelly": 8333.85,
+          "avg_kelly_pct": 3.32
         },
         "10\u201315%": {
-          "wins": 5,
-          "losses": 4,
+          "wins": 6,
+          "losses": 6,
           "pushes": 0,
-          "n": 9,
-          "win_pct": 55.6,
-          "units": 286.65,
-          "kelly": 960.84,
-          "avg_kelly_pct": 1.21
+          "n": 12,
+          "win_pct": 50.0,
+          "units": 264.65,
+          "kelly": 1642.08,
+          "avg_kelly_pct": 1.64
         },
         "15\u201320%": {
           "wins": 3,
-          "losses": 2,
+          "losses": 4,
           "pushes": 0,
-          "n": 5,
-          "win_pct": 60.0,
-          "units": 940.5,
-          "kelly": 1465.56,
-          "avg_kelly_pct": 2.82
+          "n": 7,
+          "win_pct": 42.9,
+          "units": 720.5,
+          "kelly": -542.89,
+          "avg_kelly_pct": 4.88
         },
         "20%+": {
           "wins": 3,
@@ -1915,44 +1915,44 @@
       "by_year": {
         "2026": {
           "0\u20135%": {
-            "wins": 15,
-            "losses": 16,
+            "wins": 16,
+            "losses": 18,
             "pushes": 0,
-            "n": 31,
-            "win_pct": 48.4,
-            "units": 266.33,
-            "kelly": -636.88,
-            "avg_kelly_pct": 3.71
+            "n": 34,
+            "win_pct": 47.1,
+            "units": 200.33,
+            "kelly": -1357.12,
+            "avg_kelly_pct": 3.59
           },
           "5\u201310%": {
-            "wins": 11,
+            "wins": 15,
             "losses": 14,
             "pushes": 0,
-            "n": 25,
-            "win_pct": 44.0,
-            "units": 144.08,
-            "kelly": 7485.12,
-            "avg_kelly_pct": 3.13
+            "n": 29,
+            "win_pct": 51.7,
+            "units": 749.92,
+            "kelly": 8333.85,
+            "avg_kelly_pct": 3.32
           },
           "10\u201315%": {
-            "wins": 5,
-            "losses": 4,
+            "wins": 6,
+            "losses": 6,
             "pushes": 0,
-            "n": 9,
-            "win_pct": 55.6,
-            "units": 286.65,
-            "kelly": 960.84,
-            "avg_kelly_pct": 1.21
+            "n": 12,
+            "win_pct": 50.0,
+            "units": 264.65,
+            "kelly": 1642.08,
+            "avg_kelly_pct": 1.64
           },
           "15\u201320%": {
             "wins": 3,
-            "losses": 2,
+            "losses": 4,
             "pushes": 0,
-            "n": 5,
-            "win_pct": 60.0,
-            "units": 940.5,
-            "kelly": 1465.56,
-            "avg_kelly_pct": 2.82
+            "n": 7,
+            "win_pct": 42.9,
+            "units": 720.5,
+            "kelly": -542.89,
+            "avg_kelly_pct": 4.88
           },
           "20%+": {
             "wins": 3,
@@ -1980,54 +1980,54 @@
       "min_year": null,
       "lifetime": {
         "0.0\u20131.0": {
-          "wins": 113,
-          "losses": 111,
+          "wins": 115,
+          "losses": 113,
           "pushes": 6,
-          "n": 230,
+          "n": 234,
           "win_pct": 50.4,
-          "units": -910.0,
+          "units": -930.0,
           "kelly": 173.47,
           "avg_kelly_pct": 0.06
         },
         "1.0\u20132.0": {
-          "wins": 117,
-          "losses": 94,
+          "wins": 118,
+          "losses": 95,
           "pushes": 3,
-          "n": 214,
-          "win_pct": 55.5,
-          "units": 1360.0,
-          "kelly": 2253.74,
-          "avg_kelly_pct": 0.9
+          "n": 216,
+          "win_pct": 55.4,
+          "units": 1350.0,
+          "kelly": 2225.87,
+          "avg_kelly_pct": 0.91
         },
         "2.0\u20133.0": {
-          "wins": 119,
-          "losses": 111,
+          "wins": 120,
+          "losses": 112,
           "pushes": 0,
-          "n": 230,
+          "n": 232,
           "win_pct": 51.7,
-          "units": -310.0,
-          "kelly": -881.0,
+          "units": -320.0,
+          "kelly": -698.68,
           "avg_kelly_pct": 2.36
         },
         "3.0\u20135.0": {
           "wins": 208,
-          "losses": 182,
+          "losses": 183,
           "pushes": 6,
-          "n": 396,
-          "win_pct": 53.3,
-          "units": 780.0,
-          "kelly": 10360.19,
+          "n": 397,
+          "win_pct": 53.2,
+          "units": 670.0,
+          "kelly": 9871.99,
           "avg_kelly_pct": 4.52
         },
         "5.0+": {
-          "wins": 332,
-          "losses": 280,
+          "wins": 334,
+          "losses": 283,
           "pushes": 1,
-          "n": 613,
-          "win_pct": 54.2,
-          "units": 2400.0,
-          "kelly": 36928.65,
-          "avg_kelly_pct": 10.26
+          "n": 618,
+          "win_pct": 54.1,
+          "units": 2270.0,
+          "kelly": 35069.54,
+          "avg_kelly_pct": 10.25
         }
       },
       "by_year": {
@@ -2345,54 +2345,54 @@
         },
         "2026": {
           "0.0\u20131.0": {
-            "wins": 5,
-            "losses": 6,
-            "pushes": 0,
-            "n": 11,
-            "win_pct": 45.5,
-            "units": -160.0,
-            "kelly": 143.24,
-            "avg_kelly_pct": 0.28
-          },
-          "1.0\u20132.0": {
-            "wins": 6,
+            "wins": 7,
             "losses": 8,
             "pushes": 0,
-            "n": 14,
-            "win_pct": 42.9,
-            "units": -280.0,
-            "kelly": -594.85,
-            "avg_kelly_pct": 0.91
+            "n": 15,
+            "win_pct": 46.7,
+            "units": -180.0,
+            "kelly": 143.24,
+            "avg_kelly_pct": 0.21
+          },
+          "1.0\u20132.0": {
+            "wins": 7,
+            "losses": 9,
+            "pushes": 0,
+            "n": 16,
+            "win_pct": 43.8,
+            "units": -290.0,
+            "kelly": -622.71,
+            "avg_kelly_pct": 1.04
           },
           "2.0\u20133.0": {
-            "wins": 7,
-            "losses": 6,
+            "wins": 8,
+            "losses": 7,
             "pushes": 0,
-            "n": 13,
-            "win_pct": 53.8,
-            "units": 40.0,
-            "kelly": 114.43,
-            "avg_kelly_pct": 3.0
+            "n": 15,
+            "win_pct": 53.3,
+            "units": 30.0,
+            "kelly": 296.75,
+            "avg_kelly_pct": 2.91
           },
           "3.0\u20135.0": {
             "wins": 6,
-            "losses": 9,
+            "losses": 10,
             "pushes": 1,
-            "n": 16,
-            "win_pct": 40.0,
-            "units": -390.0,
-            "kelly": -1234.15,
-            "avg_kelly_pct": 4.43
+            "n": 17,
+            "win_pct": 37.5,
+            "units": -500.0,
+            "kelly": -1722.35,
+            "avg_kelly_pct": 4.46
           },
           "5.0+": {
-            "wins": 24,
-            "losses": 15,
+            "wins": 26,
+            "losses": 18,
             "pushes": 0,
-            "n": 39,
-            "win_pct": 61.5,
-            "units": 750.0,
-            "kelly": 4597.13,
-            "avg_kelly_pct": 10.5
+            "n": 44,
+            "win_pct": 59.1,
+            "units": 620.0,
+            "kelly": 2738.02,
+            "avg_kelly_pct": 10.39
           }
         }
       }
@@ -2410,12 +2410,12 @@
       "min_year": null,
       "lifetime": {
         "0.0\u20131.0": {
-          "wins": 67,
+          "wins": 69,
           "losses": 54,
           "pushes": 5,
-          "n": 126,
-          "win_pct": 55.4,
-          "units": 760.0,
+          "n": 128,
+          "win_pct": 56.1,
+          "units": 960.0,
           "kelly": 135.8,
           "avg_kelly_pct": 0.02
         },
@@ -2430,34 +2430,34 @@
           "avg_kelly_pct": 0.61
         },
         "2.0\u20133.0": {
-          "wins": 61,
-          "losses": 67,
+          "wins": 62,
+          "losses": 68,
           "pushes": 0,
-          "n": 128,
+          "n": 130,
           "win_pct": 47.7,
-          "units": -1270.0,
-          "kelly": -2609.35,
+          "units": -1280.0,
+          "kelly": -2427.02,
           "avg_kelly_pct": 2.0
         },
         "3.0\u20135.0": {
           "wins": 124,
-          "losses": 130,
+          "losses": 131,
           "pushes": 5,
-          "n": 259,
-          "win_pct": 48.8,
-          "units": -1900.0,
-          "kelly": -3379.18,
+          "n": 260,
+          "win_pct": 48.6,
+          "units": -2010.0,
+          "kelly": -3867.38,
           "avg_kelly_pct": 4.28
         },
         "5.0+": {
-          "wins": 258,
-          "losses": 224,
+          "wins": 260,
+          "losses": 227,
           "pushes": 1,
-          "n": 483,
-          "win_pct": 53.5,
-          "units": 1160.0,
-          "kelly": 23537.42,
-          "avg_kelly_pct": 10.38
+          "n": 488,
+          "win_pct": 53.4,
+          "units": 1030.0,
+          "kelly": 21678.31,
+          "avg_kelly_pct": 10.37
         }
       },
       "by_year": {
@@ -2775,14 +2775,14 @@
         },
         "2026": {
           "0.0\u20131.0": {
-            "wins": 3,
+            "wins": 5,
             "losses": 4,
             "pushes": 0,
-            "n": 7,
-            "win_pct": 42.9,
-            "units": -140.0,
+            "n": 9,
+            "win_pct": 55.6,
+            "units": 60.0,
             "kelly": 138.36,
-            "avg_kelly_pct": 0.22
+            "avg_kelly_pct": 0.17
           },
           "1.0\u20132.0": {
             "wins": 4,
@@ -2795,34 +2795,34 @@
             "avg_kelly_pct": 0.89
           },
           "2.0\u20133.0": {
-            "wins": 4,
-            "losses": 3,
+            "wins": 5,
+            "losses": 4,
             "pushes": 0,
-            "n": 7,
-            "win_pct": 57.1,
-            "units": 70.0,
-            "kelly": 39.49,
-            "avg_kelly_pct": 2.66
+            "n": 9,
+            "win_pct": 55.6,
+            "units": 60.0,
+            "kelly": 221.81,
+            "avg_kelly_pct": 2.59
           },
           "3.0\u20135.0": {
             "wins": 6,
-            "losses": 8,
+            "losses": 9,
             "pushes": 1,
-            "n": 15,
-            "win_pct": 42.9,
-            "units": -280.0,
-            "kelly": -644.1,
-            "avg_kelly_pct": 4.33
+            "n": 16,
+            "win_pct": 40.0,
+            "units": -390.0,
+            "kelly": -1132.3,
+            "avg_kelly_pct": 4.36
           },
           "5.0+": {
-            "wins": 22,
-            "losses": 15,
+            "wins": 24,
+            "losses": 18,
             "pushes": 0,
-            "n": 37,
-            "win_pct": 59.5,
-            "units": 550.0,
-            "kelly": 2628.95,
-            "avg_kelly_pct": 10.49
+            "n": 42,
+            "win_pct": 57.1,
+            "units": 420.0,
+            "kelly": 769.84,
+            "avg_kelly_pct": 10.37
           }
         }
       }
@@ -2841,23 +2841,23 @@
       "lifetime": {
         "0.0\u20131.0": {
           "wins": 46,
-          "losses": 57,
+          "losses": 59,
           "pushes": 1,
-          "n": 104,
-          "win_pct": 44.7,
-          "units": -1670.0,
+          "n": 106,
+          "win_pct": 43.8,
+          "units": -1890.0,
           "kelly": 37.67,
           "avg_kelly_pct": 0.12
         },
         "1.0\u20132.0": {
-          "wins": 60,
-          "losses": 35,
+          "wins": 61,
+          "losses": 36,
           "pushes": 2,
-          "n": 97,
-          "win_pct": 63.2,
-          "units": 2150.0,
-          "kelly": 2418.98,
-          "avg_kelly_pct": 1.24
+          "n": 99,
+          "win_pct": 62.9,
+          "units": 2140.0,
+          "kelly": 2391.11,
+          "avg_kelly_pct": 1.25
         },
         "2.0\u20133.0": {
           "wins": 58,
@@ -3206,23 +3206,23 @@
         "2026": {
           "0.0\u20131.0": {
             "wins": 2,
-            "losses": 2,
+            "losses": 4,
             "pushes": 0,
-            "n": 4,
-            "win_pct": 50.0,
-            "units": -20.0,
+            "n": 6,
+            "win_pct": 33.3,
+            "units": -240.0,
             "kelly": 4.87,
-            "avg_kelly_pct": 0.39
+            "avg_kelly_pct": 0.26
           },
           "1.0\u20132.0": {
-            "wins": 2,
-            "losses": 2,
+            "wins": 3,
+            "losses": 3,
             "pushes": 0,
-            "n": 4,
+            "n": 6,
             "win_pct": 50.0,
-            "units": -20.0,
-            "kelly": -217.68,
-            "avg_kelly_pct": 0.95
+            "units": -30.0,
+            "kelly": -245.55,
+            "avg_kelly_pct": 1.29
           },
           "2.0\u20133.0": {
             "wins": 3,
@@ -3265,14 +3265,14 @@
       "mp_involved": false,
       "min_year": null,
       "lifetime": {
-        "wins": 497,
-        "losses": 586,
+        "wins": 501,
+        "losses": 590,
         "pushes": 16,
-        "n": 1099,
+        "n": 1107,
         "win_pct": 45.9,
-        "units": -14760.0,
-        "kelly": -32794.78,
-        "avg_kelly_pct": 5.73
+        "units": -14800.0,
+        "kelly": -32610.05,
+        "avg_kelly_pct": 5.74
       },
       "by_year": {
         "2020": {
@@ -3336,14 +3336,14 @@
           "avg_kelly_pct": 6.34
         },
         "2026": {
-          "wins": 35,
-          "losses": 19,
+          "wins": 39,
+          "losses": 23,
           "pushes": 1,
-          "n": 55,
-          "win_pct": 64.8,
-          "units": 1410.0,
-          "kelly": 13063.2,
-          "avg_kelly_pct": 5.4
+          "n": 63,
+          "win_pct": 62.9,
+          "units": 1370.0,
+          "kelly": 13247.93,
+          "avg_kelly_pct": 5.6
         }
       }
     },
@@ -3353,14 +3353,14 @@
       "mp_involved": false,
       "min_year": null,
       "lifetime": {
-        "wins": 447,
-        "losses": 542,
+        "wins": 451,
+        "losses": 545,
         "pushes": 2,
-        "n": 991,
-        "win_pct": 45.2,
-        "units": 3289.56,
-        "kelly": 112907.48,
-        "avg_kelly_pct": 5.67
+        "n": 998,
+        "win_pct": 45.3,
+        "units": 3423.8,
+        "kelly": 112749.55,
+        "avg_kelly_pct": 5.68
       },
       "by_year": {
         "2020": {
@@ -3424,14 +3424,14 @@
           "avg_kelly_pct": 5.47
         },
         "2026": {
-          "wins": 27,
-          "losses": 17,
+          "wins": 31,
+          "losses": 20,
           "pushes": 0,
-          "n": 44,
-          "win_pct": 61.4,
-          "units": 1652.4,
-          "kelly": 15008.23,
-          "avg_kelly_pct": 5.94
+          "n": 51,
+          "win_pct": 60.8,
+          "units": 1786.64,
+          "kelly": 14850.29,
+          "avg_kelly_pct": 6.15
         }
       }
     },
@@ -3441,25 +3441,25 @@
       "mp_involved": true,
       "min_year": 2026,
       "lifetime": {
-        "wins": 33,
-        "losses": 22,
+        "wins": 36,
+        "losses": 29,
         "pushes": 2,
-        "n": 57,
-        "win_pct": 60.0,
-        "units": 880.0,
-        "kelly": 10905.45,
-        "avg_kelly_pct": 4.53
+        "n": 67,
+        "win_pct": 55.4,
+        "units": 410.0,
+        "kelly": 8701.33,
+        "avg_kelly_pct": 4.87
       },
       "by_year": {
         "2026": {
-          "wins": 33,
-          "losses": 22,
+          "wins": 36,
+          "losses": 29,
           "pushes": 2,
-          "n": 57,
-          "win_pct": 60.0,
-          "units": 880.0,
-          "kelly": 10905.45,
-          "avg_kelly_pct": 4.53
+          "n": 67,
+          "win_pct": 55.4,
+          "units": 410.0,
+          "kelly": 8701.33,
+          "avg_kelly_pct": 4.87
         }
       }
     },
@@ -3469,25 +3469,25 @@
       "mp_involved": true,
       "min_year": 2026,
       "lifetime": {
-        "wins": 27,
-        "losses": 16,
+        "wins": 30,
+        "losses": 21,
         "pushes": 0,
-        "n": 43,
-        "win_pct": 62.8,
-        "units": 2548.6,
-        "kelly": 15854.69,
-        "avg_kelly_pct": 5.58
+        "n": 51,
+        "win_pct": 58.8,
+        "units": 2378.52,
+        "kelly": 14655.96,
+        "avg_kelly_pct": 5.77
       },
       "by_year": {
         "2026": {
-          "wins": 27,
-          "losses": 16,
+          "wins": 30,
+          "losses": 21,
           "pushes": 0,
-          "n": 43,
-          "win_pct": 62.8,
-          "units": 2548.6,
-          "kelly": 15854.69,
-          "avg_kelly_pct": 5.58
+          "n": 51,
+          "win_pct": 58.8,
+          "units": 2378.52,
+          "kelly": 14655.96,
+          "avg_kelly_pct": 5.77
         }
       }
     },
@@ -3497,25 +3497,25 @@
       "mp_involved": true,
       "min_year": 2026,
       "lifetime": {
-        "wins": 28,
-        "losses": 30,
+        "wins": 33,
+        "losses": 35,
         "pushes": 1,
-        "n": 59,
-        "win_pct": 48.3,
-        "units": -500.0,
-        "kelly": 7650.13,
-        "avg_kelly_pct": 3.41
+        "n": 69,
+        "win_pct": 48.5,
+        "units": -550.0,
+        "kelly": 7291.76,
+        "avg_kelly_pct": 3.63
       },
       "by_year": {
         "2026": {
-          "wins": 28,
-          "losses": 30,
+          "wins": 33,
+          "losses": 35,
           "pushes": 1,
-          "n": 59,
-          "win_pct": 48.3,
-          "units": -500.0,
-          "kelly": 7650.13,
-          "avg_kelly_pct": 3.41
+          "n": 69,
+          "win_pct": 48.5,
+          "units": -550.0,
+          "kelly": 7291.76,
+          "avg_kelly_pct": 3.63
         }
       }
     },
@@ -3525,25 +3525,25 @@
       "mp_involved": true,
       "min_year": 2026,
       "lifetime": {
-        "wins": 26,
-        "losses": 23,
+        "wins": 32,
+        "losses": 26,
         "pushes": 0,
-        "n": 49,
-        "win_pct": 53.1,
-        "units": 2257.57,
-        "kelly": 16090.31,
-        "avg_kelly_pct": 4.18
+        "n": 58,
+        "win_pct": 55.2,
+        "units": 2885.41,
+        "kelly": 15611.83,
+        "avg_kelly_pct": 4.34
       },
       "by_year": {
         "2026": {
-          "wins": 26,
-          "losses": 23,
+          "wins": 32,
+          "losses": 26,
           "pushes": 0,
-          "n": 49,
-          "win_pct": 53.1,
-          "units": 2257.57,
-          "kelly": 16090.31,
-          "avg_kelly_pct": 4.18
+          "n": 58,
+          "win_pct": 55.2,
+          "units": 2885.41,
+          "kelly": 15611.83,
+          "avg_kelly_pct": 4.34
         }
       }
     },
@@ -3553,25 +3553,25 @@
       "mp_involved": true,
       "min_year": 2026,
       "lifetime": {
-        "wins": 23,
-        "losses": 15,
+        "wins": 26,
+        "losses": 19,
         "pushes": 1,
-        "n": 39,
-        "win_pct": 60.5,
-        "units": 650.0,
-        "kelly": 7650.13,
-        "avg_kelly_pct": 5.15
+        "n": 46,
+        "win_pct": 57.8,
+        "units": 510.0,
+        "kelly": 7291.76,
+        "avg_kelly_pct": 5.44
       },
       "by_year": {
         "2026": {
-          "wins": 23,
-          "losses": 15,
+          "wins": 26,
+          "losses": 19,
           "pushes": 1,
-          "n": 39,
-          "win_pct": 60.5,
-          "units": 650.0,
-          "kelly": 7650.13,
-          "avg_kelly_pct": 5.15
+          "n": 46,
+          "win_pct": 57.8,
+          "units": 510.0,
+          "kelly": 7291.76,
+          "avg_kelly_pct": 5.44
         }
       }
     },
@@ -3581,25 +3581,25 @@
       "mp_involved": true,
       "min_year": 2026,
       "lifetime": {
-        "wins": 20,
-        "losses": 11,
+        "wins": 23,
+        "losses": 14,
         "pushes": 0,
-        "n": 31,
-        "win_pct": 64.5,
-        "units": 2199.89,
-        "kelly": 16157.37,
-        "avg_kelly_pct": 6.58
+        "n": 37,
+        "win_pct": 62.2,
+        "units": 2229.81,
+        "kelly": 15678.89,
+        "avg_kelly_pct": 6.78
       },
       "by_year": {
         "2026": {
-          "wins": 20,
-          "losses": 11,
+          "wins": 23,
+          "losses": 14,
           "pushes": 0,
-          "n": 31,
-          "win_pct": 64.5,
-          "units": 2199.89,
-          "kelly": 16157.37,
-          "avg_kelly_pct": 6.58
+          "n": 37,
+          "win_pct": 62.2,
+          "units": 2229.81,
+          "kelly": 15678.89,
+          "avg_kelly_pct": 6.78
         }
       }
     }
