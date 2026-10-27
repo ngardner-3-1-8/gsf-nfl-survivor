@@ -3,13 +3,13 @@ big_splash,Predicted,0,2,0.01994,0.86854,0.0
 big_splash,Predicted,1,1,0.04662,-0.02669,0.0
 big_splash,Top Down,0,2,0.01994,0.86854,0.0
 big_splash,Top Down,1,1,0.04662,-0.02669,0.0
-circa,Archetype,0,73,0.02895,0.7719,0.0129
-circa,Archetype,1,69,0.03437,0.71213,0.01313
-circa,Archetype,2,64,0.03544,0.70958,0.01317
-circa,Archetype,3,59,0.03807,0.69601,0.01375
-circa,Archetype,4,54,0.03881,0.69499,0.01425
-circa,Archetype,5,49,0.03944,0.69762,0.01474
-circa,Archetype,6,44,0.04148,0.70978,0.01536
+circa,Archetype,0,74,0.0287,0.77474,0.01272
+circa,Archetype,1,70,0.03428,0.71241,0.01294
+circa,Archetype,2,65,0.0355,0.70534,0.01297
+circa,Archetype,3,60,0.03806,0.69153,0.01352
+circa,Archetype,4,55,0.03893,0.68755,0.01399
+circa,Archetype,5,50,0.03956,0.68958,0.01444
+circa,Archetype,6,45,0.04151,0.70117,0.01502
 circa,Archetype,7,40,0.04265,0.70396,0.01593
 circa,Archetype,8,36,0.0434,0.69683,0.0167
 circa,Archetype,9,32,0.0478,0.6809,0.01767
@@ -21,13 +21,13 @@ circa,Archetype,14,13,0.05564,0.56474,0.02128
 circa,Archetype,15,9,0.06163,0.55193,0.02727
 circa,Archetype,16,5,0.09127,0.6353,0.04284
 circa,Archetype,17,3,0.0426,0.43346,0.01584
-circa,Predicted,0,106,0.0256,0.77966,0.00944
-circa,Predicted,1,99,0.02882,0.7523,0.0097
-circa,Predicted,2,92,0.03014,0.735,0.00971
-circa,Predicted,3,85,0.03117,0.73661,0.01013
-circa,Predicted,4,78,0.03258,0.70479,0.01064
-circa,Predicted,5,71,0.0338,0.71401,0.01108
-circa,Predicted,6,64,0.03482,0.70074,0.01146
+circa,Predicted,0,107,0.0255,0.78085,0.00935
+circa,Predicted,1,100,0.02877,0.7526,0.0096
+circa,Predicted,2,93,0.03028,0.73259,0.00961
+circa,Predicted,3,86,0.03126,0.73249,0.01001
+circa,Predicted,4,79,0.03268,0.69966,0.0105
+circa,Predicted,5,72,0.0339,0.70812,0.01093
+circa,Predicted,6,65,0.03495,0.69435,0.01128
 circa,Predicted,7,58,0.03596,0.70342,0.01172
 circa,Predicted,8,52,0.03621,0.69689,0.01226
 circa,Predicted,9,46,0.03967,0.71227,0.01307
@@ -40,13 +40,13 @@ circa,Predicted,15,17,0.04589,0.59112,0.01628
 circa,Predicted,16,12,0.05438,0.61371,0.02045
 circa,Predicted,17,7,0.05947,0.52745,0.0306
 circa,Predicted,18,4,0.03274,0.46329,0.01188
-circa,Top Down,0,106,0.02381,0.79265,0.00939
-circa,Top Down,1,99,0.02722,0.74602,0.0097
-circa,Top Down,2,92,0.02854,0.72472,0.00971
-circa,Top Down,3,85,0.02879,0.71983,0.01013
-circa,Top Down,4,78,0.03121,0.68,0.01064
-circa,Top Down,5,71,0.03268,0.68373,0.01108
-circa,Top Down,6,64,0.03395,0.66382,0.01146
+circa,Top Down,0,107,0.02373,0.7937,0.00931
+circa,Top Down,1,100,0.02718,0.7464,0.0096
+circa,Top Down,2,93,0.0287,0.72245,0.00961
+circa,Top Down,3,86,0.02891,0.71595,0.01001
+circa,Top Down,4,79,0.03133,0.67469,0.01051
+circa,Top Down,5,72,0.03278,0.67722,0.01093
+circa,Top Down,6,65,0.03418,0.65682,0.01128
 circa,Top Down,7,58,0.03489,0.65865,0.01172
 circa,Top Down,8,52,0.0356,0.64804,0.01226
 circa,Top Down,9,46,0.03923,0.66401,0.01307

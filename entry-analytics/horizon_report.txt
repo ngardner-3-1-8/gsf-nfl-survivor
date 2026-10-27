@@ -27,25 +27,25 @@ MAE in pick-% points (lower better); Spearman in [-1,1] (higher better).
 ##########################################################################
 
   Predicted:
-    horizons 0–18 (949 week-observations)
-    MAE @ horizon 0 : 0.026 pts
+    horizons 0–18 (956 week-observations)
+    MAE @ horizon 0 : 0.025 pts
     decay slope     : +0.0012 pts per week of horizon  (R=0.80)
     skill horizon   : 17 weeks (Spearman>= 0.5)
-    skill half-life : 33.41 weeks
+    skill half-life : 33.8 weeks
 
   Top Down:
-    horizons 0–18 (949 week-observations)
+    horizons 0–18 (956 week-observations)
     MAE @ horizon 0 : 0.024 pts
     decay slope     : +0.0013 pts per week of horizon  (R=0.82)
     skill horizon   : 17 weeks (Spearman>= 0.5)
-    skill half-life : 31.21 weeks
+    skill half-life : 31.58 weeks
 
   Archetype:
-    horizons 0–17 (641 week-observations)
+    horizons 0–17 (648 week-observations)
     MAE @ horizon 0 : 0.029 pts
     decay slope     : +0.0019 pts per week of horizon  (R=0.75)
     skill horizon   : 16 weeks (Spearman>= 0.5)
-    skill half-life : 34.11 weeks
+    skill half-life : 34.68 weeks
 
   ↳ lowest MAE flips from 'Top Down' (near) to 'Predicted' (far) as horizon grows.
 
