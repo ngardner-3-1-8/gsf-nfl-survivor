@@ -14,9 +14,9 @@ on:
         description: 'Space-separated seasons to include (blank = all available)'
         required: false
         default: ''
-  schedule:
-    # Tuesdays 13:17 UTC (~early morning US) — after a week's results settle.
-    - cron: '17 13 * * 2'
+  workflow_run:
+    workflows: ["Weekly 9 Sweep Feature Horizon"]
+    types: [completed]
 
 permissions:
   contents: write
