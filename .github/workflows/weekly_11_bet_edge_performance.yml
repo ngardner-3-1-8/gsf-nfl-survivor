@@ -15,7 +15,7 @@ on:
         required: false
         default: ''
   workflow_run:
-    workflows: ["Weekly 9 Flavor Accuracy"]
+    workflows: ["Weekly 10 Bet Week-Range Analysis"]
     types: [completed]
 
 permissions:
