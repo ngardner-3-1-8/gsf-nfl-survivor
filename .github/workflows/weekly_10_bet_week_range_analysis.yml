@@ -15,7 +15,7 @@ on:
         required: false
         default: ''
   workflow_run:
-    workflows: ["Weekly 9 Sweep Feature Horizon"]
+    workflows: ["Weekly 9 Flavor Accuracy"]
     types: [completed]
 
 permissions:
