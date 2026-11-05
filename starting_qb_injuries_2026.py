@@ -57,7 +57,7 @@ MANUAL_CURRENT_STARTERS = {
     'LAC': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'LA': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'MIA': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    'MIN': [None, 'C.Wentz', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+    'MIN': [None, 'C.Wentz', None, None, None, None, None, None, 'C.Wentz', None, None, None, None, None, None, None, None, None],
     'NE': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'NO': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'NYG': [None, None, 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy'],
