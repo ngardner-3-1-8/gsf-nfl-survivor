@@ -29,6 +29,12 @@ on:
         description: 'Sample every Nth as-of week (1 = all, 2 = faster)'
         required: false
         default: '1'
+  # Chained: runs after weekly_7 as part of the weekly cascade headed by
+  # Weekly 1 (5 AM MT Tuesday). A chained run passes no inputs, so the script
+  # uses its defaults (full top_ns sweep, all years/contests).
+  workflow_run:
+   workflows: ["Weekly 7 Analyze Projection Horizon"]
+   types: [completed]
 
 permissions:
   contents: write
