@@ -10,6 +10,9 @@ on:
     - cron: '30 7 * * 4'
     - cron: '30 7 * * 5'
     - cron: '30 7 * * 6'
+  workflow_run:
+    workflows: ["Weekly 11 Bet Edge Performance"]
+    types: [completed]
   workflow_dispatch: # Manual run button
 
 jobs:
