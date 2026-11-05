@@ -24,6 +24,12 @@ on:
         description: 'Spearman floor defining the "skill horizon"'
         required: false
         default: '0.5'
+  # Chained: runs after weekly_6 as part of the weekly cascade headed by
+  # Weekly 1 (5 AM MT Tuesday). A chained run passes no inputs, so the script
+  # uses its defaults (all years/contests, default skill threshold).
+  workflow_run:
+    workflows: ["Weekly 6 Train Entry Pick Choice Model"]
+    types: [completed]
 
 permissions:
   contents: write
