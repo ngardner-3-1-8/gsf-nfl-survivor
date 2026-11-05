@@ -1,9 +1,6 @@
 name: Daily 5 Apply Archetype Blend and EV
 
 on:
-  # Manual run button.
-  workflow_dispatch:
-
   # Chain: run right after Daily 4 finishes -- the lean tail of the daily
   # cascade. It folds Daily 4's per-contest archetype estimates into Daily 2's
   # projection (the blend) and recomputes true EV on the blended pick %, so we
@@ -11,6 +8,8 @@ on:
   workflow_run:
     workflows: ["Daily 4 Generate Entry Archetype Pick Estimates"]
     types: [completed]
+  # Manual run button.
+  workflow_dispatch:
 
 permissions:
   contents: write   # to commit the reblended sim file / EV back
