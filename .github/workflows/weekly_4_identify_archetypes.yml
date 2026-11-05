@@ -7,7 +7,7 @@ on:
   # Splash contests always exist first. No wall-clock coordination / DST math
   # needed -- ordering is guaranteed by completion, not by cron time.
   workflow_run:
-    workflows: ["Weekly 2 Collect Transactions"]
+    workflows: ["Weekly 3b Normalize Splash Pick History + Build Contest Historical Data"]
     types: [completed]
   workflow_dispatch:
 
