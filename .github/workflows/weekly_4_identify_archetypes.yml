@@ -2,14 +2,14 @@ name: Weekly 4 Identify Entry Archetypes
 
 on:
   # Manual runs from the Actions tab (runs the full per-contest set).
-  workflow_dispatch:
   # Chained: runs automatically after weekly_3b finishes, so the normalized
   # Splash picks (and per-contest historical data) this step reads for the
   # Splash contests always exist first. No wall-clock coordination / DST math
   # needed -- ordering is guaranteed by completion, not by cron time.
   workflow_run:
-    workflows: ["Weekly 3b Normalize Splash Pick History + Build Contest Historical Data"]
+    workflows: ["Weekly 2 Collect Transactions"]
     types: [completed]
+  workflow_dispatch:
 
 permissions:
   contents: write
