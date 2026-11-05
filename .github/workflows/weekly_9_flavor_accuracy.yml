@@ -18,6 +18,9 @@ on:
         description: 'Space-separated contest keys (blank = all)'
         required: false
         default: ''
+  workflow_run:
+   workflows: ["Weekly 8 Sweep Feature Horizon"]
+   types: [completed]
 
 permissions:
   contents: write
