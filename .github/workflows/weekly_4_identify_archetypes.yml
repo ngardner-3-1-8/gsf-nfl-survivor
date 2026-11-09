@@ -2,24 +2,18 @@ name: Weekly 4 Identify Entry Archetypes
 
 on:
   # Manual runs from the Actions tab (runs the full per-contest set).
-  # Chained: runs automatically after weekly_3b finishes, so the normalized
-  # Splash picks (and per-contest historical data) this step reads for the
-  # Splash contests always exist first. No wall-clock coordination / DST math
-  # needed -- ordering is guaranteed by completion, not by cron time.
-  workflow_run:
-    workflows: ["Weekly 3b Normalize Splash Pick History + Build Contest Historical Data"]
-    types: [completed]
   workflow_dispatch:
+  # Chained: started by Weekly 3b's hand-off (gh workflow run), and hands off to
+  # Weekly 5 when done. Each step dispatches the next, so there is no
+  # workflow_run trigger to double-fire.
 
 permissions:
   contents: write
+  actions: write   # to dispatch the next step in the chain
 
 jobs:
   identify-archetypes:
     runs-on: ubuntu-latest
-    # workflow_run fires on completion regardless of outcome, so only proceed
-    # when the upstream run actually SUCCEEDED (or when triggered manually).
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -98,3 +92,9 @@ jobs:
           done
           echo "Push still failing after $n attempts (likely a GitHub-side 500 — check githubstatus.com, then re-run)."
           exit 1
+
+      - name: Hand off to Weekly 5
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
+        run: gh workflow run weekly_5_build_entry_pick_training_data.yml --ref main -R ${{ github.repository }}

@@ -1,23 +1,24 @@
 name: Weekly 6 Train Entry Pick Choice Model
 
 on:
-  # Manual runs from the Actions tab (trains the full per-contest set).
+  # Started by Weekly 5's hand-off (gh workflow run), which passes the id of
+  # the run whose training-data artifact to use. Also runnable manually (leave
+  # the input blank to use the most recent successful Weekly 5 run). Each step
+  # dispatches the next, so there is no workflow_run trigger.
   workflow_dispatch:
-  # Chained: runs after weekly_5 finishes, so a fresh per-contest training-data
-  # artifact is always ready before this trains on it.
-  workflow_run:
-    workflows: ["Weekly 5 Build Entry Pick Training Data"]
-    types: [completed]
+    inputs:
+      weekly5_run_id:
+        description: 'Weekly 5 run id to pull the training-data artifact from (blank = latest successful)'
+        required: false
+        default: ''
 
 permissions:
   contents: write   # to commit the trained models back
-  actions: read     # to download the training-data workflow's artifact
+  actions: write    # to download the training-data artifact AND dispatch the next step
 
 jobs:
   train-model:
     runs-on: ubuntu-latest
-    # Only proceed on a successful upstream run (or a manual dispatch).
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     timeout-minutes: 90
     steps:
       - name: Checkout code
@@ -44,8 +45,8 @@ jobs:
         # workflow FILE name (the previous value pointed at a file that doesn't
         # exist, so the lookup always came back empty).
         run: |
-          if [ "${{ github.event_name }}" = "workflow_run" ]; then
-            run_id="${{ github.event.workflow_run.id }}"
+          if [ -n "${{ inputs.weekly5_run_id }}" ]; then
+            run_id="${{ inputs.weekly5_run_id }}"
           else
             run_id=$(gh run list \
               --workflow=weekly_5_build_entry_pick_training_data.yml \
@@ -86,3 +87,9 @@ jobs:
           git add models/entry_pick_choice_model*.pkl \
                   models/entry_pick_choice_model_features*.json
           git diff --cached --quiet || (git commit -m "Retrain entry pick choice model (all contests)" && git push)
+
+      - name: Hand off to Weekly 7
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
+        run: gh workflow run weekly_7_analyze_projection_horizon.yml --ref main -R ${{ github.repository }}

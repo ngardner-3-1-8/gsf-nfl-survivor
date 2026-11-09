@@ -14,12 +14,15 @@ on:
         description: 'Space-separated seasons to include (blank = all available)'
         required: false
         default: ''
-  workflow_run:
-    workflows: ["Weekly 10 Bet Week-Range Analysis"]
-    types: [completed]
+  # Chained: started by Weekly 10's hand-off (gh workflow run) as the tail of
+  # the weekly cascade (headed by Weekly 1 at 5 AM MT Tuesday). When it finishes
+  # it hands off to Daily 1, kicking off the daily cascade. Its own standalone
+  # Tuesday cron was removed; it is driven by the explicit hand-off, so there is
+  # no workflow_run trigger.
 
 permissions:
   contents: write
+  actions: write   # to dispatch Daily 1 (the daily cascade head)
 
 jobs:
   bet-edge-performance:
@@ -69,3 +72,9 @@ jobs:
           done
           echo "Push still failing after $n attempts."
           exit 1
+
+      - name: Hand off to Daily 1 (start the daily cascade)
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
+        run: gh workflow run daily_1_get_internal_rankings.yml --ref main -R ${{ github.repository }}

@@ -4,23 +4,18 @@ on:
   # Manual run button.
   workflow_dispatch:
 
-  # Chain: run right after Daily 3 finishes -- the tail of both daily cascades
-  # (the Daily 1 chain, and the 9 AM Mountain run that starts at Daily 2). No
-  # schedule of its own; it rides whichever Daily 3 run fired it.
-  workflow_run:
-    workflows: ["Daily 3 Update Circa Survivor EVs"]
-    types: [completed]
+  # Started by Daily 3's hand-off (gh workflow run), and hands off to Daily 5
+  # when done. Each step dispatches the next, so there is no workflow_run
+  # trigger.
 
 permissions:
   contents: write   # to commit the output CSVs back
+  actions: write    # to dispatch the next step in the chain
 
 jobs:
   generate-estimates:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    # workflow_run fires on completion regardless of outcome, so only proceed
-    # when Daily 3 actually SUCCEEDED (or when triggered manually).
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -70,3 +65,9 @@ jobs:
                   entry_archetype_pick_estimates_big_splash/ \
                   entry_archetype_pick_estimates_world_championship/
           git diff --cached --quiet || (git commit -m "Update entry archetype pick estimates (all contests)" && git push)
+
+      - name: Hand off to Daily 5
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
+        run: gh workflow run daily_5_apply_archetype_blend_and_ev.yml --ref main -R ${{ github.repository }}

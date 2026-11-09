@@ -3,21 +3,18 @@ name: Weekly 5 Build Entry Pick Training Data
 on:
   # Manual runs from the Actions tab (builds the full per-contest set).
   workflow_dispatch:
-  # Chained: runs after weekly_4 finishes. weekly_5 reads each contest's picks
-  # (normalized by weekly_3b) and final_data; chaining off weekly_4 keeps the
-  # whole Splash pipeline in order without any DST-aware cron juggling.
-  workflow_run:
-    workflows: ["Weekly 4 Identify Entry Archetypes"]
-    types: [completed]
+  # Chained: started by Weekly 4's hand-off (gh workflow run), and hands off to
+  # Weekly 6 when done -- passing this run's id so Weekly 6 pulls the training
+  # artifact from exactly this run (no "latest successful" race).
+  # Each step dispatches the next, so there is no workflow_run trigger.
 
 permissions:
   contents: read
+  actions: write   # to dispatch the next step in the chain
 
 jobs:
   build-training-data:
     runs-on: ubuntu-latest
-    # Only proceed on a successful upstream run (or a manual dispatch).
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     # A full row-by-row pass across every entry/week/candidate-team for every
     # season on record, done once PER CONTEST -- give it plenty of runway.
     timeout-minutes: 180
@@ -62,3 +59,15 @@ jobs:
           path: training_data/entry_pick_choice_training_data*.parquet
           retention-days: 90
           if-no-files-found: error
+
+      - name: Hand off to Weekly 6
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
+        # Pass this run's id so Weekly 6 downloads the artifact from THIS run
+        # (the artifact is available as soon as it's uploaded, even before this
+        # run is marked complete -- avoids the "latest successful run" race).
+        run: >
+          gh workflow run weekly_6_train_entry_choice_pick_model.yml
+          --ref main -R ${{ github.repository }}
+          -f weekly5_run_id=${{ github.run_id }}

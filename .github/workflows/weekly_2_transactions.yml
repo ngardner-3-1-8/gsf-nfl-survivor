@@ -3,22 +3,18 @@ name: Weekly 2 Collect Transactions
 on:
   # Manual run button.
   workflow_dispatch:
-  # Chain: run right after Weekly 1 finishes. Weekly 1 stays the scheduled head
-  # of the weekly chain; 2 -> 3b -> 4 -> 5 -> 6 then run in order off each
-  # other, so this needs no cron of its own.
-  workflow_run:
-    workflows: ["Weekly 1 Collect Last Weeks Pick Data"]
-    types: [completed]
+  # Chained: started by Weekly 1's hand-off (gh workflow run). Each step
+  # dispatches the next, so the cascade doesn't depend on workflow_run
+  # auto-triggering (GitHub throttles that for GITHUB_TOKEN-driven runs, which
+  # stalled the chain a few hops in).
 
 permissions:
   contents: write
+  actions: write   # to dispatch the next step in the chain
 
 jobs:
   weekly-transactions:
     runs-on: ubuntu-latest
-    # workflow_run fires on completion regardless of outcome, so only proceed
-    # when Weekly 1 actually SUCCEEDED (or when triggered manually).
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -49,3 +45,9 @@ jobs:
           git add nfl-transactions/*.csv || true
           git commit -m "Weekly Transactions Update: Week $(date +'%U')" || echo "No changes to commit"
           git push
+
+      - name: Hand off to Weekly 3b
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
+        run: gh workflow run weekly_3b_normalize_splash_pick_history.yml --ref main -R ${{ github.repository }}

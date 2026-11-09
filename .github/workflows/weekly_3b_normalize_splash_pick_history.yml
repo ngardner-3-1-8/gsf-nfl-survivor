@@ -14,23 +14,19 @@ on:
   #      training file (BigSplash_historical_data.csv /
   #      WorldChampionship_historical_data.csv) that daily_2's per-contest
   #      pick-% projection trains on.
-  # It's the middle of the weekly chain (Weekly 1 -> 2 -> 3b -> 4 -> 5 -> 6),
-  # so it no longer needs its own cron -- completion order guarantees it lands
-  # before weekly_4/5, and its outputs are ready for the next daily_2 run.
-  workflow_run:
-    workflows: ["Weekly 2 Collect Transactions"]
-    types: [completed]
+  # Chained: started by Weekly 2's hand-off (gh workflow run), and hands off to
+  # Weekly 4 when done. It's the middle of the weekly chain
+  # (Weekly 1 -> 2 -> 3b -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11). Each step
+  # dispatches the next, so there is no workflow_run trigger to double-fire.
 
 permissions:
   contents: write   # to commit the normalized picks + contest historical files back
+  actions: write    # to dispatch the next step in the chain
 
 jobs:
   normalize-splash-picks:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # workflow_run fires on completion regardless of outcome, so only proceed
-    # when Weekly 2 actually SUCCEEDED (or when triggered manually).
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -73,3 +69,9 @@ jobs:
                   contest-historical-data/BigSplash_historical_data*.csv \
                   contest-historical-data/WorldChampionship_historical_data*.csv
           git diff --cached --quiet || (git commit -m "Normalize Splash picks + rebuild per-contest historical data" && git push)
+
+      - name: Hand off to Weekly 4
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
+        run: gh workflow run weekly_4_identify_archetypes.yml --ref main -R ${{ github.repository }}

@@ -14,12 +14,14 @@ on:
         description: 'Space-separated seasons to include (blank = all available)'
         required: false
         default: ''
-  workflow_run:
-    workflows: ["Weekly 9 Flavor Accuracy"]
-    types: [completed]
+  # Chained: started by Weekly 9's hand-off (gh workflow run), and hands off to
+  # Weekly 11 when done. Its own standalone Tuesday cron was removed so it only
+  # runs as part of the chain (headed by Weekly 1 at 5 AM MT Tuesday); it is
+  # driven by the explicit hand-off, so there is no workflow_run trigger.
 
 permissions:
   contents: write
+  actions: write   # to dispatch the next step in the chain
 
 jobs:
   bet-week-range:
@@ -69,3 +71,9 @@ jobs:
           done
           echo "Push still failing after $n attempts."
           exit 1
+
+      - name: Hand off to Weekly 11
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
+        run: gh workflow run weekly_11_bet_edge_performance.yml --ref main -R ${{ github.repository }}

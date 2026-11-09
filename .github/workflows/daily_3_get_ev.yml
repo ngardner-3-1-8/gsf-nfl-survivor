@@ -4,22 +4,17 @@ on:
   # Manual run button.
   workflow_dispatch:
 
-  # Chain: run right after Daily 2 finishes, so EV is computed from Daily 2's
-  # just-written pick %. No schedule of its own -- it rides whichever Daily 2
-  # cascade fired it (the Daily 1 chain, or the 9 AM Mountain run).
-  workflow_run:
-    workflows: ["Daily 2 Consolidate and Predict Upcoming Weekly Data"]
-    types: [completed]
+  # Started by Daily 2's hand-off (gh workflow run), and hands off to Daily 4
+  # when done. Each step dispatches the next, so there is no workflow_run
+  # trigger. EV is computed from Daily 2's just-written pick %.
 
 permissions:
   contents: write # Required to push the new CSVs back to the repo
+  actions: write  # to dispatch the next step in the chain
 
 jobs:
   run-ev-script:
     runs-on: ubuntu-latest
-    # workflow_run fires on completion regardless of outcome, so only proceed
-    # when Daily 2 actually SUCCEEDED (or when triggered manually).
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -58,3 +53,9 @@ jobs:
             git commit -m "Automated EV projections update"
             git push
           fi
+
+      - name: Hand off to Daily 4
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
+        run: gh workflow run daily_4_generate_entry_archetype_estimates.yml --ref main -R ${{ github.repository }}

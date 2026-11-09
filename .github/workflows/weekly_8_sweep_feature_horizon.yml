@@ -29,15 +29,13 @@ on:
         description: 'Sample every Nth as-of week (1 = all, 2 = faster)'
         required: false
         default: '1'
-  # Chained: runs after weekly_7 as part of the weekly cascade headed by
-  # Weekly 1 (5 AM MT Tuesday). A chained run passes no inputs, so the script
-  # uses its defaults (full top_ns sweep, all years/contests).
-  workflow_run:
-   workflows: ["Weekly 7 Analyze Projection Horizon"]
-   types: [completed]
+  # Chained: started by Weekly 7's hand-off (gh workflow run), and hands off to
+  # Weekly 9 when done. A chained run passes no inputs, so the script uses its
+  # defaults (full top_ns sweep, all years/contests).
 
 permissions:
   contents: write
+  actions: write   # to dispatch the next step in the chain
 
 jobs:
   sweep_horizon:
@@ -80,3 +78,9 @@ jobs:
           Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
           Claude-Session: https://claude.ai/code/session_01UP4LjqY5SmZynhBYgsPMyG"
           git push || echo "Nothing to push"
+
+      - name: Hand off to Weekly 9
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
+        run: gh workflow run weekly_9_flavor_accuracy.yml --ref main -R ${{ github.repository }}

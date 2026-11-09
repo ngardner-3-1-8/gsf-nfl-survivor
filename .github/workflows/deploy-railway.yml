@@ -1,0 +1,49 @@
+name: Deploy Backend to Railway
+
+# Redeploys the Railway backend whenever Daily 5 finishes (the tail of the
+# daily cascade: Daily 1 -> 2 -> 3 -> 4 -> 5), so the pick %, EV and blended
+# data Daily 5 just committed is what the live API serves. Also runnable on
+# demand from the Actions tab.
+#
+# Setup (one time):
+#   - Add a repository secret RAILWAY_TOKEN — a Railway *project* token for the
+#     backend's project/environment (Railway: project -> Settings -> Tokens).
+#   - If that project has more than one service, add a repository variable
+#     RAILWAY_SERVICE with the backend service's name; with a single service it
+#     can be left unset.
+on:
+  # Started by Daily 5's hand-off (gh workflow run) -- the tail of the daily
+  # cascade -- so the pick %, EV and blended data Daily 5 just committed is what
+  # the live API serves. Also runnable on demand.
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v5
+        with:
+          # Deploy the newest commit on main (includes Daily 5's just-pushed data).
+          ref: main
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::error::RAILWAY_TOKEN secret is not set. Add a Railway project token under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          # `railway up` uploads this checkout (which includes Daily 5's freshly
+          # committed data) and triggers a build + deploy, so the new data goes
+          # live. --ci runs non-interactively and exits after the deploy starts.
+          if [ -n "$RAILWAY_SERVICE" ]; then
+            railway up --service "$RAILWAY_SERVICE" --ci
+          else
+            railway up --ci
+          fi

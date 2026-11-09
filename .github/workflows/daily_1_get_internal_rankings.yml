@@ -1,22 +1,65 @@
 name: Daily 1 Get Internal Rankings
 
 on:
+  # Midnight Mountain Time every night. GitHub Actions cron is UTC-only with no
+  # DST awareness and the NFL season straddles the November US DST change, so
+  # both midnight-Mountain UTC times are listed; the gate job below runs only
+  # the one that matches today's DST state (the other is a no-op). Daily 1 is
+  # the head of the daily cascade (1 -> 2 -> 3 -> 4 -> 5).
   schedule:
-    # Runs at 7:30 AM UTC Daily
-    #12:30 AM Mountain Standard Time
-    #1:30 AM Mountain Daylight Time
-    - cron: '30 7 * * 2'
-    - cron: '30 7 * * 3'
-    - cron: '30 7 * * 4'
-    - cron: '30 7 * * 5'
-    - cron: '30 7 * * 6'
-  workflow_run:
-    workflows: ["Weekly 11 Bet Edge Performance"]
-    types: [completed]
-  workflow_dispatch: # Manual run button
+    - cron: '0 6 * * *'   # 00:00 Mountain Daylight Time (UTC-6)
+    - cron: '0 7 * * *'   # 00:00 Mountain Standard Time (UTC-7)
+  # Also started by Weekly 11's hand-off (gh workflow run) as the daily cascade
+  # that runs right after the weekly chain finishes -- that arrives as a
+  # workflow_dispatch, so no workflow_run trigger is needed.
+  workflow_dispatch: # Manual run button (and the Weekly 11 hand-off target)
+
+permissions:
+  contents: write
+  actions: write   # to dispatch the next step in the chain
 
 jobs:
+  # Proceed on: the midnight-Mountain cron that matches today's DST; or any
+  # dispatch (manual, or the Weekly 11 hand-off).
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.gate.outputs.proceed }}
+    steps:
+      - name: Decide whether to proceed
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TRIGGERING_CRON: ${{ github.event.schedule }}
+        run: |
+          python3 - <<'PYEOF'
+          import datetime, os
+          def is_us_daylight_time(d):
+              # 2nd Sunday of March through the day before the 1st Sunday of
+              # November -- rule unchanged since 2007, no tzdata dependency.
+              march1 = datetime.date(d.year, 3, 1)
+              first_sun_march = march1 + datetime.timedelta(days=(6 - march1.weekday()) % 7)
+              second_sun_march = first_sun_march + datetime.timedelta(days=7)
+              nov1 = datetime.date(d.year, 11, 1)
+              first_sun_nov = nov1 + datetime.timedelta(days=(6 - nov1.weekday()) % 7)
+              return second_sun_march <= d < first_sun_nov
+          today = datetime.datetime.now(datetime.timezone.utc).date()
+          is_dst = is_us_daylight_time(today)
+          event = os.environ.get('EVENT_NAME', '')
+          cron = os.environ.get('TRIGGERING_CRON', '')
+          if event == 'schedule':
+              expected = '0 6 * * *' if is_dst else '0 7 * * *'
+              proceed = (cron == expected)
+          else:
+              proceed = True  # manual dispatch or the Weekly 11 hand-off
+          print(f"event={event} cron={cron!r} is_dst={is_dst} proceed={proceed}")
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"proceed={'true' if proceed else 'false'}\n")
+          PYEOF
+
   daily-rankings:
+    needs: gate
+    if: ${{ needs.gate.outputs.proceed == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -38,9 +81,15 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
+
           # Stage CSVs and Images (png/jpg) if you are generating plots
           git add nfl-power-ratings/*.csv
-          
+
           git commit -m "Daily Rankings Update: $(date +'%Y-%m-%d')" || echo "No changes to commit"
           git push
+
+      - name: Hand off to Daily 2
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
+        run: gh workflow run daily_2_consolidate_predict_weekly_data.yml --ref main -R ${{ github.repository }}

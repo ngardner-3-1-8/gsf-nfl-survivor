@@ -24,15 +24,13 @@ on:
         description: 'Spearman floor defining the "skill horizon"'
         required: false
         default: '0.5'
-  # Chained: runs after weekly_6 as part of the weekly cascade headed by
-  # Weekly 1 (5 AM MT Tuesday). A chained run passes no inputs, so the script
-  # uses its defaults (all years/contests, default skill threshold).
-  workflow_run:
-    workflows: ["Weekly 6 Train Entry Pick Choice Model"]
-    types: [completed]
+  # Chained: started by Weekly 6's hand-off (gh workflow run), and hands off to
+  # Weekly 8 when done. A chained run passes no inputs, so the script uses its
+  # defaults (all years/contests, default skill threshold).
 
 permissions:
   contents: write
+  actions: write   # to dispatch the next step in the chain
 
 jobs:
   horizon:
@@ -74,3 +72,9 @@ jobs:
           Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
           Claude-Session: https://claude.ai/code/session_01UP4LjqY5SmZynhBYgsPMyG"
           git push || echo "Nothing to push"
+
+      - name: Hand off to Weekly 8
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
+        run: gh workflow run weekly_8_sweep_feature_horizon.yml --ref main -R ${{ github.repository }}

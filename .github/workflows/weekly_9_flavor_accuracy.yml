@@ -18,12 +18,13 @@ on:
         description: 'Space-separated contest keys (blank = all)'
         required: false
         default: ''
-  workflow_run:
-   workflows: ["Weekly 8 Sweep Feature Horizon"]
-   types: [completed]
+  # Chained: started by Weekly 8's hand-off (gh workflow run), and hands off to
+  # Weekly 10 when done. A chained run passes no inputs, so the script uses its
+  # defaults (all years/contests).
 
 permissions:
   contents: write
+  actions: write   # to dispatch the next step in the chain
 
 jobs:
   flavor_accuracy:
@@ -65,3 +66,9 @@ jobs:
           Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
           Claude-Session: https://claude.ai/code/session_01UP4LjqY5SmZynhBYgsPMyG"
           git push || echo "Nothing to push"
+
+      - name: Hand off to Weekly 10
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
+        run: gh workflow run weekly_10_bet_week_range_analysis.yml --ref main -R ${{ github.repository }}
