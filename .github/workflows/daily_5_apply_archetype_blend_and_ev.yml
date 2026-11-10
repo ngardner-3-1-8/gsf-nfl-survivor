@@ -4,15 +4,14 @@ on:
   # Manual run button.
   workflow_dispatch:
 
-  # Started by Daily 4's hand-off (gh workflow run) -- the lean tail of the
-  # daily cascade. When it finishes it hands off to the Railway deploy. Each
-  # step dispatches the next, so there is no workflow_run trigger. It folds
-  # Daily 4's per-contest archetype estimates into Daily 2's projection (the
-  # blend) and recomputes true EV on the blended pick %.
+  # Started by Daily 4's hand-off (gh workflow run) -- the tail of the daily
+  # cascade. It folds Daily 4's per-contest archetype estimates into Daily 2's
+  # projection (the blend) and recomputes true EV on the blended pick %. Its
+  # commit/push to main is the last of the run; Railway auto-deploys on that
+  # push, so the new data goes live without a separate deploy workflow.
 
 permissions:
   contents: write   # to commit the reblended sim file / EV back
-  actions: write    # to dispatch the Railway deploy
 
 jobs:
   apply-blend-and-ev:
@@ -47,9 +46,3 @@ jobs:
           git config --global user.email 'action@github.com'
           git add nfl-power-ratings/*.csv circa-survivor-ev/*_team_ev_week_*.csv
           git diff --cached --quiet || (git commit -m "Apply archetype blend + recompute EV (daily_5)" && git push)
-
-      - name: Hand off to Railway deploy
-        if: success()
-        env:
-          GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
-        run: gh workflow run deploy-railway.yml --ref main -R ${{ github.repository }}
