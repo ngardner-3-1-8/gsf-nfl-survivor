@@ -67,7 +67,12 @@ jobs:
         # Pass this run's id so Weekly 6 downloads the artifact from THIS run
         # (the artifact is available as soon as it's uploaded, even before this
         # run is marked complete -- avoids the "latest successful run" race).
-        run: >
-          gh workflow run weekly_6_train_entry_choice_pick_model.yml
-          --ref main -R ${{ github.repository }}
-          -f weekly5_run_id=${{ github.run_id }}
+        run: |
+          for i in 1 2 3 4 5; do
+            if gh workflow run weekly_6_train_entry_choice_pick_model.yml --ref main -R ${{ github.repository }} -f weekly5_run_id=${{ github.run_id }}; then
+              echo "Dispatched next step (attempt $i)."; exit 0
+            fi
+            echo "Dispatch failed (attempt $i; often a transient GitHub 500) — retrying in $((i*15))s..."
+            sleep $((i*15))
+          done
+          echo "::error::Could not dispatch the next step after 5 attempts (check githubstatus.com, then Run workflow on it manually)."; exit 1

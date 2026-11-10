@@ -92,4 +92,12 @@ jobs:
         if: success()
         env:
           GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
-        run: gh workflow run weekly_7_analyze_projection_horizon.yml --ref main -R ${{ github.repository }}
+        run: |
+          for i in 1 2 3 4 5; do
+            if gh workflow run weekly_7_analyze_projection_horizon.yml --ref main -R ${{ github.repository }}; then
+              echo "Dispatched next step (attempt $i)."; exit 0
+            fi
+            echo "Dispatch failed (attempt $i; often a transient GitHub 500) — retrying in $((i*15))s..."
+            sleep $((i*15))
+          done
+          echo "::error::Could not dispatch the next step after 5 attempts (check githubstatus.com, then Run workflow on it manually)."; exit 1
