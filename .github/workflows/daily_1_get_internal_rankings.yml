@@ -19,6 +19,11 @@ on:
     - cron: '0 9 * * 6'   # 00:00 Mountain Daylight Time (UTC-6)
     - cron: '0 10 * * 6'   # 00:00 Mountain Standard Time (UTC-7)
 
+  push:
+    branches: [main]
+    paths:
+      - 'power-ratings/**'
+
 
 
   # Also started by Weekly 11's hand-off (gh workflow run) as the daily cascade
