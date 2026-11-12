@@ -7,8 +7,8 @@ on:
   # no-op). Weekly 1 is the head of the weekly chain (1 -> 2 -> 3b -> 4 -> 5 ->
   # 6 -> 7 -> 8 -> 9 -> 10 -> 11), so scheduling it here runs the whole chain.
   schedule:
-    - cron: '0 11 * * 2'   # 05:00 Mountain Daylight Time (UTC-6)
-    - cron: '0 12 * * 2'   # 05:00 Mountain Standard Time (UTC-7)
+    - cron: '0 9 * * 2'   # 05:00 Mountain Daylight Time (UTC-6)
+    - cron: '0 10 * * 2'   # 05:00 Mountain Standard Time (UTC-7)
   # Also kick off the whole weekly chain whenever a Survivor World Championship
   # pick file is added or changed on main (e.g. a weekly upload). Pushes made
   # by this repo's own workflows use GITHUB_TOKEN, which by design does NOT
