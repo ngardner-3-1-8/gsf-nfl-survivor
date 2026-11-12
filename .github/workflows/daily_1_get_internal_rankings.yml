@@ -7,8 +7,20 @@ on:
   # the one that matches today's DST state (the other is a no-op). Daily 1 is
   # the head of the daily cascade (1 -> 2 -> 3 -> 4 -> 5).
   schedule:
-    - cron: '0 6 * * *'   # 00:00 Mountain Daylight Time (UTC-6)
-    - cron: '0 7 * * *'   # 00:00 Mountain Standard Time (UTC-7)
+    - cron: '0 6 * * 3'   # 00:00 Mountain Daylight Time (UTC-6)
+    - cron: '0 7 * * 3'   # 00:00 Mountain Standard Time (UTC-7)
+
+    - cron: '0 6 * * 4'   # 00:00 Mountain Daylight Time (UTC-6)
+    - cron: '0 7 * * 4'   # 00:00 Mountain Standard Time (UTC-7)
+
+    - cron: '0 6 * * 5'   # 00:00 Mountain Daylight Time (UTC-6)
+    - cron: '0 7 * * 5'   # 00:00 Mountain Standard Time (UTC-7)
+
+    - cron: '0 6 * * 6'   # 00:00 Mountain Daylight Time (UTC-6)
+    - cron: '0 7 * * 6'   # 00:00 Mountain Standard Time (UTC-7)
+
+
+
   # Also started by Weekly 11's hand-off (gh workflow run) as the daily cascade
   # that runs right after the weekly chain finishes -- that arrives as a
   # workflow_dispatch, so no workflow_run trigger is needed.
