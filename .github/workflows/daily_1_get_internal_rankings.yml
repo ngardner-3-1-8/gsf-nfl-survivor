@@ -22,7 +22,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'power-ratings/**'
+      - 'nfl-power-ratings/mp_ratings_week_*_*.csv'
 
 
 
