@@ -7,17 +7,17 @@ on:
   # the one that matches today's DST state (the other is a no-op). Daily 1 is
   # the head of the daily cascade (1 -> 2 -> 3 -> 4 -> 5).
   schedule:
-    - cron: '0 9 * * 3'   # 00:00 Mountain Daylight Time (UTC-6)
-    - cron: '0 10 * * 3'   # 00:00 Mountain Standard Time (UTC-7)
+    - cron: '0 7 * * 3'   # 00:00 Mountain Daylight Time (UTC-6)
+    - cron: '0 8 * * 3'   # 00:00 Mountain Standard Time (UTC-7)
 
-    - cron: '0 9 * * 4'   # 00:00 Mountain Daylight Time (UTC-6)
-    - cron: '0 10 * * 4'   # 00:00 Mountain Standard Time (UTC-7)
+    - cron: '0 7 * * 4'   # 00:00 Mountain Daylight Time (UTC-6)
+    - cron: '0 8 * * 4'   # 00:00 Mountain Standard Time (UTC-7)
 
-    - cron: '0 9 * * 5'   # 00:00 Mountain Daylight Time (UTC-6)
-    - cron: '0 10 * * 5'   # 00:00 Mountain Standard Time (UTC-7)
+    - cron: '0 7 * * 5'   # 00:00 Mountain Daylight Time (UTC-6)
+    - cron: '0 8 * * 5'   # 00:00 Mountain Standard Time (UTC-7)
 
-    - cron: '0 9 * * 6'   # 00:00 Mountain Daylight Time (UTC-6)
-    - cron: '0 10 * * 6'   # 00:00 Mountain Standard Time (UTC-7)
+    - cron: '0 7 * * 6'   # 00:00 Mountain Daylight Time (UTC-6)
+    - cron: '0 8 * * 6'   # 00:00 Mountain Standard Time (UTC-7)
 
   push:
     branches: [main]
@@ -65,7 +65,7 @@ jobs:
           event = os.environ.get('EVENT_NAME', '')
           cron = os.environ.get('TRIGGERING_CRON', '')
           if event == 'schedule':
-              expected = '0 6 * * *' if is_dst else '0 7 * * *'
+              expected = '0 7 * * *' if is_dst else '0 8 * * *'
               proceed = (cron == expected)
           else:
               proceed = True  # manual dispatch or the Weekly 11 hand-off
