@@ -46,3 +46,29 @@ jobs:
           git config --global user.email 'action@github.com'
           git add nfl-power-ratings/*.csv circa-survivor-ev/*_team_ev_week_*.csv
           git diff --cached --quiet || (git commit -m "Apply archetype blend + recompute EV (daily_5)" && git push)
+
+      - name: Trigger a single Railway deploy
+        if: success()
+        # The whole run's data is now committed. Touch ONE dedicated trigger
+        # file and push it as the final commit. Point Railway's watch path at
+        # ONLY this file (railway-deploy-trigger.txt), so Daily 1-4 and the
+        # weekly steps push data WITHOUT redeploying, and just this one push --
+        # whose commit contains the complete, finished data -- triggers exactly
+        # one Railway deploy per run. Ends the mid-run redeploy thrashing that
+        # was restarting the API and breaking requests mid-flight.
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > railway-deploy-trigger.txt
+          git add railway-deploy-trigger.txt
+          git commit -m "Deploy trigger: Railway (end of daily cascade)"
+          n=0
+          until [ "$n" -ge 5 ]; do
+            if git push; then echo "Pushed Railway deploy trigger."; exit 0; fi
+            n=$((n + 1))
+            echo "Push attempt $n failed; re-syncing and retrying in $((n * 15))s..."
+            git pull --rebase --autostash origin main || true
+            sleep $((n * 15))
+          done
+          echo "::error::Could not push the Railway deploy trigger after $n attempts."
+          exit 1
