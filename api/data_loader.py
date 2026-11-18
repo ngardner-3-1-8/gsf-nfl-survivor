@@ -105,7 +105,19 @@ def load_current_data(data_dir: str, model: str = "consensus") -> dict:
     upcoming_week = get_upcoming_week(today, target_year, data_dir)
     sim_file = get_simulation_file(data_dir, upcoming_week, target_year)
 
-    sim_df = pd.read_csv(sim_file)
+    # Prefer the whole-season "Live Schedule" file when it exists: it is the
+    # per-week sim projections (upcoming + future weeks) appended onto the
+    # season final-data actuals (completed weeks), so the Schedule and Optimizer
+    # tabs can view / optimize over PREVIOUS weeks too — not just the upcoming
+    # one. Falls back to the upcoming-week sim file if it hasn't been built yet.
+    # upcoming_week is still computed from the per-week sim files above, so the
+    # default-selected week is unchanged.
+    live_file = os.path.join(
+        data_dir, "nfl-power-ratings", f"live_schedule_{target_year}.csv"
+    )
+    data_file = live_file if os.path.exists(live_file) else sim_file
+
+    sim_df = pd.read_csv(data_file)
 
     # EV columns are embedded in the sim file (written by daily_3_calculate_ev.py)
     # No separate EV file needed anymore
@@ -121,8 +133,8 @@ def load_current_data(data_dir: str, model: str = "consensus") -> dict:
     return {
         "upcoming_week": upcoming_week,
         "target_year": target_year,
-        "sim_file": sim_file,
-        "ev_file": sim_file,  # same file
+        "sim_file": data_file,
+        "ev_file": data_file,  # same file
         "sim_df": sim_df,
         "ev_df": ev_df,
     }
