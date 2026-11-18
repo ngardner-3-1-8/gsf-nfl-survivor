@@ -9,7 +9,7 @@ on:
   # trigger.
 
 permissions:
-  contents: write   # to commit the output CSVs back
+  contents: read    # estimates are handed to Daily 5 as an artifact, not committed
   actions: write    # to dispatch the next step in the chain
 
 jobs:
@@ -47,24 +47,31 @@ jobs:
               || echo "⚠️ daily_4 $contest produced no estimates (no model/picks yet?) — continuing"
           done
 
-      - name: Commit and Push Estimates
-        # Output CSVs are small (one row per alive entry x candidate
-        # team, per week), so these get committed directly rather than
-        # uploaded as a workflow artifact.
+      - name: Ensure estimate dirs exist
+        # So the upload never errors if a contest produced no output this run
+        # (Circa is authoritative and always writes; Splash contests are
+        # best-effort). One dir per contest.
         run: |
-          git config --global user.name 'GitHub Action'
-          git config --global user.email 'action@github.com'
-          # mkdir first so `git add` never fails with "pathspec did not
-          # match any files" if a run genuinely produces zero output for a
-          # contest (e.g. no alive entries, no per-contest model yet, or the
-          # sim file isn't out yet). One dir per contest.
           mkdir -p entry_archetype_pick_estimates \
                    entry_archetype_pick_estimates_big_splash \
                    entry_archetype_pick_estimates_world_championship
-          git add entry_archetype_pick_estimates/ \
-                  entry_archetype_pick_estimates_big_splash/ \
-                  entry_archetype_pick_estimates_world_championship/
-          git diff --cached --quiet || (git commit -m "Update entry archetype pick estimates (all contests)" && git push)
+
+      - name: Upload estimates artifact for Daily 5
+        # Hand the per-entry archetype estimates to Daily 5 as a workflow
+        # artifact instead of committing them to git. They're large (hundreds
+        # of MB and growing) and ONLY Daily 5 reads them -- the deployed API
+        # never does -- so committing them just bloated the repo and the
+        # Railway image. Daily 5 downloads this by run id (passed in the
+        # hand-off below).
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily4-entry-archetype-estimates
+          path: |
+            entry_archetype_pick_estimates/
+            entry_archetype_pick_estimates_big_splash/
+            entry_archetype_pick_estimates_world_championship/
+          retention-days: 7
+          if-no-files-found: warn
 
       - name: Hand off to Daily 5
         if: success()
@@ -72,7 +79,7 @@ jobs:
           GH_TOKEN: ${{ secrets.PIPELINE_PAT || github.token }}
         run: |
           for i in 1 2 3 4 5; do
-            if gh workflow run daily_5_apply_archetype_blend_and_ev.yml --ref main -R ${{ github.repository }}; then
+            if gh workflow run daily_5_apply_archetype_blend_and_ev.yml --ref main -R ${{ github.repository }} -f daily4_run_id=${{ github.run_id }}; then
               echo "Dispatched next step (attempt $i)."; exit 0
             fi
             echo "Dispatch failed (attempt $i; often a transient GitHub 500) — retrying in $((i*15))s..."
