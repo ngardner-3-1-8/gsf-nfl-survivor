@@ -58,7 +58,7 @@ MANUAL_CURRENT_STARTERS = {
     'LA': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'MIA': [None, None, None, None, None, None, None, None, None, 'K.McCord', 'K.McCord', 'K.McCord', 'K.McCord', 'K.McCord', 'K.McCord', 'K.McCord', 'K.McCord', 'K.McCord'],
     'MIN': [None, 'C.Wentz', None, None, None, None, None, None, 'C.Wentz', 'C.Wentz', 'K.Cousins', 'K.Cousins', 'K.Cousins', 'K.Cousins', 'K.Cousins', 'K.Cousins', 'K.Cousins', 'K.Cousins'],
-    'NE': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+    'NE': [None, None, None, None, None, None, None, None, None, None, None, 'T.DeVito', 'T.DeVito', 'T.DeVito', 'T.DeVito', 'T.DeVito', 'T.DeVito', 'T.DeVito'],
     'NO': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
     'NYG': [None, None, 'J.Winston', 'J.Winston', 'J.Winston', 'J.Winston', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy', 'J.McCarthy'],
     'NYJ': [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
