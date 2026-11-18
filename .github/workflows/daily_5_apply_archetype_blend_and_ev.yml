@@ -68,6 +68,16 @@ jobs:
         run: |
           python daily_5_apply_archetype_blend_and_ev.py
 
+      - name: Build Live Schedule file
+        # Build the whole-season "Live Schedule" CSV the Interface serves so the
+        # Schedule/Optimizer tabs can view & optimize over PREVIOUS weeks, not
+        # just the upcoming one. It appends the (now reblended) upcoming/future
+        # sim projections onto the season final-data actuals. Season year is
+        # auto-detected. Output nfl-power-ratings/live_schedule_<year>.csv is
+        # committed by the existing nfl-power-ratings/*.csv add below.
+        run: |
+          python daily_5b_build_live_schedule.py --data-dir .
+
       - name: Commit and Push Reblended Sim + EV
         run: |
           git config --global user.name 'GitHub Action'
