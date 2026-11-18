@@ -1,17 +1,22 @@
 name: Daily 5 Apply Archetype Blend and EV
 
 on:
-  # Manual run button.
-  workflow_dispatch:
-
   # Started by Daily 4's hand-off (gh workflow run) -- the tail of the daily
-  # cascade. It folds Daily 4's per-contest archetype estimates into Daily 2's
-  # projection (the blend) and recomputes true EV on the blended pick %. Its
-  # commit/push to main is the last of the run; Railway auto-deploys on that
-  # push, so the new data goes live without a separate deploy workflow.
+  # cascade. Daily 4 passes the id of the run whose entry-archetype estimates
+  # artifact to download (blank on a manual run = latest successful Daily 4).
+  # Daily 5 folds those estimates into Daily 2's projection (the blend) and
+  # recomputes true EV on the blended pick %. Its commit/push to main is the
+  # last of the run; Railway auto-deploys on that push.
+  workflow_dispatch:
+    inputs:
+      daily4_run_id:
+        description: 'Daily 4 run id to pull the estimates artifact from (blank = latest successful)'
+        required: false
+        default: ''
 
 permissions:
   contents: write   # to commit the reblended sim file / EV back
+  actions: read     # to download Daily 4's estimates artifact
 
 jobs:
   apply-blend-and-ev:
@@ -35,6 +40,29 @@ jobs:
           pip install requests beautifulsoup4 pandas numpy pytz python-dateutil \
                       scikit-learn tqdm ortools selenium undetected-chromedriver \
                       polars nflreadpy scipy
+
+      - name: Download entry-archetype estimates from Daily 4
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # Daily 4 hands these over as an artifact instead of committing them.
+        # Pull from the exact Daily 4 run that triggered us (id passed as an
+        # input); on a manual run, fall back to the most recent successful one.
+        run: |
+          if [ -n "${{ inputs.daily4_run_id }}" ]; then
+            run_id="${{ inputs.daily4_run_id }}"
+          else
+            run_id=$(gh run list \
+              --workflow=daily_4_generate_entry_archetype_estimates.yml \
+              --status=success --limit=1 \
+              --json databaseId --jq '.[0].databaseId')
+          fi
+          if [ -z "$run_id" ]; then
+            echo "::error::No successful Daily 4 run found to pull estimates from. Run Daily 4 first."
+            exit 1
+          fi
+          echo "Downloading estimates artifact from Daily 4 run $run_id"
+          gh run download "$run_id" -n daily4-entry-archetype-estimates -D .
+          echo "Downloaded estimate dirs:"; ls -d entry_archetype_pick_estimates* 2>/dev/null || echo "  (none found)"
 
       - name: Run Daily 5 Apply Archetype Blend and EV
         run: |
