@@ -447,6 +447,9 @@ def get_available_weeks(year: int = Query(None)):
             w = int(row[week_col])
             label = str(row[circa_col]) if circa_col and pd.notna(row.get(circa_col)) else f"Week {w}"
             week_options.append({"week": w, "label": label})
+        # The Live Schedule file spans the whole season (completed + future),
+        # so sort the pills/selects into week order rather than row order.
+        week_options.sort(key=lambda x: x["week"])
         return {
             "upcoming_week": upcoming,
             "target_year": current_year,
