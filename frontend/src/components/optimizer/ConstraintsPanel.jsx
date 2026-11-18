@@ -170,12 +170,13 @@ export default function ConstraintsPanel({ onSubmit, loading, upcomingWeek, week
           value={pickSource}
           onChange={setPickSource}
           options={[
-            { value: 'model',  label: 'Model estimate' },
-            { value: 'actual', label: 'Actual (historical)' },
+            { value: 'model',  label: 'Projected Pick %' },
+            { value: 'actual', label: 'Actual Pick %' },
           ]}
         />
         <p className="text-xs text-gray-600 mt-1">
-          "Actual" uses realized pick % — only differs from the model on completed weeks.
+          "Actual Pick %" uses the realized crowd pick % on completed weeks; upcoming/future
+          weeks have no actual yet, so they fall back to the projected pick %.
         </p>
       </div>
 
