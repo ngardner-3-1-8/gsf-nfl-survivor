@@ -85,7 +85,7 @@ jobs:
         # auto-detected. Output nfl-power-ratings/live_schedule_<year>.csv is
         # committed by the existing nfl-power-ratings/*.csv add below.
         run: |
-          python build_live_schedule.py --data-dir .
+          python daily_5b_build_live_schedule.py --data-dir .
 
       - name: Commit and Push Reblended Sim + EV
         run: |
