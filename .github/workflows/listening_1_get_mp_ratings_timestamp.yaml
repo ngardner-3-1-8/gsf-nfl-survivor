@@ -14,10 +14,9 @@ jobs:
         run: |
           python3 -c "
           import json
-          from datetime import datetime
-          import pytz
-          eastern = pytz.timezone('America/New_York')
-          now = datetime.now(pytz.utc).astimezone(eastern)
+          from datetime import datetime, timezone
+          from zoneinfo import ZoneInfo
+          now = datetime.now(timezone.utc).astimezone(ZoneInfo('America/New_York'))
           timestamp = now.strftime('%b %d, %Y at %I:%M %p ET')
           with open('mp_ratings_last_updated.json', 'w') as f:
               json.dump({'mp_updated': timestamp}, f)
@@ -27,4 +26,4 @@ jobs:
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
           git add mp_ratings_last_updated.json
-          git diff --staged --quiet || git commit -m "Update MP rankings timestamp" && git push
+          git diff --staged --quiet || (git commit -m "Update MP rankings timestamp" && git push)
