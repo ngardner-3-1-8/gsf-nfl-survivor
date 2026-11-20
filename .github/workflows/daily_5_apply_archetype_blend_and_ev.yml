@@ -61,7 +61,16 @@ jobs:
             exit 1
           fi
           echo "Downloading estimates artifact from Daily 4 run $run_id"
-          gh run download "$run_id" -n daily4-entry-archetype-estimates -D .
+          # The repo still has committed copies of these estimate dirs, and
+          # `gh run download` refuses to overwrite an existing file (it aborts
+          # with "file exists"). So download into a clean temp dir, then merge
+          # over the checkout: the artifact's copies win, and any file the
+          # artifact doesn't include is left untouched.
+          rm -rf .daily4_estimates
+          mkdir -p .daily4_estimates
+          gh run download "$run_id" -n daily4-entry-archetype-estimates -D .daily4_estimates
+          cp -a .daily4_estimates/. .
+          rm -rf .daily4_estimates
           echo "Downloaded estimate dirs:"; ls -d entry_archetype_pick_estimates* 2>/dev/null || echo "  (none found)"
 
       - name: Run Daily 5 Apply Archetype Blend and EV
@@ -76,7 +85,7 @@ jobs:
         # auto-detected. Output nfl-power-ratings/live_schedule_<year>.csv is
         # committed by the existing nfl-power-ratings/*.csv add below.
         run: |
-          python daily_5b_build_live_schedule.py --data-dir .
+          python build_live_schedule.py --data-dir .
 
       - name: Commit and Push Reblended Sim + EV
         run: |
