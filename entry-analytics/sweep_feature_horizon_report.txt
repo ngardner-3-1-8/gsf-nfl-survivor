@@ -8,75 +8,77 @@ MAE in pick-% points (lower better); Spearman (higher better).
 ##########################################################################
 
   best feature count by horizon (lowest MAE):
-    h= 0:  top_n=   9  (MAE 0.0256, n=8)
-    h= 1:  top_n=   9  (MAE 0.0316, n=7)
-    h= 2:  top_n=  30  (MAE 0.0353, n=6)
-    h= 3:  top_n=  30  (MAE 0.0401, n=5)
-    h= 4:  top_n=   9  (MAE 0.0390, n=4)
-    h= 5:  top_n=   9  (MAE 0.0397, n=3)
-    h= 6:  top_n=  40  (MAE 0.0453, n=2)
-    h= 7:  top_n=  60  (MAE 0.0316, n=1)
+    h= 0:  top_n=  30  (MAE 0.0262, n=9)
+    h= 1:  top_n=  15  (MAE 0.0312, n=8)
+    h= 2:  top_n=  15  (MAE 0.0348, n=7)
+    h= 3:  top_n=  30  (MAE 0.0410, n=6)
+    h= 4:  top_n=  15  (MAE 0.0403, n=5)
+    h= 5:  top_n=   9  (MAE 0.0412, n=4)
+    h= 6:  top_n=  15  (MAE 0.0446, n=3)
+    h= 7:  top_n=   9  (MAE 0.0320, n=2)
+    h= 8:  top_n=  40  (MAE 0.0322, n=1)
 
   per-config decay:
-    top_n=   9: MAE@h0=0.0256  skill half-life=42.24 wks
-    top_n=  15: MAE@h0=0.0259  skill half-life=42.27 wks
-    top_n=  30: MAE@h0=0.0257  skill half-life=41.06 wks
-    top_n=  40: MAE@h0=0.0257  skill half-life=44.63 wks
-    top_n=  60: MAE@h0=0.0258  skill half-life=41.58 wks
-    top_n= all: MAE@h0=0.0257  skill half-life=42.97 wks
+    top_n=   9: MAE@h0=0.0263  skill half-life=31.43 wks
+    top_n=  15: MAE@h0=0.0263  skill half-life=32.44 wks
+    top_n=  30: MAE@h0=0.0262  skill half-life=29.53 wks
+    top_n=  40: MAE@h0=0.0264  skill half-life=29.8 wks
+    top_n=  60: MAE@h0=0.0263  skill half-life=29.76 wks
+    top_n= all: MAE@h0=0.0265  skill half-life=29.83 wks
 
 ##########################################################################
 ## CIRCA
 ##########################################################################
 
   best feature count by horizon (lowest MAE):
-    h= 0:  top_n=   9  (MAE 0.0215, n=104)
-    h= 1:  top_n=   9  (MAE 0.0273, n=96)
-    h= 2:  top_n=  15  (MAE 0.0283, n=90)
-    h= 3:  top_n=   9  (MAE 0.0289, n=85)
-    h= 4:  top_n=   9  (MAE 0.0304, n=79)
-    h= 5:  top_n=   9  (MAE 0.0316, n=73)
-    h= 6:  top_n=   9  (MAE 0.0331, n=67)
-    h= 7:  top_n=   9  (MAE 0.0343, n=61)
-    h= 8:  top_n=  15  (MAE 0.0369, n=55)
-    h= 9:  top_n=  15  (MAE 0.0383, n=49)
-    h=10:  top_n=  15  (MAE 0.0406, n=44)
-    h=11:  top_n=   9  (MAE 0.0430, n=39)
-    h=12:  top_n=   9  (MAE 0.0379, n=34)
-    h=13:  top_n=  15  (MAE 0.0340, n=29)
-    h=14:  top_n=   9  (MAE 0.0383, n=24)
-    h=15:  top_n=  15  (MAE 0.0412, n=19)
-    h=16:  top_n=   9  (MAE 0.0473, n=14)
-    h=17:  top_n=   9  (MAE 0.0379, n=10)
+    h= 0:  top_n=   9  (MAE 0.0215, n=105)
+    h= 1:  top_n=   9  (MAE 0.0273, n=97)
+    h= 2:  top_n=   9  (MAE 0.0280, n=91)
+    h= 3:  top_n=  15  (MAE 0.0290, n=86)
+    h= 4:  top_n=   9  (MAE 0.0305, n=80)
+    h= 5:  top_n=   9  (MAE 0.0314, n=74)
+    h= 6:  top_n=   9  (MAE 0.0327, n=68)
+    h= 7:  top_n=   9  (MAE 0.0340, n=62)
+    h= 8:  top_n=   9  (MAE 0.0367, n=56)
+    h= 9:  top_n=   9  (MAE 0.0384, n=50)
+    h=10:  top_n=   9  (MAE 0.0403, n=45)
+    h=11:  top_n=   9  (MAE 0.0428, n=39)
+    h=12:  top_n=  15  (MAE 0.0378, n=34)
+    h=13:  top_n=  15  (MAE 0.0342, n=29)
+    h=14:  top_n=  30  (MAE 0.0385, n=24)
+    h=15:  top_n=   9  (MAE 0.0420, n=19)
+    h=16:  top_n=   9  (MAE 0.0479, n=14)
+    h=17:  top_n=   9  (MAE 0.0385, n=10)
     h=18:  top_n=   9  (MAE 0.0297, n=8)
-    h=19:  top_n=   9  (MAE 0.0284, n=4)
+    h=19:  top_n=   9  (MAE 0.0286, n=4)
 
   per-config decay:
-    top_n=   9: MAE@h0=0.0215  skill half-life=26.44 wks
-    top_n=  15: MAE@h0=0.0218  skill half-life=25.25 wks
-    top_n=  30: MAE@h0=0.0222  skill half-life=24.56 wks
-    top_n=  40: MAE@h0=0.0219  skill half-life=24.3 wks
-    top_n=  60: MAE@h0=0.0221  skill half-life=24.0 wks
-    top_n= all: MAE@h0=0.0220  skill half-life=24.37 wks
+    top_n=   9: MAE@h0=0.0215  skill half-life=25.86 wks
+    top_n=  15: MAE@h0=0.0219  skill half-life=25.56 wks
+    top_n=  30: MAE@h0=0.0221  skill half-life=24.5 wks
+    top_n=  40: MAE@h0=0.0220  skill half-life=24.2 wks
+    top_n=  60: MAE@h0=0.0220  skill half-life=24.29 wks
+    top_n= all: MAE@h0=0.0220  skill half-life=24.24 wks
 
 ##########################################################################
 ## WORLD_CHAMPIONSHIP
 ##########################################################################
 
   best feature count by horizon (lowest MAE):
-    h= 0:  top_n=   9  (MAE 0.0222, n=8)
-    h= 1:  top_n=  60  (MAE 0.0266, n=7)
-    h= 2:  top_n=   9  (MAE 0.0289, n=6)
-    h= 3:  top_n=  15  (MAE 0.0331, n=5)
-    h= 4:  top_n=  15  (MAE 0.0362, n=4)
-    h= 5:  top_n=  40  (MAE 0.0366, n=3)
-    h= 6:  top_n=  40  (MAE 0.0391, n=2)
-    h= 7:  top_n=  15  (MAE 0.0305, n=1)
+    h= 0:  top_n=   9  (MAE 0.0221, n=9)
+    h= 1:  top_n=  60  (MAE 0.0261, n=8)
+    h= 2:  top_n=   9  (MAE 0.0284, n=7)
+    h= 3:  top_n= all  (MAE 0.0338, n=6)
+    h= 4:  top_n=   9  (MAE 0.0355, n=5)
+    h= 5:  top_n=   9  (MAE 0.0346, n=4)
+    h= 6:  top_n=  40  (MAE 0.0358, n=3)
+    h= 7:  top_n=  60  (MAE 0.0256, n=2)
+    h= 8:  top_n=  60  (MAE 0.0213, n=1)
 
   per-config decay:
-    top_n=   9: MAE@h0=0.0222  skill half-life=66.85 wks
-    top_n=  15: MAE@h0=0.0227  skill half-life=72.72 wks
-    top_n=  30: MAE@h0=0.0225  skill half-life=63.63 wks
-    top_n=  40: MAE@h0=0.0227  skill half-life=56.43 wks
-    top_n=  60: MAE@h0=0.0227  skill half-life=56.7 wks
-    top_n= all: MAE@h0=0.0228  skill half-life=62.08 wks
+    top_n=   9: MAE@h0=0.0221  skill half-life=62.55 wks
+    top_n=  15: MAE@h0=0.0222  skill half-life=65.23 wks
+    top_n=  30: MAE@h0=0.0224  skill half-life=67.43 wks
+    top_n=  40: MAE@h0=0.0223  skill half-life=66.04 wks
+    top_n=  60: MAE@h0=0.0222  skill half-life=68.73 wks
+    top_n= all: MAE@h0=0.0225  skill half-life=67.47 wks
