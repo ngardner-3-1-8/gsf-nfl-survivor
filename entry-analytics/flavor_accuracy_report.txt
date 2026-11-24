@@ -23,12 +23,12 @@ calib_slope: 1.0 = well-calibrated; < 1 = projections too extreme.
   most accurate by MAE:            Top Down > Predicted > Archetype
   best ranking by weekly Spearman: Top Down > Archetype > Predicted
 
-  Top Down   MAE=0.0206  RMSE=0.0573  bias=+0.0073  Spearman(wk)=0.788  R²=0.601  calib=0.766
-             Top1=0.551  Top3=0.772  win%(MAE)=0.571  win%(Spear)=0.449  n=3266 over 98 wks
-  Predicted  MAE=0.0223  RMSE=0.0593  bias=+0.0073  Spearman(wk)=0.773  R²=0.575  calib=0.753
-             Top1=0.561  Top3=0.765  win%(MAE)=0.225  win%(Spear)=0.347  n=3266 over 98 wks
-  Archetype  MAE=0.0247  RMSE=0.0626  bias=+0.0099  Spearman(wk)=0.776  R²=0.542  calib=0.668
-             Top1=0.533  Top3=0.756  win%(MAE)=0.204  win%(Spear)=0.204  n=2172 over 60 wks
+  Top Down   MAE=0.0207  RMSE=0.0574  bias=+0.0072  Spearman(wk)=0.789  R²=0.601  calib=0.766
+             Top1=0.545  Top3=0.771  win%(MAE)=0.566  win%(Spear)=0.444  n=3292 over 99 wks
+  Predicted  MAE=0.0224  RMSE=0.0593  bias=+0.0072  Spearman(wk)=0.774  R²=0.575  calib=0.753
+             Top1=0.556  Top3=0.764  win%(MAE)=0.222  win%(Spear)=0.353  n=3292 over 99 wks
+  Archetype  MAE=0.0245  RMSE=0.0622  bias=+0.0098  Spearman(wk)=0.777  R²=0.546  calib=0.672
+             Top1=0.541  Top3=0.754  win%(MAE)=0.212  win%(Spear)=0.202  n=2198 over 61 wks
 
   → Top Down is most accurate on both error and ranking.
 
